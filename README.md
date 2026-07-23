@@ -9,7 +9,7 @@ Modern web teknolojileri kullanılarak geliştirilmiş, tamamen istemci taraflı
 * **Dinamik Triyaj & Erken Uyarı Skoru:** Yaş grubuna göre otomatik **NEWS2** (Erişkin) veya **PEWS** (Pediatrik) skoru hesaplama ve kritik vitaller için anlık uyarı bayrakları.
 * **İdame Sıvı Hesabı:** Holliday-Segar formülü bazlı günlük/saatlik sıvı ihtiyacı hesaplama ve ateş varlığında otomatik düzeltme katsayısı.
 * **TİTCK İlaç & Doz Asistanı:** 
-  * 250.000+ kalem TİTCK resmi ilaç veritabanı (IndexedDB ile cihazda yerel saklama).
+  * 18000+ TİTCK resmi ilaç veritabanı (IndexedDB ile cihazda yerel saklama).
   * Akıllı Türkçe karakter toleranslı arama ve marka/jenerik eşleştirme.
   * Kırmızı, Yeşil ve Normal reçete renk kodlu rozet sistemi.
   * Aktif/Pasif ürün listesi filtrelemesi ve aynı etken maddeli aktif muadil ilaç bulucu.
