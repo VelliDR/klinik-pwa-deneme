@@ -157,25 +157,30 @@ export async function searchDrugsInDB(query) {
         if (isMatch) {
             let score = 0;
             
-            // Marka ve jenerik eşleşme öncelik puanlaması
             if (brandNorm === queryNorm) {
-                score += 100; // Tam marka eşleşmesi
+                score += 100;
             } else if (brandNorm.startsWith(queryNorm)) {
-                score += 70;  // Başlayan marka eşleşmesi
+                score += 70;
             } else if (brandNorm.includes(queryNorm)) {
-                score += 50;  // Marka içinde geçen eşleşme
+                score += 50;
             } else if (genericNorm.includes(queryNorm)) {
-                score += 30;  // Etken madde (jenerik) eşleşmesi (Artık ezilmeyecek!)
+                score += 30;
             } else {
-                score += 5;   // Barkod veya diğer eşleşmeler
+                score += 5;
             }
 
             scoredResults.push({ drug, score });
         }
     }
 
-    // Puana göre sırala ve ilk 25'i al
-    scoredResults.sort((a, b) => b.score - a.score);
+    // Önce puana göre, puanlar aynıysa marka adına göre alfabetik sırala (C > R)
+    scoredResults.sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score;
+        }
+        return a.drug.brand.localeCompare(b.drug.brand, 'tr');
+    });
     
-    return scoredResults.slice(0, 25).map(item => item.drug);
+    // Limiti 40 yaparak tüm muadillerin rahatça sığmasını sağlıyoruz
+    return scoredResults.slice(0, 40).map(item => item.drug);
 }
