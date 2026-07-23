@@ -4,8 +4,6 @@ import { calculatePercentiles } from './engines/percentileEngine.js';
 import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db.js';
 import { parseDrugStrength, findEquivalents, getDrugBadgesHTML } from './drugEngine.js';
 
-const DB_INIT_KEY = 'KLINIK_DB_INITIALIZED_V10'; // Tek merkezden sürüm yönetimi
-
 function parseNum(id) {
     const el = document.getElementById(id);
     if (!el || el.value === '' || el.value === null) return null;
@@ -266,7 +264,7 @@ function recalculateAll() {
 }
 
 async function syncDatabaseOnInit() {
-    const CURRENT_VERSION_TAG = 'KLINIK_DB_PHONETIC_V15'; // En güncel sürüm etiketimiz
+    const CURRENT_VERSION_TAG = 'KLINIK_DB_PHONETIC_V15';
     const installedTag = localStorage.getItem('KLINIK_DB_TAG');
     const searchInput = document.getElementById('input-drug-search');
 
@@ -274,23 +272,19 @@ async function syncDatabaseOnInit() {
         const count = await getDrugCount();
         console.log(`📊 Cihazda Bulunan İlaç Sayısı: ${count}`);
 
-        // Veritabanı eski VEYA bomboşsa sıfırdan kur
         if (installedTag !== CURRENT_VERSION_TAG || count === 0) {
             console.log('🔄 Güncel TİTCK veritabanı indiriliyor ve cihaz diski sıfırlanıyor...');
             
-            // 1. Arama input'unu geçici olarak kilitle ve durum yaz
             if (searchInput) {
                 searchInput.disabled = true;
                 searchInput.placeholder = '⏳ İlaç veritabanı cihaza indiriliyor (%0)...';
             }
 
-            // Eski veritabanını sil
             indexedDB.deleteDatabase('KlinikAsistanDB');
 
             const response = await fetch('./data/medicines.json');
             const rawData = await response.json();
 
-            // 2. Yükleme yüzdesini input placeholder'ına canlı yazdır
             await seedDrugDatabase(rawData, (percent) => {
                 console.log(`📥 Veritabanı Yazılıyor: %${percent}`);
                 if (searchInput) {
@@ -304,7 +298,6 @@ async function syncDatabaseOnInit() {
     } catch (err) {
         console.error('❌ Veritabanı senkronizasyon hatası:', err);
     } finally {
-        // 3. İşlem bittiğinde (veya hata aldığında) input'u tekrar aç
         if (searchInput) {
             searchInput.disabled = false;
             searchInput.placeholder = 'İlaç adı, etken madde veya barkod yazın...';
@@ -331,11 +324,8 @@ function initEvents() {
             clearBtn.classList.add('hidden');
             if (resultsDiv) resultsDiv.classList.add('hidden');
             
-            // Seçili ilacı ve hesaplamaları sıfırla
             appState.drugs.selectedDrug = null;
             recalculateAll();
-
-            // Kullanıcı hemen yeni arama yapabilsin diye odağı input'ta tut
             searchInput.focus();
         });
     }
@@ -345,7 +335,6 @@ function initEvents() {
         searchInput.addEventListener('input', async (e) => {
             const q = e.target.value;
 
-            // Metin varsa 'X' butonunu göster, yoksa gizle
             if (q.trim().length > 0) {
                 clearBtn?.classList.remove('hidden');
             } else {
@@ -389,7 +378,7 @@ function initEvents() {
                 recalculateAll();
             }
         });
-    }
+    } // <-- Eksik olan kapanış süslü parantezi buraya eklendi
 
     const copyBtn = document.getElementById('btn-copy-soap');
     if (copyBtn) {
