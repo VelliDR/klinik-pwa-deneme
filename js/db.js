@@ -155,23 +155,26 @@ export async function searchDrugsInDB(query) {
         const isMatch = queryTokens.every(token => searchableText.includes(token));
         
         if (isMatch) {
-            // İlaçları alakalılık derecesine göre puanlıyoruz (Relevance Ranking)
             let score = 0;
+            
+            // Marka ve jenerik eşleşme öncelik puanlaması
             if (brandNorm === queryNorm) {
-                score += 100; // Tam marka eşleşmesi (Örn: "concerta")
+                score += 100; // Tam marka eşleşmesi
             } else if (brandNorm.startsWith(queryNorm)) {
-                score += 50;  // Aranan kelimeyle başlayan markalar
+                score += 70;  // Başlayan marka eşleşmesi
             } else if (brandNorm.includes(queryNorm)) {
-                score += 20;  // Marka adının içinde geçenler
+                score += 50;  // Marka içinde geçen eşleşme
+            } else if (genericNorm.includes(queryNorm)) {
+                score += 30;  // Etken madde (jenerik) eşleşmesi (Artık ezilmeyecek!)
             } else {
-                score += 5;   // Jenerik etken madde veya barkod eşleşmeleri
+                score += 5;   // Barkod veya diğer eşleşmeler
             }
 
             scoredResults.push({ drug, score });
         }
     }
 
-    // Puana göre büyükten küçüğe sırala (En alakalılar en üste çıkar) ve ilk 25'i al
+    // Puana göre sırala ve ilk 25'i al
     scoredResults.sort((a, b) => b.score - a.score);
     
     return scoredResults.slice(0, 25).map(item => item.drug);
