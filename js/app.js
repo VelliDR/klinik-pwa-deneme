@@ -1,9 +1,10 @@
 import { appState, subscribeState, notifySubscribers } from './state.js';
 import { calculateBSA, determineAgeGroup } from './engines/biometricsEngine.js';
 import { calculatePercentiles } from './engines/percentileEngine.js';
-import { seedDrugDatabase, searchDrugsInDB } from './db.js';
-// YENİ EKLENEN ZEKÂ MODÜLÜ
+import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db.js';
 import { parseDrugStrength, findEquivalents, getDrugBadgesHTML } from './drugEngine.js';
+
+const DB_INIT_KEY = 'KLINIK_DB_INITIALIZED_V10'; // Tek merkezden sürüm yönetimi
 
 function parseNum(id) {
     const el = document.getElementById(id);
@@ -37,9 +38,8 @@ function recalculateAll() {
     g.isf = parseNum('input-isf');
     g.icRatio = parseNum('input-ic-ratio');
 
-   const customNotes = document.getElementById('input-custom-notes')?.value;
+    const customNotes = document.getElementById('input-custom-notes')?.value;
 
-    // 1. Toplam Ay (Persentil vb. hesaplar için küsuratlı baz değer)
     let totalMonths = 0;
     if (p.ageValue) {
         if (p.ageUnit === 'years') totalMonths = p.ageValue * 12;
@@ -48,17 +48,16 @@ function recalculateAll() {
     }
     
     p.derived.totalMonths = totalMonths;
-    // 2. Yaş grubunu yeni fonksiyona göre birim ve değer yollayarak bul
     p.derived.ageGroup = p.ageValue > 0 ? determineAgeGroup(p.ageValue, p.ageUnit) : null;
     p.derived.bsa = calculateBSA(p.heightCm, p.weightKg);
 
-    // Ekranda ve notta düzgün görünmesi için dinamik yaş metni
     const ageText = p.ageUnit === 'days' ? `${p.ageValue} Gün` : 
                     p.ageUnit === 'months' ? `${p.ageValue} Ay` : 
                     `${p.ageValue} Yaş`;
 
     const bsaOut = document.getElementById('output-bsa');
     if (bsaOut) bsaOut.textContent = p.derived.bsa ? `${p.derived.bsa} m²` : '--';
+    
     const percentileResult = calculatePercentiles({
         totalMonths: totalMonths,
         gender: p.gender,
@@ -66,6 +65,7 @@ function recalculateAll() {
         weightKg: p.weightKg,
         isPediatric: p.derived.ageGroup ? p.derived.ageGroup.isPediatric : false
     });
+
     const badge = document.getElementById('badge-age-group');
     if (badge) {
         if (p.derived.ageGroup && p.ageValue > 0) {
@@ -92,36 +92,29 @@ function recalculateAll() {
         }
     }
 
-   // C. Vitaller & Triyaj Skoru
     const vBox = document.getElementById('container-vitals-risk');
     if (vBox) {
         let score = 0;
         let flags = [];
-        // Hastanın çocuk mu erişkin mi olduğunu tespit et
         const isPed = p.derived.ageGroup ? p.derived.ageGroup.isPediatric : false;
 
-        // 1. Nabız
         if (v.heartRate) {
             if (isPed && (v.heartRate > 160 || v.heartRate < 60)) { score += 3; flags.push('Anormal Nabız'); }
             else if (!isPed && (v.heartRate > 130 || v.heartRate < 50)) { score += 3; flags.push('Anormal Nabız'); }
         }
         
-        // 2. SpO2
         if (v.spo2 && v.spo2 < 92) { score += 3; flags.push('Hipoksi'); }
         
-        // 3. Ateş
         if (v.bodyTemp) {
             if (v.bodyTemp >= 38.5) { score += 1; flags.push('Yüksek Ateş'); }
             else if (v.bodyTemp <= 35.0) { score += 2; flags.push('Hipotermi'); }
         }
 
-        // 4. Solunum
         if (v.respRate) {
             if (isPed && (v.respRate > 50 || v.respRate < 15)) { score += 3; flags.push('Anormal Solunum'); }
             else if (!isPed && (v.respRate > 25 || v.respRate < 9)) { score += 3; flags.push('Anormal Solunum'); }
         }
 
-        // 5. Tansiyon (Sistolik BP üzerinden değerlendirme)
         if (v.systolicBP) {
             if (isPed) {
                 if (v.systolicBP >= 130) { score += 3; flags.push('Hipertansiyon'); }
@@ -132,7 +125,6 @@ function recalculateAll() {
             }
         }
 
-        // Herhangi bir vital girildiyse paneli göster
         if (v.heartRate || v.spo2 || v.bodyTemp || v.respRate || v.systolicBP) {
             vBox.classList.remove('hidden');
             const bType = document.getElementById('badge-risk-type');
@@ -142,13 +134,11 @@ function recalculateAll() {
             if (bType) bType.textContent = isPed ? 'PEWS' : 'NEWS2';
             if (tScore) tScore.textContent = `Skor: ${score}`;
 
-            // Skora göre arka plan rengini belirle
             vBox.className = "p-3 rounded-xl border flex flex-col gap-1 transition-colors " + 
                 (score >= 4 ? 'bg-rose-950/60 border-rose-600 text-rose-200' : 
                  score >= 2 ? 'bg-amber-950/60 border-amber-600 text-amber-200' : 
                  'bg-emerald-950/60 border-emerald-600 text-emerald-200');
 
-            // Uyarı etiketlerini bas
             if (flagsDiv) {
                 flagsDiv.innerHTML = '';
                 flags.forEach(f => {
@@ -187,7 +177,6 @@ function recalculateAll() {
         }
     }
 
-    // --- SEÇİLİ İLAÇ: MUADİL VE ZEKÂ RENDERI ---
     const cardDrug = document.getElementById('card-selected-drug');
     if (cardDrug) {
         if (d.selectedDrug) {
@@ -197,21 +186,17 @@ function recalculateAll() {
             const volElem = document.getElementById('output-drug-volume-ml');
 
             if (titleElem) titleElem.textContent = d.selectedDrug.brand;
-            
-            // Rozetleri Yazdır
             if (doseElem) doseElem.innerHTML = getDrugBadgesHTML(d.selectedDrug);
 
-            // Regex ile Doz Analizi ($ml$ hesabı)
             const strength = parseDrugStrength(d.selectedDrug.brand);
             if (volElem) {
                 if (strength && strength.type === 'liquid' && p.weightKg) {
-                    // Varsayılan pediatrik 10 mg/kg üzerinden örnek hesap (Hekim referans alır)
                     const targetMg = p.weightKg * 10;
                     const requiredMl = (targetMg / strength.mgPerMl).toFixed(1);
                     volElem.innerHTML = `
                         <div class="text-xs text-emerald-400 font-mono mt-1 border-t border-slate-700/60 pt-1">
                             🧪 <strong>Konsantrasyon:</strong> ${strength.label}<br>
-                            🎯 <strong>Örnek Doz (10mg/kg):</strong> ${targetMg} mg $\\rightarrow$ <span class="text-amber-300 font-bold">${requiredMl} ml</span>
+                            🎯 <strong>Örnek Doz (10mg/kg):</strong> ${targetMg} mg → <span class="text-amber-300 font-bold">${requiredMl} ml</span>
                         </div>
                     `;
                 } else if (strength) {
@@ -222,24 +207,33 @@ function recalculateAll() {
             }
 
             // Muadilleri Arka Planda Getir
-            findEquivalents(d.selectedDrug.atcCode, d.selectedDrug.id).then(equivalents => {
+            findEquivalents(d.selectedDrug).then(equivalents => {
                 let eqContainer = document.getElementById('container-equivalents');
                 if (!eqContainer) {
                     eqContainer = document.createElement('div');
                     eqContainer.id = 'container-equivalents';
-                    eqContainer.className = "mt-2 pt-2 border-t border-slate-700/60 text-[11px]";
+                    eqContainer.className = "mt-3 pt-3 border-t border-slate-700/60 text-xs";
                     cardDrug.appendChild(eqContainer);
                 }
 
                 if (equivalents.length > 0) {
                     eqContainer.innerHTML = `
-                        <strong class="text-slate-400 block mb-1">🔄 Aynı Etken Maddeli Aktif Muadiller (${equivalents.length}):</strong>
-                        <div class="flex flex-col gap-1 max-h-24 overflow-y-auto pr-1">
-                            ${equivalents.map(e => `<span class="text-slate-300 bg-slate-900/50 p-1 rounded border border-slate-800 truncate">• ${e.brand}</span>`).join('')}
+                        <div class="flex items-center justify-between mb-2">
+                            <strong class="text-slate-300 font-semibold text-xs flex items-center gap-1.5">
+                                <span>🔄</span> Aynı Etken Maddeli Aktif Muadiller (${equivalents.length})
+                            </strong>
+                        </div>
+                        <div class="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
+                            ${equivalents.map(e => `
+                                <div class="text-slate-200 bg-slate-900/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs flex items-center gap-2 transition-colors">
+                                    <span class="text-emerald-400 font-bold text-[10px]">•</span>
+                                    <span class="truncate font-medium leading-normal">${e.brand}</span>
+                                </div>
+                            `).join('')}
                         </div>
                     `;
                 } else {
-                    eqContainer.innerHTML = `<span class="text-slate-500 italic">Sistemde birebir aktif muadil kaydı bulunamadı.</span>`;
+                    eqContainer.innerHTML = `<span class="text-slate-500 text-xs italic block mt-1">Sistemde birebir aktif muadil kaydı bulunamadı.</span>`;
                 }
             });
 
@@ -251,7 +245,7 @@ function recalculateAll() {
     const soapArea = document.getElementById('text-soap-output');
     if (soapArea) {
         let soapText = `=== KLİNİK HASTA NOTU ===\n`;
-       soapText += `• Yaş/Cinsiyet: ${p.derived.ageGroup ? p.derived.ageGroup.label : 'Belirtilmedi'} (${ageText}, ${p.gender === 'male' ? 'Erkek' : 'Kız'})\n`;
+        soapText += `• Yaş/Cinsiyet: ${p.derived.ageGroup ? p.derived.ageGroup.label : 'Belirtilmedi'} (${ageText}, ${p.gender === 'male' ? 'Erkek' : 'Kız'})\n`;
         soapText += `• Ölçümler: Boy: ${p.heightCm || '--'} cm | Kilo: ${p.weightKg || '--'} kg | BSA: ${p.derived.bsa || '--'} m²\n`;
         
         if (customNotes && customNotes.trim()) {
@@ -272,27 +266,33 @@ function recalculateAll() {
 }
 
 async function syncDatabaseOnInit() {
-    // Versiyonu V3 yaparak eski önbellekli veritabanının atlanmasını engelliyoruz
-    const isDBReady = localStorage.getItem('KLINIK_DB_INITIALIZED_V9');
+    // Sürüm numarasını değiştirdiğimizde eski veritabanı otomatik çöpe gider
+    const CURRENT_VERSION_TAG = 'KLINIK_DB_FULL_V14'; 
+    const installedTag = localStorage.getItem('KLINIK_DB_TAG');
 
-    if (!isDBReady) {
-        console.log('🔄 TİTCK Veritabanı güncel şema ile yeniden indiriliyor...');
-        try {
-            // Eski bozuk/eksik DB'yi kökünden sil
-            indexedDB.deleteDatabase('KlinikAsistanDB');
+    try {
+        const count = await getDrugCount();
+        console.log(`📊 Cihazda Bulunan İlaç Sayısı: ${count}`);
+
+        // Eğer sürüm eski ise VEYA kayıt sayısı 0 ise veritabanını sıfırdan kur
+        if (installedTag !== CURRENT_VERSION_TAG || count === 0) {
+            console.log('🔄 Güncel TİTCK veritabanı indiriliyor ve cihaz diski sıfırlanıyor...');
             
+            // Eski veritabanını sil
+            indexedDB.deleteDatabase('KlinikAsistanDB');
+
             const response = await fetch('./data/medicines.json');
             const rawData = await response.json();
 
             await seedDrugDatabase(rawData, (percent) => {
-                console.log(`📥 Veritabanı Cihaz Diske Yazılıyor: %${percent}`);
+                console.log(`📥 Veritabanı Yazılıyor: %${percent}`);
             });
 
-            localStorage.setItem('KLINIK_DB_INITIALIZED_V4', 'true');
-            console.log('✅ Güncel ilaçlar IndexedDB hafızasına başarıyla kaydedildi.');
-        } catch (err) {
-            console.error('❌ Veritabanı aktarım hatası:', err);
+            localStorage.setItem('KLINIK_DB_TAG', CURRENT_VERSION_TAG);
+            console.log('✅ Bütün TİTCK ilaç listesi eksiksiz kuruldu!');
         }
+    } catch (err) {
+        console.error('❌ Veritabanı senkronizasyon hatası:', err);
     }
 }
 
@@ -319,7 +319,6 @@ function initEvents() {
                     matches.forEach(drug => {
                         const item = document.createElement('div');
                         item.className = "p-2 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50 flex flex-col gap-1";
-                        // Arama sonuçlarında Rozetleri Göster
                         item.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <div>
@@ -384,7 +383,6 @@ document.addEventListener('DOMContentLoaded', () => {
     syncDatabaseOnInit();
 });
 
-// Service Worker Kaydı (Çevrimdışı Çalışma)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')

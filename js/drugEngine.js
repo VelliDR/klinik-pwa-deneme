@@ -1,4 +1,4 @@
-import { initDB } from './db.js';
+import { initDB, normalizeText } from './db.js';
 
 /**
  * 1. REGEX İLE DOZ VE KONSANTRASYON PARSER'I
@@ -32,36 +32,64 @@ export function parseDrugStrength(brandName) {
 }
 
 /**
- * 2. EŞDEĞER / MUADİL İLAÇ BULUCU (ATC Kodu İle)
+ * 2. EŞDEĞER / MUADİL İLAÇ BULUCU (ATC Kodu + Etken Madde Hibrit Taraması)
  */
-export async function findEquivalents(atcCode, currentDrugId) {
-    if (!atcCode || atcCode === 'Belirtilmedi') return [];
+export async function findEquivalents(selectedDrug) {
+    if (!selectedDrug) return [];
 
-    const db = await initDB();
-    return new Promise((resolve) => {
-        const tx = db.transaction('drugs', 'readonly');
-        const store = tx.objectStore('drugs');
-        const index = store.index('atcCode');
-        const request = index.getAll(atcCode);
+    const targetAtc = selectedDrug.atcCode ? normalizeText(selectedDrug.atcCode) : '';
+    const targetGeneric = selectedDrug.generic ? normalizeText(selectedDrug.generic) : '';
+    const currentId = String(selectedDrug.id);
 
-        request.onsuccess = () => {
-            const matches = request.result || [];
-            
-            const equivalents = matches.filter(d => {
-                const isSelf = String(d.id) === String(currentDrugId);
-                const isPassiveSheet = d.sheet && d.sheet.toUpperCase().includes('PASİF');
-                return !isSelf && !isPassiveSheet;
-            });
-            
-            resolve(equivalents.slice(0, 8));
-        };
+    // Hem ATC Kodu hem Etken Madde eksikse muadil aranamaz
+    if (!targetAtc && (!targetGeneric || targetGeneric === 'belirtilmedi')) {
+        return [];
+    }
+
+    try {
+        const db = await initDB();
         
-        request.onerror = () => resolve([]);
-    });
+        // Bütün ilaçları çekip hafızada esnek filtreleme yapıyoruz
+        const allDrugs = await new Promise((resolve) => {
+            const tx = db.transaction('drugs', 'readonly');
+            const store = tx.objectStore('drugs');
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+        });
+
+        return allDrugs.filter(d => {
+            // 1. Kendisini listeden çıkar
+            if (String(d.id) === currentId) return false;
+
+            // 2. Pasif/İptal ürünleri çıkar
+            if (d.sheet && d.sheet.toUpperCase().includes('PASİF')) return false;
+
+            const dAtc = d.atcCode ? normalizeText(d.atcCode) : '';
+            const dGeneric = d.generic ? normalizeText(d.generic) : '';
+
+            // Kriter A: ATC Kodu birebir eşleşiyorsa
+            if (targetAtc && dAtc && targetAtc === dAtc) {
+                return true;
+            }
+
+            // Kriter B: Etken Madde (Generic) adı eşleşiyorsa
+            if (targetGeneric && targetGeneric !== 'belirtilmedi' && dGeneric && dGeneric !== 'belirtilmedi') {
+                if (dGeneric === targetGeneric || dGeneric.includes(targetGeneric) || targetGeneric.includes(dGeneric)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    } catch (err) {
+        console.error("Muadil arama hatası:", err);
+        return [];
+    }
 }
 
 /**
- * 3. TEMEL İLAÇ VE ROZET ÜRETİCİ (Eksik Olan Fonksiyon Geri Eklendi)
+ * 3. TEMEL İLAÇ VE ROZET ÜRETİCİ
  */
 export function getDrugBadgesHTML(drug) {
     const badges = [];

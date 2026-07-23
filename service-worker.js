@@ -1,6 +1,6 @@
-const CACHE_NAME = 'klinik-pwa-v1.1';
+const CACHE_NAME = 'klinik-pwa-v1.2'; // Versiyon güncellendi
 
-// Çevrimdışı Kullanım İçin Önbelleğe Alınacak Dosyalar (App Shell)
+// Çevrimdışı Kullanım İçin Önbelleğe Alınacak Yerel Dosyalar (App Shell)
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -8,10 +8,10 @@ const ASSETS_TO_CACHE = [
     './js/app.js',
     './js/state.js',
     './js/db.js',
+    './js/drugEngine.js', // Eksik olan modül eklendi
     './js/engines/biometricsEngine.js',
     './js/engines/percentileEngine.js',
-    './data/medicines.json',
-    'https://cdn.tailwindcss.com'
+    './data/medicines.json'
 ];
 
 // 1. SERVICE WORKER KURULUMU (INSTALL)
@@ -56,14 +56,18 @@ self.addEventListener('fetch', (event) => {
 
             // Önbellekte yoksa ağa git ve yeni gelen cevabı da cache'e ekle
             return fetch(event.request).then((networkResponse) => {
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                // Geçersiz veya hatalı yanıtları önbelleğe alma
+                if (!networkResponse || networkResponse.status !== 200) {
                     return networkResponse;
                 }
 
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
+                // Sadece kendi origin'imizdeki veya geçerli yanıtları sakla
+                if (networkResponse.type === 'basic' || networkResponse.type === 'cors') {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                }
 
                 return networkResponse;
             }).catch(() => {
