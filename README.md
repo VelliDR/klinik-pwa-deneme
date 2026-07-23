@@ -16,3 +16,11 @@ Modern web teknolojileri kullanılarak geliştirilmiş, tamamen istemci taraflı
   * Sıvı formlar için mililitre ($\text{ml}$) bazlı pratik doz konsantrasyon analizi.
 * **SOAP Klinik Notu Oluşturucu:** Tüm verileri tek tıkla profesyonel SOAP formatına dönüştürüp panoya kopyalama imkânı.
 * **Çevrimdışı Çalışma (PWA):** Service Worker desteği sayesinde internet bağlantısı olmasa bile tam performans çalışabilme.
+
+⚠️
+Yasal Uyarı & Sorumluluk Reddi
+Bu uygulama yalnızca klinik decision support (karar destek) ve eğitim amacıyla geliştirilmiştir. Uygulamada yer alan biyometri, persentil, idame sıvı, insülin ve ilaç doz hesaplamaları hiçbir koşulda hekimin veya sağlık profesyonelinin tıbbi kanaatinin, teşhisinin ve reçeteleme sorumluluğunun yerini alamaz.
+
+İlaç verileri TİTCK resmi listelerinden derlenmiştir. İlaç dozajı ve uygulaması öncesinde resmi prospektüs, SUT ve güncel klinik kılavuzlardan çapraz doğrulama yapılması doğrudan uygulayıcı hekimin sorumluluğundadır. Hesaplama veya veri uyuşmazlıklarından doğabilecek klinik sonuçlardan uygulama geliştiricisi sorumlu tutulamaz.
+
+🔒 KVKK Uyumlu: Hasta verileri hiçbir sunucuya aktarılmaz, tamamen cihazınızda yerel işlenir.
