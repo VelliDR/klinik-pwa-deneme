@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#0f172a">
-<!-- iOS Safari PWA Desteği İçin -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Klinik Karar Destek Asistanı</title>
+    
+    <!-- PWA & Mobile Desteği -->
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="data:,"> <!-- Favicon 404 uyarısını engeller -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 max-w-md mx-auto space-y-4">
@@ -26,10 +30,10 @@
             <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Giriş Tipi</label>
                 <select id="select-age-unit" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
-    <option value="years">Yaş</option>
-    <option value="months">Ay</option>
-    <option value="days">Gün</option>
-</select>
+                    <option value="years">Yaş</option>
+                    <option value="months">Ay</option>
+                    <option value="days">Gün</option>
+                </select>
             </div>
             <div>
                 <label class="text-[10px] text-slate-400 block mb-1">Yaş / Ay</label>
@@ -167,8 +171,21 @@
     <!-- 6. KART: İLAÇ ARAMA -->
     <section class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3 relative">
         <h2 class="text-xs font-semibold text-rose-400 uppercase">6. İlaç & Doz Asistanı</h2>
-        <div class="relative">
-            <input type="text" id="input-drug-search" placeholder="İlaç ara (Parasetamol, Augmentin, Arveles...)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono">
+        <div class="relative flex items-center">
+            <input 
+                type="text" 
+                id="input-drug-search" 
+                placeholder="İlaç adı, etken madde veya barkod yazın..." 
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 pr-8 text-xs font-mono focus:outline-none focus:border-rose-500"
+            >
+            <button 
+                id="btn-clear-search" 
+                type="button" 
+                class="hidden absolute right-2 text-slate-400 hover:text-slate-200 text-xs font-bold w-6 h-6 rounded-full hover:bg-slate-800 transition-all flex items-center justify-center" 
+                title="Aramayı Temizle"
+            >
+                ✕
+            </button>
             <div id="container-search-results" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"></div>
         </div>
         <div id="card-selected-drug" class="hidden bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2">
@@ -185,16 +202,18 @@
             </div>
         </div>
     </section>
-<!-- EKSTRA NOTLAR VE SIFIRLAMA -->
-<section class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
-    <div class="flex justify-between items-center">
-        <h2 class="text-xs font-semibold text-rose-400 uppercase">Ekstra Anamnez & Fizik Muayene</h2>
-        <button id="btn-reset-form" type="button" class="text-[10px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 text-slate-300 border border-slate-600 px-2 py-1 rounded-lg transition-colors font-mono">
-            🗑️ Formu Temizle
-        </button>
-    </div>
-    <textarea id="input-custom-notes" rows="2" placeholder="Örn: 2 gündür yüksek ateş, FM: Oskültasyonda sağ bazalde raller mevcut, döküntü yok..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 resize-none focus:outline-none focus:border-rose-500"></textarea>
-</section>
+
+    <!-- EKSTRA NOTLAR VE SIFIRLAMA -->
+    <section class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+        <div class="flex justify-between items-center">
+            <h2 class="text-xs font-semibold text-rose-400 uppercase">Ekstra Anamnez & Fizik Muayene</h2>
+            <button id="btn-reset-form" type="button" class="text-[10px] bg-slate-700 hover:bg-rose-950 hover:text-rose-300 text-slate-300 border border-slate-600 px-2 py-1 rounded-lg transition-colors font-mono">
+                🗑️ Formu Temizle
+            </button>
+        </div>
+        <textarea id="input-custom-notes" rows="2" placeholder="Örn: 2 gündür yüksek ateş, FM: Oskültasyonda sağ bazalde raller mevcut, döküntü yok..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 resize-none focus:outline-none focus:border-rose-500"></textarea>
+    </section>
+
     <!-- 7. KART: SOAP NOTU -->
     <section class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3 mb-8">
         <div class="flex justify-between items-center">

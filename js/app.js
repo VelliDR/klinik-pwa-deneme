@@ -266,26 +266,36 @@ function recalculateAll() {
 }
 
 async function syncDatabaseOnInit() {
-    // Sürüm numarasını değiştirdiğimizde eski veritabanı otomatik çöpe gider
-    const CURRENT_VERSION_TAG = 'KLINIK_DB_FULL_V14'; 
+    const CURRENT_VERSION_TAG = 'KLINIK_DB_PHONETIC_V15'; // En güncel sürüm etiketimiz
     const installedTag = localStorage.getItem('KLINIK_DB_TAG');
+    const searchInput = document.getElementById('input-drug-search');
 
     try {
         const count = await getDrugCount();
         console.log(`📊 Cihazda Bulunan İlaç Sayısı: ${count}`);
 
-        // Eğer sürüm eski ise VEYA kayıt sayısı 0 ise veritabanını sıfırdan kur
+        // Veritabanı eski VEYA bomboşsa sıfırdan kur
         if (installedTag !== CURRENT_VERSION_TAG || count === 0) {
             console.log('🔄 Güncel TİTCK veritabanı indiriliyor ve cihaz diski sıfırlanıyor...');
             
+            // 1. Arama input'unu geçici olarak kilitle ve durum yaz
+            if (searchInput) {
+                searchInput.disabled = true;
+                searchInput.placeholder = '⏳ İlaç veritabanı cihaza indiriliyor (%0)...';
+            }
+
             // Eski veritabanını sil
             indexedDB.deleteDatabase('KlinikAsistanDB');
 
             const response = await fetch('./data/medicines.json');
             const rawData = await response.json();
 
+            // 2. Yükleme yüzdesini input placeholder'ına canlı yazdır
             await seedDrugDatabase(rawData, (percent) => {
                 console.log(`📥 Veritabanı Yazılıyor: %${percent}`);
+                if (searchInput) {
+                    searchInput.placeholder = `⏳ İlaçlar hazırlanıyor (%${percent})...`;
+                }
             });
 
             localStorage.setItem('KLINIK_DB_TAG', CURRENT_VERSION_TAG);
@@ -293,6 +303,12 @@ async function syncDatabaseOnInit() {
         }
     } catch (err) {
         console.error('❌ Veritabanı senkronizasyon hatası:', err);
+    } finally {
+        // 3. İşlem bittiğinde (veya hata aldığında) input'u tekrar aç
+        if (searchInput) {
+            searchInput.disabled = false;
+            searchInput.placeholder = 'İlaç adı, etken madde veya barkod yazın...';
+        }
     }
 }
 
@@ -305,11 +321,37 @@ function initEvents() {
     });
 
     const searchInput = document.getElementById('input-drug-search');
+    const clearBtn = document.getElementById('btn-clear-search');
     const resultsDiv = document.getElementById('container-search-results');
 
+    // 1. Temizleme Butonuna Tıklama Olayı
+    if (clearBtn && searchInput) {
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.classList.add('hidden');
+            if (resultsDiv) resultsDiv.classList.add('hidden');
+            
+            // Seçili ilacı ve hesaplamaları sıfırla
+            appState.drugs.selectedDrug = null;
+            recalculateAll();
+
+            // Kullanıcı hemen yeni arama yapabilsin diye odağı input'ta tut
+            searchInput.focus();
+        });
+    }
+
+    // 2. Arama İnput Olayı
     if (searchInput && resultsDiv) {
         searchInput.addEventListener('input', async (e) => {
             const q = e.target.value;
+
+            // Metin varsa 'X' butonunu göster, yoksa gizle
+            if (q.trim().length > 0) {
+                clearBtn?.classList.remove('hidden');
+            } else {
+                clearBtn?.classList.add('hidden');
+            }
+
             if (q.trim().length >= 2) {
                 const matches = await searchDrugsInDB(q);
                 resultsDiv.innerHTML = '';
