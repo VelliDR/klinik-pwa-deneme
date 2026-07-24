@@ -4,6 +4,7 @@ import { calculatePercentiles } from './engines/percentileEngine.js';
 import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db.js';
 import { parseDrugStrength, findEquivalents, getDrugBadgesHTML } from './drugEngine.js';
 import { calculateInfusionRate } from './engines/infusionEngine.js';
+import { calculateElectrolyteAdjustments } from './engines/sodiumEngine.js';
 
 function parseNum(id) {
     const el = document.getElementById(id);
@@ -201,22 +202,67 @@ function recalculateAll() {
         }
     }
 
+    // 1. ELEKTROLİT VE SODYUM HESAPLAMA
+    const serumNa = parseNum('input-serum-na');
+    const serumK = parseNum('input-serum-k');
+    const serumCa = parseNum('input-serum-ca');
+    const infusateNa = parseNum('select-na-fluid');
+    const targetNaChange = parseNum('input-target-na-change') || 8;
+
+    const ionData = calculateElectrolyteAdjustments({
+        weightKg: p.weightKg,
+        gender: p.gender,
+        ageGroup: p.derived.ageGroup?.id,
+        serumNa, serumK, serumCa, infusateNa,
+        targetNaChangePerDay: targetNaChange
+    });
+
+    let naRateMlHr = 0;
+    const naOut = document.getElementById('output-na-infusion-rate');
+    if (naOut) {
+        if (ionData.naResult) {
+            naRateMlHr = ionData.naResult.hourlyRateMl;
+            naOut.textContent = `${naRateMlHr} ml/saat (1L ile ΔNa: ${ionData.naResult.deltaNaPerLiter} mEq)`;
+        } else {
+            naOut.textContent = '--';
+        }
+    }
+
+    const ionWarnBox = document.getElementById('container-ion-warnings');
+    if (ionWarnBox) {
+        if (ionData.warnings.length > 0) {
+            ionWarnBox.classList.remove('hidden');
+            ionWarnBox.innerHTML = ionData.warnings.map(w => `<div>${w}</div>`).join('');
+        } else {
+            ionWarnBox.classList.add('hidden');
+        }
+    }
+
+    // 2. İDAME SIVI HESABI (SODYUM İNFÜZYONU İDAME SIVISINDAN DÜŞÜLÜR)
     const dFluid = document.getElementById('output-daily-fluid');
     const hFluid = document.getElementById('output-hourly-fluid');
     if (dFluid && hFluid) {
         if (p.weightKg && p.weightKg > 0) {
-            let base = p.weightKg <= 10 ? p.weightKg * 100 : p.weightKg <= 20 ? 1000 + (p.weightKg - 10) * 50 : 1500 + (p.weightKg - 20) * 20;
-            if (base > 2500) base = 2500;
-            if (v.bodyTemp && v.bodyTemp > 37.5) base *= (1 + (v.bodyTemp - 37.5) * 0.12);
-            const daily = Math.round(base);
-            dFluid.textContent = `${daily} ml/gün`;
-            hFluid.textContent = `${(daily / 24).toFixed(1)} ml/saat`;
+            let baseDaily = p.weightKg <= 10 ? p.weightKg * 100 : p.weightKg <= 20 ? 1000 + (p.weightKg - 10) * 50 : 1500 + (p.weightKg - 20) * 20;
+            if (baseDaily > 2500) baseDaily = 2500;
+            if (v.bodyTemp && v.bodyTemp > 37.5) baseDaily *= (1 + (v.bodyTemp - 37.5) * 0.12);
+
+            const baseHourly = baseDaily / 24;
+            
+            // Çatışma Önleyici: Net İdame = Bazal İdame - Na Düzeltme Hızı
+            let netHourlyFluid = baseHourly - naRateMlHr;
+            if (netHourlyFluid < 0) netHourlyFluid = 0;
+
+            const netDaily = Math.round(netHourlyFluid * 24);
+            dFluid.textContent = `${netDaily} ml/gün`;
+            hFluid.textContent = `${netHourlyFluid.toFixed(1)} ml/saat ${naRateMlHr > 0 ? '(Net İdame)' : ''}`;
         } else {
             dFluid.textContent = '--';
             hFluid.textContent = '--';
         }
     }
 
+    // 3. İNSÜLİN HESAPLAMA
     const totInsulin = document.getElementById('output-total-insulin');
     if (totInsulin) {
         if (g.currentGlucose && g.currentGlucose > 0) {
@@ -228,7 +274,7 @@ function recalculateAll() {
         }
     }
 
-    // 1. İNFÜZYON HESAPLAMA (SOAP Notundan Önce Hesaplayıp Hafızaya Alıyoruz)
+    // 4. SÜREKLİ İNFÜZYON HESAPLAMA
     const infMg = parseNum('input-inf-mg');
     const infVol = parseNum('input-inf-vol');
     const infDose = parseNum('input-inf-dose');
@@ -251,7 +297,7 @@ function recalculateAll() {
         }
     }
 
-    // 2. ÇOKLU İLAÇ LİSTESİNİ RENDER ETME (Güvenli Çözelti Gösterimi)
+    // 5. ÇOKLU İLAÇ LİSTESİNİ RENDER ETME
     const containerSelected = document.getElementById('container-selected-drugs');
     if (containerSelected) {
         containerSelected.innerHTML = '';
@@ -260,7 +306,6 @@ function recalculateAll() {
             const strength = parseDrugStrength(drug.brand);
             let volHtml = '';
 
-            // Tehlikeli doz sapmalarını önlemek için sadece net konsantrasyon gösterilir
             if (strength && strength.type === 'liquid') {
                 volHtml = `
                     <div class="text-[11px] text-emerald-400 font-mono mt-1 border-t border-slate-700/60 pt-1">
@@ -326,7 +371,7 @@ function recalculateAll() {
         });
     }
 
-    // 3. SOAP NOTU BASMA (Tam Entegre Çıktı)
+    // 6. SOAP NOTU BASMA (Tam Entegre Çıktı)
     const soapArea = document.getElementById('text-soap-output');
     if (soapArea) {
         let soapText = `=== KLİNİK HASTA NOTU ===\n`;
@@ -345,10 +390,18 @@ function recalculateAll() {
         if (percentileResult && percentileResult.bmiPercentile) {
             soapText += `• Persentil: Boy P:${percentileResult.heightPercentile || '--'} | Kilo P:${percentileResult.weightPercentile || '--'} | BKİ P:${percentileResult.bmiPercentile} (${percentileResult.category})\n`;
         }
+
+        if (serumNa || serumK || serumCa) {
+            soapText += `• Elektrolitler: Na: ${serumNa || '--'} mEq/L | K: ${serumK || '--'} mEq/L | Ca: ${serumCa || '--'} mg/dL\n`;
+        }
+
         soapText += `• Vitaller: TA: ${v.systolicBP || '--'}/${v.diastolicBP || '--'} mmHg | Nabız: ${v.heartRate || '--'}/dk | Ateş: ${v.bodyTemp || '--'}°C | SpO2: %${v.spo2 || '--'}\n`;
         soapText += `• Plan: İdame Sıvı: ${document.getElementById('output-daily-fluid')?.textContent || '--'}`;
         
-        // İnfüzyon bilgisi varsa SOAP nota eklenir
+        if (ionData && ionData.naResult) {
+            soapText += `\n• Na Düzeltme İnfüzyonu: ${naRateMlHr} ml/saat (Hedef: ${targetNaChange} mEq/gün)`;
+        }
+
         if (infResult && infMg && infDose) {
             const unitLabel = infUnit === 'mcg_kg_min' ? 'mcg/kg/dk' : infUnit === 'mcg_min' ? 'mcg/dk' : 'mg/kg/saat';
             soapText += `\n• Perfüzör / İnfüzyon: ${infMg} mg / ${infVol} ml SF (${infDose} ${unitLabel}) → ${infResult.rateMlHr} ml/saat (${infResult.concentrationMcgMl} mcg/ml)`;
@@ -421,7 +474,6 @@ function initEvents() {
     const clearBtn = document.getElementById('btn-clear-search');
     const resultsDiv = document.getElementById('container-search-results');
 
-    // 1. Temizleme Butonuna Tıklama Olayı
     if (clearBtn && searchInput) {
         clearBtn.addEventListener('click', () => {
             searchInput.value = '';
@@ -431,7 +483,6 @@ function initEvents() {
         });
     }
 
-    // 2. Arama İnput Olayı
     if (searchInput && resultsDiv) {
         searchInput.addEventListener('input', async (e) => {
             const q = e.target.value;
@@ -524,7 +575,6 @@ if ('serviceWorker' in navigator) {
                 const newWorker = reg.installing;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // Yeni versiyon indi, önbellek yenilendi!
                         window.location.reload();
                     }
                 });

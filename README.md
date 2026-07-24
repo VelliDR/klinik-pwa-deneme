@@ -8,6 +8,7 @@ Modern web teknolojileri kullanılarak geliştirilmiş, tamamen istemci taraflı
 * **Pediatrik Persentil & Z-Skor Motoru:** WHO/CDC verilerine dayalı esnek interpolasyon algoritması ile boy, kilo ve BKİ persentil hesaplaması, zayıflık/obezite sınıflandırması.
 * **Dinamik Triyaj & Erken Uyarı Skoru:** Yaş grubuna göre otomatik **NEWS2** (Erişkin) veya **PEWS** (Pediatrik) skoru hesaplama ve kritik vitaller için anlık uyarı bayrakları.
 * **İdame Sıvı Hesabı:** Holliday-Segar formülü bazlı günlük/saatlik sıvı ihtiyacı hesaplama ve ateş varlığında otomatik düzeltme katsayısı.
+* **GFR Hesaplayıcı
 * **TİTCK İlaç & Doz Asistanı:** 
   * 18000+ TİTCK resmi ilaç veritabanı (IndexedDB ile cihazda yerel saklama).
   * Akıllı Türkçe karakter toleranslı arama ve marka/jenerik eşleştirme.

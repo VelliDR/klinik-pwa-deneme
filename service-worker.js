@@ -1,6 +1,5 @@
-const CACHE_NAME = 'klinik-pwa-v1.3'; // Versiyon v1.3'e yükseltildi
+const CACHE_NAME = 'klinik-pwa-v1.6';
 
-// Çevrimdışı Kullanım İçin Önbelleğe Alınacak Yerel Dosyalar (App Shell)
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -11,6 +10,8 @@ const ASSETS_TO_CACHE = [
     './js/drugEngine.js',
     './js/engines/biometricsEngine.js',
     './js/engines/percentileEngine.js',
+    './js/engines/infusionEngine.js',
+    './js/engines/sodiumEngine.js', // Yeni eklendi
     './data/medicines.json'
 ];
 
