@@ -1,24 +1,62 @@
 export const appState = {
     patient: {
-        ageUnit: 'years', ageValue: 5, dob: null, isPremature: false, gestationalWeeks: 40,
-        heightCm: 110, weightKg: 20,
-        derived: { totalMonths: 60, correctedMonths: 60, ageGroup: null, bsa: null }
+        ageUnit: 'years', 
+        ageValue: null, 
+        dob: null, 
+        isPremature: false, 
+        gestationalWeeks: 40,
+        gender: 'male',
+        heightCm: null, 
+        weightKg: null,
+        creatinine: null, // 👈 EKLENDİ (eGFR için)
+        derived: { 
+            totalMonths: 0, 
+            correctedMonths: 0, 
+            ageGroup: null, 
+            bsa: null,
+            egfr: null   // 👈 EKLENDİ (eGFR sonucu için)
+        }
     },
     vitals: {
-        systolicBP: 120, diastolicBP: 80, heartRate: 75, respRate: 16, bodyTemp: 36.6, spo2: 98,
+        systolicBP: null, 
+        diastolicBP: null, 
+        heartRate: null, 
+        respRate: null, 
+        bodyTemp: null, 
+        spo2: null,
         derived: { evaluation: null }
     },
-    fluid: { derived: { fluidResult: null } },
+    fluid: { 
+        derived: { fluidResult: null } 
+    },
     glycemia: {
-        currentGlucose: 200, targetGlucose: 100, carbsGrams: 30, isf: 25, icRatio: 20,
+        currentGlucose: null, 
+        targetGlucose: 100, 
+        carbsGrams: 0, 
+        isf: null, 
+        icRatio: null,
         derived: { insulinResult: null }
     },
     drugs: {
-        searchQuery: '', searchResults: [], selectedDrug: null,
+        searchQuery: '', 
+        searchResults: [], 
+        selectedDrugs: [], // 👈 GÜNCELLENDİ (Tekil 'selectedDrug' yerine çoklu dizi yapıldı)
         derived: { dosageResult: null }
+    },
+    infusion: {
+        drugAmountMg: null,
+        totalVolumeMl: 50,
+        targetDose: null,
+        doseUnit: 'mcg_kg_min',
+        derived: { infusionResult: null }
     }
+    
 };
 
 const listeners = [];
-export function subscribeState(listener) { listeners.push(listener); }
-export function notifySubscribers() { listeners.forEach(fn => fn(appState)); }
+export function subscribeState(listener) { 
+    listeners.push(listener); 
+}
+export function notifySubscribers() { 
+    listeners.forEach(fn => fn(appState)); 
+}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'klinik-pwa-v1.2'; // Versiyon güncellendi
+const CACHE_NAME = 'klinik-pwa-v1.3'; // Versiyon v1.3'e yükseltildi
 
 // Çevrimdışı Kullanım İçin Önbelleğe Alınacak Yerel Dosyalar (App Shell)
 const ASSETS_TO_CACHE = [
@@ -8,7 +8,7 @@ const ASSETS_TO_CACHE = [
     './js/app.js',
     './js/state.js',
     './js/db.js',
-    './js/drugEngine.js', // Eksik olan modül eklendi
+    './js/drugEngine.js',
     './js/engines/biometricsEngine.js',
     './js/engines/percentileEngine.js',
     './data/medicines.json'
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME).then((cache) => {
             console.log('[Service Worker] Statik dosyalar önbelleğe alınıyor...');
             return cache.addAll(ASSETS_TO_CACHE);
-        }).then(() => self.skipWaiting()) // Yeni SW'nin hemen aktif olması için
+        }).then(() => self.skipWaiting())
     );
 });
 
@@ -38,30 +38,25 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        }).then(() => self.clients.claim()) // Tüm açık sekmeleri hemen devral
+        }).then(() => self.clients.claim())
     );
 });
 
 // 3. İSTEKLERİ YAKALAMA VE ÇEVRİMDIŞI SUNMA (FETCH)
 self.addEventListener('fetch', (event) => {
-    // Sadece GET isteklerini önbelleğe al
     if (event.request.method !== 'GET') return;
 
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            // Önbellekte varsa doğrudan diskten ver
             if (cachedResponse) {
                 return cachedResponse;
             }
 
-            // Önbellekte yoksa ağa git ve yeni gelen cevabı da cache'e ekle
             return fetch(event.request).then((networkResponse) => {
-                // Geçersiz veya hatalı yanıtları önbelleğe alma
                 if (!networkResponse || networkResponse.status !== 200) {
                     return networkResponse;
                 }
 
-                // Sadece kendi origin'imizdeki veya geçerli yanıtları sakla
                 if (networkResponse.type === 'basic' || networkResponse.type === 'cors') {
                     const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {

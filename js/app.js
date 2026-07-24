@@ -3,6 +3,7 @@ import { calculateBSA, determineAgeGroup } from './engines/biometricsEngine.js';
 import { calculatePercentiles } from './engines/percentileEngine.js';
 import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db.js';
 import { parseDrugStrength, findEquivalents, getDrugBadgesHTML } from './drugEngine.js';
+import { calculateInfusionRate } from './engines/infusionEngine.js';
 
 function parseNum(id) {
     const el = document.getElementById(id);
@@ -12,17 +13,49 @@ function parseNum(id) {
     return isNaN(num) ? null : num;
 }
 
+// eGFR HESAPLAMA MOTORU (Pediatrik Schwartz + Erişkin CKD-EPI 2021)
+function calculateEGFR({ ageInYears, gender, heightCm, creatinine }) {
+    if (!creatinine || creatinine <= 0) return null;
+
+    // 1. Pediatrik (<18 Yaş): Bedside Schwartz Formülü
+    if (ageInYears < 18) {
+        if (!heightCm || heightCm <= 0) return null;
+        const gfr = (0.413 * heightCm) / creatinine;
+        return Number(gfr.toFixed(1));
+    }
+
+    // 2. Erişkin (>=18 Yaş): CKD-EPI 2021 Formülü
+    if (!ageInYears || ageInYears <= 0) return null;
+    const isFemale = gender === 'female';
+    const kappa = isFemale ? 0.7 : 0.9;
+    const alpha = isFemale ? -0.241 : -0.302;
+    const genderMultiplier = isFemale ? 1.012 : 1.0;
+
+    const scrKappa = creatinine / kappa;
+    const minVal = Math.min(scrKappa, 1);
+    const maxVal = Math.max(scrKappa, 1);
+
+    const gfr = 142 * Math.pow(minVal, alpha) * Math.pow(maxVal, -1.200) * Math.pow(0.9938, ageInYears) * genderMultiplier;
+    return Number(gfr.toFixed(1));
+}
+
 function recalculateAll() {
     const p = appState.patient;
     const v = appState.vitals;
     const g = appState.glycemia;
     const d = appState.drugs;
 
+    // Çoklu İlaç Dizi Kontrolü
+    if (!Array.isArray(d.selectedDrugs)) {
+        d.selectedDrugs = [];
+    }
+
     p.ageUnit = document.getElementById('select-age-unit')?.value || 'years';
     p.ageValue = parseNum('input-age');
     p.gender = document.getElementById('select-gender')?.value || 'male';
     p.heightCm = parseNum('input-height');
     p.weightKg = parseNum('input-weight');
+    p.creatinine = parseNum('input-creatinine');
 
     v.systolicBP = parseNum('input-sys-bp');
     v.diastolicBP = parseNum('input-dia-bp');
@@ -39,15 +72,32 @@ function recalculateAll() {
     const customNotes = document.getElementById('input-custom-notes')?.value;
 
     let totalMonths = 0;
+    let ageInYears = 0;
+
     if (p.ageValue) {
-        if (p.ageUnit === 'years') totalMonths = p.ageValue * 12;
-        else if (p.ageUnit === 'months') totalMonths = p.ageValue;
-        else if (p.ageUnit === 'days') totalMonths = Number((p.ageValue / 30).toFixed(2));
+        if (p.ageUnit === 'years') {
+            totalMonths = p.ageValue * 12;
+            ageInYears = p.ageValue;
+        } else if (p.ageUnit === 'months') {
+            totalMonths = p.ageValue;
+            ageInYears = p.ageValue / 12;
+        } else if (p.ageUnit === 'days') {
+            totalMonths = Number((p.ageValue / 30).toFixed(2));
+            ageInYears = p.ageValue / 365;
+        }
     }
     
     p.derived.totalMonths = totalMonths;
     p.derived.ageGroup = p.ageValue > 0 ? determineAgeGroup(p.ageValue, p.ageUnit) : null;
     p.derived.bsa = calculateBSA(p.heightCm, p.weightKg);
+
+    const egfrValue = calculateEGFR({
+        ageInYears,
+        gender: p.gender,
+        heightCm: p.heightCm,
+        creatinine: p.creatinine
+    });
+    p.derived.egfr = egfrValue;
 
     const ageText = p.ageUnit === 'days' ? `${p.ageValue} Gün` : 
                     p.ageUnit === 'months' ? `${p.ageValue} Ay` : 
@@ -55,6 +105,9 @@ function recalculateAll() {
 
     const bsaOut = document.getElementById('output-bsa');
     if (bsaOut) bsaOut.textContent = p.derived.bsa ? `${p.derived.bsa} m²` : '--';
+
+    const egfrOut = document.getElementById('output-egfr');
+    if (egfrOut) egfrOut.textContent = egfrValue ? `${egfrValue} ml/dk/1.73m²` : '--';
     
     const percentileResult = calculatePercentiles({
         totalMonths: totalMonths,
@@ -175,76 +228,115 @@ function recalculateAll() {
         }
     }
 
-    const cardDrug = document.getElementById('card-selected-drug');
-    if (cardDrug) {
-        if (d.selectedDrug) {
-            cardDrug.classList.remove('hidden');
-            const titleElem = document.getElementById('text-drug-title');
-            const doseElem = document.getElementById('output-drug-dose-mg');
-            const volElem = document.getElementById('output-drug-volume-ml');
+    // 1. İNFÜZYON HESAPLAMA (SOAP Notundan Önce Hesaplayıp Hafızaya Alıyoruz)
+    const infMg = parseNum('input-inf-mg');
+    const infVol = parseNum('input-inf-vol');
+    const infDose = parseNum('input-inf-dose');
+    const infUnit = document.getElementById('select-inf-unit')?.value || 'mcg_kg_min';
 
-            if (titleElem) titleElem.textContent = d.selectedDrug.brand;
-            if (doseElem) doseElem.innerHTML = getDrugBadgesHTML(d.selectedDrug);
+    const infResult = calculateInfusionRate({
+        drugAmountMg: infMg,
+        totalVolumeMl: infVol,
+        weightKg: p.weightKg,
+        targetDose: infDose,
+        doseUnit: infUnit
+    });
 
-            const strength = parseDrugStrength(d.selectedDrug.brand);
-            if (volElem) {
-                if (strength && strength.type === 'liquid' && p.weightKg) {
-                    const targetMg = p.weightKg * 10;
-                    const requiredMl = (targetMg / strength.mgPerMl).toFixed(1);
-                    volElem.innerHTML = `
-                        <div class="text-xs text-emerald-400 font-mono mt-1 border-t border-slate-700/60 pt-1">
-                            🧪 <strong>Konsantrasyon:</strong> ${strength.label}<br>
-                            🎯 <strong>Örnek Doz (10mg/kg):</strong> ${targetMg} mg → <span class="text-amber-300 font-bold">${requiredMl} ml</span>
-                        </div>
-                    `;
-                } else if (strength) {
-                    volElem.innerHTML = `<span class="text-[10px] text-slate-400 font-mono block mt-1">Saptanan Form: ${strength.label}</span>`;
-                } else {
-                    volElem.innerHTML = `<span class="text-[10px] text-slate-500 font-mono block mt-1">Barkod: ${d.selectedDrug.barcode || '--'}</span>`;
-                }
-            }
-
-            // Muadilleri Arka Planda Getir
-            findEquivalents(d.selectedDrug).then(equivalents => {
-                let eqContainer = document.getElementById('container-equivalents');
-                if (!eqContainer) {
-                    eqContainer = document.createElement('div');
-                    eqContainer.id = 'container-equivalents';
-                    eqContainer.className = "mt-3 pt-3 border-t border-slate-700/60 text-xs";
-                    cardDrug.appendChild(eqContainer);
-                }
-
-                if (equivalents.length > 0) {
-                    eqContainer.innerHTML = `
-                        <div class="flex items-center justify-between mb-2">
-                            <strong class="text-slate-300 font-semibold text-xs flex items-center gap-1.5">
-                                <span>🔄</span> Aynı Etken Maddeli Aktif Muadiller (${equivalents.length})
-                            </strong>
-                        </div>
-                        <div class="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
-                            ${equivalents.map(e => `
-                                <div class="text-slate-200 bg-slate-900/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs flex items-center gap-2 transition-colors">
-                                    <span class="text-emerald-400 font-bold text-[10px]">•</span>
-                                    <span class="truncate font-medium leading-normal">${e.brand}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                } else {
-                    eqContainer.innerHTML = `<span class="text-slate-500 text-xs italic block mt-1">Sistemde birebir aktif muadil kaydı bulunamadı.</span>`;
-                }
-            });
-
+    const infOut = document.getElementById('output-infusion-rate');
+    if (infOut) {
+        if (infResult) {
+            infOut.textContent = `${infResult.rateMlHr} ml/saat (${infResult.concentrationMcgMl} mcg/ml)`;
         } else {
-            cardDrug.classList.add('hidden');
+            infOut.textContent = '--';
         }
     }
 
+    // 2. ÇOKLU İLAÇ LİSTESİNİ RENDER ETME (Güvenli Çözelti Gösterimi)
+    const containerSelected = document.getElementById('container-selected-drugs');
+    if (containerSelected) {
+        containerSelected.innerHTML = '';
+
+        d.selectedDrugs.forEach((drug, index) => {
+            const strength = parseDrugStrength(drug.brand);
+            let volHtml = '';
+
+            // Tehlikeli doz sapmalarını önlemek için sadece net konsantrasyon gösterilir
+            if (strength && strength.type === 'liquid') {
+                volHtml = `
+                    <div class="text-[11px] text-emerald-400 font-mono mt-1 border-t border-slate-700/60 pt-1">
+                        🧪 <strong>Konsantrasyon:</strong> ${strength.label}
+                    </div>
+                `;
+            } else if (strength) {
+                volHtml = `<span class="text-[10px] text-slate-400 font-mono block mt-0.5">Form: ${strength.label}</span>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = "bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5 relative";
+            item.innerHTML = `
+                <div class="flex justify-between items-start gap-2">
+                    <div class="pr-6">
+                        <strong class="text-xs font-bold text-rose-400 block">${drug.brand}</strong>
+                        <span class="text-[10px] text-slate-400 block">${drug.generic || 'Etken madde belirtilmedi'}</span>
+                    </div>
+                    <button type="button" data-index="${index}" class="btn-remove-drug absolute top-2 right-2 text-slate-400 hover:text-rose-400 font-bold text-xs p-1 rounded-md hover:bg-slate-800 transition-colors" title="İlacı Kaldır">
+                        ✕
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                    ${getDrugBadgesHTML(drug)}
+                </div>
+                ${volHtml}
+                <div id="container-eq-${index}" class="pt-1"></div>
+            `;
+            containerSelected.appendChild(item);
+
+            findEquivalents(drug).then(equivalents => {
+                const eqDiv = document.getElementById(`container-eq-${index}`);
+                if (eqDiv) {
+                    if (equivalents.length > 0) {
+                        eqDiv.innerHTML = `
+                            <details class="text-[10px] text-slate-400 mt-1">
+                                <summary class="cursor-pointer text-slate-300 font-semibold hover:text-emerald-400 transition-colors flex items-center gap-1 select-none">
+                                    <span>🔄</span> Aktif Muadiller (${equivalents.length})
+                                </summary>
+                                <div class="flex flex-col gap-1 mt-1.5 pl-2 border-l-2 border-slate-700 max-h-32 overflow-y-auto">
+                                    ${equivalents.map(e => `
+                                        <div class="text-slate-200 text-[10px] flex items-center gap-1.5 py-0.5">
+                                            <span class="text-emerald-400">•</span>
+                                            <span class="truncate font-medium">${e.brand}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </details>
+                        `;
+                    } else {
+                        eqDiv.innerHTML = `<span class="text-slate-500 text-[10px] italic block mt-1">Sistemde birebir aktif muadil kaydı bulunamadı.</span>`;
+                    }
+                }
+            });
+        });
+
+        containerSelected.querySelectorAll('.btn-remove-drug').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.getAttribute('data-index'));
+                d.selectedDrugs.splice(idx, 1);
+                recalculateAll();
+            });
+        });
+    }
+
+    // 3. SOAP NOTU BASMA (Tam Entegre Çıktı)
     const soapArea = document.getElementById('text-soap-output');
     if (soapArea) {
         let soapText = `=== KLİNİK HASTA NOTU ===\n`;
         soapText += `• Yaş/Cinsiyet: ${p.derived.ageGroup ? p.derived.ageGroup.label : 'Belirtilmedi'} (${ageText}, ${p.gender === 'male' ? 'Erkek' : 'Kız'})\n`;
-        soapText += `• Ölçümler: Boy: ${p.heightCm || '--'} cm | Kilo: ${p.weightKg || '--'} kg | BSA: ${p.derived.bsa || '--'} m²\n`;
+        soapText += `• Ölçümler: Boy: ${p.heightCm || '--'} cm | Kilo: ${p.weightKg || '--'} kg | BSA: ${p.derived.bsa || '--'} m²`;
+        
+        if (p.creatinine) {
+            soapText += ` | Kr: ${p.creatinine} mg/dL | eGFR: ${p.derived.egfr || '--'} ml/dk`;
+        }
+        soapText += `\n`;
         
         if (customNotes && customNotes.trim()) {
             soapText += `• Anamnez / FM: ${customNotes.trim()}\n`;
@@ -255,7 +347,19 @@ function recalculateAll() {
         }
         soapText += `• Vitaller: TA: ${v.systolicBP || '--'}/${v.diastolicBP || '--'} mmHg | Nabız: ${v.heartRate || '--'}/dk | Ateş: ${v.bodyTemp || '--'}°C | SpO2: %${v.spo2 || '--'}\n`;
         soapText += `• Plan: İdame Sıvı: ${document.getElementById('output-daily-fluid')?.textContent || '--'}`;
-        if (d.selectedDrug) soapText += `\n• Seçili İlaç: ${d.selectedDrug.brand} (Etken Madde: ${d.selectedDrug.generic})`;
+        
+        // İnfüzyon bilgisi varsa SOAP nota eklenir
+        if (infResult && infMg && infDose) {
+            const unitLabel = infUnit === 'mcg_kg_min' ? 'mcg/kg/dk' : infUnit === 'mcg_min' ? 'mcg/dk' : 'mg/kg/saat';
+            soapText += `\n• Perfüzör / İnfüzyon: ${infMg} mg / ${infVol} ml SF (${infDose} ${unitLabel}) → ${infResult.rateMlHr} ml/saat (${infResult.concentrationMcgMl} mcg/ml)`;
+        }
+
+        if (d.selectedDrugs && d.selectedDrugs.length > 0) {
+            soapText += `\n• Reçete / İlaçlar (${d.selectedDrugs.length}):\n`;
+            d.selectedDrugs.forEach((drug, i) => {
+                soapText += `  ${i + 1}. ${drug.brand} (${drug.generic || 'Etken madde yok'})\n`;
+            });
+        }
         
         soapArea.value = soapText;
     }
@@ -323,9 +427,6 @@ function initEvents() {
             searchInput.value = '';
             clearBtn.classList.add('hidden');
             if (resultsDiv) resultsDiv.classList.add('hidden');
-            
-            appState.drugs.selectedDrug = null;
-            recalculateAll();
             searchInput.focus();
         });
     }
@@ -362,8 +463,12 @@ function initEvents() {
                             </div>
                         `;
                         item.addEventListener('click', () => {
-                            appState.drugs.selectedDrug = drug;
-                            searchInput.value = drug.brand;
+                            if (!Array.isArray(appState.drugs.selectedDrugs)) {
+                                appState.drugs.selectedDrugs = [];
+                            }
+                            appState.drugs.selectedDrugs.push(drug);
+                            searchInput.value = '';
+                            clearBtn?.classList.add('hidden');
                             resultsDiv.classList.add('hidden');
                             recalculateAll();
                         });
@@ -373,12 +478,10 @@ function initEvents() {
                     resultsDiv.classList.add('hidden');
                 }
             } else {
-                appState.drugs.selectedDrug = null;
                 resultsDiv.classList.add('hidden');
-                recalculateAll();
             }
         });
-    } // <-- Eksik olan kapanış süslü parantezi buraya eklendi
+    }
 
     const copyBtn = document.getElementById('btn-copy-soap');
     if (copyBtn) {
@@ -402,7 +505,7 @@ function initEvents() {
                 if (el.id !== 'text-soap-output') el.value = '';
             });
             document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
-            appState.drugs.selectedDrug = null;
+            appState.drugs.selectedDrugs = [];
             recalculateAll();
         });
     }
@@ -416,7 +519,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-            .catch(err => console.error('Service Worker hatası:', err));
+        navigator.serviceWorker.register('./service-worker.js').then(reg => {
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Yeni versiyon indi, önbellek yenilendi!
+                        window.location.reload();
+                    }
+                });
+            });
+        }).catch(err => console.error('Service Worker hatası:', err));
     });
 }
