@@ -20,6 +20,13 @@ Acil servis, poliklinik ve yoğun bakım nöbetlerinde hekimlerin zihinsel yük�
 - **🧪 Majör İyonlar & Adrogué-Madias Sodyum Motoru:** 
   - Hiponatremi/hipernatremi düzeltmelerinde %3 NaCl, %0.9 SF vb. çözeltiler için hedefli infüzyon hızı hesabı.
   - Derin hiponatremi, hipokalemi ve hipokalsiyumide otomatik klinik uyarılar.
+- **🩸 Kan Gazı (ABG/VBG) & Asit-Baz Motoru:** 
+  - Winter formülü vb. ile primer ve sekonder kompanzasyon hesabı.
+  - Albümin düzeltmeli Anyon Açığı (AG) ve Delta-Delta (Δ/Δ) oranı ile HAGMA/NAGMA ayırımı.
+- **🦴 Düzeltilmiş Kalsiyum Motoru:** 
+  - Albümin seviyesine göre gerçek (düzeltilmiş) kalsiyumu (Payne formülü) hesaplayarak hiper/hipokalsemik acilleri (EKG takibi, kriz vb.) tespit eder.
+- **🧠 Glasgow Koma Skalası (GCS):** 
+  - Erişkin ve Pediatrik (<2 yaş) modlarla beyin hasar derecesi skorlaması ve GCS ≤ 8 için entübasyon (havayolu) risk uyarısı.
 - **⚖️ Akıllı Sıvı Çatışma Önleyicisi (Priority Matrix):** 
   - Elektrolit düzeltme sıvılarını bazal idame sıvısından otomatik olarak düşerek hastayı iatrojenik **sıvı yüklenmesinden (fluid overload)** koruyan dinamik dengeleyici.
 - **💊 TİTCK İlaç Veritabanı & Muadil Motoru:** 

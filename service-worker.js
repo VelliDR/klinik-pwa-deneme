@@ -1,4 +1,4 @@
-const CACHE_NAME = 'klinik-pwa-v1.6';
+const CACHE_NAME = 'klinik-pwa-v1.7';
 
 const ASSETS_TO_CACHE = [
     './',
@@ -11,7 +11,10 @@ const ASSETS_TO_CACHE = [
     './js/engines/biometricsEngine.js',
     './js/engines/percentileEngine.js',
     './js/engines/infusionEngine.js',
-    './js/engines/sodiumEngine.js', // Yeni eklendi
+    './js/engines/sodiumEngine.js',
+    './js/engines/bloodGasEngine.js',
+    './js/engines/calciumEngine.js',
+    './js/engines/gcsEngine.js',
     './data/medicines.json'
 ];
 

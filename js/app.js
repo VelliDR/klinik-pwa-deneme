@@ -5,6 +5,9 @@ import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db.js';
 import { parseDrugStrength, findEquivalents, getDrugBadgesHTML } from './drugEngine.js';
 import { calculateInfusionRate } from './engines/infusionEngine.js';
 import { calculateElectrolyteAdjustments } from './engines/sodiumEngine.js';
+import { analyzeBloodGas } from './engines/bloodGasEngine.js';
+import { calculateCorrectedCalcium } from './engines/calciumEngine.js';
+import { calculateGCS } from './engines/gcsEngine.js';
 
 function parseNum(id) {
     const el = document.getElementById(id);
@@ -371,6 +374,80 @@ function recalculateAll() {
         });
     }
 
+    // 5B. KAN GAZI, KALSİYUM VE GCS HESAPLAMALARI
+    const bgpH = parseNum('input-bg-ph');
+    const bgpCO2 = parseNum('input-bg-pco2');
+    const bgHCO3 = parseNum('input-bg-hco3');
+    const bgType = document.getElementById('select-bg-type')?.value || 'ABG';
+    const serumCl = parseNum('input-serum-cl');
+    const serumAlbumin = parseNum('input-albumin');
+
+    const bloodGasResult = analyzeBloodGas({
+        pH: bgpH,
+        pCO2: bgpCO2,
+        HCO3: bgHCO3,
+        Na: serumNa,
+        Cl: serumCl,
+        Albumin: serumAlbumin,
+        sampleType: bgType
+    });
+
+    const calcGcsE = document.getElementById('select-gcs-e')?.value;
+    const calcGcsV = document.getElementById('select-gcs-v')?.value;
+    const calcGcsM = document.getElementById('select-gcs-m')?.value;
+    
+    const isPediatricUnder2 = p.derived.totalMonths !== undefined && p.derived.totalMonths !== null ? p.derived.totalMonths < 24 : false;
+
+    const gcsResult = calculateGCS({
+        isPediatricUnder2,
+        eye: calcGcsE,
+        verbal: calcGcsV,
+        motor: calcGcsM
+    });
+
+    const calciumResult = calculateCorrectedCalcium({
+        totalCalcium: serumCa,
+        albumin: serumAlbumin
+    });
+
+    const bgWarnBox = document.getElementById('container-bg-warnings');
+    if (bgWarnBox) {
+        if (bloodGasResult && (bloodGasResult.flags.length > 0 || bloodGasResult.hagmaStatus)) {
+            bgWarnBox.classList.remove('hidden');
+            let msgs = [];
+            msgs.push(`Analiz: ${bloodGasResult.primaryDisorder} ${bloodGasResult.hagmaStatus ? ' | ' + bloodGasResult.hagmaStatus : ''}`);
+            if (bloodGasResult.compensationText) msgs.push(`Durum: ${bloodGasResult.compensationText}`);
+            
+            bgWarnBox.innerHTML = msgs.map(m => `<div>${m}</div>`).join('');
+        } else {
+            bgWarnBox.classList.add('hidden');
+        }
+    }
+
+    const gcsWarnBox = document.getElementById('container-gcs-warnings');
+    if (gcsWarnBox) {
+        if (gcsResult && gcsResult.flags.length > 0) {
+            gcsWarnBox.classList.remove('hidden');
+            gcsWarnBox.classList.replace('bg-slate-900/60', 'bg-amber-950/40');
+            gcsWarnBox.classList.replace('border-slate-700/50', 'border-amber-600/50');
+            gcsWarnBox.classList.replace('text-slate-300', 'text-amber-200');
+            gcsWarnBox.innerHTML = `<div>⚠️ ${gcsResult.alertMsg}</div>`;
+        } else if (gcsResult) {
+            gcsWarnBox.classList.remove('hidden');
+            gcsWarnBox.classList.replace('bg-amber-950/40', 'bg-slate-900/60');
+            gcsWarnBox.classList.replace('border-amber-600/50', 'border-slate-700/50');
+            gcsWarnBox.classList.replace('text-amber-200', 'text-slate-300');
+            gcsWarnBox.innerHTML = `<div>Sonuç: ${gcsResult.category} (Skor: ${gcsResult.total})</div>`;
+        } else {
+            gcsWarnBox.classList.add('hidden');
+        }
+    }
+
+    if (ionWarnBox && calciumResult && calciumResult.flags.length > 0) {
+        ionWarnBox.classList.remove('hidden');
+        ionWarnBox.innerHTML += `<div class="mt-1 border-t border-amber-600/30 pt-1">⚠️ ${calciumResult.alertMsg}</div>`;
+    }
+
     // 6. SOAP NOTU BASMA (Tam Entegre Çıktı)
     const soapArea = document.getElementById('text-soap-output');
     if (soapArea) {
@@ -414,6 +491,41 @@ function recalculateAll() {
             });
         }
         
+        let objArr = [];
+        if (bloodGasResult) {
+            let agStr = bloodGasResult.AG !== null ? bloodGasResult.AG.toFixed(1) : '--';
+            let cAgStr = bloodGasResult.corrected_AG !== null ? bloodGasResult.corrected_AG.toFixed(1) : (bloodGasResult.AG !== null ? 'Albümin Bekleniyor' : '--');
+            let drStr = bloodGasResult.deltaRatio !== null ? bloodGasResult.deltaRatio.toFixed(2) : '--';
+            objArr.push(`Kan Gazı: pH ${bloodGasResult.pH}, pCO2 ${bloodGasResult.pCO2}, HCO3 ${bloodGasResult.HCO3}, AG ${agStr} (Düzeltilmiş: ${cAgStr}), Delta Oranı: ${drStr}`);
+        }
+        if (calciumResult) {
+            objArr.push(`Düzeltilmiş Ca: ${calciumResult.correctedCa} mg/dL`);
+        }
+        if (gcsResult) {
+            objArr.push(`GCS: ${gcsResult.total}/15 (E${gcsResult.eye}V${gcsResult.verbal}M${gcsResult.motor})`);
+        }
+        if (objArr.length > 0) {
+            soapText += `\nO: ${objArr.join('. ')}`;
+        }
+        
+        let asxArr = [];
+        if (bloodGasResult) {
+            asxArr.push(`${bloodGasResult.primaryDisorder}${bloodGasResult.hagmaStatus ? ' - ' + bloodGasResult.hagmaStatus : ''}`);
+        }
+        if (calciumResult && calciumResult.flags.length > 0) {
+            let caAlert = calciumResult.flags.includes('CRITICAL_HYPERCALCEMIC_CRISIS') ? 'Hiperkalsemik Kriz' : 
+                          calciumResult.flags.includes('ALERT_HYPERCALCEMIA') ? 'Hiperkalsemi' : 'Hipokalsiyemi';
+            asxArr.push(`Kalsiyum Tablosu: ${caAlert}`);
+        } else if (calciumResult) {
+            asxArr.push('Normokalsemi');
+        }
+        if (gcsResult) {
+            asxArr.push(`${gcsResult.category}${gcsResult.flags.includes('AIRWAY_COMPROMISE_RISK') ? ' (Havayolu Riski!)' : ''}`);
+        }
+        if (asxArr.length > 0) {
+            soapText += `\nA: ${asxArr.join(' + ')}`;
+        }
+
         soapArea.value = soapText;
     }
 
