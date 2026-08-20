@@ -38,3 +38,29 @@ export function determineAgeGroup(ageValue, ageUnit) {
     if (years <= 64) return AGE_GROUPS.ADULT;
     return AGE_GROUPS.GERIATRIC;
 }
+
+export function calculateEGFR(creatinine, ageYears, gender, heightCm) {
+    if (!creatinine) return null;
+    
+    // Bedside Schwartz for Pediatrics (<18)
+    if (ageYears < 18) {
+        if (!heightCm) return null;
+        return Number(((0.413 * heightCm) / creatinine).toFixed(0));
+    }
+    
+    if (!ageYears || !gender) return null;
+    
+    // CKD-EPI 2021 for Adults
+    const isFemale = gender === 'F';
+    const kappa = isFemale ? 0.7 : 0.9;
+    const alpha = isFemale ? -0.241 : -0.302;
+    
+    const scrOverKappa = creatinine / kappa;
+    const minVal = Math.min(scrOverKappa, 1);
+    const maxVal = Math.max(scrOverKappa, 1);
+    
+    let egfr = 142 * Math.pow(minVal, alpha) * Math.pow(maxVal, -1.2) * Math.pow(0.9938, ageYears);
+    if (isFemale) egfr *= 1.012;
+    
+    return Number(egfr.toFixed(0));
+}

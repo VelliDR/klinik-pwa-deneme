@@ -3,7 +3,7 @@
  */
 
 const DB_NAME = 'KlinikAsistanDB';
-const DB_VERSION = 10;
+const DB_VERSION = 16;
 const STORE_NAME = 'drugs';
 
 let memoryDrugsCache = null; // Bellek içi arama önbelleği

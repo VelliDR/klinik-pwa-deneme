@@ -1,24 +1,27 @@
-const CACHE_NAME = 'klinik-pwa-v1.7';
+const CACHE_NAME = 'klinik-pwa-v2';
 
 const ASSETS_TO_CACHE = [
-    './',
     './index.html',
     './manifest.json',
     './js/app.js',
     './js/state.js',
-    './js/db.js',
-    './js/drugEngine.js',
+    './js/db/titckIndexedDB.js',
     './js/engines/biometricsEngine.js',
     './js/engines/percentileEngine.js',
     './js/engines/infusionEngine.js',
-    './js/engines/sodiumEngine.js',
     './js/engines/bloodGasEngine.js',
     './js/engines/calciumEngine.js',
-    './js/engines/gcsEngine.js',
+    './js/engines/pediatricEngine.js',
+    './js/engines/surgeryEngine.js',
+    './js/engines/obgynEngine.js',
+    './js/engines/cardiacEngine.js',
+    './js/engines/triageEngine.js',
+    './js/engines/labGuideEngine.js',
+    './js/engines/fluidEngine.js',
+    './js/utils/soapGenerator.js',
     './data/medicines.json'
 ];
 
-// 1. SERVICE WORKER KURULUMU (INSTALL)
 self.addEventListener('install', (event) => {
     console.log('[Service Worker] Kuruluyor...');
     event.waitUntil(
@@ -29,7 +32,6 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// 2. SERVICE WORKER AKTİFLEŞTİRME (ACTIVATE) & ESKİ CACHE TEMİZLİĞİ
 self.addEventListener('activate', (event) => {
     console.log('[Service Worker] Aktifleştiriliyor...');
     event.waitUntil(
@@ -46,7 +48,6 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// 3. İSTEKLERİ YAKALAMA VE ÇEVRİMDIŞI SUNMA (FETCH)
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
 

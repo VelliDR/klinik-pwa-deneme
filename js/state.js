@@ -1,62 +1,55 @@
 export const appState = {
-    patient: {
-        ageUnit: 'years', 
-        ageValue: null, 
-        dob: null, 
-        isPremature: false, 
-        gestationalWeeks: 40,
-        gender: 'male',
-        heightCm: null, 
+    // 1. Global Biometry (Ortak)
+    biometry: {
+        ageYears: null,
+        ageMonths: null,
+        gender: null, // 'M' or 'F'
         weightKg: null,
-        creatinine: null, // 👈 EKLENDİ (eGFR için)
-        derived: { 
-            totalMonths: 0, 
-            correctedMonths: 0, 
-            ageGroup: null, 
-            bsa: null,
-            egfr: null   // 👈 EKLENDİ (eGFR sonucu için)
-        }
+        heightCm: null,
+        bsa: null,
+        egfr: null
     },
-    vitals: {
-        systolicBP: null, 
-        diastolicBP: null, 
-        heartRate: null, 
-        respRate: null, 
-        bodyTemp: null, 
-        spo2: null,
-        derived: { evaluation: null }
-    },
-    fluid: { 
-        derived: { fluidResult: null } 
-    },
-    glycemia: {
-        currentGlucose: null, 
-        targetGlucose: 100, 
-        carbsGrams: 0, 
-        isf: null, 
-        icRatio: null,
-        derived: { insulinResult: null }
-    },
-    drugs: {
-        searchQuery: '', 
-        searchResults: [], 
-        selectedDrugs: [], // 👈 GÜNCELLENDİ (Tekil 'selectedDrug' yerine çoklu dizi yapıldı)
-        derived: { dosageResult: null }
-    },
-    infusion: {
-        drugAmountMg: null,
-        totalVolumeMl: 50,
-        targetDose: null,
-        doseUnit: 'mcg_kg_min',
-        derived: { infusionResult: null }
-    }
-    
-};
 
-const listeners = [];
-export function subscribeState(listener) { 
-    listeners.push(listener); 
-}
-export function notifySubscribers() { 
-    listeners.forEach(fn => fn(appState)); 
-}
+    // 2. Sekme-Spesifik Veriler
+    pediatrics: {
+        active: false, // is this tab active/visited
+        percentiles: null,
+        vaccines: null,
+        syrupDose: null,
+        pews: null,
+        pgcs: null
+    },
+    
+    surgery: {
+        active: false,
+        alvarado: null,
+        ranson: null,
+        parkland: null,
+        suture: null
+    },
+
+    obgyn: {
+        active: false,
+        eddData: null,
+        bishop: null,
+        preeclampsia: null
+    },
+
+    medicine: {
+        active: false,
+        bloodGas: null,
+        fluid: null,
+        sodium: null,
+        calcium: null,
+        infusion: null,
+        news2: null,
+        gcs: null
+    },
+
+    other: {
+        active: false,
+        cardiac: null,
+        labGuide: null,
+        drugPrescription: null
+    }
+};

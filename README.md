@@ -1,6 +1,6 @@
 # 🩺 Klinik Karar Destek Asistanı (PWA)
 
-Acil servis, poliklinik ve yoğun bakım nöbetlerinde hekimlerin zihinsel yükünü hafifletmek, karmaşık medikal hesaplama hatalarını engellemek ve hasta notlarını standartlaştırmak için geliştirilmiş **offline-first (çevrimdışı öncelikli)** PWA uygulaması.
+Acil servis, poliklinik ve yoğun bakım nöbetlerinde hekimlerin zihinsel yükünü hafifletmek, karmaşık medikal hesaplama hatalarını engellemek ve hasta notlarını standartlaştırmak için geliştirilmiş **offline-first (çevrimdışı öncelikli)** PWA uygulaması. Modern akordiyon (dikey) UI mimarisi ile mobil cihazlarda rahat ve hızlı kullanım sağlar.
 
 ---
 
@@ -9,30 +9,32 @@ Acil servis, poliklinik ve yoğun bakım nöbetlerinde hekimlerin zihinsel yük�
 - **🧬 Biyometri & eGFR Motoru:** 
   - Erişkinlerde **CKD-EPI 2021** formülü ile eGFR hesabı.
   - Pediatrik yaş grubunda **Bedside Schwartz** formülü ve Vücut Yüzey Alanı (BSA) hesabı.
-- **📊 WHO / CDC Büyüme Persentil Motoru:** 
-  - Pediatrik vakalarda yaşa ve cinsiyete göre boy, kilo ve BKİ persentil analizi.
+- **📊 Büyüme Persentil & Pediatrik Motor:** 
+  - Yaşa ve cinsiyete göre boy, kilo persentil analizi.
+  - En güncel **2025 T.C. Sağlık Bakanlığı Ulusal Çocukluk Dönemi Aşılama Takvimi** (6'lı Karma, KKK ek doz güncellemeleri dahil).
+  - Şurup dozaj (Parasetamol, İbuprofen, vb.) hesaplamaları.
 - **🚨 NEWS2 & PEWS Acil Triyaj Skorlama:** 
   - Vital bulgulara göre otomatik risk skorlaması ve klinik uyarı bayrakları (Hipoksi, Hipotansiyon, Anormal Nabız vb.).
-- **💧 Dinamik İdame Sıvı Hesabı:** 
-  - **Holliday-Segar** metodolojisi ve ateşe bağlı ($>37.5^\circ\text{C}$) otomatik sıvı ihtiyacı düzeltmesi.
-- **💉 Sürekli İnfüzyon (Perfüzör) Motoru:** 
-  - Noradrenalin, Dopamin vb. kritik ilaçlar için $\text{mcg/kg/dk} \rightarrow \text{ml/saat}$ perfüzör hızı çevrimi.
-- **🧪 Majör İyonlar & Adrogué-Madias Sodyum Motoru:** 
-  - Hiponatremi/hipernatremi düzeltmelerinde %3 NaCl, %0.9 SF vb. çözeltiler için hedefli infüzyon hızı hesabı.
-  - Derin hiponatremi, hipokalemi ve hipokalsiyumide otomatik klinik uyarılar.
-- **🩸 Kan Gazı (ABG/VBG) & Asit-Baz Motoru:** 
-  - Winter formülü vb. ile primer ve sekonder kompanzasyon hesabı.
-  - Albümin düzeltmeli Anyon Açığı (AG) ve Delta-Delta (Δ/Δ) oranı ile HAGMA/NAGMA ayırımı.
-- **🦴 Düzeltilmiş Kalsiyum Motoru:** 
-  - Albümin seviyesine göre gerçek (düzeltilmiş) kalsiyumu (Payne formülü) hesaplayarak hiper/hipokalsemik acilleri (EKG takibi, kriz vb.) tespit eder.
+- **💧 İdame Sıvı ve Sodyum Düzeltme Motoru:** 
+  - **Holliday-Segar** metodolojisi ve ateşe bağlı sıvı ihtiyacı düzeltmesi.
+  - ODS riskini önlemek için modern kılavuzlara uygun (24 saatte max 8 mEq/L) **Sodyum açığı ve infüzyon hesabı**.
+- **🔥 Yanık ve Cerrahi (Alvarado, Parkland) Motoru:** 
+  - **ATLS 10. Baskı (2018)** uyumlu güncel Parkland formülü (Yetişkinler 2mL/kg, Çocuklar 3mL/kg başlangıç).
+  - Yara yerine göre otomatik **sütür materyali ve alınma zamanı** rehberi.
+- **🤰 Obstetrik ve Jinekoloji Motoru:**
+  - SAT'a göre Tahmini Doğum Tarihi (TDT) ve Gestasyonel Hafta (GH) hesabı.
+  - Bishop Skoru ve Preeklampsi kriterleme algoritması.
+- **🧪 Majör İyonlar & Kan Gazı (ABG/VBG) Motoru:** 
+  - Asit-Baz analizi, primer ve sekonder kompanzasyon hesabı (Winter formülü).
+  - Düzeltilmiş (Albümine göre) kalsiyum hesabı.
 - **🧠 Glasgow Koma Skalası (GCS):** 
-  - Erişkin ve Pediatrik (<2 yaş) modlarla beyin hasar derecesi skorlaması ve GCS ≤ 8 için entübasyon (havayolu) risk uyarısı.
-- **⚖️ Akıllı Sıvı Çatışma Önleyicisi (Priority Matrix):** 
-  - Elektrolit düzeltme sıvılarını bazal idame sıvısından otomatik olarak düşerek hastayı iatrojenik **sıvı yüklenmesinden (fluid overload)** koruyan dinamik dengeleyici.
+  - Erişkin ve Pediatrik (<2 yaş) modlarla beyin hasar derecesi skorlaması.
 - **💊 TİTCK İlaç Veritabanı & Muadil Motoru:** 
-  - Cihazda çevrimdışı (IndexedDB) çalışan 10.000+ TİTCK ilaç listesi, etken madde ve aktif muadil arama altyapısı.
+  - Cihazda çevrimdışı (IndexedDB) çalışan 10.000+ TİTCK ilaç listesi.
+  - Akıllı **Muadil arama** ve reçeteleme sistemi. 
+  - Temel İlaç Listesindeki ilaçlar için anlık **Pediatrik** ve **Neonatal** rozet gösterimleri.
 - **📋 Otomatik SOAP Hasta Notu:** 
-  - Tüm ölçüm, vital, perfüzör, elektrolit ve reçete verilerini tek tıkla panoya kopyalanabilir klinik nota dönüştürme.
+  - Tüm hesaplamaları ve seçilen tedavi protokollerini anında önizlenebilir, tek tıkla kopyalanabilir klinik nota dönüştürür.
 
 ---
 
@@ -40,8 +42,8 @@ Acil servis, poliklinik ve yoğun bakım nöbetlerinde hekimlerin zihinsel yük�
 
 Bu proje, bir tıp öğrencisinin/hekimin klinik ihtiyaçları ve saha gözlemleri doğrultusunda **Yapay Zekâ (AI) iş birliğiyle** sıfırdan tasarlanmış ve kodlanmıştır.
 
-- **Klinik Algoritmalar & Medikal Matematik:** Tüm tıp formülleri (Adrogué-Madias, CKD-EPI 2021, Holliday-Segar, Bedside Schwartz, NEWS2/PEWS), AI iş birliğiyle güncel kılavuzlar ve literatür referans alınarak bağımsız (decoupled) JavaScript motorlarına dönüştürülmüştür.
-- **Yazılım Mimarisi & UX:** İstemci tarafında sıfır bağımlılıkla çalışan, PWA standartlarına uygun, KVKK/GDPR uyumlu ve çevrimdışı öncelikli modüler yapı AI yönlendirmeleriyle inşa edilmiştir.
+- **Klinik Algoritmalar & Medikal Matematik:** Tüm tıp formülleri (ATLS 10 Parkland, 2025 Aşı Takvimi, CKD-EPI 2021, Holliday-Segar vb.), AI iş birliğiyle en güncel kılavuzlar ve literatür referans alınarak bağımsız (decoupled) JavaScript motorlarına dönüştürülmüştür.
+- **Yazılım Mimarisi & UX:** İstemci tarafında sıfır bağımlılıkla çalışan, PWA standartlarına uygun, KVKK/GDPR uyumlu ve çevrimdışı öncelikli, modern dikey akordiyon (`<details>`) UI yapısı AI yönlendirmeleriyle inşa edilmiştir.
 
 ---
 
@@ -51,6 +53,7 @@ Uygulama **Progressive Web App (PWA)** standartlarında geliştirilmiştir. Herh
 
 🔗 **PWA Uygulama Bağlantısı:** 
 https://vellidr.github.io/klinik-pwa-deneme/
+
 ---
 
 ## 🔒 Gizlilik & KVKK Uyumsuzluğu

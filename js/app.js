@@ -1,696 +1,504 @@
-import { appState, subscribeState, notifySubscribers } from './state.js';
-import { calculateBSA, determineAgeGroup } from './engines/biometricsEngine.js';
+import { appState } from './state.js';
+import { calculateBSA, calculateEGFR } from './engines/biometricsEngine.js';
+import { calculatePediatricDose, getVaccineSchedule } from './engines/pediatricEngine.js';
 import { calculatePercentiles } from './engines/percentileEngine.js';
-import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db.js';
-import { parseDrugStrength, findEquivalents, getDrugBadgesHTML } from './drugEngine.js';
-import { calculateInfusionRate } from './engines/infusionEngine.js';
-import { calculateElectrolyteAdjustments } from './engines/sodiumEngine.js';
+import { calculateAlvarado, calculateParkland, getSutureGuidance, calculateRanson } from './engines/surgeryEngine.js';
+import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from './engines/obgynEngine.js';
 import { analyzeBloodGas } from './engines/bloodGasEngine.js';
+import { calculateMaintenanceFluid, calculateSodiumCorrection } from './engines/fluidEngine.js';
+import { calculateNEWS2, calculatePEWS, calculateGCS } from './engines/triageEngine.js';
+import { calculateQTc, calculateAxis } from './engines/cardiacEngine.js';
+import { getLabTubeGuide } from './engines/labGuideEngine.js';
 import { calculateCorrectedCalcium } from './engines/calciumEngine.js';
-import { calculateGCS } from './engines/gcsEngine.js';
+import { calculateInfusionRate } from './engines/infusionEngine.js';
+import { generateSOAP } from './utils/soapGenerator.js';
+import { seedDrugDatabase, searchDrugsInDB } from './db/titckIndexedDB.js';
 
-function parseNum(id) {
-    const el = document.getElementById(id);
-    if (!el || el.value === '' || el.value === null) return null;
-    const clean = String(el.value).replace(',', '.').trim();
-    const num = parseFloat(clean);
-    return isNaN(num) ? null : num;
-}
+// Utils
+const parseNum = (val) => val === '' || isNaN(val) ? null : Number(val);
 
-// eGFR HESAPLAMA MOTORU (Pediatrik Schwartz + Erişkin CKD-EPI 2021)
-function calculateEGFR({ ageInYears, gender, heightCm, creatinine }) {
-    if (!creatinine || creatinine <= 0) return null;
+// Initialize DB
+fetch('./data/medicines.json')
+    .then(r => r.json())
+    .then(data => seedDrugDatabase(data))
+    .catch(() => console.log('Mock/Offline DB Mode'));
 
-    // 1. Pediatrik (<18 Yaş): Bedside Schwartz Formülü
-    if (ageInYears < 18) {
-        if (!heightCm || heightCm <= 0) return null;
-        const gfr = (0.413 * heightCm) / creatinine;
-        return Number(gfr.toFixed(1));
-    }
-
-    // 2. Erişkin (>=18 Yaş): CKD-EPI 2021 Formülü
-    if (!ageInYears || ageInYears <= 0) return null;
-    const isFemale = gender === 'female';
-    const kappa = isFemale ? 0.7 : 0.9;
-    const alpha = isFemale ? -0.241 : -0.302;
-    const genderMultiplier = isFemale ? 1.012 : 1.0;
-
-    const scrKappa = creatinine / kappa;
-    const minVal = Math.min(scrKappa, 1);
-    const maxVal = Math.max(scrKappa, 1);
-
-    const gfr = 142 * Math.pow(minVal, alpha) * Math.pow(maxVal, -1.200) * Math.pow(0.9938, ageInYears) * genderMultiplier;
-    return Number(gfr.toFixed(1));
-}
-
-function recalculateAll() {
-    const p = appState.patient;
-    const v = appState.vitals;
-    const g = appState.glycemia;
-    const d = appState.drugs;
-
-    // Çoklu İlaç Dizi Kontrolü
-    if (!Array.isArray(d.selectedDrugs)) {
-        d.selectedDrugs = [];
-    }
-
-    p.ageUnit = document.getElementById('select-age-unit')?.value || 'years';
-    p.ageValue = parseNum('input-age');
-    p.gender = document.getElementById('select-gender')?.value || 'male';
-    p.heightCm = parseNum('input-height');
-    p.weightKg = parseNum('input-weight');
-    p.creatinine = parseNum('input-creatinine');
-
-    v.systolicBP = parseNum('input-sys-bp');
-    v.diastolicBP = parseNum('input-dia-bp');
-    v.heartRate = parseNum('input-hr');
-    v.respRate = parseNum('input-rr');
-    v.bodyTemp = parseNum('input-temp');
-    v.spo2 = parseNum('input-spo2');
-
-    g.currentGlucose = parseNum('input-glucose');
-    g.carbsGrams = parseNum('input-carbs') || 0;
-    g.isf = parseNum('input-isf');
-    g.icRatio = parseNum('input-ic-ratio');
-
-    const customNotes = document.getElementById('input-custom-notes')?.value;
-
-    let totalMonths = 0;
-    let ageInYears = 0;
-
-    if (p.ageValue) {
-        if (p.ageUnit === 'years') {
-            totalMonths = p.ageValue * 12;
-            ageInYears = p.ageValue;
-        } else if (p.ageUnit === 'months') {
-            totalMonths = p.ageValue;
-            ageInYears = p.ageValue / 12;
-        } else if (p.ageUnit === 'days') {
-            totalMonths = Number((p.ageValue / 30).toFixed(2));
-            ageInYears = p.ageValue / 365;
-        }
-    }
+// Update Logic
+function updateAllTabs() {
+    // 1. BIOMETRY
+    const ageVal = parseNum(document.getElementById('input-age').value);
+    const ageUnit = document.getElementById('select-age-unit').value;
     
-    p.derived.totalMonths = totalMonths;
-    p.derived.ageGroup = p.ageValue > 0 ? determineAgeGroup(p.ageValue, p.ageUnit) : null;
-    p.derived.bsa = calculateBSA(p.heightCm, p.weightKg);
+    let y = 0, m = 0;
+    if (ageVal !== null) {
+        if (ageUnit === 'years') y = ageVal;
+        if (ageUnit === 'months') m = ageVal;
+    } else {
+        y = null;
+        m = null;
+    }
 
-    const egfrValue = calculateEGFR({
-        ageInYears,
-        gender: p.gender,
-        heightCm: p.heightCm,
-        creatinine: p.creatinine
-    });
-    p.derived.egfr = egfrValue;
-
-    const ageText = p.ageUnit === 'days' ? `${p.ageValue} Gün` : 
-                    p.ageUnit === 'months' ? `${p.ageValue} Ay` : 
-                    `${p.ageValue} Yaş`;
-
-    const bsaOut = document.getElementById('output-bsa');
-    if (bsaOut) bsaOut.textContent = p.derived.bsa ? `${p.derived.bsa} m²` : '--';
-
-    const egfrOut = document.getElementById('output-egfr');
-    if (egfrOut) egfrOut.textContent = egfrValue ? `${egfrValue} ml/dk/1.73m²` : '--';
+    appState.biometry.ageYears = y;
+    appState.biometry.ageMonths = m;
+    const totalMonths = (y || 0) * 12 + (m || 0);
     
-    const percentileResult = calculatePercentiles({
-        totalMonths: totalMonths,
-        gender: p.gender,
-        heightCm: p.heightCm,
-        weightKg: p.weightKg,
-        isPediatric: p.derived.ageGroup ? p.derived.ageGroup.isPediatric : false
-    });
-
-    const badge = document.getElementById('badge-age-group');
-    if (badge) {
-        if (p.derived.ageGroup && p.ageValue > 0) {
-            badge.textContent = `${p.derived.ageGroup.label} (${ageText})`;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
-    }
-
-    const pContainer = document.getElementById('container-percentiles');
-    if (pContainer) {
-        if (percentileResult && (percentileResult.heightPercentile || percentileResult.weightPercentile || percentileResult.bmiPercentile)) {
-            pContainer.classList.remove('hidden');
-            const hElem = document.getElementById('output-p-height');
-            const wElem = document.getElementById('output-p-weight');
-            const bmiElem = document.getElementById('output-p-bmi');
-
-            if (hElem) hElem.textContent = percentileResult.heightPercentile ? `${percentileResult.heightPercentile}. Persentil` : '--';
-            if (wElem) wElem.textContent = percentileResult.weightPercentile ? `${percentileResult.weightPercentile}. Persentil` : '--';
-            if (bmiElem) bmiElem.textContent = percentileResult.bmiPercentile ? `${percentileResult.bmiPercentile}. P (${percentileResult.category})` : '--';
-        } else {
-            pContainer.classList.add('hidden');
-        }
-    }
-
-    const vBox = document.getElementById('container-vitals-risk');
-    if (vBox) {
-        let score = 0;
-        let flags = [];
-        const isPed = p.derived.ageGroup ? p.derived.ageGroup.isPediatric : false;
-
-        if (v.heartRate) {
-            if (isPed && (v.heartRate > 160 || v.heartRate < 60)) { score += 3; flags.push('Anormal Nabız'); }
-            else if (!isPed && (v.heartRate > 130 || v.heartRate < 50)) { score += 3; flags.push('Anormal Nabız'); }
-        }
-        
-        if (v.spo2 && v.spo2 < 92) { score += 3; flags.push('Hipoksi'); }
-        
-        if (v.bodyTemp) {
-            if (v.bodyTemp >= 38.5) { score += 1; flags.push('Yüksek Ateş'); }
-            else if (v.bodyTemp <= 35.0) { score += 2; flags.push('Hipotermi'); }
-        }
-
-        if (v.respRate) {
-            if (isPed && (v.respRate > 50 || v.respRate < 15)) { score += 3; flags.push('Anormal Solunum'); }
-            else if (!isPed && (v.respRate > 25 || v.respRate < 9)) { score += 3; flags.push('Anormal Solunum'); }
-        }
-
-        if (v.systolicBP) {
-            if (isPed) {
-                if (v.systolicBP >= 130) { score += 3; flags.push('Hipertansiyon'); }
-                else if (v.systolicBP <= 70) { score += 3; flags.push('Hipotansiyon'); }
-            } else {
-                if (v.systolicBP >= 180) { score += 3; flags.push('Hipertansif Kriz'); }
-                else if (v.systolicBP <= 90) { score += 3; flags.push('Hipotansiyon'); }
-            }
-        }
-
-        if (v.heartRate || v.spo2 || v.bodyTemp || v.respRate || v.systolicBP) {
-            vBox.classList.remove('hidden');
-            const bType = document.getElementById('badge-risk-type');
-            const tScore = document.getElementById('text-risk-score');
-            const flagsDiv = document.getElementById('container-flags');
-
-            if (bType) bType.textContent = isPed ? 'PEWS' : 'NEWS2';
-            if (tScore) tScore.textContent = `Skor: ${score}`;
-
-            vBox.className = "p-3 rounded-xl border flex flex-col gap-1 transition-colors " + 
-                (score >= 4 ? 'bg-rose-950/60 border-rose-600 text-rose-200' : 
-                 score >= 2 ? 'bg-amber-950/60 border-amber-600 text-amber-200' : 
-                 'bg-emerald-950/60 border-emerald-600 text-emerald-200');
-
-            if (flagsDiv) {
-                flagsDiv.innerHTML = '';
-                flags.forEach(f => {
-                    flagsDiv.innerHTML += `<span class="text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded">⚠️ ${f}</span>`;
-                });
-            }
-        } else {
-            vBox.classList.add('hidden');
-        }
-    }
-
-    // 1. ELEKTROLİT VE SODYUM HESAPLAMA
-    const serumNa = parseNum('input-serum-na');
-    const serumK = parseNum('input-serum-k');
-    const serumCa = parseNum('input-serum-ca');
-    const infusateNa = parseNum('select-na-fluid');
-    const targetNaChange = parseNum('input-target-na-change') || 8;
-
-    const ionData = calculateElectrolyteAdjustments({
-        weightKg: p.weightKg,
-        gender: p.gender,
-        ageGroup: p.derived.ageGroup?.id,
-        serumNa, serumK, serumCa, infusateNa,
-        targetNaChangePerDay: targetNaChange
-    });
-
-    let naRateMlHr = 0;
-    const naOut = document.getElementById('output-na-infusion-rate');
-    if (naOut) {
-        if (ionData.naResult) {
-            naRateMlHr = ionData.naResult.hourlyRateMl;
-            naOut.textContent = `${naRateMlHr} ml/saat (1L ile ΔNa: ${ionData.naResult.deltaNaPerLiter} mEq)`;
-        } else {
-            naOut.textContent = '--';
-        }
-    }
-
-    const ionWarnBox = document.getElementById('container-ion-warnings');
-    if (ionWarnBox) {
-        if (ionData.warnings.length > 0) {
-            ionWarnBox.classList.remove('hidden');
-            ionWarnBox.innerHTML = ionData.warnings.map(w => `<div>${w}</div>`).join('');
-        } else {
-            ionWarnBox.classList.add('hidden');
-        }
-    }
-
-    // 2. İDAME SIVI HESABI (SODYUM İNFÜZYONU İDAME SIVISINDAN DÜŞÜLÜR)
-    const dFluid = document.getElementById('output-daily-fluid');
-    const hFluid = document.getElementById('output-hourly-fluid');
-    if (dFluid && hFluid) {
-        if (p.weightKg && p.weightKg > 0) {
-            let baseDaily = p.weightKg <= 10 ? p.weightKg * 100 : p.weightKg <= 20 ? 1000 + (p.weightKg - 10) * 50 : 1500 + (p.weightKg - 20) * 20;
-            if (baseDaily > 2500) baseDaily = 2500;
-            if (v.bodyTemp && v.bodyTemp > 37.5) baseDaily *= (1 + (v.bodyTemp - 37.5) * 0.12);
-
-            const baseHourly = baseDaily / 24;
-            
-            // Çatışma Önleyici: Net İdame = Bazal İdame - Na Düzeltme Hızı
-            let netHourlyFluid = baseHourly - naRateMlHr;
-            if (netHourlyFluid < 0) netHourlyFluid = 0;
-
-            const netDaily = Math.round(netHourlyFluid * 24);
-            dFluid.textContent = `${netDaily} ml/gün`;
-            hFluid.textContent = `${netHourlyFluid.toFixed(1)} ml/saat ${naRateMlHr > 0 ? '(Net İdame)' : ''}`;
-        } else {
-            dFluid.textContent = '--';
-            hFluid.textContent = '--';
-        }
-    }
-
-    // 3. İNSÜLİN HESAPLAMA
-    const totInsulin = document.getElementById('output-total-insulin');
-    if (totInsulin) {
-        if (g.currentGlucose && g.currentGlucose > 0) {
-            let corr = (g.isf > 0 && g.currentGlucose > 100) ? (g.currentGlucose - 100) / g.isf : 0;
-            let carbDose = g.icRatio > 0 ? g.carbsGrams / g.icRatio : 0;
-            totInsulin.textContent = `${(corr + carbDose).toFixed(1)} Ünite`;
-        } else {
-            totInsulin.textContent = '--';
-        }
-    }
-
-    // 4. SÜREKLİ İNFÜZYON HESAPLAMA
-    const infMg = parseNum('input-inf-mg');
-    const infVol = parseNum('input-inf-vol');
-    const infDose = parseNum('input-inf-dose');
-    const infUnit = document.getElementById('select-inf-unit')?.value || 'mcg_kg_min';
-
-    const infResult = calculateInfusionRate({
-        drugAmountMg: infMg,
-        totalVolumeMl: infVol,
-        weightKg: p.weightKg,
-        targetDose: infDose,
-        doseUnit: infUnit
-    });
-
-    const infOut = document.getElementById('output-infusion-rate');
-    if (infOut) {
-        if (infResult) {
-            infOut.textContent = `${infResult.rateMlHr} ml/saat (${infResult.concentrationMcgMl} mcg/ml)`;
-        } else {
-            infOut.textContent = '--';
-        }
-    }
-
-    // 5. ÇOKLU İLAÇ LİSTESİNİ RENDER ETME
-    const containerSelected = document.getElementById('container-selected-drugs');
-    if (containerSelected) {
-        containerSelected.innerHTML = '';
-
-        d.selectedDrugs.forEach((drug, index) => {
-            const strength = parseDrugStrength(drug.brand);
-            let volHtml = '';
-
-            if (strength && strength.type === 'liquid') {
-                volHtml = `
-                    <div class="text-[11px] text-emerald-400 font-mono mt-1 border-t border-slate-700/60 pt-1">
-                        🧪 <strong>Konsantrasyon:</strong> ${strength.label}
-                    </div>
-                `;
-            } else if (strength) {
-                volHtml = `<span class="text-[10px] text-slate-400 font-mono block mt-0.5">Form: ${strength.label}</span>`;
-            }
-
-            const item = document.createElement('div');
-            item.className = "bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-1.5 relative";
-            item.innerHTML = `
-                <div class="flex justify-between items-start gap-2">
-                    <div class="pr-6">
-                        <strong class="text-xs font-bold text-rose-400 block">${drug.brand}</strong>
-                        <span class="text-[10px] text-slate-400 block">${drug.generic || 'Etken madde belirtilmedi'}</span>
-                    </div>
-                    <button type="button" data-index="${index}" class="btn-remove-drug absolute top-2 right-2 text-slate-400 hover:text-rose-400 font-bold text-xs p-1 rounded-md hover:bg-slate-800 transition-colors" title="İlacı Kaldır">
-                        ✕
-                    </button>
-                </div>
-                <div class="flex flex-wrap gap-1">
-                    ${getDrugBadgesHTML(drug)}
-                </div>
-                ${volHtml}
-                <div id="container-eq-${index}" class="pt-1"></div>
-            `;
-            containerSelected.appendChild(item);
-
-            findEquivalents(drug).then(equivalents => {
-                const eqDiv = document.getElementById(`container-eq-${index}`);
-                if (eqDiv) {
-                    if (equivalents.length > 0) {
-                        eqDiv.innerHTML = `
-                            <details class="text-[10px] text-slate-400 mt-1">
-                                <summary class="cursor-pointer text-slate-300 font-semibold hover:text-emerald-400 transition-colors flex items-center gap-1 select-none">
-                                    <span>🔄</span> Aktif Muadiller (${equivalents.length})
-                                </summary>
-                                <div class="flex flex-col gap-1 mt-1.5 pl-2 border-l-2 border-slate-700 max-h-32 overflow-y-auto">
-                                    ${equivalents.map(e => `
-                                        <div class="text-slate-200 text-[10px] flex items-center gap-1.5 py-0.5">
-                                            <span class="text-emerald-400">•</span>
-                                            <span class="truncate font-medium">${e.brand}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </details>
-                        `;
-                    } else {
-                        eqDiv.innerHTML = `<span class="text-slate-500 text-[10px] italic block mt-1">Sistemde birebir aktif muadil kaydı bulunamadı.</span>`;
-                    }
-                }
-            });
-        });
-
-        containerSelected.querySelectorAll('.btn-remove-drug').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(e.currentTarget.getAttribute('data-index'));
-                d.selectedDrugs.splice(idx, 1);
-                recalculateAll();
-            });
-        });
-    }
-
-    // 5B. KAN GAZI, KALSİYUM VE GCS HESAPLAMALARI
-    const bgpH = parseNum('input-bg-ph');
-    const bgpCO2 = parseNum('input-bg-pco2');
-    const bgHCO3 = parseNum('input-bg-hco3');
-    const bgType = document.getElementById('select-bg-type')?.value || 'ABG';
-    const serumCl = parseNum('input-serum-cl');
-    const serumAlbumin = parseNum('input-albumin');
-
-    const bloodGasResult = analyzeBloodGas({
-        pH: bgpH,
-        pCO2: bgpCO2,
-        HCO3: bgHCO3,
-        Na: serumNa,
-        Cl: serumCl,
-        Albumin: serumAlbumin,
-        sampleType: bgType
-    });
-
-    const calcGcsE = document.getElementById('select-gcs-e')?.value;
-    const calcGcsV = document.getElementById('select-gcs-v')?.value;
-    const calcGcsM = document.getElementById('select-gcs-m')?.value;
+    appState.biometry.gender = document.getElementById('select-gender').value || null;
+    appState.biometry.weightKg = parseNum(document.getElementById('input-weight').value);
+    appState.biometry.heightCm = parseNum(document.getElementById('input-height').value);
+    const crea = parseNum(document.getElementById('input-creatinine').value);
     
-    const isPediatricUnder2 = p.derived.totalMonths !== undefined && p.derived.totalMonths !== null ? p.derived.totalMonths < 24 : false;
+    if (appState.biometry.weightKg && appState.biometry.heightCm) {
+        appState.biometry.bsa = calculateBSA(appState.biometry.heightCm, appState.biometry.weightKg);
+        document.getElementById('output-bsa').textContent = appState.biometry.bsa.toFixed(2);
+    } else {
+        appState.biometry.bsa = null;
+        document.getElementById('output-bsa').textContent = '--';
+    }
 
-    const gcsResult = calculateGCS({
-        isPediatricUnder2,
-        eye: calcGcsE,
-        verbal: calcGcsV,
-        motor: calcGcsM
-    });
+    if (crea !== null && y !== null) {
+        appState.biometry.egfr = calculateEGFR(crea, y, appState.biometry.gender === 'female' ? 'F' : 'M', appState.biometry.heightCm);
+        document.getElementById('output-egfr').textContent = appState.biometry.egfr || '--';
+    } else {
+        appState.biometry.egfr = null;
+        document.getElementById('output-egfr').textContent = '--';
+    }
 
-    const calciumResult = calculateCorrectedCalcium({
-        totalCalcium: serumCa,
-        albumin: serumAlbumin
-    });
-
-    const bgWarnBox = document.getElementById('container-bg-warnings');
-    if (bgWarnBox) {
-        if (bloodGasResult && (bloodGasResult.flags.length > 0 || bloodGasResult.hagmaStatus)) {
-            bgWarnBox.classList.remove('hidden');
-            let msgs = [];
-            msgs.push(`Analiz: ${bloodGasResult.primaryDisorder} ${bloodGasResult.hagmaStatus ? ' | ' + bloodGasResult.hagmaStatus : ''}`);
-            if (bloodGasResult.compensationText) msgs.push(`Durum: ${bloodGasResult.compensationText}`);
-            
-            bgWarnBox.innerHTML = msgs.map(m => `<div>${m}</div>`).join('');
+    const percContainer = document.getElementById('container-percentiles');
+    if (appState.biometry.weightKg && appState.biometry.heightCm && appState.biometry.gender) {
+        appState.pediatrics.percentiles = calculatePercentiles({
+            totalMonths,
+            gender: appState.biometry.gender,
+            weightKg: appState.biometry.weightKg,
+            heightCm: appState.biometry.heightCm,
+            isPediatric: totalMonths <= 216
+        });
+        if (appState.pediatrics.percentiles) {
+            percContainer.classList.remove('hidden');
+            document.getElementById('output-p-weight').textContent = appState.pediatrics.percentiles.weightPercentile || '--';
+            document.getElementById('output-p-height').textContent = appState.pediatrics.percentiles.heightPercentile || '--';
         } else {
-            bgWarnBox.classList.add('hidden');
+            percContainer.classList.add('hidden');
         }
+    } else {
+        appState.pediatrics.percentiles = null;
+        percContainer.classList.add('hidden');
     }
 
-    const gcsWarnBox = document.getElementById('container-gcs-warnings');
-    if (gcsWarnBox) {
-        if (gcsResult && gcsResult.flags.length > 0) {
-            gcsWarnBox.classList.remove('hidden');
-            gcsWarnBox.classList.replace('bg-slate-900/60', 'bg-amber-950/40');
-            gcsWarnBox.classList.replace('border-slate-700/50', 'border-amber-600/50');
-            gcsWarnBox.classList.replace('text-slate-300', 'text-amber-200');
-            gcsWarnBox.innerHTML = `<div>⚠️ ${gcsResult.alertMsg}</div>`;
-        } else if (gcsResult) {
-            gcsWarnBox.classList.remove('hidden');
-            gcsWarnBox.classList.replace('bg-amber-950/40', 'bg-slate-900/60');
-            gcsWarnBox.classList.replace('border-amber-600/50', 'border-slate-700/50');
-            gcsWarnBox.classList.replace('text-amber-200', 'text-slate-300');
-            gcsWarnBox.innerHTML = `<div>Sonuç: ${gcsResult.category} (Skor: ${gcsResult.total})</div>`;
+    // Vaccines
+    if (ageVal !== null) {
+        const vax = getVaccineSchedule(totalMonths);
+        document.getElementById('output-ped-vaccines').innerHTML = vax && vax.length 
+            ? `<ul class="list-disc pl-4 text-slate-300">${vax.map(v => `<li>${v}</li>`).join('')}</ul>`
+            : 'Bu ay için planlı aşı bulunamadı.';
+    }
+
+    // PEDIATRIC SYRUP
+    const syrupVal = document.getElementById('select-ped-syrup').value;
+    const syrupRes = document.getElementById('output-ped-syrup');
+    if (syrupVal) {
+        if (appState.biometry.weightKg) {
+            appState.pediatrics.syrupDose = calculatePediatricDose(appState.biometry.weightKg, syrupVal);
+            syrupRes.classList.remove('hidden');
+            syrupRes.innerHTML = `<strong>Doz:</strong> ${appState.pediatrics.syrupDose.targetDoseMg} mg<br>
+                               <strong>Hacim:</strong> ${appState.pediatrics.syrupDose.volumeMl} ml<br>
+                               <strong>Ölçek:</strong> ${appState.pediatrics.syrupDose.olcekText} (${appState.pediatrics.syrupDose.freq})`;
         } else {
-            gcsWarnBox.classList.add('hidden');
+            syrupRes.classList.remove('hidden');
+            syrupRes.innerHTML = `⚠️ Lütfen hesaplama için Kilo giriniz.`;
+        }
+    } else {
+        appState.pediatrics.syrupDose = null;
+        syrupRes.classList.add('hidden');
+    }
+
+    // VITALS / TRIAGE
+    const pewsB = parseNum(document.getElementById('input-pews-behavior').value);
+    const pewsC = parseNum(document.getElementById('input-pews-cv').value);
+    const pewsR = parseNum(document.getElementById('input-pews-resp').value);
+    
+    // Auto-show PEWS inputs if age < 16 years
+    if (totalMonths !== null && totalMonths < 192) {
+        document.getElementById('container-pews-inputs').classList.remove('hidden');
+        document.getElementById('container-pews-inputs').classList.add('grid');
+    } else {
+        document.getElementById('container-pews-inputs').classList.add('hidden');
+        document.getElementById('container-pews-inputs').classList.remove('grid');
+    }
+
+    const nRr = parseNum(document.getElementById('input-rr').value);
+    const nSpo2 = parseNum(document.getElementById('input-spo2').value);
+    const nSbp = parseNum(document.getElementById('input-sys-bp').value);
+    const nHr = parseNum(document.getElementById('input-hr').value);
+    const nTemp = parseNum(document.getElementById('input-temp').value);
+    const nAvpu = document.getElementById('input-avpu').value;
+    const nOx = document.getElementById('input-oxygen').checked;
+    const riskContainer = document.getElementById('container-vitals-risk');
+    const badgeRiskType = document.getElementById('badge-risk-type');
+    const textRiskScore = document.getElementById('text-risk-score');
+    const flagContainer = document.getElementById('container-flags');
+    
+    if (totalMonths !== null && totalMonths < 192 && pewsB !== null && pewsC !== null && pewsR !== null) {
+        appState.pediatrics.pews = calculatePEWS(pewsB, pewsC, pewsR);
+        riskContainer.classList.remove('hidden');
+        riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${appState.pediatrics.pews.score >= 3 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-emerald-950/40 border-emerald-600/50'}`;
+        badgeRiskType.textContent = 'PEWS';
+        badgeRiskType.className = `text-xs font-bold font-mono ${appState.pediatrics.pews.score >= 3 ? 'text-rose-400' : 'text-emerald-400'}`;
+        textRiskScore.textContent = `Skor: ${appState.pediatrics.pews.score}`;
+        flagContainer.innerHTML = appState.pediatrics.pews.recommendation;
+        appState.medicine.news2 = null;
+    } else if (nRr !== null && nSpo2 !== null && nSbp !== null && nHr !== null && nTemp !== null) {
+        appState.medicine.news2 = calculateNEWS2(nRr, nSpo2, nSbp, nHr, nTemp, nOx, nAvpu);
+        riskContainer.classList.remove('hidden');
+        riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${appState.medicine.news2.score >= 5 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-slate-800 border-slate-700/50'}`;
+        badgeRiskType.textContent = 'NEWS2';
+        badgeRiskType.className = `text-xs font-bold font-mono ${appState.medicine.news2.score >= 5 ? 'text-rose-400' : 'text-slate-300'}`;
+        textRiskScore.textContent = `Skor: ${appState.medicine.news2.score}`;
+        flagContainer.innerHTML = `${appState.medicine.news2.risk} - ${appState.medicine.news2.monitoring}`;
+        appState.pediatrics.pews = null;
+    } else {
+        riskContainer.classList.add('hidden');
+    }
+
+    // GCS
+    const gcsE = parseNum(document.getElementById('select-gcs-e').value);
+    const gcsV = parseNum(document.getElementById('select-gcs-v').value);
+    const gcsM = parseNum(document.getElementById('select-gcs-m').value);
+    if (gcsE && gcsV && gcsM) {
+        appState.medicine.gcs = calculateGCS(gcsE, gcsV, gcsM);
+        const gRes = document.getElementById('container-gcs-warnings');
+        gRes.classList.remove('hidden');
+        gRes.innerHTML = `GCS: ${appState.medicine.gcs.total} (${appState.medicine.gcs.interpretation}) <br> <span class="text-rose-400">${appState.medicine.gcs.airwayRisk || ''}</span>`;
+    }
+
+    // SURGERY
+    const alvParams = {
+        migration: document.getElementById('chk-alv-mig').checked,
+        anorexia: document.getElementById('chk-alv-ano').checked,
+        nausea: document.getElementById('chk-alv-nau').checked,
+        rlqPain: document.getElementById('chk-alv-rlq').checked,
+        rebound: document.getElementById('chk-alv-reb').checked,
+        temp: document.getElementById('chk-alv-temp').checked,
+        leukocytosis: document.getElementById('chk-alv-leu').checked,
+        leftShift: document.getElementById('chk-alv-shi').checked
+    };
+    appState.surgery.alvarado = calculateAlvarado(alvParams);
+    const alvRes = document.getElementById('output-alvarado');
+    if (appState.surgery.alvarado.score > 0) {
+        alvRes.classList.remove('hidden');
+        alvRes.textContent = `Skor: ${appState.surgery.alvarado.score}/10 (${appState.surgery.alvarado.risk}). ${appState.surgery.alvarado.recommendation}`;
+    } else {
+        alvRes.classList.add('hidden');
+    }
+
+    const tbsa = parseNum(document.getElementById('input-parkland-tbsa').value);
+    if (tbsa && appState.biometry.weightKg) {
+        appState.surgery.parkland = calculateParkland(appState.biometry.weightKg, tbsa, appState.biometry.ageYears);
+        const pkRes = document.getElementById('output-parkland');
+        pkRes.classList.remove('hidden');
+        pkRes.innerHTML = `<strong>Total (24s):</strong> ${appState.surgery.parkland.totalVolume} mL <span class="text-[9px] text-slate-400">(ATLS 10. Baskı: ${appState.surgery.parkland.multiplierUsed}mL/kg)</span><br>
+                           <strong>İlk 8 Saat:</strong> ${appState.surgery.parkland.first8HrsVolume} mL (${appState.surgery.parkland.first8HrsRate} mL/s)<br>
+                           <strong>Kalan 16 Saat:</strong> ${appState.surgery.parkland.next16HrsVolume} mL (${appState.surgery.parkland.next16HrsRate} mL/s)`;
+    }
+
+    const sutureLoc = document.getElementById('select-suture-loc').value;
+    const sutureRes = document.getElementById('output-suture');
+    if (sutureLoc) {
+        appState.surgery.suture = getSutureGuidance(sutureLoc);
+        sutureRes.classList.remove('hidden');
+        sutureRes.innerHTML = `<strong>Materyal:</strong> ${appState.surgery.suture.material}<br>
+                               <strong>Boyut:</strong> ${appState.surgery.suture.size}<br>
+                               <strong>Alınma:</strong> ${appState.surgery.suture.removalDays}`;
+    }
+
+    // OBGYN
+    const lmp = document.getElementById('input-lmp').value;
+    if (lmp) {
+        appState.obgyn.eddData = calculateObstetrics(lmp);
+        const eddRes = document.getElementById('output-edd');
+        eddRes.classList.remove('hidden');
+        eddRes.innerHTML = `GH: ${appState.obgyn.eddData.gestationalAge} | TDT: ${appState.obgyn.eddData.edd}`;
+    }
+
+    const bDil = parseNum(document.getElementById('input-bishop-dil').value);
+    const bEff = parseNum(document.getElementById('input-bishop-eff').value);
+    const bSta = parseNum(document.getElementById('input-bishop-sta').value);
+    const bCon = parseNum(document.getElementById('input-bishop-con').value);
+    const bPos = parseNum(document.getElementById('input-bishop-pos').value);
+    if (bDil !== null && bEff !== null && bSta !== null && bCon !== null && bPos !== null) {
+        appState.obgyn.bishop = calculateBishop(bDil, bEff, bSta, bCon, bPos);
+        const bRes = document.getElementById('output-bishop');
+        bRes.classList.remove('hidden');
+        bRes.textContent = `Skor: ${appState.obgyn.bishop.score}. ${appState.obgyn.bishop.interpretation}`;
+    }
+
+    const preSbp = parseNum(document.getElementById('input-sys-bp').value); // reuse sys bp
+    const preDbp = parseNum(document.getElementById('input-dia-bp').value); // reuse dia bp
+    const prePro = document.getElementById('chk-pre-pro').checked;
+    const preSym = document.getElementById('chk-pre-sym').checked;
+    const preRes = document.getElementById('output-pre');
+    if (preSbp !== null && preDbp !== null) {
+        const symptoms = preSym ? ['symptom'] : [];
+        appState.obgyn.preeclampsia = calculatePreeclampsia(preSbp, preDbp, prePro, symptoms);
+        if (appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+            preRes.classList.remove('hidden');
+            preRes.innerHTML = `${appState.obgyn.preeclampsia.diagnosis}<br><span class="text-xs text-rose-300 font-normal">${appState.obgyn.preeclampsia.alert || ''}</span>`;
+        } else {
+            preRes.classList.add('hidden');
+        }
+    } else {
+        preRes.classList.add('hidden');
+    }
+
+    // IONS & FLUIDS
+    const fTemp = parseNum(document.getElementById('input-temp').value); // reuse temp
+    if (appState.biometry.weightKg) {
+        appState.medicine.fluid = calculateMaintenanceFluid(appState.biometry.weightKg, fTemp);
+        document.getElementById('output-daily-fluid').textContent = `${appState.medicine.fluid.dailyVolume} mL`;
+        document.getElementById('output-hourly-fluid').textContent = `${appState.medicine.fluid.hourlyRate} mL/s`;
+    }
+
+    // Calcium
+    const ionCa = parseNum(document.getElementById('input-serum-ca').value);
+    const ionAlb = parseNum(document.getElementById('input-albumin').value);
+    const ionWarn = document.getElementById('container-ion-warnings');
+    let warnings = [];
+    if (ionCa !== null) {
+        const caObj = calculateCorrectedCalcium({ totalCalcium: ionCa, albumin: ionAlb });
+        if (caObj && caObj.correctedCa) {
+            warnings.push(`Düzeltilmiş Ca: ${caObj.correctedCa} ${caObj.alertMsg ? '('+caObj.alertMsg+')' : ''}`);
         }
     }
 
-    if (ionWarnBox && calciumResult && calciumResult.flags.length > 0) {
-        ionWarnBox.classList.remove('hidden');
-        ionWarnBox.innerHTML += `<div class="mt-1 border-t border-amber-600/30 pt-1">⚠️ ${calciumResult.alertMsg}</div>`;
+    // Sodium
+    const ionNa = parseNum(document.getElementById('input-serum-na').value);
+    const targetNaDrop = parseNum(document.getElementById('input-target-na-change').value) || 8;
+    if (ionNa !== null && appState.biometry.weightKg && appState.biometry.gender) {
+        const isMale = appState.biometry.gender === 'male';
+        const ageYears = appState.biometry.ageYears || 30; // fallback
+        const tbwFraction = isMale ? (ageYears > 65 ? 0.5 : 0.6) : (ageYears > 65 ? 0.45 : 0.5);
+        
+        const targetNa = ionNa + targetNaDrop;
+        
+        const naObj = calculateSodiumCorrection(ionNa, targetNa, appState.biometry.weightKg, tbwFraction);
+        if (naObj) {
+            document.getElementById('output-na-deficit').textContent = `${naObj.deficit.toFixed(0)} mEq`;
+            if (naObj.warning) warnings.push(naObj.warning);
+            warnings.push(`1L %3 NaCl: +${naObj.deltaNa3Percent.toFixed(1)} mEq artırır`);
+            warnings.push(`1L %0.9 NaCl: +${naObj.deltaNa09Percent.toFixed(1)} mEq artırır`);
+        }
+    } else {
+        document.getElementById('output-na-deficit').textContent = '--';
     }
 
-    // 6. SOAP NOTU BASMA (Tam Entegre Çıktı)
-    const soapArea = document.getElementById('text-soap-output');
-    if (soapArea) {
-        let soapText = `=== KLİNİK HASTA NOTU ===\n`;
-        soapText += `• Yaş/Cinsiyet: ${p.derived.ageGroup ? p.derived.ageGroup.label : 'Belirtilmedi'} (${ageText}, ${p.gender === 'male' ? 'Erkek' : 'Kız'})\n`;
-        soapText += `• Ölçümler: Boy: ${p.heightCm || '--'} cm | Kilo: ${p.weightKg || '--'} kg | BSA: ${p.derived.bsa || '--'} m²`;
-        
-        if (p.creatinine) {
-            soapText += ` | Kr: ${p.creatinine} mg/dL | eGFR: ${p.derived.egfr || '--'} ml/dk`;
-        }
-        soapText += `\n`;
-        
-        if (customNotes && customNotes.trim()) {
-            soapText += `• Anamnez / FM: ${customNotes.trim()}\n`;
-        }
-
-        if (percentileResult && percentileResult.bmiPercentile) {
-            soapText += `• Persentil: Boy P:${percentileResult.heightPercentile || '--'} | Kilo P:${percentileResult.weightPercentile || '--'} | BKİ P:${percentileResult.bmiPercentile} (${percentileResult.category})\n`;
-        }
-
-        if (serumNa || serumK || serumCa) {
-            soapText += `• Elektrolitler: Na: ${serumNa || '--'} mEq/L | K: ${serumK || '--'} mEq/L | Ca: ${serumCa || '--'} mg/dL\n`;
-        }
-
-        soapText += `• Vitaller: TA: ${v.systolicBP || '--'}/${v.diastolicBP || '--'} mmHg | Nabız: ${v.heartRate || '--'}/dk | Ateş: ${v.bodyTemp || '--'}°C | SpO2: %${v.spo2 || '--'}\n`;
-        soapText += `• Plan: İdame Sıvı: ${document.getElementById('output-daily-fluid')?.textContent || '--'}`;
-        
-        if (ionData && ionData.naResult) {
-            soapText += `\n• Na Düzeltme İnfüzyonu: ${naRateMlHr} ml/saat (Hedef: ${targetNaChange} mEq/gün)`;
-        }
-
-        if (infResult && infMg && infDose) {
-            const unitLabel = infUnit === 'mcg_kg_min' ? 'mcg/kg/dk' : infUnit === 'mcg_min' ? 'mcg/dk' : 'mg/kg/saat';
-            soapText += `\n• Perfüzör / İnfüzyon: ${infMg} mg / ${infVol} ml SF (${infDose} ${unitLabel}) → ${infResult.rateMlHr} ml/saat (${infResult.concentrationMcgMl} mcg/ml)`;
-        }
-
-        if (d.selectedDrugs && d.selectedDrugs.length > 0) {
-            soapText += `\n• Reçete / İlaçlar (${d.selectedDrugs.length}):\n`;
-            d.selectedDrugs.forEach((drug, i) => {
-                soapText += `  ${i + 1}. ${drug.brand} (${drug.generic || 'Etken madde yok'})\n`;
-            });
-        }
-        
-        let objArr = [];
-        if (bloodGasResult) {
-            let agStr = bloodGasResult.AG !== null ? bloodGasResult.AG.toFixed(1) : '--';
-            let cAgStr = bloodGasResult.corrected_AG !== null ? bloodGasResult.corrected_AG.toFixed(1) : (bloodGasResult.AG !== null ? 'Albümin Bekleniyor' : '--');
-            let drStr = bloodGasResult.deltaRatio !== null ? bloodGasResult.deltaRatio.toFixed(2) : '--';
-            objArr.push(`Kan Gazı: pH ${bloodGasResult.pH}, pCO2 ${bloodGasResult.pCO2}, HCO3 ${bloodGasResult.HCO3}, AG ${agStr} (Düzeltilmiş: ${cAgStr}), Delta Oranı: ${drStr}`);
-        }
-        if (calciumResult) {
-            objArr.push(`Düzeltilmiş Ca: ${calciumResult.correctedCa} mg/dL`);
-        }
-        if (gcsResult) {
-            objArr.push(`GCS: ${gcsResult.total}/15 (E${gcsResult.eye}V${gcsResult.verbal}M${gcsResult.motor})`);
-        }
-        if (objArr.length > 0) {
-            soapText += `\nO: ${objArr.join('. ')}`;
-        }
-        
-        let asxArr = [];
-        if (bloodGasResult) {
-            asxArr.push(`${bloodGasResult.primaryDisorder}${bloodGasResult.hagmaStatus ? ' - ' + bloodGasResult.hagmaStatus : ''}`);
-        }
-        if (calciumResult && calciumResult.flags.length > 0) {
-            let caAlert = calciumResult.flags.includes('CRITICAL_HYPERCALCEMIC_CRISIS') ? 'Hiperkalsemik Kriz' : 
-                          calciumResult.flags.includes('ALERT_HYPERCALCEMIA') ? 'Hiperkalsemi' : 'Hipokalsiyemi';
-            asxArr.push(`Kalsiyum Tablosu: ${caAlert}`);
-        } else if (calciumResult) {
-            asxArr.push('Normokalsemi');
-        }
-        if (gcsResult) {
-            asxArr.push(`${gcsResult.category}${gcsResult.flags.includes('AIRWAY_COMPROMISE_RISK') ? ' (Havayolu Riski!)' : ''}`);
-        }
-        if (asxArr.length > 0) {
-            soapText += `\nA: ${asxArr.join(' + ')}`;
-        }
-
-        soapArea.value = soapText;
+    if (warnings.length > 0) {
+        ionWarn.classList.remove('hidden');
+        ionWarn.innerHTML = warnings.join('<br>');
+    } else {
+        ionWarn.classList.add('hidden');
     }
 
-    notifySubscribers();
+    // BLOOD GAS
+    const ph = parseNum(document.getElementById('input-bg-ph').value);
+    const pco2 = parseNum(document.getElementById('input-bg-pco2').value);
+    const hco3 = parseNum(document.getElementById('input-bg-hco3').value);
+    if (ph && pco2 && hco3) {
+        appState.medicine.bloodGas = analyzeBloodGas({
+            pH: ph, pCO2: pco2, HCO3: hco3, 
+            Na: parseNum(document.getElementById('input-bg-na').value), 
+            Cl: parseNum(document.getElementById('input-bg-cl').value), 
+            Albumin: parseNum(document.getElementById('input-albumin').value), 
+            sampleType: document.getElementById('select-bg-type').value
+        });
+        const bgRes = document.getElementById('container-bg-warnings');
+        bgRes.classList.remove('hidden');
+        bgRes.innerHTML = `${appState.medicine.bloodGas.diagnosis}`;
+    }
+
+    // INFUSION
+    const infDose = parseNum(document.getElementById('input-inf-dose').value);
+    const infMg = parseNum(document.getElementById('input-inf-mg').value);
+    const infVol = parseNum(document.getElementById('input-inf-vol').value);
+    if (infDose !== null && infMg !== null && infVol !== null && appState.biometry.weightKg) {
+        const infObj = calculateInfusionRate({
+            drugAmountMg: infMg,
+            totalVolumeMl: infVol,
+            weightKg: appState.biometry.weightKg,
+            targetDose: infDose,
+            doseUnit: 'mcg_kg_min'
+        });
+        if (infObj) {
+            document.getElementById('output-infusion-rate').textContent = `${infObj.rateMlHr} mL/saat`;
+        }
+    } else {
+        document.getElementById('output-infusion-rate').textContent = '--';
+    }
+
+    // CARDIAC
+    const qt = parseNum(document.getElementById('input-ecg-qt').value);
+    const rr = parseNum(document.getElementById('input-ecg-rr').value);
+    if (qt && rr) {
+        appState.other.cardiac = calculateQTc(qt, rr);
+        const qtRes = document.getElementById('output-ecg-qtc');
+        qtRes.classList.remove('hidden');
+        qtRes.textContent = `QTc: ${appState.other.cardiac.qtcBazett} ms (Bazett). ${appState.other.cardiac.interpretation}`;
+    }
+
+    const ecgD1 = parseNum(document.getElementById('input-ecg-d1').value);
+    const ecgAvf = parseNum(document.getElementById('input-ecg-avf').value);
+    if (ecgD1 !== null && ecgAvf !== null) {
+        const axisObj = calculateAxis(ecgD1, ecgAvf);
+        const axisRes = document.getElementById('output-ecg-axis');
+        if (axisObj) {
+            axisRes.classList.remove('hidden');
+            axisRes.textContent = `Aks: ${axisObj.axisAngle}° (${axisObj.axisInterpretation})`;
+        }
+    }
+
+    // Live SOAP Update
+    updateLiveSOAP();
 }
 
-async function syncDatabaseOnInit() {
-    const CURRENT_VERSION_TAG = 'KLINIK_DB_PHONETIC_V15';
-    const installedTag = localStorage.getItem('KLINIK_DB_TAG');
-    const searchInput = document.getElementById('input-drug-search');
+document.addEventListener('input', updateAllTabs);
+document.addEventListener('change', updateAllTabs);
 
-    try {
-        const count = await getDrugCount();
-        console.log(`📊 Cihazda Bulunan İlaç Sayısı: ${count}`);
-
-        if (installedTag !== CURRENT_VERSION_TAG || count === 0) {
-            console.log('🔄 Güncel TİTCK veritabanı indiriliyor ve cihaz diski sıfırlanıyor...');
-            
-            if (searchInput) {
-                searchInput.disabled = true;
-                searchInput.placeholder = '⏳ İlaç veritabanı cihaza indiriliyor (%0)...';
-            }
-
-            indexedDB.deleteDatabase('KlinikAsistanDB');
-
-            const response = await fetch('./data/medicines.json');
-            const rawData = await response.json();
-
-            await seedDrugDatabase(rawData, (percent) => {
-                console.log(`📥 Veritabanı Yazılıyor: %${percent}`);
-                if (searchInput) {
-                    searchInput.placeholder = `⏳ İlaçlar hazırlanıyor (%${percent})...`;
-                }
-            });
-
-            localStorage.setItem('KLINIK_DB_TAG', CURRENT_VERSION_TAG);
-            console.log('✅ Bütün TİTCK ilaç listesi eksiksiz kuruldu!');
-        }
-    } catch (err) {
-        console.error('❌ Veritabanı senkronizasyon hatası:', err);
-    } finally {
-        if (searchInput) {
-            searchInput.disabled = false;
-            searchInput.placeholder = 'İlaç adı, etken madde veya barkod yazın...';
-        }
+// LAB SEARCH
+document.getElementById('input-lab-search').addEventListener('input', (e) => {
+    const q = e.target.value;
+    const res = getLabTubeGuide(q);
+    const el = document.getElementById('container-lab-results');
+    if (res && q.length > 2) {
+        el.classList.remove('hidden');
+        el.innerHTML = res.map(r => `
+            <div class="mb-2 p-2 border-l-4 rounded-r-lg bg-slate-800" style="border-color: ${r.color.includes('Mor') ? 'purple' : r.color.includes('Mavi') ? '#38bdf8' : r.color.includes('Sarı') ? '#facc15' : '#10b981'};">
+                <strong class="text-slate-100">${r.color}</strong> (Sıra: ${r.order})<br>
+                <span class="text-xs text-slate-400">${r.notes}</span>
+            </div>
+        `).join('');
+    } else {
+        el.classList.add('hidden');
     }
-}
-
-function initEvents() {
-    document.querySelectorAll('input, select, textarea').forEach(el => {
-        if (el.id !== 'input-drug-search' && el.id !== 'text-soap-output') {
-            el.addEventListener('input', recalculateAll);
-            el.addEventListener('change', recalculateAll);
-        }
-    });
-
-    const searchInput = document.getElementById('input-drug-search');
-    const clearBtn = document.getElementById('btn-clear-search');
-    const resultsDiv = document.getElementById('container-search-results');
-
-    if (clearBtn && searchInput) {
-        clearBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            clearBtn.classList.add('hidden');
-            if (resultsDiv) resultsDiv.classList.add('hidden');
-            searchInput.focus();
-        });
-    }
-
-    if (searchInput && resultsDiv) {
-        searchInput.addEventListener('input', async (e) => {
-            const q = e.target.value;
-
-            if (q.trim().length > 0) {
-                clearBtn?.classList.remove('hidden');
-            } else {
-                clearBtn?.classList.add('hidden');
-            }
-
-            if (q.trim().length >= 2) {
-                const matches = await searchDrugsInDB(q);
-                resultsDiv.innerHTML = '';
-
-                if (matches.length > 0) {
-                    resultsDiv.classList.remove('hidden');
-                    matches.forEach(drug => {
-                        const item = document.createElement('div');
-                        item.className = "p-2 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50 flex flex-col gap-1";
-                        item.innerHTML = `
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <strong class="text-slate-100 text-xs block">${drug.brand}</strong>
-                                    <span class="text-[10px] text-slate-400 block">${drug.generic}</span>
-                                </div>
-                            </div>
-                            <div class="flex flex-wrap gap-1 mt-0.5">
-                                ${getDrugBadgesHTML(drug)}
-                            </div>
-                        `;
-                        item.addEventListener('click', () => {
-                            if (!Array.isArray(appState.drugs.selectedDrugs)) {
-                                appState.drugs.selectedDrugs = [];
-                            }
-                            appState.drugs.selectedDrugs.push(drug);
-                            searchInput.value = '';
-                            clearBtn?.classList.add('hidden');
-                            resultsDiv.classList.add('hidden');
-                            recalculateAll();
-                        });
-                        resultsDiv.appendChild(item);
-                    });
-                } else {
-                    resultsDiv.classList.add('hidden');
-                }
-            } else {
-                resultsDiv.classList.add('hidden');
-            }
-        });
-    }
-
-    const copyBtn = document.getElementById('btn-copy-soap');
-    if (copyBtn) {
-        copyBtn.addEventListener('click', () => {
-            const soapText = document.getElementById('text-soap-output')?.value;
-            if (soapText) {
-                navigator.clipboard.writeText(soapText);
-                const fb = document.getElementById('copy-feedback');
-                if (fb) {
-                    fb.classList.remove('hidden');
-                    setTimeout(() => fb.classList.add('hidden'), 2000);
-                }
-            }
-        });
-    }
-
-    const resetBtn = document.getElementById('btn-reset-form');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            document.querySelectorAll('input, textarea').forEach(el => {
-                if (el.id !== 'text-soap-output') el.value = '';
-            });
-            document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
-            appState.drugs.selectedDrugs = [];
-            recalculateAll();
-        });
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    initEvents();
-    recalculateAll();
-    syncDatabaseOnInit();
 });
 
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js').then(reg => {
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        window.location.reload();
-                    }
-                });
-            });
-        }).catch(err => console.error('Service Worker hatası:', err));
-    });
+// DRUG SEARCH
+const clearBtn = document.getElementById('btn-clear-search');
+const drugInput = document.getElementById('input-drug-search');
+const drugResult = document.getElementById('container-search-results');
+
+drugInput.addEventListener('input', async (e) => {
+    const q = e.target.value;
+    if (q.length > 0) {
+        clearBtn.classList.remove('hidden');
+    } else {
+        clearBtn.classList.add('hidden');
+        drugResult.innerHTML = '';
+        drugResult.classList.add('hidden');
+        return;
+    }
+
+    if (q.length > 2) {
+        try {
+            const res = await searchDrugsInDB(q);
+            if (res && res.length > 0) {
+                drugResult.classList.remove('hidden');
+                drugResult.innerHTML = res.map(r => `
+                    <div class="mb-1 p-3 border-l-2 border-rose-500 bg-slate-900 shadow-sm relative group">
+                        <div class="cursor-pointer hover:bg-slate-800 drug-item-add pr-16" data-brand="${r.brand}" data-generic="${r.generic}">
+                            <strong class="text-rose-300 text-sm flex flex-wrap items-center gap-1">
+                                <span>${r.brand}</span>
+                                ${Number(r.isChildEssential) > 0 ? '<span class="px-1.5 bg-sky-900/40 text-sky-300 border border-sky-700/50 rounded-full text-[9px]">Pediatrik</span>' : ''}
+                                ${Number(r.isNeonateEssential) > 0 ? '<span class="px-1.5 bg-fuchsia-900/40 text-fuchsia-300 border border-fuchsia-700/50 rounded-full text-[9px]">Neonatal</span>' : ''}
+                            </strong>
+                            <span class="text-[10px] text-slate-400 font-medium">${r.generic} | ${r.atcCode} | ${r.prescriptionType}</span>
+                        </div>
+                        <button type="button" class="btn-muadil absolute top-1/2 -translate-y-1/2 right-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-80 hover:opacity-100" data-atc="${r.atcCode}" data-generic="${r.generic}">Muadil</button>
+                    </div>
+                `).join('');
+            } else {
+                drugResult.classList.remove('hidden');
+                drugResult.innerHTML = '<div class="p-3 text-xs text-gray-500 bg-slate-900">Bulunamadı</div>';
+            }
+        } catch (err) {
+            drugResult.innerHTML = '';
+        }
+    } else {
+        drugResult.innerHTML = '';
+        drugResult.classList.add('hidden');
+    }
+});
+
+clearBtn.addEventListener('click', () => {
+    drugInput.value = '';
+    clearBtn.classList.add('hidden');
+    drugResult.innerHTML = '';
+    drugResult.classList.add('hidden');
+});
+
+drugResult.addEventListener('click', (e) => {
+    const btnMuadil = e.target.closest('.btn-muadil');
+    if (btnMuadil) {
+        const atc = btnMuadil.getAttribute('data-atc');
+        const generic = btnMuadil.getAttribute('data-generic');
+        const query = (atc && atc !== 'Belirtilmedi') ? atc : generic;
+        
+        if (query) {
+            drugInput.value = query;
+            drugInput.dispatchEvent(new Event('input'));
+        }
+        return;
+    }
+
+    const item = e.target.closest('.drug-item-add');
+    if (item) {
+        const brand = item.getAttribute('data-brand');
+        const generic = item.getAttribute('data-generic');
+        
+        if (!appState.treatment) appState.treatment = { selectedDrugs: [] };
+        if (!appState.treatment.selectedDrugs.find(d => d.brand === brand)) {
+            appState.treatment.selectedDrugs.push({ brand, generic });
+            renderSelectedDrugs();
+            updateAllTabs();
+        }
+    }
+});
+
+window.removeDrug = function(index) {
+    if (appState.treatment && appState.treatment.selectedDrugs) {
+        appState.treatment.selectedDrugs.splice(index, 1);
+        renderSelectedDrugs();
+        updateAllTabs();
+    }
+};
+
+function renderSelectedDrugs() {
+    const container = document.getElementById('container-selected-drugs');
+    if (!container) return;
+    if (!appState.treatment || !appState.treatment.selectedDrugs || appState.treatment.selectedDrugs.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    container.innerHTML = appState.treatment.selectedDrugs.map((d, index) => `
+        <div class="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700">
+            <div class="flex flex-col">
+                <span class="text-xs text-rose-300 font-bold">${d.brand}</span>
+                <span class="text-[10px] text-slate-400">${d.generic}</span>
+            </div>
+            <button class="text-slate-500 hover:text-rose-500 text-xs px-2 py-1" onclick="window.removeDrug(${index})">✕</button>
+        </div>
+    `).join('');
 }
+
+// SOAP COPY INLINE
+function updateLiveSOAP() {
+    const soapText = generateSOAP();
+    document.getElementById('text-soap-output').value = soapText;
+}
+
+document.getElementById('btn-copy-soap').addEventListener('click', () => {
+    const text = document.getElementById('text-soap-output').value;
+    navigator.clipboard.writeText(text).then(() => {
+        const fb = document.getElementById('copy-feedback');
+        fb.classList.remove('hidden');
+        setTimeout(() => fb.classList.add('hidden'), 2000);
+    });
+});
