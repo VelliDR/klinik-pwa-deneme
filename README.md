@@ -13,6 +13,9 @@ Acil servis, poliklinik ve yoğun bakım nöbetlerinde hekimlerin zihinsel yük�
   - Yaşa ve cinsiyete göre boy, kilo persentil analizi.
   - En güncel **2025 T.C. Sağlık Bakanlığı Ulusal Çocukluk Dönemi Aşılama Takvimi** (6'lı Karma, KKK ek doz güncellemeleri dahil).
   - Şurup dozaj (Parasetamol, İbuprofen, vb.) hesaplamaları.
+- **🩸 Pediatrik Demir & Anemi Kartı:**
+  - WHO kriterlerine göre anemi değerlendirmesi.
+  - Prematüre ve miadında doğan bebekler/çocuklar için güvenli demir profilaksisi ve tedavi dozajı (Maksimum doz sınırlarıyla birlikte).
 - **🚨 NEWS2 & PEWS Acil Triyaj Skorlama:** 
   - Vital bulgulara göre otomatik risk skorlaması ve klinik uyarı bayrakları (Hipoksi, Hipotansiyon, Anormal Nabız vb.).
 - **💧 İdame Sıvı ve Sodyum Düzeltme Motoru:** 
@@ -24,6 +27,10 @@ Acil servis, poliklinik ve yoğun bakım nöbetlerinde hekimlerin zihinsel yük�
 - **🤰 Obstetrik ve Jinekoloji Motoru:**
   - SAT'a göre Tahmini Doğum Tarihi (TDT) ve Gestasyonel Hafta (GH) hesabı.
   - Bishop Skoru ve Preeklampsi kriterleme algoritması.
+- **❤️ Kardiyak & EKG Motoru:**
+  - QTc (Bazett, Fridericia, Bogossian) hesabı.
+  - EKG Aks sapması tespiti.
+  - QT uzama riski için Tisdale Skorlaması.
 - **🧪 Majör İyonlar & Kan Gazı (ABG/VBG) Motoru:** 
   - Asit-Baz analizi, primer ve sekonder kompanzasyon hesabı (Winter formülü).
   - Düzeltilmiş (Albümine göre) kalsiyum hesabı.
