@@ -43,52 +43,74 @@ export function calculatePediatricIron(params) {
         return result;
     }
 
-    // ── 1. HEMOGLOBİN ANALİZİ ──
+    // ── 1. HEMOGLOBİN VE FİZYOLOJİK ANEMİ NADİRİ ANALİZİ ──
+    let physioMin = 9.0;
+    let physioMax = 11.0;
+    let physioNote = '';
+
     if (hemoglobin !== null && hemoglobin > 0) {
         if (ageMonths <= 0.5) {
-            // Yenidoğan
+            // Yenidoğan (0-15 Gün)
             if (hemoglobin < 13.5) {
                 result.hbCategory = 'Patolojik Anemi';
-                result.hbEvaluation = { isAnemic: true, text: 'Yenidoğan anemisi (< 13.5 g/dL). Uzman değerlendirmesi gerekir.', badgeColor: 'rose' };
+                result.hbEvaluation = { isAnemic: true, text: `Yenidoğan anemisi (Hb ${hemoglobin} < 13.5 g/dL). Kordon klempleme, kanama veya hemoliz yönünden uzman değerlendirmesi gerekir.`, badgeColor: 'rose' };
             } else {
-                result.hbEvaluation = { isAnemic: false, text: 'Normal Hb düzeyi (Yenidoğan).', badgeColor: 'emerald' };
+                result.hbEvaluation = { isAnemic: false, text: `Normal Yenidoğan Hb Düzeyi (${hemoglobin} g/dL, Referans: 13.5 - 20.0).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 0.5 && ageMonths <= 3) {
-            // 2-3. ay fizyolojik nadir
-            if (hemoglobin < 9.0) {
-                result.hbCategory = 'Patolojik Anemi';
-                result.hbEvaluation = { isAnemic: true, text: 'Patolojik anemi (< 9.0 g/dL). İleri tetkik ve tedavi gerekir.', badgeColor: 'rose' };
-            } else if (hemoglobin >= 9.0 && hemoglobin <= 11.0) {
-                result.hbCategory = 'Fizyolojik Anemi';
-                result.hbEvaluation = { isAnemic: false, text: 'Fizyolojik anemi (9.0 – 11.0 g/dL). Demir tedavisi başlanmaz, takip önerilir.', badgeColor: 'amber' };
+            // 2-3. ay: Süt Çocuğu Fizyolojik Anemi Nadiri (Physiological Anemia of Infancy)
+            if (isPreterm) {
+                physioMin = 7.0;
+                physioMax = 9.0;
+                physioNote = 'Preterm Bebek Fizyolojik Anemi Nadiri (4-8. haftalar, Beklenen Hb: 7.0 - 9.0 g/dL)';
             } else {
-                result.hbEvaluation = { isAnemic: false, text: 'Normal Hb düzeyi.', badgeColor: 'emerald' };
+                physioMin = 9.0;
+                physioMax = 11.0;
+                physioNote = 'Term Bebek Fizyolojik Anemi Nadiri (6-12. haftalar, Beklenen Hb: 9.0 - 11.0 g/dL)';
+            }
+
+            if (hemoglobin < physioMin) {
+                result.hbCategory = 'Patolojik Anemi';
+                result.hbEvaluation = { 
+                    isAnemic: true, 
+                    text: `Patolojik Anemi (Hb ${hemoglobin} < ${physioMin} g/dL). ${physioNote}. İleri tetkik ve aktif tedavi gereklidir.`, 
+                    badgeColor: 'rose' 
+                };
+            } else if (hemoglobin >= physioMin && hemoglobin <= physioMax) {
+                result.hbCategory = 'Fizyolojik Anemi';
+                result.hbEvaluation = { 
+                    isAnemic: false, 
+                    text: `Fizyolojik Anemi Dönemi (Hb ${hemoglobin} g/dL). ${physioNote}. Eritropoetin düşüşüne bağlı normal süreçtir; aktif demir tedavisi başlanmaz, takip önerilir.`, 
+                    badgeColor: 'amber' 
+                };
+            } else {
+                result.hbEvaluation = { isAnemic: false, text: `Normal Hb düzeyi (${hemoglobin} g/dL).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 3 && ageMonths <= 60) {
-            // 6 ay – 5 yaş
+            // 6 ay – 5 yaş (DSÖ & Sağlık Bakanlığı Cutoff: 11.0 g/dL)
             if (hemoglobin < 11.0) {
                 result.hbCategory = 'Patolojik Anemi';
-                result.hbEvaluation = { isAnemic: true, text: 'Anemi (< 11.0 g/dL). DSÖ / Sağlık Bakanlığı kriterlerine göre.', badgeColor: 'rose' };
+                result.hbEvaluation = { isAnemic: true, text: `Anemi (Hb ${hemoglobin} < 11.0 g/dL). DSÖ / Sağlık Bakanlığı kriterlerine göre Demir Eksikliği Anemisi uyuşmaktadır.`, badgeColor: 'rose' };
             } else {
-                result.hbEvaluation = { isAnemic: false, text: 'Normal Hb düzeyi.', badgeColor: 'emerald' };
+                result.hbEvaluation = { isAnemic: false, text: `Normal Hb düzeyi (${hemoglobin} g/dL, Cutoff: 11.0).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 60 && ageMonths <= 144) {
-            // 5 – 11 yaş
+            // 5 – 11 yaş (Cutoff: 11.5 g/dL)
             if (hemoglobin < 11.5) {
                 result.hbCategory = 'Patolojik Anemi';
-                result.hbEvaluation = { isAnemic: true, text: 'Anemi (< 11.5 g/dL).', badgeColor: 'rose' };
+                result.hbEvaluation = { isAnemic: true, text: `Anemi (Hb ${hemoglobin} < 11.5 g/dL).`, badgeColor: 'rose' };
             } else {
-                result.hbEvaluation = { isAnemic: false, text: 'Normal Hb düzeyi.', badgeColor: 'emerald' };
+                result.hbEvaluation = { isAnemic: false, text: `Normal Hb düzeyi (${hemoglobin} g/dL, Cutoff: 11.5).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 144) {
-            // > 12 yaş
+            // > 12 yaş (Erkek: 13.0 g/dL, Kadın: 12.0 g/dL)
             const cutoff = gender === 'male' && ageMonths >= 180 ? 13.0 : 12.0;
             if (hemoglobin < cutoff) {
                 result.hbCategory = 'Patolojik Anemi';
-                result.hbEvaluation = { isAnemic: true, text: `Anemi (< ${cutoff.toFixed(1)} g/dL).`, badgeColor: 'rose' };
+                result.hbEvaluation = { isAnemic: true, text: `Anemi (Hb ${hemoglobin} < ${cutoff.toFixed(1)} g/dL).`, badgeColor: 'rose' };
             } else {
                 result.hbCategory = 'Normal';
-                result.hbEvaluation = { isAnemic: false, text: 'Normal Hb düzeyi.', badgeColor: 'emerald' };
+                result.hbEvaluation = { isAnemic: false, text: `Normal Hb düzeyi (${hemoglobin} g/dL, Cutoff: ${cutoff.toFixed(1)}).`, badgeColor: 'emerald' };
             }
         }
 
@@ -101,29 +123,30 @@ export function calculatePediatricIron(params) {
         result.hbEvaluation = { isAnemic: false, text: 'Hb değeri girilmedi.', badgeColor: 'slate' };
     }
 
-    // ── 2. PROFİLAKSİ HESABI (Demir Gibi Türkiye) ──
+    // ── 2. PROFİLAKSİ HESABI (Demir Gibi Türkiye & Preterm Kılavuzu) ──
     if (ageMonths > 12) {
         result.prophylaxis.eligible = false;
-        result.prophylaxis.text = 'Profilaksi dönemi tamamlanmıştır (1 yaş üstü).';
+        result.prophylaxis.text = 'Profilaksi dönemi tamamlanmıştır (1 yaş üstü). Ek profilaksi gerekmez.';
     } else if (!isPreterm) {
         // Term bebek
         if (ageMonths < 4) {
             result.prophylaxis.eligible = false;
-            result.prophylaxis.text = 'Profilaksi için henüz erken. T.C. Sağlık Bakanlığı protokolüne göre 4. ay kontrolünde başlanmalıdır.';
+            result.prophylaxis.text = 'Profilaksi için henüz erken (Term bebeklerde 4. ayda 1 mg/kg/gün başlanır).';
         } else {
             result.prophylaxis.eligible = true;
             result.prophylaxis.mgDay = Math.min(Math.round(weightKg * 1), 15); // 1 mg/kg, max 15mg
-            result.prophylaxis.text = 'T.C. Sağlık Bakanlığı "Demir Gibi Türkiye" protokolü: Term bebekler için 4. aydan itibaren 1 mg/kg/gün (Maks 15 mg).';
+            result.prophylaxis.text = 'T.C. Sağlık Bakanlığı "Demir Gibi Türkiye" Term Bebek Protokolü: 4. aydan itibaren 1 mg/kg/gün (Maks 15 mg/gün).';
         }
     } else {
-        // Preterm bebek
+        // Preterm bebek (<37 hafta)
         if (ageMonths < 2) {
             result.prophylaxis.eligible = false;
-            result.prophylaxis.text = 'Profilaksi için henüz erken. Preterm bebeklerde 2. ay kontrolünde başlanmalıdır.';
+            result.prophylaxis.text = '⚡ Preterm Bebek Protokolü: Profilaksi 2. ay kontrolünde başlanmalıdır (2-4 mg/kg/gün).';
         } else {
             result.prophylaxis.eligible = true;
-            result.prophylaxis.mgDay = Math.round(weightKg * 2); // 2 mg/kg
-            result.prophylaxis.text = 'Preterm bebek profilaksi protokolü: 2. aydan itibaren 2 mg/kg/gün.';
+            const mgPerKg = weightKg < 1.5 ? 4 : 2; // Very low birth weight preterm: 4 mg/kg/day
+            result.prophylaxis.mgDay = Math.min(Math.round(weightKg * mgPerKg), 15);
+            result.prophylaxis.text = `⚡ PRETERM BEBEK PROFİLAKSİ PROTOKOLÜ: 2. aydan itibaren ${mgPerKg} mg/kg/gün demir takviyesi (Maks 15 mg/gün).`;
         }
     }
 
@@ -132,7 +155,7 @@ export function calculatePediatricIron(params) {
         result.treatment.eligible = true;
         const maxDose = ageMonths <= 72 ? 60 : 200;
         result.treatment.mgDay = Math.min(Math.round(weightKg * 4), maxDose); // 4 mg/kg/gün, capped
-        result.treatment.text = `Tedavi Dozu: 4 mg/kg/gün (Maksimum günlük doz sınırı ${maxDose} mg).`;
+        result.treatment.text = `Aktif Tedavi Dozu: 4 mg/kg/gün (Maksimum günlük doz sınırı ${maxDose} mg).`;
         
         // Disable prophylaxis if active treatment
         if (result.prophylaxis.eligible) {
@@ -142,7 +165,7 @@ export function calculatePediatricIron(params) {
         }
     } else if (result.hbCategory === 'Fizyolojik Anemi') {
         result.treatment.eligible = false;
-        result.treatment.text = 'Fizyolojik anemi döneminde demir tedavisi önerilmez.';
+        result.treatment.text = `Fizyolojik Anemi Dönemi (Hb ${hemoglobin} g/dL): Aktif demir tedavisi önerilmez.`;
     } else {
         result.treatment.eligible = false;
         result.treatment.text = 'Mevcut bulgularla aktif tedavi endikasyonu tespit edilmedi.';
