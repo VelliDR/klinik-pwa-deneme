@@ -1,5 +1,5 @@
 export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }) {
-    if (!pH || !pCO2 || !HCO3) return null;
+    if (!pH || !pCO2 || !HCO3 || pH <= 0 || pCO2 <= 0 || HCO3 <= 0) return null;
 
     let calc_pH = pH;
     let calc_pCO2 = pCO2;
@@ -40,7 +40,7 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType })
     let compensationText = '';
     let flags = [];
 
-    if (primaryDisorder.includes('Metabolik Asidoz')) {
+    if (primaryDisorder === 'Metabolik Asidoz') {
         let expected = (1.5 * calc_HCO3) + 8;
         expected_pCO2_min = expected - 2;
         expected_pCO2_max = expected + 2;
@@ -54,7 +54,7 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType })
         } else {
             compensationText = 'Uygun Kompanzasyon (Saf Metabolik Asidoz)';
         }
-    } else if (primaryDisorder.includes('Metabolik Alkaloz')) {
+    } else if (primaryDisorder === 'Metabolik Alkaloz') {
         let expected = (0.7 * calc_HCO3) + 20;
         expected_pCO2_min = expected - 5;
         expected_pCO2_max = expected + 5;
@@ -68,14 +68,14 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType })
         } else {
             compensationText = 'Uygun Kompanzasyon (Saf Metabolik Alkaloz)';
         }
-    } else if (primaryDisorder.includes('Respiratuar Asidoz')) {
+    } else if (primaryDisorder === 'Respiratuar Asidoz') {
         // Akut
         let delta_pCO2 = calc_pCO2 - 40;
         let exp_acute_HCO3 = 24 + (delta_pCO2 / 10) * 1;
         let exp_chronic_HCO3 = 24 + (delta_pCO2 / 10) * 3.5;
         
         compensationText = `Akut Hdf HCO3: ~${exp_acute_HCO3.toFixed(1)} | Kronik Hdf HCO3: ~${exp_chronic_HCO3.toFixed(1)}`;
-    } else if (primaryDisorder.includes('Respiratuar Alkaloz')) {
+    } else if (primaryDisorder === 'Respiratuar Alkaloz') {
         let delta_pCO2 = 40 - calc_pCO2;
         let exp_acute_HCO3 = 24 - (delta_pCO2 / 10) * 2;
         let exp_chronic_HCO3 = 24 - (delta_pCO2 / 10) * 4.5;

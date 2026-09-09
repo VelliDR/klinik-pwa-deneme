@@ -16,6 +16,7 @@ export function calculateBSA(heightCm, weightKg) {
 
 export function determineAgeGroup(ageValue, ageUnit) {
     if (!ageValue || ageValue <= 0) return null;
+    if (!['years', 'months', 'days'].includes(ageUnit)) return null;
 
     // 1. Gelen değeri matematiksel kıyaslama için aya çeviriyoruz
     let totalMonths = 0;

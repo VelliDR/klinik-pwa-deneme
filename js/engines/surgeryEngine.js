@@ -1,6 +1,7 @@
 // Surgery Engine: Alvarado, Ranson, Parkland, Sütür/Yara
 
 export function calculateAlvarado(params) {
+    if (!params) return null;
     // params = { migration: bool, anorexia: bool, nausea: bool, rlqPain: bool, rebound: bool, temp: bool, leukocytosis: bool, leftShift: bool }
     let score = 0;
     if (params.migration) score += 1;
@@ -29,7 +30,7 @@ export function calculateAlvarado(params) {
 }
 
 export function calculateParkland(weightKg, tbsaPercent, ageYears = null) {
-    if (!weightKg || !tbsaPercent || tbsaPercent <= 0) return null;
+    if (!weightKg || weightKg <= 0 || !tbsaPercent || tbsaPercent <= 0) return null;
     
     // ATLS 10th Edition Update (2018)
     // Yetişkinler (Alev/Haşlanma): 2 mL * kg * TBSA
@@ -55,6 +56,7 @@ export function calculateParkland(weightKg, tbsaPercent, ageYears = null) {
 }
 
 export function calculateRanson(params) {
+    if (!params) return null;
     // params = { ageO55, wbcO16, gluO200, astO250, ldhO350, hctDrop10, bunRise5, caU8, pO2U60, baseDefO4, fluidSecO6 }
     let score = 0;
     

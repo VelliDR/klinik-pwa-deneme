@@ -56,7 +56,7 @@ export function calculatePreeclampsia(sbp, dbp, proteinuria, symptoms) {
     const isSevereBP = sbp >= 160 || dbp >= 110;
     const isMildBP = sbp >= 140 || dbp >= 90;
     const hasSevereSymptoms = symptoms && symptoms.length > 0;
-    if (isSevereBP || (isMildBP && (proteinuria || hasSevereSymptoms))) {
+    if (isSevereBP || (isMildBP && hasSevereSymptoms)) {
         diagnosis = 'Preeklampsi (Ağır Özellikli)';
         alert = 'MgSO4 protokolü başlatın ve acil doğum değerlendirmesi yapın!';
     } else if (isMildBP && proteinuria) {

@@ -33,7 +33,12 @@ export function calculateMaintenanceFluid(weightKg, tempCelsius = null) {
 
 export function calculateSodiumCorrection(measuredNa, targetNa, weightKg, tbwFactor) {
     if (!measuredNa || !weightKg || !tbwFactor) return null;
-    if (!targetNa) targetNa = 140; // Default target
+    
+    if (!targetNa) {
+        if (measuredNa < 135) targetNa = Math.min(135, measuredNa + 8);
+        else if (measuredNa > 145) targetNa = Math.max(145, measuredNa - 8);
+        else targetNa = 140;
+    }
     
     // Total Body Water
     const tbw = weightKg * tbwFactor;
@@ -43,8 +48,8 @@ export function calculateSodiumCorrection(measuredNa, targetNa, weightKg, tbwFac
     
     let warning = '';
     // Modern guidelines recommend max 8 mEq/L in 24 hours to avoid ODS
-    if (targetNa - measuredNa > 8) {
-        warning = '⚠️ ODS Riski! 24 saatte max 8 mEq/L düzeltme önerilir.';
+    if (Math.abs(targetNa - measuredNa) > 8) {
+        warning = '⚠️ ODS / Serebral Ödem Riski! 24 saatte max 8 mEq/L düzeltme önerilir.';
     }
 
     // Adrogué-Madias Formula for 1L of solution

@@ -8,30 +8,35 @@ export function calculatePediatricDose(weightKg, drugKey) {
         'paracetamol': {
             name: 'Parasetamol',
             doseMgPerKg: 15,
+            maxDose: 1000,
             concentration: 120 / 5, // 120mg / 5ml (Calpol)
             freq: '4-6 saatte bir'
         },
         'ibuprofen': {
             name: 'İbuprofen',
             doseMgPerKg: 10,
+            maxDose: 400,
             concentration: 100 / 5, // 100mg / 5ml (Dolven)
             freq: '6-8 saatte bir'
         },
         'amoklavin_400': {
             name: 'Amoksisilin-Klavulanat (400/57)',
             doseMgPerKg: 20, // 40mg/kg/gün (2'ye bölünmüş doz => 20 mg/kg/doz)
+            maxDose: 1000,
             concentration: 400 / 5,
             freq: '12 saatte bir'
         },
         'cefuroxime_250': {
             name: 'Sefuroksim (250mg)',
             doseMgPerKg: 15, // 30mg/kg/gün => 15 mg/kg/doz
+            maxDose: 500,
             concentration: 250 / 5,
             freq: '12 saatte bir'
         },
         'clarithromycin_125': {
             name: 'Klaritromisin (125mg)',
             doseMgPerKg: 7.5, // 15mg/kg/gün => 7.5 mg/kg/doz
+            maxDose: 500,
             concentration: 125 / 5,
             freq: '12 saatte bir'
         }
@@ -40,14 +45,16 @@ export function calculatePediatricDose(weightKg, drugKey) {
     const drug = drugs[drugKey];
     if (!drug) return null;
 
-    const targetDoseMg = weightKg * drug.doseMgPerKg;
+    const targetDoseMg = Math.min(weightKg * drug.doseMgPerKg, drug.maxDose || Infinity);
     const volumeMl = targetDoseMg / drug.concentration;
     
     // Ölçek hesabı (1 ölçek = 5 ml)
     const olcek = volumeMl / 5;
     let olcekText = '';
     
-    if (olcek >= 1) {
+    if (volumeMl < 2.5) {
+        olcekText = 'Doğru ölçüm için oral enjektör kullanınız.';
+    } else if (olcek >= 1) {
         const tam = Math.floor(olcek);
         const kalan = olcek - tam;
         olcekText = `${tam} tam`;
@@ -66,7 +73,7 @@ export function calculatePediatricDose(weightKg, drugKey) {
     return {
         name: drug.name,
         targetDoseMg: Math.round(targetDoseMg),
-        volumeMl: volumeMl.toFixed(1),
+        volumeMl: parseFloat(volumeMl.toFixed(1)),
         olcekText,
         freq: drug.freq
     };
@@ -76,7 +83,8 @@ export function getVaccineSchedule(ageInMonths) {
     if (ageInMonths === null || ageInMonths === undefined) return null;
     
     let vaccines = [];
-    if (ageInMonths < 2) vaccines = ["Hepatit B (1. Doz) - Doğumda"];
+    if (ageInMonths < 1 && ageInMonths >= 0) vaccines = ["Hepatit B (1. Doz) - Doğumda"];
+    else if (ageInMonths >= 1 && ageInMonths < 2) vaccines = ["Hepatit B (2. Doz)"];
     else if (ageInMonths >= 2 && ageInMonths < 4) vaccines = ["BCG (Verem)", "KPA (1. Doz)", "DaBT-İPA-Hib-HepB (1. Doz)"];
     else if (ageInMonths >= 4 && ageInMonths < 6) vaccines = ["KPA (2. Doz)", "DaBT-İPA-Hib-HepB (2. Doz)"];
     else if (ageInMonths >= 6 && ageInMonths < 9) vaccines = ["DaBT-İPA-Hib-HepB (3. Doz)", "OPA (1. Doz)"];

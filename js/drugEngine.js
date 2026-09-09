@@ -1,4 +1,4 @@
-import { initDB, normalizeText } from './db.js';
+import { initDB, normalizeText } from './db/titckIndexedDB.js';
 
 /**
  * 1. REGEX İLE DOZ VE KONSANTRASYON PARSER'I
