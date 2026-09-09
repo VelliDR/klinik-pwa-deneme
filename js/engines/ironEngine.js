@@ -148,15 +148,19 @@ export function calculatePediatricIron(params) {
         result.treatment.text = 'Mevcut bulgularla aktif tedavi endikasyonu tespit edilmedi.';
     }
 
-    // ── 4. PREPARAT & DAMLA ÇEVRİM MOTORU ──
+    // ── 4. PREPARAT & DAMLA / ŞURUP ÇEVRİM MOTORU ──
     if (result.prophylaxis.mgDay > 0) {
-        result.prophylaxis.ferrumDrops = Math.ceil(result.prophylaxis.mgDay / 2.5);
-        result.prophylaxis.ferroDrops = Math.ceil(result.prophylaxis.mgDay / 1.5);
+        result.prophylaxis.ferrumDrops = Math.ceil(result.prophylaxis.mgDay / 2.5); // 2.5 mg/damla (Ferrum Lek / Santafer Damla)
+        result.prophylaxis.ferroDrops = Math.ceil(result.prophylaxis.mgDay / 1.5);  // 1.5 mg/damla (Ferro Sanol Damla)
+        result.prophylaxis.syrupMl = parseFloat((result.prophylaxis.mgDay / 10).toFixed(1)); // 50 mg / 5 mL Şurup = 10 mg/mL
+        result.prophylaxis.syrupOlcek = parseFloat((result.prophylaxis.syrupMl / 5).toFixed(1));
     }
 
     if (result.treatment.mgDay > 0) {
         result.treatment.ferrumDrops = Math.ceil(result.treatment.mgDay / 2.5);
         result.treatment.ferroDrops = Math.ceil(result.treatment.mgDay / 1.5);
+        result.treatment.syrupMl = parseFloat((result.treatment.mgDay / 10).toFixed(1));
+        result.treatment.syrupOlcek = parseFloat((result.treatment.syrupMl / 5).toFixed(1));
     }
 
     return result;

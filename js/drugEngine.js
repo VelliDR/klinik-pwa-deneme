@@ -110,12 +110,18 @@ export function getDrugBadgesHTML(drug) {
         badges.push('<span class="bg-amber-950 text-amber-300 border border-amber-600 px-1.5 py-0.5 rounded text-[10px]">⚠️ Pasif / İptal</span>');
     }
 
-    // Çocuk / Yenidoğan Temel İlaç Rozetleri
-    if (drug.isChildEssential == 1) {
-        badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]">👶 Pediatrik Temel</span>');
+    // Çocuk / Yenidoğan Temel İlaç Rozetleri & Formülasyon Tespiti
+    const isChildFlag = Number(drug.isChildEssential) === 1 || drug.isChildEssential === true || drug.isChildEssential === '1';
+    const isNeonateFlag = Number(drug.isNeonateEssential) === 1 || drug.isNeonateEssential === true || drug.isNeonateEssential === '1';
+
+    const textSearch = (drug.brand + ' ' + (drug.generic || '') + ' ' + (drug.form || '')).toLowerCase();
+    const isPediatricForm = textSearch.includes('pediatrik') || textSearch.includes('çocuk') || textSearch.includes('şurup') || textSearch.includes('süspansiyon') || textSearch.includes('damla') || textSearch.includes('pediatric');
+
+    if (isChildFlag || isPediatricForm) {
+        badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]">👶 Pediatrik / Çocuk</span>');
     }
-    if (drug.isNeonateEssential == 1) {
-        badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]">🍼 Yenidoğan Temel</span>');
+    if (isNeonateFlag) {
+        badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]">🍼 Yenidoğan</span>');
     }
 
     return badges.join(' ');

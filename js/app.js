@@ -117,14 +117,22 @@ function updateAllTabs() {
 
             // Prophylaxis
             if (ir.prophylaxis.eligible) {
-                ironHtml += `<div class="mt-1"><strong>Profilaksi:</strong> ${ir.prophylaxis.mgDay} mg/gün<br><span class="text-[9px] text-slate-400">(Ferrum: ${ir.prophylaxis.ferrumDrops} damla | Ferro Sanol: ${ir.prophylaxis.ferroDrops} damla)</span><br><span class="text-[9px] text-amber-400">${ir.prophylaxis.text}</span></div>`;
+                ironHtml += `<div class="mt-1"><strong>Profilaksi:</strong> ${ir.prophylaxis.mgDay} mg/gün<br><span class="text-[9px] text-slate-300">Damla: Ferrum ${ir.prophylaxis.ferrumDrops} damla | Ferro Sanol ${ir.prophylaxis.ferroDrops} damla</span>`;
+                if (ir.prophylaxis.syrupMl) {
+                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${ir.prophylaxis.syrupMl} mL (${ir.prophylaxis.syrupOlcek} ölçek)</span>`;
+                }
+                ironHtml += `<br><span class="text-[9px] text-amber-400">${ir.prophylaxis.text}</span></div>`;
             } else if (ir.prophylaxis.text) {
                 ironHtml += `<div class="mt-1 text-[10px] text-sky-400">ℹ️ ${ir.prophylaxis.text}</div>`;
             }
 
             // Treatment
             if (ir.treatment.eligible) {
-                ironHtml += `<div class="mt-1"><strong>Tedavi:</strong> ${ir.treatment.mgDay} mg/gün<br><span class="text-[9px] text-slate-400">(Ferrum: ${ir.treatment.ferrumDrops} damla | Ferro Sanol: ${ir.treatment.ferroDrops} damla)</span><br><span class="text-[9px] text-rose-400">${ir.treatment.text}</span></div>`;
+                ironHtml += `<div class="mt-1"><strong>Tedavi:</strong> ${ir.treatment.mgDay} mg/gün<br><span class="text-[9px] text-slate-300">Damla: Ferrum ${ir.treatment.ferrumDrops} damla | Ferro Sanol ${ir.treatment.ferroDrops} damla</span>`;
+                if (ir.treatment.syrupMl) {
+                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${ir.treatment.syrupMl} mL (${ir.treatment.syrupOlcek} ölçek)</span>`;
+                }
+                ironHtml += `<br><span class="text-[9px] text-rose-400">${ir.treatment.text}</span></div>`;
             } else if (ir.treatment.text) {
                 ironHtml += `<div class="mt-1 text-[10px] text-slate-500">${ir.treatment.text}</div>`;
             }

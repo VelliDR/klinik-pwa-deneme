@@ -39,6 +39,20 @@ export function calculatePediatricDose(weightKg, drugKey) {
             maxDose: 500,
             concentration: 125 / 5,
             freq: '12 saatte bir'
+        },
+        'laroxyl_25': {
+            name: 'Laroxyl / Amitriptilin (25mg)',
+            doseMgPerKg: 0.5, // Pediatrik nocturn enürezis / proflaksi (6-10y: 10-25mg, >11y: 25-50mg)
+            maxDose: 50,
+            concentration: 25 / 1, // 25mg tablet
+            freq: 'Gece yatarken'
+        },
+        'cetirizine_5': {
+            name: 'Setirizin (5mg/5ml - Zyrtec/Allerset)',
+            doseMgPerKg: 0.25, // 2-6y: 2.5mg, >6y: 5-10mg
+            maxDose: 10,
+            concentration: 5 / 5,
+            freq: 'Günde 1 kez'
         }
     };
 
