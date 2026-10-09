@@ -1,11 +1,12 @@
 /**
- * PERCENTILE ENGINE (Neyzi 2015 LMS Standards)
- * Pediatrik hastalar (0-18 yaş / 0-216 ay) için Türk Çocuklarında Boy, Kilo ve BKİ Persentil / Z-Skor Hesabı.
+ * PERCENTILE ENGINE (Neyzi 2015 LMS Standards & ÇEDD Çözüm Normatif Modelleri)
+ * Pediatrik hastalar (0-18 yaş / 0-216 ay) için Türk Çocuklarında Boy, Kilo, Baş Çevresi ve BKİ Persentil / Z-Skor Hesabı.
  * Referans: Neyzi O, et al. Reference Values for Weight, Height, Head Circumference, and Body Mass Index in Turkish Children. J Clin Res Pediatr Endocrinol 2015.
+ * ÇEDD (Çocuk Endokrinolojisi ve Diyabet Derneği) Hedef Boy (Mid-Parental Height) & Prematüre Düzeltilmiş Yaş Standartları.
  */
 
 // Z < 0 durumunda simetri kuralı eklentili Abramowitz & Stegun
-function standardNormalCDF(z) {
+export function standardNormalCDF(z) {
     if (z === null || isNaN(z)) return null;
     const isNegative = z < 0;
     const absZ = Math.abs(z);
@@ -22,7 +23,7 @@ function standardNormalCDF(z) {
     return isNegative ? (1 - p) : p;
 }
 
-function zToPercentile(z) {
+export function zToPercentile(z) {
     if (z === null || isNaN(z)) return null;
     const cdf = standardNormalCDF(z);
     if (cdf === null) return null;
@@ -30,7 +31,7 @@ function zToPercentile(z) {
 }
 
 // LMS Formülü: Z = ((X/M)^L - 1) / (L*S)
-function calculateLMSZScore(x, l, m, s) {
+export function calculateLMSZScore(x, l, m, s) {
     if (x <= 0 || m <= 0 || s <= 0) return null;
     if (Math.abs(l) < 0.0001) {
         return Math.log(x / m) / s;
@@ -38,7 +39,7 @@ function calculateLMSZScore(x, l, m, s) {
     return (Math.pow(x / m, l) - 1) / (l * s);
 }
 
-// Lineer İnterpolasyon (Komşu yaş aralığı LMS paremetreleri)
+// Lineer İnterpolasyon (Komşu yaş aralığı LMS parametreleri)
 function interpolate(x, xArr, yArr) {
     if (x <= xArr[0]) return yArr[0];
     if (x >= xArr[xArr.length - 1]) return yArr[yArr.length - 1];
@@ -60,6 +61,9 @@ const AGE_MONTHS_GRID = [
     114, 120, 126, 132, 138, 144, 150, 156, 162, 168, 174, 180, 186, 192, 198, 204, 210, 216
 ];
 
+// Neyzi 2015 Baş Çevresi Yaş Izgarası (0 - 36 Ay)
+const HC_AGE_MONTHS_GRID = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 18, 21, 24, 30, 36];
+
 const NEYZI_2015_DATA = {
     male: {
         height: {
@@ -76,6 +80,11 @@ const NEYZI_2015_DATA = {
             L: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.4, 0.2, 0.0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
             M: [13.4, 14.8, 16.1, 16.8, 17.1, 17.2, 17.2, 17.2, 17.2, 17.1, 17.0, 16.9, 16.8, 16.5, 16.2, 16.0, 15.8, 15.6, 15.4, 15.3, 15.2, 15.1, 15.1, 15.2, 15.3, 15.4, 15.5, 15.7, 16.0, 16.3, 16.6, 17.0, 17.5, 18.0, 18.5, 19.0, 19.5, 20.1, 20.6, 21.0, 21.4, 21.8, 22.1, 22.3, 22.4, 22.5, 22.5, 22.5, 22.5],
             S: [0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.09, 0.09, 0.09, 0.09, 0.10, 0.10, 0.10, 0.11, 0.11, 0.12, 0.12, 0.12, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12]
+        },
+        headCirc: {
+            L: HC_AGE_MONTHS_GRID.map(() => 1.0),
+            M: [35.0, 37.3, 39.0, 40.5, 41.7, 42.7, 43.6, 44.3, 44.9, 45.4, 45.9, 46.3, 46.6, 47.4, 48.0, 48.5, 49.0, 49.7, 50.2],
+            S: [0.038, 0.036, 0.035, 0.034, 0.033, 0.033, 0.032, 0.032, 0.031, 0.031, 0.031, 0.030, 0.030, 0.030, 0.029, 0.029, 0.029, 0.028, 0.028]
         }
     },
     female: {
@@ -93,6 +102,11 @@ const NEYZI_2015_DATA = {
             L: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.4, 0.2, 0.0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0],
             M: [13.3, 14.5, 15.6, 16.3, 16.7, 16.9, 16.9, 16.9, 16.8, 16.7, 16.6, 16.5, 16.4, 16.1, 15.8, 15.6, 15.4, 15.2, 15.0, 14.9, 14.8, 14.8, 14.9, 15.0, 15.1, 15.2, 15.4, 15.7, 16.0, 16.4, 16.8, 17.2, 17.7, 18.2, 18.7, 19.1, 19.5, 19.9, 20.2, 20.5, 20.7, 20.9, 21.0, 21.1, 21.2, 21.2, 21.2, 21.2, 21.2],
             S: [0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.09, 0.09, 0.09, 0.09, 0.10, 0.10, 0.10, 0.11, 0.11, 0.12, 0.12, 0.12, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12]
+        },
+        headCirc: {
+            L: HC_AGE_MONTHS_GRID.map(() => 1.0),
+            M: [34.3, 36.5, 38.2, 39.5, 40.6, 41.6, 42.4, 43.1, 43.7, 44.2, 44.7, 45.1, 45.4, 46.2, 46.8, 47.4, 47.9, 48.6, 49.1],
+            S: [0.038, 0.036, 0.035, 0.034, 0.033, 0.033, 0.032, 0.032, 0.031, 0.031, 0.031, 0.030, 0.030, 0.030, 0.029, 0.029, 0.029, 0.028, 0.028]
         }
     }
 };
@@ -114,25 +128,39 @@ function getGrowthNorms(totalMonths, gender = 'male') {
     const bmiM = interpolate(m, AGE_MONTHS_GRID, data.bmi.M);
     const bmiS = interpolate(m, AGE_MONTHS_GRID, data.bmi.S);
 
+    // Baş Çevresi Normu (0 - 36 ay)
+    let headCirc = null;
+    if (m <= 36) {
+        const hcL = interpolate(m, HC_AGE_MONTHS_GRID, data.headCirc.L);
+        const hcM = interpolate(m, HC_AGE_MONTHS_GRID, data.headCirc.M);
+        const hcS = interpolate(m, HC_AGE_MONTHS_GRID, data.headCirc.S);
+        headCirc = { L: hcL, M: hcM, S: hcS };
+    }
+
     return { 
         height: { L: heightL, M: heightM, S: heightS },
         weight: { L: weightL, M: weightM, S: weightS },
-        bmi: { L: bmiL, M: bmiM, S: bmiS }
+        bmi: { L: bmiL, M: bmiM, S: bmiS },
+        headCirc
     };
 }
 
+/**
+ * 1. PERSENTİL VE Z-SKOR HESAPLAYICI (Boy, Kilo, BKİ, Baş Çevresi)
+ */
 export function calculatePercentiles(params) {
     if (!params) return null;
-    const { totalMonths, gender, heightCm, weightKg, isPediatric } = params;
+    const { totalMonths, gender, heightCm, weightKg, headCircumferenceCm, isPediatric } = params;
 
     if (!isPediatric || totalMonths === null || totalMonths === undefined || totalMonths < 0 || totalMonths > 216) {
         return null;
     }
 
     const norms = getGrowthNorms(totalMonths, gender);
-    let heightP = null, weightP = null, bmiP = null, bmiValue = null;
-    let heightZ = null, weightZ = null, bmiZ = null;
+    let heightP = null, weightP = null, bmiP = null, headCircP = null, bmiValue = null;
+    let heightZ = null, weightZ = null, bmiZ = null, headCircZ = null;
     let category = 'Normal Gelişim';
+    let headCircCategory = null;
 
     if (heightCm && heightCm > 0) {
         heightZ = calculateLMSZScore(heightCm, norms.height.L, norms.height.M, norms.height.S);
@@ -152,24 +180,121 @@ export function calculatePercentiles(params) {
         bmiP = zToPercentile(bmiZ);
 
         if (bmiP < 3) category = 'Ağır Malnütrisyon / Çok Düşük Kilolu (<3.p)';
-        else if (bmiP < 10) category = 'Zayıf / Düşük Kilolu (3-10.p)';
-        else if (bmiP <= 85) category = 'Normal Gelişim (10-85.p)';
+        else if (bmiP < 15) category = 'Zayıf / Düşük Kilolu (3-15.p)';
+        else if (bmiP <= 85) category = 'Normal Ağırlık (15-85.p)';
         else if (bmiP <= 95) category = 'Fazla Kilolu / Obezite Riski (85-95.p)';
-        else category = 'Obezite (>95.p)';
+        else if (bmiP < 99) category = 'Obezite (95-99.p)';
+        else category = 'Ağır / Morbid Obezite (≥99.p)';
+    }
+
+    // Baş Çevresi (0 - 36 ay)
+    if (headCircumferenceCm && headCircumferenceCm > 0 && norms.headCirc) {
+        headCircZ = calculateLMSZScore(headCircumferenceCm, norms.headCirc.L, norms.headCirc.M, norms.headCirc.S);
+        headCircP = zToPercentile(headCircZ);
+
+        if (headCircZ < -2.0) {
+            headCircCategory = '🔴 Mikrosefali Riski (<3.p, Z < -2 SD): Nörogelişimsel & Kranial USG takibi önerilir.';
+        } else if (headCircZ > 2.0) {
+            headCircCategory = '🟡 Makrosefali (>97.p, Z > +2 SD): Hidrosefali / Ailesel makrosefali ayrımı için baş çevresi hızı izlenmelidir.';
+        } else {
+            headCircCategory = '🟢 Normal Baş Çevresi (3-97.p)';
+        }
     }
 
     return { 
         heightZ: heightZ !== null ? Number(heightZ.toFixed(2)) : null,
         weightZ: weightZ !== null ? Number(weightZ.toFixed(2)) : null,
         bmiZ: bmiZ !== null ? Number(bmiZ.toFixed(2)) : null,
+        headCircZ: headCircZ !== null ? Number(headCircZ.toFixed(2)) : null,
         heightPercentile: heightP, 
         weightPercentile: weightP, 
         bmiValue, 
         bmiPercentile: bmiP, 
+        headCircumferencePercentile: headCircP,
         category,
-        // Backward compatibility aliases for SOAP generator & old references
+        headCircCategory,
+        // Geriye dönük uyumluluk
         weight: weightP,
         height: heightP,
         bmi: bmiP
+    };
+}
+
+/**
+ * 2. ÇEDD HEDEF BOY (MID-PARENTAL HEIGHT) & GENETİK POTANSİYEL MOTORU (Tanner Metodu)
+ */
+export function calculateTargetHeight({ motherHeightCm, fatherHeightCm, childGender, currentHeightZ = null }) {
+    if (!motherHeightCm || !fatherHeightCm || motherHeightCm <= 0 || fatherHeightCm <= 0) return null;
+    const isBoy = childGender === 'male' || childGender === 'M';
+    
+    // Tanner Mid-Parental Height (cm)
+    const midParental = isBoy 
+        ? (motherHeightCm + fatherHeightCm + 13) / 2
+        : (motherHeightCm + fatherHeightCm - 13) / 2;
+
+    const targetMin = Number((midParental - 8.5).toFixed(1));
+    const targetMax = Number((midParental + 8.5).toFixed(1));
+
+    // Neyzi 2015 18 Yaş M ve S Referans Değerleri:
+    // Erkek 18y: M = 176.0, S = 0.042
+    // Kız 18y: M = 163.0, S = 0.040
+    const adultM = isBoy ? 176.0 : 163.0;
+    const adultS = isBoy ? 0.042 : 0.040;
+    const targetZ = calculateLMSZScore(midParental, 1.0, adultM, adultS);
+    const targetPercentile = zToPercentile(targetZ);
+
+    let deviationAlert = null;
+    let deviationValue = null;
+
+    if (currentHeightZ !== null && !isNaN(currentHeightZ)) {
+        // Çocuğun mevcut boy SDS'si ile hedef boy SDS'si arasındaki sapma
+        deviationValue = Number((currentHeightZ - targetZ).toFixed(2));
+        if (deviationValue < -1.5) {
+            deviationAlert = '⚠️ Genetik Hedef Boy Potansiyelinden Belirgin Sapma (Boy SDS hedef boy SDS\'sinin >1.5 SD altında). Patolojik boy kısalığı açısından Çocuk Endokrinolojisi değerlendirmesi önerilir.';
+        } else if (deviationValue > 1.5) {
+            deviationAlert = 'ℹ️ Çocuk mevcut persentili genetik hedef boy potansiyelinin belirgin üzerinde seyrediyor.';
+        }
+    }
+
+    return {
+        targetHeightCm: Number(midParental.toFixed(1)),
+        targetRangeCm: `${targetMin} - ${targetMax} cm (±8.5 cm)`,
+        targetMin,
+        targetMax,
+        targetZ: targetZ !== null ? Number(targetZ.toFixed(2)) : null,
+        targetPercentile,
+        deviationValue,
+        deviationAlert
+    };
+}
+
+/**
+ * 3. PREMATÜRE BEBEKLERDE DÜZELTİLMİŞ YAŞ HESAPLAYICI (ÇEDD / AAP)
+ */
+export function calculateCorrectedAge({ chronologicalMonths, gestationalWeeks }) {
+    if (chronologicalMonths === null || gestationalWeeks === null || isNaN(chronologicalMonths) || isNaN(gestationalWeeks)) {
+        return null;
+    }
+    
+    // 37 hafta ve üzeri term kabul edilir
+    if (gestationalWeeks >= 37) {
+        return {
+            isPreterm: false,
+            gestationalWeeks,
+            correctedMonths: chronologicalMonths,
+            weeksMissing: 0
+        };
+    }
+
+    const weeksMissing = Math.max(0, 40 - gestationalWeeks);
+    const monthsMissing = weeksMissing / 4.348; // haftadan aya
+    const correctedMonths = Math.max(0, Number((chronologicalMonths - monthsMissing).toFixed(1)));
+
+    return {
+        isPreterm: true,
+        gestationalWeeks,
+        weeksMissing,
+        correctedMonths,
+        correctedMonthsFormatted: `${Math.floor(correctedMonths)} ay ${Math.round((correctedMonths % 1) * 30)} gün`
     };
 }

@@ -1,0 +1,16 @@
+# Large raw data dumps & backups
+data/*.raw.json
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDE & Editor Directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary & Log Files
+*.log
+*.tmp

@@ -37,9 +37,17 @@ export function calculateObstetrics(lmpDateStr) {
 }
 
 export function calculateBishop(dilation, effacement, station, consistency, position) {
-    if (dilation === null || effacement === null || station === null || consistency === null || position === null) return null;
+    if (dilation == null || effacement == null || station == null || consistency == null || position == null) return null;
     
-    const score = parseInt(dilation) + parseInt(effacement) + parseInt(station) + parseInt(consistency) + parseInt(position);
+    const d = parseInt(dilation, 10);
+    const e = parseInt(effacement, 10);
+    const s = parseInt(station, 10);
+    const c = parseInt(consistency, 10);
+    const p = parseInt(position, 10);
+
+    if (isNaN(d) || isNaN(e) || isNaN(s) || isNaN(c) || isNaN(p)) return null;
+    
+    const score = d + e + s + c + p;
     
     let interpretation = '';
     if (score >= 8) interpretation = 'Elverişli (Favorable). İndüksiyon başarılı olma ihtimali yüksek.';
@@ -50,7 +58,7 @@ export function calculateBishop(dilation, effacement, station, consistency, posi
 }
 
 export function calculatePreeclampsia(sbp, dbp, proteinuria, symptoms) {
-    if (sbp === null || dbp === null) return null;
+    if (sbp == null || dbp == null || isNaN(sbp) || isNaN(dbp)) return null;
     let diagnosis = 'Normal';
     let alert = null;
     const isSevereBP = sbp >= 160 || dbp >= 110;

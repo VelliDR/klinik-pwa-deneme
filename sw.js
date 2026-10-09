@@ -1,8 +1,10 @@
-const CACHE_NAME = 'klinik-pwa-v5';
+const CACHE_NAME = 'klinik-pwa-v7';
 
 const ASSETS_TO_CACHE = [
     './index.html',
     './manifest.json',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
     './js/app.js',
     './js/state.js',
     './js/drugEngine.js',
@@ -10,6 +12,7 @@ const ASSETS_TO_CACHE = [
     './js/engines/biometricsEngine.js',
     './js/engines/percentileEngine.js',
     './js/engines/infusionEngine.js',
+    './js/engines/endocrineEngine.js',
     './js/engines/bloodGasEngine.js',
     './js/engines/calciumEngine.js',
     './js/engines/pediatricEngine.js',

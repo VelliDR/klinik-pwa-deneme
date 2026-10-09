@@ -1,7 +1,7 @@
 import { appState } from './state.js';
 import { calculateBSA, calculateEGFR } from './engines/biometricsEngine.js';
-import { calculatePediatricDose, getVaccineSchedule } from './engines/pediatricEngine.js';
-import { calculatePercentiles } from './engines/percentileEngine.js';
+import { calculatePediatricDose, getVaccineSchedule, classifyPediatricBP, calculateCentorMcIsaac } from './engines/pediatricEngine.js';
+import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from './engines/percentileEngine.js';
 import { calculatePediatricIron } from './engines/ironEngine.js';
 import { calculateAlvarado, calculateParkland, getSutureGuidance, calculateRanson } from './engines/surgeryEngine.js';
 import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from './engines/obgynEngine.js';
@@ -11,23 +11,53 @@ import { calculateNEWS2, calculatePEWS, calculateGCS } from './engines/triageEng
 import { calculateQTc, calculateAxis } from './engines/cardiacEngine.js';
 import { getLabTubeGuide } from './engines/labGuideEngine.js';
 import { calculateCorrectedCalcium } from './engines/calciumEngine.js';
-import { calculateInfusionRate } from './engines/infusionEngine.js';
+import { calculateInfusionRate, calculateGIR } from './engines/infusionEngine.js';
+import { convertSteroids, calculateHOMAIR } from './engines/endocrineEngine.js';
 import { generateSOAP } from './utils/soapGenerator.js';
-import { seedDrugDatabase, searchDrugsInDB } from './db/titckIndexedDB.js';
+import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db/titckIndexedDB.js';
 import { getDrugBadgesHTML } from './drugEngine.js';
 
 // Utils
 const parseNum = (val) => val === '' || isNaN(val) ? null : Number(val);
 
-// Initialize DB
-fetch('./data/medicines.json')
-    .then(r => r.json())
-    .then(data => seedDrugDatabase(data))
-    .catch(() => console.log('Mock/Offline DB Mode'));
+// Initialize Drug Database (PWA Akıllı Yükleyici: IndexedDB hazırsa gereksiz ağ indirmesi yapmaz)
+async function initDrugCatalog() {
+    try {
+        const count = await getDrugCount();
+        const DB_BUILD_KEY = 'klinik_drug_db_build';
+        const CURRENT_BUILD = 'titck_2026_v18';
+        const savedBuild = localStorage.getItem(DB_BUILD_KEY);
+
+        if (count > 1000 && savedBuild === CURRENT_BUILD) {
+            console.log(`[TİTCK PWA] IndexedDB hazır (${count} ilaç kayıtlı).`);
+            return;
+        }
+
+        console.log('[TİTCK PWA] İlaç kataloğu yükleniyor/güncelleniyor...');
+        let res = null;
+        try {
+            res = await fetch('./data/medicines.json');
+        } catch (e) {
+            console.warn('[TİTCK PWA] medicines.json fetch uyarısı, alternatif dosya deneniyor...');
+        }
+        if (!res || !res.ok) {
+            res = await fetch('./data/titck_skrs_prospektuslu.json');
+        }
+        if (res && res.ok) {
+            const data = await res.json();
+            await seedDrugDatabase(data);
+            localStorage.setItem(DB_BUILD_KEY, CURRENT_BUILD);
+            console.log('[TİTCK PWA] 18.212 TİTCK ilacı ve prospektüs linkleri IndexedDB üzerine indekslendi.');
+        }
+    } catch (err) {
+        console.warn('[TİTCK PWA] Çevrimdışı modda yerel IndexedDB kataloğu kullanılıyor:', err);
+    }
+}
+initDrugCatalog();
 
 // Update Logic
 function updateAllTabs() {
-    // 1. BIOMETRY
+    // 1. BIOMETRY & DEMOGRAPHY
     const ageVal = parseNum(document.getElementById('input-age').value);
     const ageUnit = document.getElementById('select-age-unit').value;
     
@@ -65,25 +95,110 @@ function updateAllTabs() {
         document.getElementById('output-egfr').textContent = '--';
     }
 
+    // Preterm & Düzeltilmiş Yaş
+    const isPreterm = document.getElementById('chk-preterm')?.checked || false;
+    const pretermGw = parseNum(document.getElementById('input-gestational-weeks')?.value);
+    const pretermGwContainer = document.getElementById('container-preterm-gw');
+    const correctedAgeEl = document.getElementById('output-corrected-age');
+    const ironPretermBadge = document.getElementById('badge-iron-preterm');
+
+    if (pretermGwContainer) {
+        if (isPreterm) {
+            pretermGwContainer.classList.remove('hidden');
+            pretermGwContainer.classList.add('flex');
+        } else {
+            pretermGwContainer.classList.add('hidden');
+            pretermGwContainer.classList.remove('flex');
+        }
+    }
+    if (ironPretermBadge) {
+        ironPretermBadge.textContent = isPreterm ? '⚡ Preterm Aktif' : '';
+    }
+
+    if (isPreterm && pretermGw !== null && totalMonths !== null) {
+        appState.pediatrics.correctedAge = calculateCorrectedAge({
+            chronologicalMonths: totalMonths,
+            gestationalWeeks: pretermGw
+        });
+        if (appState.pediatrics.correctedAge && appState.pediatrics.correctedAge.isPreterm) {
+            correctedAgeEl.classList.remove('hidden');
+            correctedAgeEl.innerHTML = `⚡ Düzeltilmiş Yaş: <strong>${appState.pediatrics.correctedAge.correctedMonths} ay</strong> (${appState.pediatrics.correctedAge.correctedMonthsFormatted}) | Takvim Yaşı: ${totalMonths} ay (${appState.pediatrics.correctedAge.weeksMissing} hf erken doğum)`;
+        } else {
+            correctedAgeEl.classList.add('hidden');
+        }
+    } else {
+        appState.pediatrics.correctedAge = null;
+        if (correctedAgeEl) correctedAgeEl.classList.add('hidden');
+    }
+
+    // Persentil & Baş Çevresi
+    const headCirc = parseNum(document.getElementById('input-head-circ')?.value);
     const percContainer = document.getElementById('container-percentiles');
+    const rowHeadCirc = document.getElementById('row-head-circ');
+    const outputHeadCirc = document.getElementById('output-p-head');
+
+    // Preterm bebeklerde ilk 36 ayda persentil hesabı düzeltilmiş yaşa göre yapılır
+    const growthMonths = (appState.pediatrics.correctedAge && appState.pediatrics.correctedAge.isPreterm && totalMonths <= 36)
+        ? appState.pediatrics.correctedAge.correctedMonths
+        : totalMonths;
+
     if (appState.biometry.weightKg && appState.biometry.heightCm && appState.biometry.gender) {
         appState.pediatrics.percentiles = calculatePercentiles({
-            totalMonths,
+            totalMonths: growthMonths,
             gender: appState.biometry.gender,
             weightKg: appState.biometry.weightKg,
             heightCm: appState.biometry.heightCm,
+            headCircumferenceCm: headCirc,
             isPediatric: totalMonths <= 216
         });
         if (appState.pediatrics.percentiles) {
             percContainer.classList.remove('hidden');
             document.getElementById('output-p-weight').innerHTML = appState.pediatrics.percentiles.weightPercentile ? `%${appState.pediatrics.percentiles.weightPercentile} <span class="text-[9px] text-slate-500">(Z: ${appState.pediatrics.percentiles.weightZ})</span>` : '--';
             document.getElementById('output-p-height').innerHTML = appState.pediatrics.percentiles.heightPercentile ? `%${appState.pediatrics.percentiles.heightPercentile} <span class="text-[9px] text-slate-500">(Z: ${appState.pediatrics.percentiles.heightZ})</span>` : '--';
+
+            if (appState.pediatrics.percentiles.headCircumferencePercentile !== null && rowHeadCirc && outputHeadCirc) {
+                rowHeadCirc.classList.remove('hidden');
+                outputHeadCirc.innerHTML = `%${appState.pediatrics.percentiles.headCircumferencePercentile} <span class="text-[9px] text-slate-500">(Z: ${appState.pediatrics.percentiles.headCircZ})</span> <span class="text-[9px] ml-1">${appState.pediatrics.percentiles.headCircCategory || ''}</span>`;
+            } else if (rowHeadCirc) {
+                rowHeadCirc.classList.add('hidden');
+            }
         } else {
             percContainer.classList.add('hidden');
+            if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
         }
     } else {
         appState.pediatrics.percentiles = null;
         percContainer.classList.add('hidden');
+        if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
+    }
+
+    // ÇEDD Hedef Boy & Genetik Potansiyel (Tanner Metodu)
+    const motherH = parseNum(document.getElementById('input-mother-height')?.value);
+    const fatherH = parseNum(document.getElementById('input-father-height')?.value);
+    const targetHContainer = document.getElementById('output-target-height');
+    if (motherH && fatherH && appState.biometry.gender) {
+        const curHeightZ = appState.pediatrics.percentiles ? appState.pediatrics.percentiles.heightZ : null;
+        appState.pediatrics.targetHeight = calculateTargetHeight({
+            motherHeightCm: motherH,
+            fatherHeightCm: fatherH,
+            childGender: appState.biometry.gender,
+            currentHeightZ: curHeightZ
+        });
+        const th = appState.pediatrics.targetHeight;
+        if (th && targetHContainer) {
+            targetHContainer.classList.remove('hidden');
+            let thHtml = `<div><strong>Hedef Boy:</strong> ${th.targetHeightCm} cm <span class="text-slate-400">(${th.targetRangeCm})</span></div>`;
+            thHtml += `<div><strong>Genetik Potansiyel Persentili:</strong> %${th.targetPercentile} (Z: ${th.targetZ})</div>`;
+            if (th.deviationAlert) {
+                thHtml += `<div class="${th.deviationValue < -1.5 ? 'text-rose-400 font-bold' : 'text-sky-400'} pt-1 border-t border-slate-800">${th.deviationAlert}</div>`;
+            }
+            targetHContainer.innerHTML = thHtml;
+        } else if (targetHContainer) {
+            targetHContainer.classList.add('hidden');
+        }
+    } else {
+        appState.pediatrics.targetHeight = null;
+        if (targetHContainer) targetHContainer.classList.add('hidden');
     }
 
     // Vaccines
@@ -188,6 +303,7 @@ function updateAllTabs() {
     const nRr = parseNum(document.getElementById('input-rr').value);
     const nSpo2 = parseNum(document.getElementById('input-spo2').value);
     const nSbp = parseNum(document.getElementById('input-sys-bp').value);
+    const nDbp = parseNum(document.getElementById('input-dia-bp').value);
     const nHr = parseNum(document.getElementById('input-hr').value);
     const nTemp = parseNum(document.getElementById('input-temp').value);
     const nAvpu = document.getElementById('input-avpu').value;
@@ -196,6 +312,29 @@ function updateAllTabs() {
     const badgeRiskType = document.getElementById('badge-risk-type');
     const textRiskScore = document.getElementById('text-risk-score');
     const flagContainer = document.getElementById('container-flags');
+    const pedBpContainer = document.getElementById('output-pediatric-bp');
+
+    // AAP 2017 Pediatrik Tansiyon Sınıflandırması
+    if (nSbp !== null && nDbp !== null && totalMonths !== null && totalMonths <= 216) {
+        const pedAgeY = y !== null ? y : (m ? m / 12 : 5);
+        appState.pediatrics.bp = classifyPediatricBP({
+            ageYears: pedAgeY,
+            gender: appState.biometry.gender,
+            sbp: nSbp,
+            dbp: nDbp
+        });
+        if (appState.pediatrics.bp && pedBpContainer) {
+            pedBpContainer.classList.remove('hidden');
+            pedBpContainer.className = `col-span-2 p-2 rounded-lg border text-[10px] font-mono space-y-0.5 ${appState.pediatrics.bp.alertClass}`;
+            pedBpContainer.innerHTML = `<div class="font-bold">AAP 2017 Tansiyon: ${appState.pediatrics.bp.stage}</div>
+                ${appState.pediatrics.bp.thresholds ? `<div class="text-[9px] text-slate-300 opacity-90">${appState.pediatrics.bp.thresholds}</div>` : ''}`;
+        } else if (pedBpContainer) {
+            pedBpContainer.classList.add('hidden');
+        }
+    } else {
+        appState.pediatrics.bp = null;
+        if (pedBpContainer) pedBpContainer.classList.add('hidden');
+    }
     
     if (totalMonths !== null && totalMonths < 192 && pewsB !== null && pewsC !== null && pewsR !== null) {
         appState.pediatrics.pews = calculatePEWS(pewsB, pewsC, pewsR);
@@ -419,6 +558,42 @@ function updateAllTabs() {
         document.getElementById('output-infusion-rate').textContent = '--';
     }
 
+    // GLUCOSE INFUSION RATE (GIR) & NEONATAL
+    const dextrosePct = parseNum(document.getElementById('select-gir-dextrose')?.value);
+    let girRate = parseNum(document.getElementById('input-gir-rate')?.value);
+    if (girRate === null && appState.medicine.fluid && appState.medicine.fluid.hourlyRate) {
+        girRate = appState.medicine.fluid.hourlyRate;
+    }
+    const girContainer = document.getElementById('output-gir-result');
+    if (dextrosePct && girRate && appState.biometry.weightKg) {
+        appState.medicine.gir = calculateGIR({
+            dextrosePercent: dextrosePct,
+            rateMlHr: girRate,
+            weightKg: appState.biometry.weightKg
+        });
+        const g = appState.medicine.gir;
+        if (g && girContainer) {
+            girContainer.classList.remove('hidden');
+            girContainer.className = `p-2 rounded-lg border text-[10px] font-mono space-y-1.5 bg-slate-900/60 border-slate-700/60`;
+            let gHtml = `<div class="flex justify-between items-center">
+                <span class="text-slate-400">GIR:</span>
+                <span class="text-xs font-bold ${g.alertClass}">${g.gir} mg/kg/dk</span>
+            </div>`;
+            gHtml += `<div class="text-[10px] ${g.alertClass}">${g.interpretation}</div>`;
+            if (g.status === 'LOW' || g.gir < 4) {
+                gHtml += `<div class="p-1.5 bg-rose-950/60 border border-rose-700/60 rounded text-rose-300 font-bold text-[9px]">
+                    🚨 Hipoglisemi Acil Bolus: ${g.hypoglycemiaBolus.instructions}
+                </div>`;
+            }
+            girContainer.innerHTML = gHtml;
+        } else if (girContainer) {
+            girContainer.classList.add('hidden');
+        }
+    } else {
+        appState.medicine.gir = null;
+        if (girContainer) girContainer.classList.add('hidden');
+    }
+
     // CARDIAC
     const qt = parseNum(document.getElementById('input-ecg-qt').value);
     const hrInput = document.getElementById('input-hr');
@@ -542,6 +717,100 @@ function updateAllTabs() {
         axisRes.classList.add('hidden');
     }
 
+    // ENDOCRINE: STEROID & HOMA-IR
+    const steroidSrc = document.getElementById('select-steroid-source')?.value;
+    const steroidDose = parseNum(document.getElementById('input-steroid-dose')?.value);
+    const steroidTable = document.getElementById('output-steroid-table');
+    if (steroidSrc && steroidDose) {
+        appState.medicine.steroid = convertSteroids({ sourceDrug: steroidSrc, doseMg: steroidDose });
+        const st = appState.medicine.steroid;
+        if (st && steroidTable) {
+            steroidTable.classList.remove('hidden');
+            steroidTable.innerHTML = `
+                <div class="text-sky-300 font-bold mb-1 border-b border-slate-700/50 pb-1">
+                    ${st.sourceDrug} ${st.inputDoseMg} mg Eşdeğerlikleri:
+                </div>
+                <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
+                    ${st.conversions.map(c => `
+                        <div class="flex justify-between items-center ${c.isSource ? 'text-amber-300 font-bold' : 'text-slate-300'}">
+                            <span>${c.name}:</span>
+                            <span>${c.equivalentDoseMg} mg</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else if (steroidTable) {
+            steroidTable.classList.add('hidden');
+        }
+    } else {
+        appState.medicine.steroid = null;
+        if (steroidTable) steroidTable.classList.add('hidden');
+    }
+
+    const fastingGlu = parseNum(document.getElementById('input-homa-glucose')?.value);
+    const fastingIns = parseNum(document.getElementById('input-homa-insulin')?.value);
+    const pubertyStage = document.getElementById('select-homa-puberty')?.value;
+    const homaRes = document.getElementById('output-homa-result');
+    if (fastingGlu && fastingIns) {
+        appState.medicine.homaIR = calculateHOMAIR({
+            fastingGlucoseMgDl: fastingGlu,
+            fastingInsulinUuMl: fastingIns,
+            tannerStage: pubertyStage
+        });
+        const hm = appState.medicine.homaIR;
+        if (hm && homaRes) {
+            homaRes.classList.remove('hidden');
+            homaRes.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${hm.alertClass}`;
+            homaRes.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>HOMA-IR: ${hm.homaIR}</span>
+                    <span>Eşik: &gt; ${hm.cutoff} (${hm.tannerStage})</span>
+                </div>
+                <div class="text-[10px] leading-relaxed">${hm.interpretation}</div>
+            `;
+        } else if (homaRes) {
+            homaRes.classList.add('hidden');
+        }
+    } else {
+        appState.medicine.homaIR = null;
+        if (homaRes) homaRes.classList.add('hidden');
+    }
+
+    // CENTOR / MCISAAC
+    const cFever = document.getElementById('chk-centor-fever')?.checked || false;
+    const cNoCough = document.getElementById('chk-centor-no-cough')?.checked || false;
+    const cNodes = document.getElementById('chk-centor-nodes')?.checked || false;
+    const cTonsils = document.getElementById('chk-centor-tonsils')?.checked || false;
+    const centorRes = document.getElementById('output-centor-result');
+
+    if (cFever || cNoCough || cNodes || cTonsils) {
+        const centorAgeY = y !== null ? y : (m ? m / 12 : 20);
+        appState.pediatrics.centor = calculateCentorMcIsaac({
+            feverOver38: cFever,
+            noCough: cNoCough,
+            tenderCervicalNodes: cNodes,
+            tonsillarExudate: cTonsils,
+            ageYears: centorAgeY
+        });
+        const ct = appState.pediatrics.centor;
+        if (ct && centorRes) {
+            centorRes.classList.remove('hidden');
+            centorRes.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${ct.score >= 4 ? 'bg-rose-950/40 border-rose-600/50' : ct.score >= 2 ? 'bg-amber-950/40 border-amber-600/50' : 'bg-slate-900/60 border-slate-700/50'}`;
+            centorRes.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <strong class="${ct.alertClass}">Centor Skoru: ${ct.score}</strong>
+                    <span class="text-slate-300">GAS Riski: ${ct.riskPercent}</span>
+                </div>
+                <div class="text-[10px] text-slate-300">${ct.recommendation}</div>
+            `;
+        } else if (centorRes) {
+            centorRes.classList.add('hidden');
+        }
+    } else {
+        appState.pediatrics.centor = null;
+        if (centorRes) centorRes.classList.add('hidden');
+    }
+
     // Live SOAP Update
     updateLiveSOAP();
 }
@@ -576,7 +845,7 @@ const drugInput = document.getElementById('input-drug-search');
 const drugResult = document.getElementById('container-search-results');
 
 drugInput.addEventListener('input', async (e) => {
-    const q = e.target.value;
+    const q = e.target.value.trim();
     if (q.length > 0) {
         clearBtn.classList.remove('hidden');
     } else {
@@ -586,28 +855,69 @@ drugInput.addEventListener('input', async (e) => {
         return;
     }
 
-    if (q.length > 2) {
+    if (q.length >= 2) {
         try {
             const res = await searchDrugsInDB(q);
             if (res && res.length > 0) {
                 drugResult.classList.remove('hidden');
-                drugResult.innerHTML = res.map(r => `
-                    <div class="mb-1 p-3 border-l-2 border-rose-500 bg-slate-900 shadow-sm relative group">
-                        <div class="cursor-pointer hover:bg-slate-800 drug-item-add pr-16" data-brand="${r.brand}" data-generic="${r.generic}" data-atc="${r.atcCode}">
-                            <strong class="text-rose-300 text-sm flex flex-wrap items-center gap-1">
-                                <span>${r.brand}</span>
-                                ${getDrugBadgesHTML(r)}
-                            </strong>
-                            <span class="text-[10px] text-slate-400 font-medium">${r.generic} | ${r.atcCode} | ${r.prescriptionType}</span>
+                drugResult.innerHTML = res.map(r => {
+                    const ktUrl = r.kt_pdf_prospektus_url || r.kt || '';
+                    const kubUrl = r.kub_pdf_url || r.kub || '';
+                    const rxBorder = r.prescriptionType === 'Kırmızı' ? 'border-red-500' :
+                                     r.prescriptionType === 'Yeşil' ? 'border-emerald-500' :
+                                     (r.prescriptionType === 'Mor' || r.prescriptionType === 'Turuncu') ? 'border-purple-500' :
+                                     'border-rose-500';
+
+                    return `
+                    <div class="mb-2 p-2.5 border-l-2 ${rxBorder} bg-slate-900 rounded-r-lg shadow-sm space-y-1.5 transition-all hover:bg-slate-850">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="cursor-pointer flex-1 drug-item-add" 
+                                 data-brand="${r.brand}" 
+                                 data-generic="${r.generic}" 
+                                 data-atc="${r.atcCode}"
+                                 data-barcode="${r.barcode || ''}"
+                                 data-rx="${r.prescriptionType || 'Normal'}"
+                                 data-company="${r.company || ''}"
+                                 data-kt="${ktUrl}"
+                                 data-kub="${kubUrl}">
+                                <div class="text-rose-300 text-xs sm:text-sm font-bold flex flex-wrap items-center gap-1.5 leading-snug">
+                                    <span>${r.brand}</span>
+                                    ${getDrugBadgesHTML(r)}
+                                </div>
+                                <div class="text-[11px] text-slate-300 font-medium mt-0.5">
+                                    <span class="text-emerald-400 font-semibold">${r.generic}</span>
+                                    ${r.atcCode ? `<span class="text-slate-500 font-mono text-[10px]"> | ATC: ${r.atcCode}</span>` : ''}
+                                    ${r.barcode ? `<span class="text-slate-500 font-mono text-[10px]"> | Barkod: ${r.barcode}</span>` : ''}
+                                </div>
+                                ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">🏢 ${r.company}</div>` : ''}
+                            </div>
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-atc="${r.atcCode}" data-generic="${r.generic}" title="Eşdeğer / Muadil İlaçları Bul">Muadil</button>
+                            </div>
                         </div>
-                        <button type="button" class="btn-muadil absolute top-1/2 -translate-y-1/2 right-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-80 hover:opacity-100" data-atc="${r.atcCode}" data-generic="${r.generic}">Muadil</button>
+                        ${(ktUrl || kubUrl) ? `
+                        <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
+                            ${ktUrl ? `
+                                <a href="${ktUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 hover:border-amber-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" title="Resmi TİTCK Kullanma Talimatı (Prospektüs)">
+                                    <span>📄 Prospektüs (KT)</span>
+                                </a>
+                            ` : ''}
+                            ${kubUrl ? `
+                                <a href="${kubUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-700/60 hover:border-sky-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" title="Resmi TİTCK Kısa Ürün Bilgisi (KÜB)">
+                                    <span>📋 KÜB</span>
+                                </a>
+                            ` : ''}
+                        </div>
+                        ` : ''}
                     </div>
-                `).join('');
+                    `;
+                }).join('');
             } else {
                 drugResult.classList.remove('hidden');
-                drugResult.innerHTML = '<div class="p-3 text-xs text-gray-500 bg-slate-900">Bulunamadı</div>';
+                drugResult.innerHTML = '<div class="p-3 text-xs text-gray-500 bg-slate-900 text-center rounded">Eşleşen ilaç bulunamadı</div>';
             }
         } catch (err) {
+            console.error('Arama hatası:', err);
             drugResult.innerHTML = '';
         }
     } else {
@@ -624,6 +934,11 @@ clearBtn.addEventListener('click', () => {
 });
 
 drugResult.addEventListener('click', (e) => {
+    // PDF linklerine tıklanınca ilaç seçimini tetiklemesin
+    if (e.target.closest('.btn-pdf-link')) {
+        return;
+    }
+
     const btnMuadil = e.target.closest('.btn-muadil');
     if (btnMuadil) {
         const atc = btnMuadil.getAttribute('data-atc');
@@ -642,10 +957,15 @@ drugResult.addEventListener('click', (e) => {
         const brand = item.getAttribute('data-brand');
         const generic = item.getAttribute('data-generic');
         const atcCode = item.getAttribute('data-atc');
+        const barcode = item.getAttribute('data-barcode');
+        const rx = item.getAttribute('data-rx');
+        const company = item.getAttribute('data-company');
+        const kt = item.getAttribute('data-kt');
+        const kub = item.getAttribute('data-kub');
         
         if (!appState.treatment) appState.treatment = { selectedDrugs: [] };
         if (!appState.treatment.selectedDrugs.find(d => d.brand === brand)) {
-            appState.treatment.selectedDrugs.push({ brand, generic, atcCode });
+            appState.treatment.selectedDrugs.push({ brand, generic, atcCode, barcode, rx, company, kt, kub });
             renderSelectedDrugs();
             updateAllTabs();
         }
@@ -669,12 +989,21 @@ function renderSelectedDrugs() {
     }
     
     container.innerHTML = appState.treatment.selectedDrugs.map((d, index) => `
-        <div class="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700">
-            <div class="flex flex-col">
-                <span class="text-xs text-rose-300 font-bold">${d.brand}</span>
-                <span class="text-[10px] text-slate-400">${d.generic}</span>
+        <div class="flex justify-between items-center bg-slate-900 p-2.5 rounded-lg border border-slate-700/80 mb-1.5">
+            <div class="flex flex-col flex-1 pr-2">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs text-rose-300 font-bold">${d.brand}</span>
+                    ${d.rx && d.rx !== 'Normal' ? `<span class="text-[9px] px-1 py-0.5 rounded ${d.rx === 'Kırmızı' ? 'bg-red-950 text-red-300 border border-red-700' : 'bg-emerald-950 text-emerald-300 border border-emerald-700'} font-semibold">${d.rx}</span>` : ''}
+                </div>
+                <span class="text-[10px] text-slate-400 mt-0.5">${d.generic}${d.company ? ` • <span class="text-slate-500">${d.company}</span>` : ''}</span>
+                ${(d.kt || d.kub) ? `
+                    <div class="flex gap-2 mt-1">
+                        ${d.kt ? `<a href="${d.kt}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline">📄 Prospektüs</a>` : ''}
+                        ${d.kub ? `<a href="${d.kub}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline">📋 KÜB</a>` : ''}
+                    </div>
+                ` : ''}
             </div>
-            <button class="text-slate-500 hover:text-rose-500 text-xs px-2 py-1" onclick="window.removeDrug(${index})">✕</button>
+            <button class="text-slate-500 hover:text-rose-500 text-xs px-2 py-1 rounded hover:bg-slate-800 transition-colors" onclick="window.removeDrug(${index})" title="İlacı Kaldır">✕</button>
         </div>
     `).join('');
 }
@@ -693,3 +1022,12 @@ document.getElementById('btn-copy-soap').addEventListener('click', () => {
         setTimeout(() => fb.classList.add('hidden'), 2000);
     });
 });
+
+// PWA Service Worker Registration (Çevrimdışı Çalışma)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('[PWA] Service Worker aktif:', reg.scope))
+            .catch(err => console.error('[PWA] Service Worker kayıt hatası:', err));
+    });
+}

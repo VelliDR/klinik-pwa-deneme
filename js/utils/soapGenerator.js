@@ -11,6 +11,9 @@ export function generateSOAP() {
     if (appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined) {
         ptParts.push(`Yaş: ${appState.biometry.ageYears} Yıl (${appState.biometry.ageMonths || 0} Ay)`);
     }
+    if (appState.pediatrics && appState.pediatrics.correctedAge && appState.pediatrics.correctedAge.isPreterm) {
+        ptParts.push(`Düzeltilmiş Yaş: ${appState.pediatrics.correctedAge.correctedMonths} Ay (${appState.pediatrics.correctedAge.gestationalWeeks} GH preterm)`);
+    }
     if (appState.biometry.gender) {
         ptParts.push(`Cinsiyet: ${appState.biometry.gender === 'female' ? 'Kadın' : 'Erkek'}`);
     }
@@ -43,9 +46,16 @@ export function generateSOAP() {
         if (perc.heightPercentile !== null && perc.heightPercentile !== undefined) {
             bioParts.push(`Boy/Yaş: %${perc.heightPercentile}${perc.heightZ !== null ? ' (Z: ' + perc.heightZ + ')' : ''}`);
         }
+        if (perc.headCircumferencePercentile !== null && perc.headCircumferencePercentile !== undefined) {
+            bioParts.push(`Baş Çevresi: %${perc.headCircumferencePercentile}${perc.headCircZ !== null ? ' (Z: ' + perc.headCircZ + ')' : ''}`);
+        }
         if (perc.bmiPercentile !== null && perc.bmiPercentile !== undefined) {
             bioParts.push(`BKİ: ${perc.bmiValue || ''} kg/m² (%${perc.bmiPercentile}, ${perc.category || 'Normal'})`);
         }
+    }
+    if (appState.pediatrics && appState.pediatrics.targetHeight) {
+        const th = appState.pediatrics.targetHeight;
+        bioParts.push(`Hedef Boy (Tanner): ${th.targetHeightCm} cm (${th.targetRangeCm}, %${th.targetPercentile})`);
     }
     if (bioParts.length > 0) {
         o.push(`- Büyüme & Biyometri: ${bioParts.join(', ')}.`);
@@ -57,7 +67,10 @@ export function generateSOAP() {
         o.push(`- Demir & Anemi Durumu: ${ir.anemiaStatus || 'Normal'}${ir.hb !== null ? ' (Hb: ' + ir.hb + ' g/dL)' : ''}. ${ir.treatmentRecommendation || ''}`);
     }
 
-    // Triage / Vitals
+    // Triage / Vitals / Tansiyon
+    if (appState.pediatrics && appState.pediatrics.bp) {
+        o.push(`- Pediatrik Tansiyon (AAP 2017): ${appState.pediatrics.bp.stage}${appState.pediatrics.bp.thresholds ? ' [' + appState.pediatrics.bp.thresholds + ']' : ''}`);
+    }
     if (appState.medicine && appState.medicine.news2) {
         o.push(`- Vital / Triyaj (NEWS2): Skor ${appState.medicine.news2.score || 0} (${appState.medicine.news2.risk || 'Düşük Risk'})`);
     }
@@ -102,6 +115,28 @@ export function generateSOAP() {
         o.push(bgStr + '.');
     }
 
+    // İnfüzyon & GIR
+    if (appState.medicine && appState.medicine.gir) {
+        const g = appState.medicine.gir;
+        o.push(`- Glukoz İnfüzyon Hızı (GIR): ${g.gir} mg/kg/dk (${g.interpretation}).`);
+    }
+
+    // Endokrin & Metabolizma
+    if (appState.medicine && appState.medicine.homaIR) {
+        const hm = appState.medicine.homaIR;
+        o.push(`- HOMA-IR İnsülin Direnci: ${hm.homaIR} [${hm.tannerStage}, Eşik: ${hm.cutoff}] -> ${hm.isResistant ? 'İnsülin Direnci Pozitif' : 'Normal'}.`);
+    }
+    if (appState.medicine && appState.medicine.steroid) {
+        const st = appState.medicine.steroid;
+        o.push(`- Glukokortikoid Eşdeğerlik: ${st.sourceDrug} ${st.inputDoseMg} mg bazında hesaplandı.`);
+    }
+
+    // Akılcı Antibiyotik & Centor-McIsaac
+    if (appState.pediatrics && appState.pediatrics.centor) {
+        const ct = appState.pediatrics.centor;
+        o.push(`- Centor / McIsaac Faranjit Skoru: ${ct.score} (GAS Riski: ${ct.riskPercent}). ${ct.recommendation}`);
+    }
+
     // Cerrahi Skorlar
     if (appState.surgery && appState.surgery.alvarado && appState.surgery.alvarado.score > 0) {
         const alv = appState.surgery.alvarado;
@@ -115,6 +150,21 @@ export function generateSOAP() {
     }
 
     // --- DEĞERLENDİRME ---
+    if (appState.pediatrics && appState.pediatrics.targetHeight && appState.pediatrics.targetHeight.deviationAlert) {
+        a.push(`- ${appState.pediatrics.targetHeight.deviationAlert}`);
+    }
+    if (appState.pediatrics && appState.pediatrics.bp && appState.pediatrics.bp.stage.includes('Hipertansiyon')) {
+        a.push(`- Pediatrik Kan Basıncı Uyarısı: ${appState.pediatrics.bp.stage}. Doğrulayıcı ölçümler ve etiyolojik tarama önerilir.`);
+    }
+    if (appState.medicine && appState.medicine.gir && (appState.medicine.gir.status === 'LOW' || appState.medicine.gir.gir < 4)) {
+        a.push(`- Neonatal Hipoglisemi Riski: Glukoz infüzyon hızı kritik düşük (${appState.medicine.gir.gir} mg/kg/dk).`);
+    }
+    if (appState.medicine && appState.medicine.homaIR && appState.medicine.homaIR.isResistant) {
+        a.push(`- ${appState.medicine.homaIR.interpretation}`);
+    }
+    if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
+        a.push(`- Akut Tonsillofaranjit: Yüksek Streptokok olasılığı (Centor Skoru: ${appState.pediatrics.centor.score}).`);
+    }
     if (appState.surgery && appState.surgery.alvarado && appState.surgery.alvarado.score >= 7) {
         a.push(`- Yüksek Apendisit Olasılığı (Alvarado Skoru: ${appState.surgery.alvarado.score}/10). Cerrahi konsültasyonu önerilir.`);
     }
@@ -127,6 +177,10 @@ export function generateSOAP() {
 
     // --- PLAN & TEDAVİ ---
     let pCount = 1;
+    if (appState.medicine && appState.medicine.gir && (appState.medicine.gir.status === 'LOW' || appState.medicine.gir.gir < 4)) {
+        p.push(`${pCount}. Hipoglisemi Acil Protokolü: ${appState.medicine.gir.hypoglycemiaBolus.instructions}`);
+        pCount++;
+    }
     if (appState.surgery && appState.surgery.parkland && appState.surgery.parkland.status === 'OK') {
         const pk = appState.surgery.parkland;
         p.push(`${pCount}. Parkland Yanık Sıvı Resüsitasyonu: Toplam 24s Sıvı: ${pk.totalFluid24h} mL (İlk 8s: ${pk.first8hRate} mL/s, Sonraki 16s: ${pk.next16hRate} mL/s).`);
@@ -145,6 +199,10 @@ export function generateSOAP() {
     if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.prophylaxisDose) {
         const ir = appState.pediatrics.iron;
         p.push(`${pCount}. Demir Takviyesi / Profilaksi: ${ir.prophylaxisDose}`);
+        pCount++;
+    }
+    if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
+        p.push(`${pCount}. Akılcı Antibiyotik Protokolü: AGBHS şüphesi nedeniyle Amoksisilin 50 mg/kg/gün (2 dozda, 10 gün) veya Penisilin V değerlendiriniz.`);
         pCount++;
     }
     if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {

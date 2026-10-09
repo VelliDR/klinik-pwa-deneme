@@ -14,6 +14,10 @@ export const appState = {
     pediatrics: {
         active: false, // is this tab active/visited
         percentiles: null,
+        targetHeight: null,
+        correctedAge: null,
+        bp: null,
+        centor: null,
         vaccines: null,
         syrupDose: null,
         pews: null,
@@ -42,6 +46,9 @@ export const appState = {
         sodium: null,
         calcium: null,
         infusion: null,
+        gir: null,
+        steroid: null,
+        homaIR: null,
         news2: null,
         gcs: null
     },

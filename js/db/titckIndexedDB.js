@@ -1,9 +1,10 @@
 /**
  * INDEXEDDB STORAGE ENGINE (Gelişmiş Tıbbi Arama ve Tam TİTCK Uyumlu)
+ * KÜB, KT (Prospektüs) ve Firma Bilgileri Destekli
  */
 
 const DB_NAME = 'KlinikAsistanDB';
-const DB_VERSION = 16;
+const DB_VERSION = 18;
 const STORE_NAME = 'drugs';
 
 let memoryDrugsCache = null; // Bellek içi arama önbelleği
@@ -43,6 +44,7 @@ export function initDB() {
             store.createIndex('generic', 'generic', { unique: false });
             store.createIndex('barcode', 'barcode', { unique: false });
             store.createIndex('atcCode', 'atcCode', { unique: false });
+            store.createIndex('company', 'company', { unique: false });
         };
 
         request.onsuccess = () => resolve(request.result);
@@ -61,7 +63,7 @@ export async function seedDrugDatabase(rawDrugList, progressCallback) {
     }
 
     if (drugArray.length === 0) {
-        console.error("❌ HATA: medicines.json içinde geçerli bir ilaç dizisi bulunamadı!");
+        console.error("❌ HATA: İlaç listesi içinde geçerli bir veri dizisi bulunamadı!");
         return;
     }
 
@@ -80,11 +82,18 @@ export async function seedDrugDatabase(rawDrugList, progressCallback) {
             .replace(/[^a-z0-9]/g, '');
     }
 
-    // Geliştirilmiş Akıllı Sütun Bulucu (Önce Tam Eşleşme, Sonra İçerme)
+    // Geliştirilmiş Akıllı Sütun Bulucu (Önce Doğrudan Özellik, Sonra Tam Eşleşme, Sonra İçerme)
     function findVal(obj, possibleKeys) {
+        // Hızlı doğrudan arama (O(1))
+        for (const pk of possibleKeys) {
+            if (obj[pk] !== undefined && obj[pk] !== null && obj[pk] !== "") {
+                return obj[pk];
+            }
+        }
+
         const keys = Object.keys(obj);
         
-        // 1. Aşama: Tam Eşleşme Kontrolü (Hata riskini sıfırlar)
+        // 1. Aşama: Normalleştirilmiş Tam Eşleşme
         for (const pk of possibleKeys) {
             const cleanPk = normalizeKey(pk);
             const exactKey = keys.find(k => normalizeKey(k) === cleanPk);
@@ -112,27 +121,32 @@ export async function seedDrugDatabase(rawDrugList, progressCallback) {
             const store = tx.objectStore(STORE_NAME);
 
             chunk.forEach((item, index) => {
-                const brandName = findVal(item, [
+                const brandName = item.brand || findVal(item, [
                     "İlaç Adı", "ilac adi", "İLAÇ ADI", "ILAC ADI", 
                     "Ürün Adı", "urun adi", "ÜRÜN ADI", 
                     "İlaç Ticari Adı", "Ticari Ad", "Brand", "ILAC", "NAME", "DRUG_NAME"
                 ]);
 
-                // Etken Madde Sütun Başlıkları Genişletildi
-                const genericName = findVal(item, [
+                const genericName = item.generic || findVal(item, [
                     "Etkin Madde", "Etken Madde", "ETKİN MADDE", "ETKEN MADDE", 
                     "Etkin Madde Adı", "Etken Madde Adı", 
                     "ATC Adı", "atc adi", "ATC ADI", "Generic", "ATC_ADI", "ETKEN_MADDE", "ETKİN_MADDE"
                 ]) || "Belirtilmedi";
 
-                const atcVal = findVal(item, ["ATC Kodu", "atc kodu", "ATC KODU", "AtcCode", "ATC_KODU", "ATC"]);
-                const barcodeVal = findVal(item, ["Barkod", "barkod", "BARKOD", "Barcode", "BARCODE"]);
-                const rxType = String(findVal(item, ["Reçete Türü", "recete turu", "REÇETE TÜRÜ", "PrescriptionType"]) || "Normal").trim();
-                const statusVal = findVal(item, ["Durumu", "durumu", "Status"]) || "Aktif";
-                const sheetVal = findVal(item, ["_sheet", "sheet"]) || "AKTİF ÜRÜNLER LİSTESİ";
+                const atcVal = item.atc || item.atcCode || findVal(item, ["ATC Kodu", "atc kodu", "ATC KODU", "AtcCode", "ATC_KODU", "ATC"]);
+                const barcodeVal = item.barcode || findVal(item, ["Barkod", "barkod", "BARKOD", "Barcode", "BARCODE"]);
+                const companyVal = item.company || findVal(item, ["Firma Adı", "firma adi", "FİRMA ADI", "Firma", "Company", "FİRMA"]);
+                const rxType = String(item.rx || item.prescriptionType || findVal(item, ["Reçete Türü", "Reçete \nTürü", "recete turu", "REÇETE TÜRÜ", "PrescriptionType"]) || "Normal").trim();
+                const statusVal = item.status || findVal(item, ["Durumu", "durumu", "Status"]) || "Aktif";
+                const sheetVal = item.sheet || findVal(item, ["_sheet", "sheet"]) || "AKTİF ÜRÜNLER LİSTESİ";
                 
-                const childEssential = findVal(item, ["Çocuk Temel İlaç Listesi Durumu", "isChildEssential"]) || 0;
-                const neonateEssential = findVal(item, ["Yenidoğan Temel İlaç Listesi Durumu", "isNeonateEssential"]) || 0;
+                const essentialVal = item.essential !== undefined ? item.essential : findVal(item, ["Temel İlaç Listesi Durumu", "isEssential"]);
+                const childEssential = item.child !== undefined ? item.child : findVal(item, ["Çocuk Temel İlaç Listesi Durumu", "Çocuk Temel İlaç\nListesi Durumu", "Çocuk Temel İlaç\r\nListesi Durumu", "isChildEssential"]);
+                const neonateEssential = item.neonate !== undefined ? item.neonate : findVal(item, ["Yenidoğan Temel İlaç Listesi Durumu", "Yenidoğan\nTemel İlaç\nListesi Durumu", "Yenidoğan\r\nTemel İlaç\r\nListesi Durumu", "isNeonateEssential"]);
+
+                // KÜB ve Prospektüs (KT) linkleri
+                const kubVal = item.kub || item.kub_pdf_url || item.kubUrl || "";
+                const ktVal = item.kt || item.kt_pdf_prospektus_url || item.prospektusUrl || "";
 
                 const globalUniqueId = `drug_${processed + index + 1}`;
 
@@ -143,11 +157,15 @@ export async function seedDrugDatabase(rawDrugList, progressCallback) {
                     generic: String(genericName).trim(),
                     atcCode: String(atcVal).trim(),
                     barcode: String(barcodeVal).trim(),
+                    company: String(companyVal).trim(),
                     prescriptionType: rxType,
                     status: String(statusVal).trim(),
                     sheet: String(sheetVal).trim(),
-                    isChildEssential: childEssential,
-                    isNeonateEssential: neonateEssential
+                    isEssential: Number(essentialVal) === 1 ? 1 : 0,
+                    isChildEssential: Number(childEssential) === 1 ? 1 : 0,
+                    isNeonateEssential: Number(neonateEssential) === 1 ? 1 : 0,
+                    kub_pdf_url: String(kubVal).trim(),
+                    kt_pdf_prospektus_url: String(ktVal).trim()
                 };
 
                 store.put(normalizedDrug);
@@ -174,50 +192,67 @@ export async function searchDrugsInDB(query) {
             const tx = db.transaction(STORE_NAME, 'readonly');
             const store = tx.objectStore(STORE_NAME);
             const request = store.getAll();
-            request.onsuccess = () => resolve(request.result || []);
+            request.onsuccess = () => {
+                const list = request.result || [];
+                // Ön-normalizasyon: Her arama tuşlamasında 18.000 defa regex çalıştırmayı önler
+                list.forEach(drug => {
+                    drug._brandNorm = normalizeText(drug.brand);
+                    drug._genericNorm = normalizeText(drug.generic);
+                    drug._barcodeNorm = normalizeText(drug.barcode);
+                    drug._atcNorm = normalizeText(drug.atcCode);
+                    drug._companyNorm = normalizeText(drug.company);
+                    drug._searchable = `${drug._brandNorm} ${drug._genericNorm} ${drug._barcodeNorm} ${drug._atcNorm} ${drug._companyNorm}`;
+                });
+                resolve(list);
+            };
             request.onerror = () => reject(request.error);
         });
     }
 
-    const queryNorm = normalizeText(query);
+    const trimmedQuery = query.trim();
+    const queryNorm = normalizeText(trimmedQuery);
     const queryTokens = queryNorm.split(' ').filter(Boolean);
     if (queryTokens.length === 0) return [];
 
     const scoredResults = [];
 
     for (const drug of memoryDrugsCache) {
-        const brandNorm = normalizeText(drug.brand);
-        const genericNorm = normalizeText(drug.generic);
-        const barcodeNorm = normalizeText(drug.barcode);
-        const atcNorm = normalizeText(drug.atcCode);
-        const rxNorm = normalizeText(drug.prescriptionType);
-
-        const searchableText = `${brandNorm} ${genericNorm} ${barcodeNorm} ${atcNorm} ${rxNorm}`;
+        // Birebir Barkod Eşleşmesi (Barkod okuyucu veya tam kod)
+        if (drug.barcode && drug.barcode === trimmedQuery) {
+            scoredResults.push({ drug, score: 2000 });
+            continue;
+        }
 
         // Sorgudaki TÜM kelimelerin varlığı kontrol ediliyor
-        const isMatch = queryTokens.every(token => searchableText.includes(token));
+        const isMatch = queryTokens.every(token => drug._searchable.includes(token));
         
         if (isMatch) {
             let score = 0;
             
             // 1. Tam veya Başlayan Marka Eşleşmesi
-            if (brandNorm === queryNorm) {
+            if (drug._brandNorm === queryNorm) {
                 score += 1000;
-            } else if (brandNorm.startsWith(queryNorm)) {
+            } else if (drug._brandNorm.startsWith(queryNorm)) {
                 score += 700;
-            } else if (brandNorm.includes(queryNorm)) {
+            } else if (drug._brandNorm.includes(queryNorm)) {
                 score += 500;
             } else {
                 // Kümülatif (Toplanabilir) Kelime Puanlaması
                 queryTokens.forEach(token => {
-                    if (brandNorm.includes(token)) score += 150;
-                    if (genericNorm.includes(token)) score += 100;
-                    if (atcNorm.includes(token)) score += 80;
+                    if (drug._brandNorm.includes(token)) score += 150;
+                    if (drug._genericNorm.includes(token)) score += 120;
+                    if (drug._companyNorm.includes(token)) score += 90;
+                    if (drug._atcNorm.includes(token)) score += 80;
                 });
             }
 
+            // Resmi Prospektüs / KÜB PDF dokümanı olan ürünlere hafif öncelik
+            if (drug.kt_pdf_prospektus_url || drug.kub_pdf_url) {
+                score += 30;
+            }
+
             // Aktif ürünlere öncelik bonusu
-            if (drug.sheet && !drug.sheet.toUpperCase().includes('PASİF')) {
+            if (drug.status === 'Aktif' || (drug.sheet && !drug.sheet.toUpperCase().includes('PASİF'))) {
                 score += 50;
             }
 
