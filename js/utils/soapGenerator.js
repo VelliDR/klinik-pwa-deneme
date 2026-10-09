@@ -149,6 +149,83 @@ export function generateSOAP() {
         o.push(`- Obstetrik: SAT'a göre Gebelik Haftası: ${edd.gestationalAge || '--'}, Tahmini Doğum Tarihi (TDT): ${edd.edd || '--'}.`);
     }
 
+    // Tromboemboli & Kardiyak Acil
+    if (appState.thrombosis) {
+        const th = appState.thrombosis;
+        if (th.wellsDVT && th.wellsDVT.isValid) {
+            o.push(`- Wells DVT Skoru: ${th.wellsDVT.score} Puan (${th.wellsDVT.riskCategory} - DVT İhtimali: ${th.wellsDVT.probability}).`);
+        }
+        if (th.wellsPTE && th.wellsPTE.isValid) {
+            o.push(`- Wells PTE Skoru: ${th.wellsPTE.score} Puan (2-Seviyeli: ${th.wellsPTE.twoTierRisk.risk}, 3-Seviyeli: ${th.wellsPTE.threeTierRisk.risk}).`);
+        }
+        if (th.perc && th.perc.isValid) {
+            o.push(`- PERC Dışlama Kuralı: Pozitif Kriter Sayısı: ${th.perc.positiveCount} (${th.perc.isPERCNegative ? 'PERC Negatif - PE Güvenle Dışlandı' : 'PERC Pozitif - İleri İnceleme Gerekli'}).`);
+        }
+        if (th.heart && th.heart.isValid) {
+            o.push(`- HEART Skoru (Göğüs Ağrısı): ${th.heart.score}/10 (${th.heart.riskCategory} - 6-Haftalık MACE: %${th.heart.maceRatePercent}).`);
+        }
+        if (th.cha2ds2vasc && th.cha2ds2vasc.isValid) {
+            o.push(`- CHA₂DS₂-VASc AF İnme Skoru: ${th.cha2ds2vasc.score} Puan (Yıllık İnme Riski: %${th.cha2ds2vasc.annualStrokeRiskPercent}).`);
+        }
+        if (th.hasbled && th.hasbled.isValid) {
+            o.push(`- HAS-BLED Kanama Skoru: ${th.hasbled.score} Puan (${th.hasbled.bleedingRiskCategory}).`);
+        }
+    }
+
+    // Nefroloji, Toksikoloji & Solunum
+    if (appState.nephroTox) {
+        const nt = appState.nephroTox;
+        if (nt.fena && nt.fena.isValid) {
+            o.push(`- FENa: %${nt.fena.fenaPercent} (${nt.fena.interpretation}).`);
+        }
+        if (nt.feurea && nt.feurea.isValid) {
+            o.push(`- FEUrea (Diüretik Güvenli): %${nt.feurea.feUreaPercent} (${nt.feurea.interpretation}).`);
+        }
+        if (nt.correctedSodium && nt.correctedSodium.isValid) {
+            o.push(`- Düzeltilmiş Sodyum (Katz): ${nt.correctedSodium.correctedSodium} mEq/L (Ölçülen: ${nt.correctedSodium.measuredSodium}, Glukoz: ${nt.correctedSodium.glucose}).`);
+        }
+        if (nt.osmolalGap && nt.osmolalGap.isValid) {
+            o.push(`- Osmolal Açık: ${nt.osmolalGap.osmolalGap} mOsm/kg (${nt.osmolalGap.isElevated ? 'YÜKSEK - Toksik Alkol Şüphesi' : 'Normal'}).`);
+        }
+        if (nt.paracetamol && nt.paracetamol.isValid) {
+            o.push(`- Parasetamol Düzeyi (Rumack-Matthew): ${nt.paracetamol.levelMcgMl} µg/mL (${nt.paracetamol.hoursPostIngestion}. saat) -> ${nt.paracetamol.interpretation}.`);
+        }
+        if (nt.curb65 && nt.curb65.isValid) {
+            o.push(`- CURB-65 Pnömoni Skoru: ${nt.curb65.score}/5 (${nt.curb65.mortalityGroup} - 30-Günlük Mortalite: %${nt.curb65.mortalityPercent}).`);
+        }
+    }
+
+    // Neonatoloji & Pediatrik Acil
+    if (appState.neonatology) {
+        const neo = appState.neonatology;
+        if (neo.bhutani && neo.bhutani.isValid) {
+            o.push(`- Bhutani Sarılık: Yaş: ${neo.bhutani.ageHours}s, TSB: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`);
+        }
+        if (neo.apgar) {
+            o.push(`- APGAR Skoru (${neo.apgar.minute}. dk): ${neo.apgar.score}/10 (${neo.apgar.status}).`);
+        }
+        if (neo.westleyCroup) {
+            o.push(`- Westley Krup Skoru: ${neo.westleyCroup.score}/17 (${neo.westleyCroup.severity} - ${neo.westleyCroup.interpretation}).`);
+        }
+        if (neo.cdsDehydration) {
+            o.push(`- Klinik Dehidratasyon Skalası (CDS): ${neo.cdsDehydration.score}/8 (${neo.cdsDehydration.interpretation}).`);
+        }
+    }
+
+    // İlaç Güvenliği & DDI
+    if (appState.safetyPrescription) {
+        const sp = appState.safetyPrescription;
+        if (sp.tripleWhammy && sp.tripleWhammy.isTripleWhammy) {
+            o.push(`- 🚨 İlaç Güvenliği: Triple Whammy AKI Riski Tespit Edildi (RAS Blokörü + Diüretik + NSAİİ).`);
+        }
+        if (sp.renalAdjustments && sp.renalAdjustments.alertsCount > 0) {
+            o.push(`- Renal Dozaj Uyarısı (${sp.renalAdjustments.egfr} mL/dk): ${sp.renalAdjustments.alertsCount} ilaçta doz kısıtlaması/kontrendikasyon mevcut.`);
+        }
+        if (sp.pregnancySafety && sp.pregnancySafety.alertsCount > 0) {
+            o.push(`- Gebelik Güvenlik Uyarısı: ${sp.pregnancySafety.alertsCount} ilaçta fetal risk saptandı.`);
+        }
+    }
+
     // --- DEĞERLENDİRME ---
     if (appState.pediatrics && appState.pediatrics.targetHeight && appState.pediatrics.targetHeight.deviationAlert) {
         a.push(`- ${appState.pediatrics.targetHeight.deviationAlert}`);
@@ -173,6 +250,46 @@ export function generateSOAP() {
     }
     if (appState.medicine && appState.medicine.bloodGas && appState.medicine.bloodGas.primaryDisorder) {
         a.push(`- Asit-Baz Bozukluğu: ${appState.medicine.bloodGas.primaryDisorder}.`);
+    }
+
+    // Yeni Klinik Modül Değerlendirmeleri
+    if (appState.thrombosis) {
+        if (appState.thrombosis.wellsDVT && appState.thrombosis.wellsDVT.score >= 2) {
+            a.push(`- Yüksek DVT Şüphesi: Wells Skoru ${appState.thrombosis.wellsDVT.score} (Acil Kompresyon Doppler USG önerilir).`);
+        }
+        if (appState.thrombosis.wellsPTE && appState.thrombosis.wellsPTE.score > 4) {
+            a.push(`- Yüksek Pulmoner Emboli Olasılığı: Wells PE Skoru ${appState.thrombosis.wellsPTE.score} (Acil BT Pulmoner Anjiyografi endikedir).`);
+        }
+        if (appState.thrombosis.heart && appState.thrombosis.heart.score >= 7) {
+            a.push(`- Yüksek Kardiyovasküler Olay Riski: HEART Skoru ${appState.thrombosis.heart.score} (Erken invaziv koroner anjiyografi/yatış).`);
+        }
+        if (appState.thrombosis.cha2ds2vasc && appState.thrombosis.cha2ds2vasc.score >= 2) {
+            a.push(`- Yüksek AF Tromboemboli Riski: CHA₂DS₂-VASc Skoru ${appState.thrombosis.cha2ds2vasc.score} (Oral Antikoagülan - OAK Class I endikasyon).`);
+        }
+    }
+    if (appState.nephroTox) {
+        if (appState.nephroTox.paracetamol && appState.nephroTox.paracetamol.isToxic) {
+            a.push(`- Akut Parasetamol Hepatotoksisitesi: Serum düzeyi Rumack-Matthew tedavi çizgisinin üzerindedir.`);
+        }
+        if (appState.nephroTox.osmolalGap && appState.nephroTox.osmolalGap.isElevated) {
+            a.push(`- Yüksek Osmolal Açık (${appState.nephroTox.osmolalGap.osmolalGap} mOsm/kg): Metanol / Etilen Glikol intoksikasyonu dışlanmalıdır.`);
+        }
+        if (appState.nephroTox.curb65 && appState.nephroTox.curb65.score >= 3) {
+            a.push(`- Şiddetli Pnömoni (CURB-65 Skoru: ${appState.nephroTox.curb65.score}): Yüksek mortalite riski, acil hastane/YBÜ yatışı.`);
+        }
+    }
+    if (appState.neonatology) {
+        if (appState.neonatology.bhutani && appState.neonatology.bhutani.status === 'EXCHANGE_TRANSFUSION_REQUIRED') {
+            a.push(`- KRİTİK HİPERBİLİRUBİNEMİ: Acil Kan Değişimi (Exchange Transfusion) ve yoğun fototerapi endikasyonu!`);
+        } else if (appState.neonatology.bhutani && appState.neonatology.bhutani.status === 'PHOTOTHERAPY_REQUIRED') {
+            a.push(`- Yenidoğan Patolojik Sarılığı: TND fototerapi eşiği aşıldı, fototerapi başlanması gereklidir.`);
+        }
+        if (appState.neonatology.westleyCroup && appState.neonatology.westleyCroup.score >= 6) {
+            a.push(`- Ciddi Krup / Yaklaşan Solunum Yetmezliği: Westley Skoru ${appState.neonatology.westleyCroup.score} (Nebülize Epinefrin ve YBÜ gözlemi).`);
+        }
+    }
+    if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
+        a.push(`- İlaç Etkileşim Uyarısı: Triple Whammy kombinasyonu nedeniyle Akut Böbrek Hasarı riski çok yüksektir.`);
     }
 
     // --- PLAN & TEDAVİ ---
@@ -203,6 +320,28 @@ export function generateSOAP() {
     }
     if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
         p.push(`${pCount}. Akılcı Antibiyotik Protokolü: AGBHS şüphesi nedeniyle Amoksisilin 50 mg/kg/gün (2 dozda, 10 gün) veya Penisilin V değerlendiriniz.`);
+        pCount++;
+    }
+
+    // Yeni Plan & Tedavi Adımları
+    if (appState.nephroTox && appState.nephroTox.paracetamol && appState.nephroTox.paracetamol.isToxic && appState.nephroTox.paracetamol.nacProtocol) {
+        const nac = appState.nephroTox.paracetamol.nacProtocol;
+        p.push(`${pCount}. IV N-Asetilsistein (NAC) 21 Saatlik Protokolü:`);
+        p.push(`   - Faz 1 (Yükleme, 1. saat): ${nac.phase1.doseMgKg} mg/kg (${nac.phase1.fluidD5W})`);
+        p.push(`   - Faz 2 (4 saatlik infüzyon): ${nac.phase2.doseMgKg} mg/kg (${nac.phase2.fluidD5W})`);
+        p.push(`   - Faz 3 (16 saatlik infüzyon): ${nac.phase3.doseMgKg} mg/kg (${nac.phase3.fluidD5W})`);
+        pCount++;
+    }
+    if (appState.neonatology && appState.neonatology.westleyCroup && appState.neonatology.westleyCroup.score >= 3) {
+        p.push(`${pCount}. Krup Tedavisi: Tek doz Deksametazon 0.60 mg/kg oral/IM${appState.neonatology.westleyCroup.score >= 6 ? ' + Nebülize L-Epinefrin 0.5 mL/kg (1:1000, maks 5 mL)' : ''}.`);
+        pCount++;
+    }
+    if (appState.neonatology && appState.neonatology.cdsDehydration && appState.neonatology.cdsDehydration.orsRecommendedMl) {
+        p.push(`${pCount}. Dehidratasyon Sıvı Protokolü: ${appState.neonatology.cdsDehydration.orsRecommendedMl}`);
+        pCount++;
+    }
+    if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
+        p.push(`${pCount}. İlaç Güvenliği Eylemi: NSAİİ kesilmeli, analjezi için Parasetamol tercih edilmeli ve böbrek fonksiyonları (kreatinin, K+) kontrol edilmelidir.`);
         pCount++;
     }
     if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {

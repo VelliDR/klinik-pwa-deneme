@@ -306,6 +306,59 @@
                 </div>
             </details>
 
+            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-nephro-tox">
+                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
+                    <span>Nefroloji, Toksikoloji & Pnömoni</span>
+                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                </summary>
+                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
+                    <!-- FENa & FEUrea -->
+                    <span class="text-[10px] font-bold text-sky-400 block pt-2">FENa & FEUrea (Akut Böbrek Hasarı Ayrımı)</span>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Na</label><input type="number" id="input-fena-s-na" placeholder="140" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Na</label><input type="number" id="input-fena-u-na" placeholder="15" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Kr</label><input type="number" step="0.01" id="input-fena-s-cr" placeholder="1.8" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Kr</label><input type="number" id="input-fena-u-cr" placeholder="80" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum BUN (mg/dL)</label><input type="number" id="input-feurea-s-bun" placeholder="45" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Üre (mg/dL)</label><input type="number" id="input-feurea-u-urea" placeholder="500" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-[10px] text-amber-300 cursor-pointer">
+                        <input type="checkbox" id="chk-fena-diuretic" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
+                        <span>Hasta Diüretik / Furosemid Alıyor (FENa yanıltıcı olabilir)</span>
+                    </label>
+                    <div id="output-fena-feurea" class="hidden text-[10px] p-2 bg-slate-900/60 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- Düzeltilmiş Sodyum & Osmolal Gap -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Düzeltilmiş Na (Katz) & Osmolal Açık</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Ölçülen Na</label><input type="number" id="input-corr-na-meas" placeholder="130" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Glukoz (mg/dL)</label><input type="number" id="input-corr-glucose" placeholder="380" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Ölçülen Osmol.</label><input type="number" id="input-osm-measured" placeholder="310" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                    </div>
+                    <div id="output-corr-na-osm" class="hidden text-[10px] p-2 bg-slate-900/60 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- Parasetamol Toksisitesi & IV NAC -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Parasetamol Toksisitesi (Rumack-Matthew & NAC)</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Alımdan Geçen Süre (Saat: 4-24)</label><input type="number" id="input-apap-hours" placeholder="6" min="4" max="24" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Parasetamol (µg/mL)</label><input type="number" id="input-apap-level" placeholder="160" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
+                    </div>
+                    <div id="output-apap-rumack" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- CURB-65 Pnömoni -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">CURB-65 Toplum Kökenli Pnömoni Triyajı</span>
+                    <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-300">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-c" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Konfüzyon (Yeni)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-u" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Üre &gt; 7 mmol/L (BUN &gt; 19)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-r" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Solunum Sayısı ≥ 30/dk</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-b" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Hipotansiyon (&lt;90 veya ≤60)</label>
+                        <label class="flex items-center gap-1 cursor-pointer col-span-2"><input type="checkbox" id="chk-curb-65" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş ≥ 65 Yıl</label>
+                    </div>
+                    <div id="output-curb65" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+                </div>
+            </details>
 
             <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
@@ -347,6 +400,143 @@
                         <input type="text" id="input-lab-search" placeholder="Örn: Troponin" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono focus:outline-none focus:border-rose-500">
                         <div id="container-lab-results" class="hidden mt-2 space-y-1 max-h-32 overflow-y-auto"></div>
                     </div>
+                </div>
+            </details>
+
+            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-thrombosis">
+                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
+                    <span>Tromboemboli & Kardiyak Acil</span>
+                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                </summary>
+                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
+                    <!-- Wells DVT -->
+                    <span class="text-[10px] font-bold text-sky-400 block pt-2">Wells DVT Skoru (Derin Ven Trombozu)</span>
+                    <div class="space-y-1 text-[10px] text-slate-300">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-cancer" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Aktif Kanser (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-paralysis" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Paralizi, Parezi veya İmmobilizasyon (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-bedridden" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> ≥3 Gün Yatak İstirahati veya Major Cerrahi (&lt;12 hf) (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-tenderness" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Derin Ven Dağılımı Boyunca Lokalize Hassasiyet (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-swelling-entire" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Tüm Bacakta Şişlik (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-calf-diff" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Semptomatik Baldır Çapı &gt;3 cm Farklı (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-pitting-edema" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Semptomatik Bacakta Gode Bırakan Ödem (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-collateral" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kollateral Yüzeyel Venler (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-dvt-previous-dvt" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Belgelenmiş Geçirilmiş DVT (+1)</label>
+                        <label class="flex items-center gap-1 cursor-pointer text-emerald-400 font-semibold"><input type="checkbox" id="chk-dvt-alt-likely" class="accent-emerald-500 bg-slate-900 border-slate-700 rounded"> Alternatif Tanı DVT Kadar veya Daha Olası (-2)</label>
+                    </div>
+                    <div id="output-wells-dvt" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- Wells PTE & PERC -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Wells PTE & PERC Kuralı (Pulmoner Emboli)</span>
+                    <div class="space-y-1 text-[10px] text-slate-300">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-pe-dvt-symptoms" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> DVT Klinik Bulguları/Semptomları (+3.0)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-pe-alt-less-likely" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Alternatif Tanı PE'den Daha Az Olası (+3.0)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-pe-hr-100" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kalp Hızı &gt; 100/dk (+1.5)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-pe-immobilization" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> İmmobilizasyon (≥3 gün) veya Son 4 Haftada Cerrahi (+1.5)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-pe-previous-pe" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Geçirilmiş DVT / PE Öyküsü (+1.5)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-pe-hemoptysis" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Hemoptizi (+1.0)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-pe-malignancy" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kanser/Malignite (Son 6 ayda tedavi veya palyatif) (+1.0)</label>
+                    </div>
+                    <div id="output-wells-pe" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <details class="text-[10px] bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60 group/perc">
+                        <summary class="cursor-pointer select-none text-slate-300 font-semibold flex justify-between items-center">
+                            <span>PERC Dışlama Kuralı (Düşük Riskte BT/D-Dimer Gerekir mi?)</span>
+                            <span class="text-slate-400 group-open/perc:rotate-180 transition-transform text-[9px]">▼</span>
+                        </summary>
+                        <div class="space-y-1 mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-300">
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-age" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş ≥ 50 Yıl</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-hr" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kalp Hızı ≥ 100/dk</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-spo2" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Oda Havasında SpO2 &lt; %95</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-swelling" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Tek Taraflı Bacak Şişliği</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-hemoptysis" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Hemoptizi</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-surgery" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Son 4 Haftada Cerrahi veya Travma</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-history" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Geçirilmiş DVT veya PE</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-perc-estrogen" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Östrojen Kullanımı (OKS/HRT)</label>
+                        </div>
+                        <div id="output-perc" class="hidden mt-2 p-2 rounded-lg border font-mono space-y-1"></div>
+                    </details>
+
+                    <!-- HEART Score -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">HEART Skoru (Acil Göğüs Ağrısı & 6-Haftalık MACE)</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-1">Anamnez (History)</label>
+                            <select id="select-heart-history" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Hafif Şüpheli (0 Puan)</option>
+                                <option value="1">Orta Şüpheli (1 Puan)</option>
+                                <option value="2">Yüksek Şüpheli (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-1">EKG (ECG)</label>
+                            <select id="select-heart-ecg" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Normal (0 Puan)</option>
+                                <option value="1">Spesifik Olmayan Repolarizasyon / LBBB (1 Puan)</option>
+                                <option value="2">Belirgin ST Depresyonu / İskemi (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-1">Yaş (Age)</label>
+                            <select id="select-heart-age" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">&lt; 45 Yaş (0 Puan)</option>
+                                <option value="1">45 - 64 Yaş (1 Puan)</option>
+                                <option value="2">≥ 65 Yaş (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-1">Risk Faktörleri (DM, HT, Kolesterol, Sigara, Aile)</label>
+                            <select id="select-heart-risk" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Risk Faktörü Yok (0 Puan)</option>
+                                <option value="1">1 veya 2 Risk Faktörü (1 Puan)</option>
+                                <option value="2">≥ 3 Risk Faktörü veya Ateroskleroz Öyküsü (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-[9px] text-slate-400 block mb-1">Troponin Düzeyi</label>
+                            <select id="select-heart-troponin" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Normal Sınırda / Negatif (0 Puan)</option>
+                                <option value="1">1 - 3 Katı Arası Yüksek (1 Puan)</option>
+                                <option value="2">&gt; 3 Katı Yüksek (2 Puan)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="output-heart-score" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- CHA₂DS₂-VASc & HAS-BLED -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Atriyal Fibrilasyon: CHA₂DS₂-VASc & HAS-BLED</span>
+                    <div class="space-y-1 text-[10px] text-slate-300">
+                        <span class="text-[9px] text-slate-400 block font-semibold">CHA₂DS₂-VASc Kriterleri:</span>
+                        <div class="grid grid-cols-2 gap-1">
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-chf" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> KKY / Sol Ventrikül Disfonksiyonu (+1)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-htn" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Hipertansiyon (+1)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-age75" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş ≥ 75 Yıl (+2)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-dm" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Diyabetes Mellitus (+1)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-stroke" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Geçirilmiş İnme / GİA / TE (+2)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-vasc" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Vasküler Hastalık (MI, PAD, Plak) (+1)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-age65" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş 65 - 74 Yıl (+1)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-af-female" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kadın Cinsiyet (+1)</label>
+                        </div>
+                    </div>
+                    <div id="output-cha2ds2vasc" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <details class="text-[10px] bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60 group/hasbled">
+                        <summary class="cursor-pointer select-none text-slate-300 font-semibold flex justify-between items-center">
+                            <span>HAS-BLED Kanama Riski Skoru</span>
+                            <span class="text-slate-400 group-open/hasbled:rotate-180 transition-transform text-[9px]">▼</span>
+                        </summary>
+                        <div class="grid grid-cols-2 gap-1 mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-300">
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-htn" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kontrolsüz HT (Sys &gt;160)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-renal" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Anormal Böbrek Fonk.</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-liver" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Anormal Karaciğer Fonk.</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-stroke" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> İnme Öyküsü</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-history" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kanama Öyküsü / Diyatez</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-inr" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Labil INR (TTR &lt;%60)</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-elderly" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş &gt; 65 Yıl</label>
+                            <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-bleeding-drugs" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> İlaç (Antiplatelet / NSAİİ)</label>
+                            <label class="flex items-center gap-1 cursor-pointer col-span-2"><input type="checkbox" id="chk-bleeding-alcohol" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Alkol Kullanımı (≥8 kadeh/hf)</label>
+                        </div>
+                        <div id="output-hasbled" class="hidden mt-2 p-2 rounded-lg border font-mono space-y-1"></div>
+                    </details>
                 </div>
             </details>
 
@@ -526,6 +716,173 @@
                 </div>
             </details>
 
+            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-neonatology">
+                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
+                    <span>Neonatoloji & Pediatrik Acil</span>
+                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                </summary>
+                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
+                    <!-- Bhutani Sarılık -->
+                    <span class="text-[10px] font-bold text-sky-400 block pt-2">Bhutani Yenidoğan Sarılığı & Fototerapi (TND/AAP)</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-1">Bebeğin Yaşı (Saat)</label>
+                            <input type="number" id="input-bhutani-age-hours" placeholder="48" min="1" max="168" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-1">Total Bilirubin (mg/dL)</label>
+                            <input type="number" step="0.1" id="input-bhutani-tsb" placeholder="13.2" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-1">Gestasyon Haftası</label>
+                            <input type="number" id="input-bhutani-gw" placeholder="38" min="35" max="42" value="38" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-[10px] text-amber-300 cursor-pointer">
+                        <input type="checkbox" id="chk-bhutani-risk-factors" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
+                        <span>Nörotoksisite Risk Faktörleri Var (Hemoliz, G6PD, Asfiksi, Sepsis, Alb &lt; 3.0)</span>
+                    </label>
+                    <div id="output-bhutani-result" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- APGAR Skoru -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">APGAR Yenidoğan Değerlendirme Skoru</span>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-[9px] text-slate-400">Değerlendirme Zamanı:</label>
+                        <select id="select-apgar-minute" class="bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-300">
+                            <option value="1">1. Dakika</option>
+                            <option value="5">5. Dakika</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Kalp Hızı</label>
+                            <select id="select-apgar-hr" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="2">&gt; 100 / dk (2 Puan)</option>
+                                <option value="1">&lt; 100 / dk (1 Puan)</option>
+                                <option value="0">Yok (0 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Solunum Çabası</label>
+                            <select id="select-apgar-resp" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="2">İyi, Güçlü Ağlama (2 Puan)</option>
+                                <option value="1">Zayıf, Düzensiz (1 Puan)</option>
+                                <option value="0">Yok / Apne (0 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Kas Tonusu</label>
+                            <select id="select-apgar-tone" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="2">Aktif Hareketli (2 Puan)</option>
+                                <option value="1">Ekstremitelerde Fleksiyon (1 Puan)</option>
+                                <option value="0">Flask / Gevşek (0 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Uyarılma Yanıtı (Grimace)</label>
+                            <select id="select-apgar-reflex" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="2">Öksürme / Aksırma / Ağlama (2 Puan)</option>
+                                <option value="1">Yüz Buruşturma (1 Puan)</option>
+                                <option value="0">Yanıt Yok (0 Puan)</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Cilt Rengi</label>
+                            <select id="select-apgar-color" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="2">Tamamen Pembe (2 Puan)</option>
+                                <option value="1">Gövde Pembe, Uçlar Mavi (1 Puan)</option>
+                                <option value="0">Soluk / Mavi - Siyanotik (0 Puan)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="output-apgar-result" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- Westley Krup Skoru -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Westley Krup Şiddet Skoru</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Stridor</label>
+                            <select id="select-croup-stridor" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Yok (0 Puan)</option>
+                                <option value="1">Ağlarken / Ajitasyonla (1 Puan)</option>
+                                <option value="2">İstirahatte (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Çekilmeler (Retractions)</label>
+                            <select id="select-croup-retractions" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Yok (0 Puan)</option>
+                                <option value="1">Hafif (1 Puan)</option>
+                                <option value="2">Orta (2 Puan)</option>
+                                <option value="3">Şiddetli (3 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Hava Girişi</label>
+                            <select id="select-croup-air" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Normal (0 Puan)</option>
+                                <option value="1">Azalmış (1 Puan)</option>
+                                <option value="2">Belirgin Azalmış (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Siyanoz</label>
+                            <select id="select-croup-cyanosis" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Yok (0 Puan)</option>
+                                <option value="4">Ajitasyonla (4 Puan)</option>
+                                <option value="5">İstirahatte (5 Puan)</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Bilinç Düzeyi</label>
+                            <select id="select-croup-consciousness" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Normal (0 Puan)</option>
+                                <option value="5">Değişmiş / Letarjik (5 Puan)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="output-croup-result" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- CDS Dehidratasyon & ORS -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Klinik Dehidratasyon Skalası (CDS) & ORS Sıvı</span>
+                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Genel Görünüm</label>
+                            <select id="select-cds-appearance" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Normal (0 Puan)</option>
+                                <option value="1">Huzursuz / İrrite (1 Puan)</option>
+                                <option value="2">Letarjik / Uykulu (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Gözler</label>
+                            <select id="select-cds-eyes" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Normal (0 Puan)</option>
+                                <option value="1">Hafif Çökük (1 Puan)</option>
+                                <option value="2">Belirgin Çökük (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Mukozalar (Dil / Dudak)</label>
+                            <select id="select-cds-mucosa" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Nemli (0 Puan)</option>
+                                <option value="1">Yapışkan (1 Puan)</option>
+                                <option value="2">Kuru (2 Puan)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Gözyaşı</label>
+                            <select id="select-cds-tears" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] text-slate-200">
+                                <option value="0">Normal / Var (0 Puan)</option>
+                                <option value="1">Azalmış (1 Puan)</option>
+                                <option value="2">Yok (2 Puan)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="output-cds-result" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+                </div>
+            </details>
+
             <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>İlaç, TİTCK & Prospektüs</span>
@@ -547,6 +904,34 @@
                     </div>
                     <div id="container-search-results" class="space-y-2 max-h-80 overflow-y-auto"></div>
                     <div id="container-selected-drugs" class="space-y-2 border-t border-slate-700/40 pt-2 empty:hidden"></div>
+
+                    <!-- Akılcı Reçete & İlaç Güvenliği Paneli -->
+                    <div class="border-t border-slate-700/50 pt-3 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wide">🛡️ İlaç Güvenliği & DDI Koruma Motoru</span>
+                            <span id="badge-safety-status" class="text-[9px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Aktif</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[9px] text-slate-400 block mb-1">eGFR Değeri (mL/dk)</label>
+                                <input type="number" id="input-safety-egfr" placeholder="Biyometriden otm." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                            </div>
+                            <div>
+                                <label class="text-[9px] text-slate-400 block mb-1">Gebelik / Trimester</label>
+                                <select id="select-safety-trimester" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-300">
+                                    <option value="0">Gebe Değil</option>
+                                    <option value="1">1. Trimester (1-13 hf)</option>
+                                    <option value="2">2. Trimester (14-27 hf)</option>
+                                    <option value="3">3. Trimester (≥28 hf)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Canlı Uyarı Çıktıları -->
+                        <div id="output-safety-triple-whammy" class="hidden text-[10px] p-2.5 rounded-lg border font-mono space-y-1"></div>
+                        <div id="output-safety-renal" class="hidden text-[10px] p-2.5 rounded-lg border font-mono space-y-1"></div>
+                        <div id="output-safety-pregnancy" class="hidden text-[10px] p-2.5 rounded-lg border font-mono space-y-1"></div>
+                    </div>
                 </div>
             </details>
 

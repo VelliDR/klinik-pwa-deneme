@@ -16,6 +16,10 @@ import { convertSteroids, calculateHOMAIR } from './engines/endocrineEngine.js';
 import { generateSOAP } from './utils/soapGenerator.js';
 import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db/titckIndexedDB.js';
 import { getDrugBadgesHTML } from './drugEngine.js';
+import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine.js';
+import { calculateFENa, calculateFEUrea, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine.js';
+import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration } from './engines/neonatologyEngine.js';
+import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety } from './engines/safetyPrescriptionEngine.js';
 
 // Utils
 const parseNum = (val) => val === '' || isNaN(val) ? null : Number(val);
@@ -809,6 +813,658 @@ function updateAllTabs() {
     } else {
         appState.pediatrics.centor = null;
         if (centorRes) centorRes.classList.add('hidden');
+    }
+
+    // ----------------------------------------------------
+    // TROMBOEMBOLİ & KARDİYAK ACİL MOTORLARI
+    // ----------------------------------------------------
+    // A. Wells DVT
+    const dvtCancer = document.getElementById('chk-dvt-cancer')?.checked || false;
+    const dvtParalysis = document.getElementById('chk-dvt-paralysis')?.checked || false;
+    const dvtBedridden = document.getElementById('chk-dvt-bedridden')?.checked || false;
+    const dvtTenderness = document.getElementById('chk-dvt-tenderness')?.checked || false;
+    const dvtSwelling = document.getElementById('chk-dvt-swelling-entire')?.checked || false;
+    const dvtCalf = document.getElementById('chk-dvt-calf-diff')?.checked || false;
+    const dvtPitting = document.getElementById('chk-dvt-pitting-edema')?.checked || false;
+    const dvtCollateral = document.getElementById('chk-dvt-collateral')?.checked || false;
+    const dvtPrev = document.getElementById('chk-dvt-previous-dvt')?.checked || false;
+    const dvtAlt = document.getElementById('chk-dvt-alt-likely')?.checked || false;
+    const dvtOut = document.getElementById('output-wells-dvt');
+
+    if (dvtCancer || dvtParalysis || dvtBedridden || dvtTenderness || dvtSwelling || dvtCalf || dvtPitting || dvtCollateral || dvtPrev || dvtAlt) {
+        const dvtRes = calculateWellsDVT({
+            activeCancer: dvtCancer,
+            paralysisOrParesis: dvtParalysis,
+            bedriddenRecently: dvtBedridden,
+            localizedTenderness: dvtTenderness,
+            entireLegSwollen: dvtSwelling,
+            calfSwellingGreaterThan3cm: dvtCalf,
+            pittingEdema: dvtPitting,
+            collateralSuperficialVeins: dvtCollateral,
+            previouslyDocumentedDVT: dvtPrev,
+            alternativeDiagnosisLikely: dvtAlt
+        });
+        appState.thrombosis.wellsDVT = dvtRes;
+        if (dvtOut) {
+            dvtOut.classList.remove('hidden');
+            const alertBg = dvtRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (dvtRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            dvtOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            dvtOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>Wells DVT: ${dvtRes.score} Puan</span>
+                    <span>${dvtRes.riskCategory} (%${dvtRes.probability})</span>
+                </div>
+                <div class="text-[10px]">${dvtRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.thrombosis.wellsDVT = null;
+        if (dvtOut) dvtOut.classList.add('hidden');
+    }
+
+    // B. Wells PTE
+    const peDvt = document.getElementById('chk-pe-dvt-symptoms')?.checked || false;
+    const peAlt = document.getElementById('chk-pe-alt-less-likely')?.checked || false;
+    const peHr = document.getElementById('chk-pe-hr-100')?.checked || false;
+    const peImm = document.getElementById('chk-pe-immobilization')?.checked || false;
+    const pePrev = document.getElementById('chk-pe-previous-pe')?.checked || false;
+    const peHemo = document.getElementById('chk-pe-hemoptysis')?.checked || false;
+    const peMal = document.getElementById('chk-pe-malignancy')?.checked || false;
+    const peOut = document.getElementById('output-wells-pe');
+
+    if (peDvt || peAlt || peHr || peImm || pePrev || peHemo || peMal) {
+        const peRes = calculateWellsPTE({
+            clinicalSignsOfDVT: peDvt,
+            peLikelyOrMoreLikelyThanAlt: peAlt,
+            heartRateOver100: peHr,
+            immobilizationOrSurgery: peImm,
+            previousDvtOrPe: pePrev,
+            hemoptysis: peHemo,
+            malignancy: peMal
+        });
+        appState.thrombosis.wellsPTE = peRes;
+        if (peOut) {
+            peOut.classList.remove('hidden');
+            const alertBg = peRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200';
+            peOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            peOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>Wells PTE: ${peRes.score} Puan</span>
+                    <span>${peRes.twoTierRisk.risk} (${peRes.twoTierRisk.tier})</span>
+                </div>
+                <div class="text-[10px]">${peRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.thrombosis.wellsPTE = null;
+        if (peOut) peOut.classList.add('hidden');
+    }
+
+    // C. PERC
+    const percAge = document.getElementById('chk-perc-age')?.checked || false;
+    const percHr = document.getElementById('chk-perc-hr')?.checked || false;
+    const percSpo2 = document.getElementById('chk-perc-spo2')?.checked || false;
+    const percSwelling = document.getElementById('chk-perc-swelling')?.checked || false;
+    const percHemo = document.getElementById('chk-perc-hemoptysis')?.checked || false;
+    const percSurg = document.getElementById('chk-perc-surgery')?.checked || false;
+    const percHist = document.getElementById('chk-perc-history')?.checked || false;
+    const percEst = document.getElementById('chk-perc-estrogen')?.checked || false;
+    const percOut = document.getElementById('output-perc');
+
+    if (percAge || percHr || percSpo2 || percSwelling || percHemo || percSurg || percHist || percEst) {
+        const percRes = evaluatePERC({
+            ageGte50: percAge,
+            heartRateGte100: percHr,
+            spo2Lt95OnRoomAir: percSpo2,
+            unilateralLegSwelling: percSwelling,
+            hemoptysis: percHemo,
+            recentSurgeryOrTrauma: percSurg,
+            priorDvtOrPe: percHist,
+            hormoneOrEstrogenUse: percEst
+        });
+        appState.thrombosis.perc = percRes;
+        if (percOut) {
+            percOut.classList.remove('hidden');
+            const alertBg = percRes.alertClass === 'success' ? 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200' : 'bg-amber-950/40 border-amber-600/50 text-amber-200';
+            percOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            percOut.innerHTML = `
+                <div class="font-bold">${percRes.isPERCNegative ? '✓ PERC NEGATİF (0 Kriter)' : `⚠️ PERC POZİTİF (${percRes.positiveCount} Kriter)`}</div>
+                <div class="text-[10px]">${percRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.thrombosis.perc = null;
+        if (percOut) percOut.classList.add('hidden');
+    }
+
+    // D. HEART Score
+    const hHist = parseNum(document.getElementById('select-heart-history')?.value) || 0;
+    const hEcg = parseNum(document.getElementById('select-heart-ecg')?.value) || 0;
+    const hAge = parseNum(document.getElementById('select-heart-age')?.value) || 0;
+    const hRisk = parseNum(document.getElementById('select-heart-risk')?.value) || 0;
+    const hTrop = parseNum(document.getElementById('select-heart-troponin')?.value) || 0;
+    const heartOut = document.getElementById('output-heart-score');
+
+    if (hHist > 0 || hEcg > 0 || hAge > 0 || hRisk > 0 || hTrop > 0) {
+        const heartRes = calculateHEART({
+            historyPoints: hHist,
+            ecgPoints: hEcg,
+            agePoints: hAge,
+            riskFactorsPoints: hRisk,
+            troponinPoints: hTrop
+        });
+        appState.thrombosis.heart = heartRes;
+        if (heartOut) {
+            heartOut.classList.remove('hidden');
+            const alertBg = heartRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (heartRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            heartOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            heartOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>HEART Skoru: ${heartRes.score}/10</span>
+                    <span>${heartRes.riskCategory} (%${heartRes.maceRatePercent} MACE)</span>
+                </div>
+                <div class="text-[10px]">${heartRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.thrombosis.heart = null;
+        if (heartOut) heartOut.classList.add('hidden');
+    }
+
+    // E. CHA2DS2-VASc & HAS-BLED
+    const afChf = document.getElementById('chk-af-chf')?.checked || false;
+    const afHtn = document.getElementById('chk-af-htn')?.checked || false;
+    const afAge75 = document.getElementById('chk-af-age75')?.checked || false;
+    const afDm = document.getElementById('chk-af-dm')?.checked || false;
+    const afStroke = document.getElementById('chk-af-stroke')?.checked || false;
+    const afVasc = document.getElementById('chk-af-vasc')?.checked || false;
+    const afAge65 = document.getElementById('chk-af-age65')?.checked || false;
+    const afFemale = document.getElementById('chk-af-female')?.checked || false;
+    const afOut = document.getElementById('output-cha2ds2vasc');
+
+    if (afChf || afHtn || afAge75 || afDm || afStroke || afVasc || afAge65 || afFemale) {
+        const afRes = calculateCHA2DS2VASc({
+            congestiveHeartFailure: afChf,
+            hypertension: afHtn,
+            age75OrOlder: afAge75,
+            diabetesMellitus: afDm,
+            priorStrokeOrTIA: afStroke,
+            vascularDisease: afVasc,
+            age65to74: afAge65,
+            femaleGender: afFemale
+        });
+        appState.thrombosis.cha2ds2vasc = afRes;
+        if (afOut) {
+            afOut.classList.remove('hidden');
+            const alertBg = afRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (afRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            afOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            afOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>CHA₂DS₂-VASc: ${afRes.score} Puan</span>
+                    <span>Yıllık İnme: %${afRes.annualStrokeRiskPercent}</span>
+                </div>
+                <div class="text-[10px]">${afRes.anticoagulationRecommendation}</div>
+            `;
+        }
+    } else {
+        appState.thrombosis.cha2ds2vasc = null;
+        if (afOut) afOut.classList.add('hidden');
+    }
+
+    // HAS-BLED
+    const bHtn = document.getElementById('chk-bleeding-htn')?.checked || false;
+    const bRenal = document.getElementById('chk-bleeding-renal')?.checked || false;
+    const bLiver = document.getElementById('chk-bleeding-liver')?.checked || false;
+    const bStroke = document.getElementById('chk-bleeding-stroke')?.checked || false;
+    const bHist = document.getElementById('chk-bleeding-history')?.checked || false;
+    const bInr = document.getElementById('chk-bleeding-inr')?.checked || false;
+    const bElderly = document.getElementById('chk-bleeding-elderly')?.checked || false;
+    const bDrugs = document.getElementById('chk-bleeding-drugs')?.checked || false;
+    const bAlc = document.getElementById('chk-bleeding-alcohol')?.checked || false;
+    const hasbledOut = document.getElementById('output-hasbled');
+
+    if (bHtn || bRenal || bLiver || bStroke || bHist || bInr || bElderly || bDrugs || bAlc) {
+        const bRes = calculateHASBLED({
+            hypertensionUncontrolled: bHtn,
+            abnormalRenalFunction: bRenal,
+            abnormalLiverFunction: bLiver,
+            priorStroke: bStroke,
+            bleedingHistoryOrPredisposition: bHist,
+            labileINR: bInr,
+            elderlyOver65: bElderly,
+            drugsConcomitant: bDrugs,
+            alcoholExcess: bAlc
+        });
+        appState.thrombosis.hasbled = bRes;
+        if (hasbledOut) {
+            hasbledOut.classList.remove('hidden');
+            const alertBg = bRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-amber-950/40 border-amber-600/50 text-amber-200';
+            hasbledOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            hasbledOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>HAS-BLED: ${bRes.score} Puan</span>
+                    <span>${bRes.bleedingRiskCategory}</span>
+                </div>
+                <div class="text-[10px]">${bRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.thrombosis.hasbled = null;
+        if (hasbledOut) hasbledOut.classList.add('hidden');
+    }
+
+    // ----------------------------------------------------
+    // NEFROLOJİ, TOKSİKOLOJİ & PNÖMONİ MOTORLARI
+    // ----------------------------------------------------
+    // A. FENa & FEUrea
+    const fenaSNa = parseNum(document.getElementById('input-fena-s-na')?.value);
+    const fenaUNa = parseNum(document.getElementById('input-fena-u-na')?.value);
+    const fenaSCr = parseNum(document.getElementById('input-fena-s-cr')?.value);
+    const fenaUCr = parseNum(document.getElementById('input-fena-u-cr')?.value);
+    const fenaDiuretic = document.getElementById('chk-fena-diuretic')?.checked || false;
+    const feureaSBun = parseNum(document.getElementById('input-feurea-s-bun')?.value);
+    const feureaUUrea = parseNum(document.getElementById('input-feurea-u-urea')?.value);
+    const fenaOut = document.getElementById('output-fena-feurea');
+
+    if ((fenaSNa && fenaUNa && fenaSCr && fenaUCr) || (feureaSBun && feureaUUrea && fenaSCr && fenaUCr)) {
+        let resHtml = '';
+        if (fenaSNa && fenaUNa && fenaSCr && fenaUCr) {
+            const fenaRes = calculateFENa({
+                serumSodium: fenaSNa,
+                urineSodium: fenaUNa,
+                serumCreatinine: fenaSCr,
+                urineCreatinine: fenaUCr,
+                isOnDiuretics: fenaDiuretic
+            });
+            appState.nephroTox.fena = fenaRes;
+            resHtml += `
+                <div class="flex justify-between items-center font-bold">
+                    <span>FENa: %${fenaRes.fenaPercent}</span>
+                    <span class="${fenaRes.alertClass === 'danger' ? 'text-rose-400' : 'text-sky-400'}">${fenaRes.etiology}</span>
+                </div>
+                <div class="text-[10px] text-slate-300">${fenaRes.interpretation}</div>
+            `;
+        }
+        if (feureaSBun && feureaUUrea && fenaSCr && fenaUCr) {
+            const feureaRes = calculateFEUrea({
+                serumBUN: feureaSBun,
+                urineUrea: feureaUUrea,
+                serumCreatinine: fenaSCr,
+                urineCreatinine: fenaUCr
+            });
+            appState.nephroTox.feurea = feureaRes;
+            resHtml += `
+                <div class="flex justify-between items-center font-bold pt-1 border-t border-slate-700/60 mt-1">
+                    <span>FEUrea (Diüretik Güvenli): %${feureaRes.feUreaPercent}</span>
+                    <span class="${feureaRes.alertClass === 'danger' ? 'text-rose-400' : 'text-sky-400'}">${feureaRes.etiology}</span>
+                </div>
+                <div class="text-[10px] text-slate-300">${feureaRes.interpretation}</div>
+            `;
+        }
+        if (fenaOut) {
+            fenaOut.classList.remove('hidden');
+            fenaOut.innerHTML = resHtml;
+        }
+    } else {
+        appState.nephroTox.fena = null;
+        appState.nephroTox.feurea = null;
+        if (fenaOut) fenaOut.classList.add('hidden');
+    }
+
+    // B. Düzeltilmiş Sodyum & Osmolal Gap
+    const corrNaMeas = parseNum(document.getElementById('input-corr-na-meas')?.value);
+    const corrGlu = parseNum(document.getElementById('input-corr-glucose')?.value);
+    const osmMeas = parseNum(document.getElementById('input-osm-measured')?.value);
+    const corrNaOut = document.getElementById('output-corr-na-osm');
+
+    if (corrNaMeas && corrGlu) {
+        const corrRes = calculateCorrectedSodium({
+            measuredSodium: corrNaMeas,
+            glucoseMgDl: corrGlu
+        });
+        appState.nephroTox.correctedSodium = corrRes;
+        let osmRes = null;
+        if (osmMeas) {
+            osmRes = calculateOsmolalGap({
+                measuredOsmolality: osmMeas,
+                sodium: corrNaMeas,
+                glucoseMgDl: corrGlu,
+                bunMgDl: feureaSBun || 15
+            });
+            appState.nephroTox.osmolalGap = osmRes;
+        }
+        if (corrNaOut) {
+            corrNaOut.classList.remove('hidden');
+            corrNaOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>Katz Düzeltilmiş Na: ${corrRes.correctedSodium} mEq/L</span>
+                    <span class="text-slate-400">Ölçülen: ${corrRes.measuredSodium}</span>
+                </div>
+                <div class="text-[10px] text-slate-300">${corrRes.interpretation}</div>
+                ${osmRes ? `
+                    <div class="flex justify-between items-center font-bold pt-1 border-t border-slate-700/60 mt-1">
+                        <span>Osmolal Açık: ${osmRes.osmolalGap} mOsm/kg</span>
+                        <span class="${osmRes.isElevated ? 'text-rose-400 font-bold' : 'text-emerald-400'}">${osmRes.isElevated ? '⚠️ YÜKSEK (Toksik Alkol?)' : '✓ Normal'}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-300">${osmRes.interpretation}</div>
+                ` : ''}
+            `;
+        }
+    } else {
+        appState.nephroTox.correctedSodium = null;
+        appState.nephroTox.osmolalGap = null;
+        if (corrNaOut) corrNaOut.classList.add('hidden');
+    }
+
+    // C. Parasetamol (Rumack-Matthew) & NAC
+    const apapHours = parseNum(document.getElementById('input-apap-hours')?.value);
+    const apapLevel = parseNum(document.getElementById('input-apap-level')?.value);
+    const apapOut = document.getElementById('output-apap-rumack');
+
+    if (apapHours && apapLevel) {
+        const apapRes = evaluateRumackMatthew({
+            hoursPostIngestion: apapHours,
+            paracetamolLevelMcgMl: apapLevel,
+            weightKg: appState.biometry.weightKg || undefined
+        });
+        appState.nephroTox.paracetamol = apapRes;
+        if (apapOut) {
+            apapOut.classList.remove('hidden');
+            const alertBg = apapRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (apapRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            apapOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            let nacHtml = '';
+            if (apapRes.nacProtocol) {
+                const nac = apapRes.nacProtocol;
+                nacHtml = `
+                    <div class="pt-1 border-t border-rose-700/60 font-semibold text-rose-300">
+                        IV NAC Protokolü: Yükleme: ${nac.phase1.totalMg} mg (${nac.phase1.fluidD5W}) -> 2. Faz: ${nac.phase2.totalMg} mg -> 3. Faz: ${nac.phase3.totalMg} mg
+                    </div>
+                `;
+            }
+            apapOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>${apapRes.hoursPostIngestion}. Saat: ${apapRes.levelMcgMl} µg/mL</span>
+                    <span>${apapRes.isToxic ? '🚨 TOKSİK SEVİYE' : '✓ Tedavi Çizgisi Altında'}</span>
+                </div>
+                <div class="text-[10px] leading-relaxed">${apapRes.interpretation}</div>
+                ${nacHtml}
+            `;
+        }
+    } else {
+        appState.nephroTox.paracetamol = null;
+        if (apapOut) apapOut.classList.add('hidden');
+    }
+
+    // D. CURB-65
+    const curbC = document.getElementById('chk-curb-c')?.checked || false;
+    const curbU = document.getElementById('chk-curb-u')?.checked || false;
+    const curbR = document.getElementById('chk-curb-r')?.checked || false;
+    const curbB = document.getElementById('chk-curb-b')?.checked || false;
+    const curb65 = document.getElementById('chk-curb-65')?.checked || (y !== null && y >= 65);
+    const curbOut = document.getElementById('output-curb65');
+
+    if (curbC || curbU || curbR || curbB || curb65) {
+        const curbRes = calculateCURB65({
+            confusion: curbC,
+            bunOver19: curbU,
+            respiratoryRateGte30: curbR,
+            hypotension: curbB,
+            ageGte65: curb65
+        });
+        appState.nephroTox.curb65 = curbRes;
+        if (curbOut) {
+            curbOut.classList.remove('hidden');
+            const alertBg = curbRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (curbRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            curbOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            curbOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>CURB-65 Skoru: ${curbRes.score}/5</span>
+                    <span>${curbRes.mortalityGroup} (Mortalite: %${curbRes.mortalityPercent})</span>
+                </div>
+                <div class="text-[10px] font-semibold text-sky-300">${curbRes.treatmentSetting}</div>
+                <div class="text-[10px]">${curbRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.nephroTox.curb65 = null;
+        if (curbOut) curbOut.classList.add('hidden');
+    }
+
+    // ----------------------------------------------------
+    // NEONATOLOJİ & PEDİATRİK ACİL MOTORLARI
+    // ----------------------------------------------------
+    // A. Bhutani Sarılık (TND / AAP)
+    const bAgeH = parseNum(document.getElementById('input-bhutani-age-hours')?.value);
+    const bTsb = parseNum(document.getElementById('input-bhutani-tsb')?.value);
+    const bGw = parseNum(document.getElementById('input-bhutani-gw')?.value) || 38;
+    const bRisk = document.getElementById('chk-bhutani-risk-factors')?.checked || false;
+    const bhutaniOut = document.getElementById('output-bhutani-result');
+
+    if (bAgeH && bTsb) {
+        const bRes = calculateBhutaniJaundice({
+            ageHours: bAgeH,
+            totalBilirubin: bTsb,
+            gestationalWeeks: bGw,
+            hasRiskFactors: bRisk
+        });
+        appState.neonatology.bhutani = bRes;
+        if (bhutaniOut) {
+            bhutaniOut.classList.remove('hidden');
+            const alertBg = bRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (bRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            bhutaniOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            bhutaniOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>${bRes.ageHours}. Saat: TSB ${bRes.totalBilirubin} mg/dL</span>
+                    <span>${bRes.riskGroupLabel || ''}</span>
+                </div>
+                ${bRes.phototherapyThreshold ? `<div class="text-[10px]">Fototerapi Eşiği: ${bRes.phototherapyThreshold} mg/dL | Kan Değişimi: ${bRes.exchangeThreshold} mg/dL</div>` : ''}
+                <div class="text-[10px] font-semibold">${bRes.interpretation}</div>
+                <div class="text-[10px] text-slate-300">${bRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.neonatology.bhutani = null;
+        if (bhutaniOut) bhutaniOut.classList.add('hidden');
+    }
+
+    // B. APGAR Skoru
+    const aMin = parseNum(document.getElementById('select-apgar-minute')?.value) || 1;
+    const aHr = parseNum(document.getElementById('select-apgar-hr')?.value) ?? 2;
+    const aResp = parseNum(document.getElementById('select-apgar-resp')?.value) ?? 2;
+    const aTone = parseNum(document.getElementById('select-apgar-tone')?.value) ?? 2;
+    const aReflex = parseNum(document.getElementById('select-apgar-reflex')?.value) ?? 2;
+    const aColor = parseNum(document.getElementById('select-apgar-color')?.value) ?? 2;
+    const apgarOut = document.getElementById('output-apgar-result');
+
+    const apgarRes = calculateAPGAR({
+        minute: aMin,
+        heartRate: aHr,
+        respiratoryEffort: aResp,
+        muscleTone: aTone,
+        reflexIrritability: aReflex,
+        color: aColor
+    });
+    appState.neonatology.apgar = apgarRes;
+    if (apgarOut) {
+        apgarOut.classList.remove('hidden');
+        const alertBg = apgarRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (apgarRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+        apgarOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+        apgarOut.innerHTML = `
+            <div class="flex justify-between items-center font-bold">
+                <span>APGAR (${apgarRes.minute}. Dakika): ${apgarRes.score}/10</span>
+                <span>${apgarRes.status}</span>
+            </div>
+            <div class="text-[10px]">${apgarRes.interpretation}</div>
+            <div class="text-[10px] text-slate-300">${apgarRes.recommendations.join(' ')}</div>
+        `;
+    }
+
+    // C. Westley Krup
+    const crStridor = parseNum(document.getElementById('select-croup-stridor')?.value) || 0;
+    const crRetr = parseNum(document.getElementById('select-croup-retractions')?.value) || 0;
+    const crAir = parseNum(document.getElementById('select-croup-air')?.value) || 0;
+    const crCyan = parseNum(document.getElementById('select-croup-cyanosis')?.value) || 0;
+    const crConsc = parseNum(document.getElementById('select-croup-consciousness')?.value) || 0;
+    const croupOut = document.getElementById('output-croup-result');
+
+    if (crStridor > 0 || crRetr > 0 || crAir > 0 || crCyan > 0 || crConsc > 0) {
+        const croupRes = calculateWestleyCroup({
+            stridor: crStridor,
+            retractions: crRetr,
+            airEntry: crAir,
+            cyanosis: crCyan,
+            consciousness: crConsc
+        });
+        appState.neonatology.westleyCroup = croupRes;
+        if (croupOut) {
+            croupOut.classList.remove('hidden');
+            const alertBg = croupRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (croupRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            croupOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            croupOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>Westley Krup Skoru: ${croupRes.score}/17</span>
+                    <span>${croupRes.severity}</span>
+                </div>
+                <div class="text-[10px] leading-relaxed">${croupRes.interpretation}</div>
+                <div class="text-[10px] text-slate-300">${croupRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.neonatology.westleyCroup = null;
+        if (croupOut) croupOut.classList.add('hidden');
+    }
+
+    // D. CDS Dehidratasyon & ORS
+    const cdsApp = parseNum(document.getElementById('select-cds-appearance')?.value) || 0;
+    const cdsEyes = parseNum(document.getElementById('select-cds-eyes')?.value) || 0;
+    const cdsMuc = parseNum(document.getElementById('select-cds-mucosa')?.value) || 0;
+    const cdsTears = parseNum(document.getElementById('select-cds-tears')?.value) || 0;
+    const cdsOut = document.getElementById('output-cds-result');
+
+    if (cdsApp > 0 || cdsEyes > 0 || cdsMuc > 0 || cdsTears > 0) {
+        const cdsRes = calculateCDSDehydration({
+            generalAppearance: cdsApp,
+            eyes: cdsEyes,
+            mucousMembranes: cdsMuc,
+            tears: cdsTears,
+            weightKg: appState.biometry.weightKg || undefined
+        });
+        appState.neonatology.cdsDehydration = cdsRes;
+        if (cdsOut) {
+            cdsOut.classList.remove('hidden');
+            const alertBg = cdsRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (cdsRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            cdsOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            cdsOut.innerHTML = `
+                <div class="flex justify-between items-center font-bold">
+                    <span>CDS Skoru: ${cdsRes.score}/8</span>
+                    <span>${cdsRes.severity}</span>
+                </div>
+                <div class="text-[10px]">${cdsRes.interpretation}</div>
+                <div class="text-[10px] text-slate-300">${cdsRes.recommendations.join(' ')}</div>
+            `;
+        }
+    } else {
+        appState.neonatology.cdsDehydration = null;
+        if (cdsOut) cdsOut.classList.add('hidden');
+    }
+
+    // ----------------------------------------------------
+    // AKILCI REÇETE & İLAÇ GÜVENLİĞİ MOTORU
+    // ----------------------------------------------------
+    const selectedDrugs = (appState.treatment && appState.treatment.selectedDrugs) ? appState.treatment.selectedDrugs : [];
+    const safetyEgfr = parseNum(document.getElementById('input-safety-egfr')?.value) ?? appState.biometry.egfr;
+    const safetyTrim = parseNum(document.getElementById('select-safety-trimester')?.value) || 0;
+
+    const outWhammy = document.getElementById('output-safety-triple-whammy');
+    const outRenal = document.getElementById('output-safety-renal');
+    const outPreg = document.getElementById('output-safety-pregnancy');
+    const badgeSafety = document.getElementById('badge-safety-status');
+
+    if (selectedDrugs.length > 0) {
+        // 1. Triple Whammy AKI
+        const whammyRes = detectTripleWhammy(selectedDrugs);
+        appState.safetyPrescription.tripleWhammy = whammyRes;
+        if (whammyRes.isTripleWhammy || whammyRes.isDoubleRisk) {
+            if (outWhammy) {
+                outWhammy.classList.remove('hidden');
+                outWhammy.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${whammyRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outWhammy.innerHTML = `
+                    <div class="font-bold text-xs">${whammyRes.title}</div>
+                    <div class="text-[10px] leading-relaxed">${whammyRes.mechanism || ''}</div>
+                    <div class="text-[10px]">${whammyRes.recommendations.join(' ')}</div>
+                `;
+            }
+        } else if (outWhammy) {
+            outWhammy.classList.add('hidden');
+        }
+
+        // 2. Renal Doz Kesintileri (eGFR)
+        if (safetyEgfr) {
+            const renalRes = checkRenalDoseAdjustments({ egfr: safetyEgfr, drugs: selectedDrugs });
+            appState.safetyPrescription.renalAdjustments = renalRes;
+            if (renalRes.alertsCount > 0) {
+                if (outRenal) {
+                    outRenal.classList.remove('hidden');
+                    outRenal.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${renalRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                    outRenal.innerHTML = `
+                        <div class="font-bold text-xs">⚠️ Renal Dozaj Uyarısı (eGFR: ${renalRes.egfr} mL/dk)</div>
+                        ${renalRes.warnings.map(w => `<div class="text-[10px] leading-relaxed">• <strong>${w.drug}</strong>: ${w.message}</div>`).join('')}
+                    `;
+                }
+            } else if (outRenal) {
+                outRenal.classList.add('hidden');
+            }
+        } else if (outRenal) {
+            outRenal.classList.add('hidden');
+        }
+
+        // 3. Gebelik & Fetal Risk
+        if (safetyTrim > 0) {
+            const pregRes = checkPregnancySafety(selectedDrugs, { trimester: safetyTrim });
+            appState.safetyPrescription.pregnancySafety = pregRes;
+            if (pregRes.alertsCount > 0) {
+                if (outPreg) {
+                    outPreg.classList.remove('hidden');
+                    outPreg.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${pregRes.hasSevereFetalRisk ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                    outPreg.innerHTML = `
+                        <div class="font-bold text-xs">🤰 Gebelik ve Fetotoksisite Uyarısı (${safetyTrim}. Trimester)</div>
+                        ${pregRes.alerts.map(a => `<div class="text-[10px] leading-relaxed">• <strong>${a.drugName} (Kategori ${a.category})</strong>: ${a.warning}</div>`).join('')}
+                    `;
+                }
+            } else if (outPreg) {
+                outPreg.classList.add('hidden');
+            }
+        } else if (outPreg) {
+            outPreg.classList.add('hidden');
+        }
+
+        // Status Badge Update
+        if (badgeSafety) {
+            const hasDanger = (appState.safetyPrescription.tripleWhammy?.isTripleWhammy) ||
+                              (appState.safetyPrescription.renalAdjustments?.hasContraindication) ||
+                              (appState.safetyPrescription.pregnancySafety?.hasSevereFetalRisk);
+            const totalWarns = (appState.safetyPrescription.renalAdjustments?.alertsCount || 0) +
+                               (appState.safetyPrescription.pregnancySafety?.alertsCount || 0) +
+                               (appState.safetyPrescription.tripleWhammy?.isTripleWhammy ? 1 : (appState.safetyPrescription.tripleWhammy?.isDoubleRisk ? 1 : 0));
+            if (hasDanger) {
+                badgeSafety.textContent = '🚨 Kritik Uyarı';
+                badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700 font-bold';
+            } else if (totalWarns > 0) {
+                badgeSafety.textContent = `⚠️ ${totalWarns} Uyarı`;
+                badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700 font-semibold';
+            } else {
+                badgeSafety.textContent = '✓ Güvenli';
+                badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-semibold';
+            }
+        }
+    } else {
+        if (outWhammy) outWhammy.classList.add('hidden');
+        if (outRenal) outRenal.classList.add('hidden');
+        if (outPreg) outPreg.classList.add('hidden');
+        if (badgeSafety) {
+            badgeSafety.textContent = 'Aktif';
+            badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700';
+        }
     }
 
     // Live SOAP Update

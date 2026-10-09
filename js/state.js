@@ -58,5 +58,42 @@ export const appState = {
         cardiac: null,
         labGuide: null,
         drugPrescription: null
+    },
+
+    // 3. İleri Düzey Klinik Motorlar
+    thrombosis: {
+        active: false,
+        wellsDVT: null,
+        wellsPTE: null,
+        perc: null,
+        cha2ds2vasc: null,
+        hasbled: null,
+        heart: null
+    },
+
+    nephroTox: {
+        active: false,
+        fena: null,
+        feurea: null,
+        correctedSodium: null,
+        osmolalGap: null,
+        paracetamol: null,
+        curb65: null
+    },
+
+    neonatology: {
+        active: false,
+        bhutani: null,
+        apgar: null,
+        westleyCroup: null,
+        cdsDehydration: null
+    },
+
+    safetyPrescription: {
+        active: false,
+        renalAdjustments: null,
+        tripleWhammy: null,
+        pregnancySafety: null,
+        selectedSafetyDrugs: []
     }
 };

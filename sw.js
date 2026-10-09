@@ -1,4 +1,4 @@
-const CACHE_NAME = 'klinik-pwa-v7';
+const CACHE_NAME = 'klinik-pwa-v8';
 
 const ASSETS_TO_CACHE = [
     './index.html',
@@ -23,6 +23,10 @@ const ASSETS_TO_CACHE = [
     './js/engines/triageEngine.js',
     './js/engines/labGuideEngine.js',
     './js/engines/fluidEngine.js',
+    './js/engines/thrombosisEngine.js',
+    './js/engines/nephroToxEngine.js',
+    './js/engines/neonatologyEngine.js',
+    './js/engines/safetyPrescriptionEngine.js',
     './js/utils/soapGenerator.js',
     './data/medicines.json'
 ];
