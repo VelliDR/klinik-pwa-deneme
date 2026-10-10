@@ -177,25 +177,26 @@ export function generateSOAP() {
     }
 
     // Nefroloji, Toksikoloji & Solunum
+    // Nefroloji, Toksikoloji & Solunum (Aşama 2)
     if (appState.nephroTox) {
         const nt = appState.nephroTox;
         if (nt.fena && nt.fena.isValid) {
-            o.push(`- FENa: %${nt.fena.fenaPercent} (${nt.fena.interpretation}).`);
+            o.push(`- FENa: %${nt.fena.fenaPercent} (${nt.fena.category})${nt.fena.isOnDiuretics ? ' [Hasta Diüretik Alıyor - FENa Yalancı Yüksek Olabilir]' : ''}.`);
         }
         if (nt.feurea && nt.feurea.isValid) {
-            o.push(`- FEUrea (Diüretik Güvenli): %${nt.feurea.feUreaPercent} (${nt.feurea.interpretation}).`);
+            o.push(`- FEUrea (Diüretik Güvenli): %${nt.feurea.feUreaPercent} (${nt.feurea.category}).`);
         }
         if (nt.correctedSodium && nt.correctedSodium.isValid) {
-            o.push(`- Düzeltilmiş Sodyum (Katz): ${nt.correctedSodium.correctedSodium} mEq/L (Ölçülen: ${nt.correctedSodium.measuredSodium}, Glukoz: ${nt.correctedSodium.glucose}).`);
+            o.push(`- Düzeltilmiş Sodyum: Katz: ${nt.correctedSodium.correctedSodiumKatz} mEq/L, Hillier: ${nt.correctedSodium.correctedSodiumHillier} mEq/L (Ölçülen: ${nt.correctedSodium.measuredSodium}, Glukoz: ${nt.correctedSodium.glucose} mg/dL). ${nt.correctedSodium.interpretation}`);
         }
         if (nt.osmolalGap && nt.osmolalGap.isValid) {
-            o.push(`- Osmolal Açık: ${nt.osmolalGap.osmolalGap} mOsm/kg (${nt.osmolalGap.isElevated ? 'YÜKSEK - Toksik Alkol Şüphesi' : 'Normal'}).`);
+            o.push(`- Osmolal Açık: ${nt.osmolalGap.osmolalGap} mOsm/kg (Ölçülen: ${nt.osmolalGap.measuredOsm}, Hesaplanan: ${nt.osmolalGap.calculatedOsm}) -> ${nt.osmolalGap.isCriticalGap ? '🚨 KRİTİK YÜKSEK (Toksik Alkol Zehirlenmesi)' : (nt.osmolalGap.isHighGap ? '⚠️ YÜKSEK' : '✓ Normal')}.`);
         }
         if (nt.paracetamol && nt.paracetamol.isValid) {
-            o.push(`- Parasetamol Düzeyi (Rumack-Matthew): ${nt.paracetamol.levelMcgMl} µg/mL (${nt.paracetamol.hoursPostIngestion}. saat) -> ${nt.paracetamol.interpretation}.`);
+            o.push(`- Parasetamol Düzeyi (Rumack-Matthew): ${nt.paracetamol.levelMcgMl} µg/mL (${nt.paracetamol.hoursPostIngestion}. saat, Eşik: ${nt.paracetamol.threshold} µg/mL${nt.paracetamol.isHighRisk ? ' - Yüksek Risk Nomogramı' : ''}) -> ${nt.paracetamol.isToxic ? '🚨 TOKSİK DÜZEY' : '✓ Tedavi Çizgisi Altında'}.`);
         }
         if (nt.curb65 && nt.curb65.isValid) {
-            o.push(`- CURB-65 Pnömoni Skoru: ${nt.curb65.score}/5 (${nt.curb65.mortalityGroup} - 30-Günlük Mortalite: %${nt.curb65.mortalityPercent}).`);
+            o.push(`- CURB-65 / CRB-65 Pnömoni Skoru: CURB-65: ${nt.curb65.score}/5, CRB-65: ${nt.curb65.crbScore}/4 (${nt.curb65.mortalityGroup} - 30-Günlük Mortalite: %${nt.curb65.mortalityPercent}).`);
         }
     }
 
@@ -278,14 +279,33 @@ export function generateSOAP() {
         }
     }
     if (appState.nephroTox) {
-        if (appState.nephroTox.paracetamol && appState.nephroTox.paracetamol.isToxic) {
-            a.push(`- Akut Parasetamol Hepatotoksisitesi: Serum düzeyi Rumack-Matthew tedavi çizgisinin üzerindedir.`);
+        const nt = appState.nephroTox;
+        if (nt.fena && nt.feurea) {
+            if (nt.fena.isOnDiuretics && nt.fena.fenaPercent >= 1.0 && nt.feurea.feUreaPercent < 35.0) {
+                a.push(`- Oligüri / Azotemi Değerlendirmesi: Diüretik etkisiyle FENa yalancı yüksek çıkmıştır; FEUrea <%35 Prerenal Hipoperfüzyonu doğrulamaktadır.`);
+            } else if (nt.fena.fenaPercent < 1.0 && nt.feurea.feUreaPercent < 35.0) {
+                a.push(`- Akut Böbrek Hasarı: Güçlü Prerenal Azotemi (Tübüler fonksiyonlar korunmuş, sıvı açığı/hipovolemi).`);
+            } else if (nt.fena.fenaPercent > 2.0 && nt.feurea.feUreaPercent >= 35.0) {
+                a.push(`- Akut Böbrek Hasarı: Güçlü İntrensek Renal Hasar / Akut Tübüler Nekroz (ATN).`);
+            }
+        } else if (nt.fena && nt.fena.fenaPercent < 1.0) {
+            a.push(`- Prerenal Azotemi (FENa <%1): Böbrek hipoperfüzyonu/dehidratasyon.`);
+        } else if (nt.fena && nt.fena.fenaPercent > 2.0) {
+            a.push(`- İntrensek Renal Hasar (FENa >%2): Tübüler hasar / ATN.`);
         }
-        if (appState.nephroTox.osmolalGap && appState.nephroTox.osmolalGap.isElevated) {
-            a.push(`- Yüksek Osmolal Açık (${appState.nephroTox.osmolalGap.osmolalGap} mOsm/kg): Metanol / Etilen Glikol intoksikasyonu dışlanmalıdır.`);
+
+        if (nt.paracetamol && nt.paracetamol.isToxic) {
+            a.push(`- Akut Parasetamol Hepatotoksisitesi: Serum düzeyi Rumack-Matthew tedavi çizgisinin üzerindedir (Karaciğer yetmezliği riski!).`);
         }
-        if (appState.nephroTox.curb65 && appState.nephroTox.curb65.score >= 3) {
-            a.push(`- Şiddetli Pnömoni (CURB-65 Skoru: ${appState.nephroTox.curb65.score}): Yüksek mortalite riski, acil hastane/YBÜ yatışı.`);
+        if (nt.osmolalGap && nt.osmolalGap.isCriticalGap) {
+            a.push(`- 🚨 KRİTİK OSMOLAL AÇIK (${nt.osmolalGap.osmolalGap} mOsm/kg > 20): Toksik Alkol Zehirlenmesi (Metanol / Etilen Glikol / Propilen Glikol) kuşkusu!`);
+        } else if (nt.osmolalGap && nt.osmolalGap.isHighGap) {
+            a.push(`- Yüksek Osmolal Açık (${nt.osmolalGap.osmolalGap} mOsm/kg): Toksik alkol veya anyon açığı asidozu dışlanmalıdır.`);
+        }
+        if (nt.curb65 && nt.curb65.score >= 3) {
+            a.push(`- Şiddetli Toplum Kökenli Pnömoni (CURB-65 Skoru: ${nt.curb65.score}/5): Yüksek mortalite riski (%${nt.curb65.mortalityPercent}), acil hastane/YBÜ yatışı.`);
+        } else if (nt.curb65 && nt.curb65.score === 2) {
+            a.push(`- Orta Risk Pnömoni (CURB-65 Skoru: 2/5): Kısa süreli hastane yatışı / gözlem endikedir.`);
         }
     }
     if (appState.neonatology) {
@@ -350,13 +370,27 @@ export function generateSOAP() {
         pCount++;
     }
 
-    // Yeni Plan & Tedavi Adımları
+    // Yeni Plan & Tedavi Adımları (Aşama 2)
     if (appState.nephroTox && appState.nephroTox.paracetamol && appState.nephroTox.paracetamol.isToxic && appState.nephroTox.paracetamol.nacProtocol) {
         const nac = appState.nephroTox.paracetamol.nacProtocol;
-        p.push(`${pCount}. IV N-Asetilsistein (NAC) 21 Saatlik Protokolü:`);
-        p.push(`   - Faz 1 (Yükleme, 1. saat): ${nac.phase1.doseMgKg} mg/kg (${nac.phase1.fluidD5W})`);
-        p.push(`   - Faz 2 (4 saatlik infüzyon): ${nac.phase2.doseMgKg} mg/kg (${nac.phase2.fluidD5W})`);
-        p.push(`   - Faz 3 (16 saatlik infüzyon): ${nac.phase3.doseMgKg} mg/kg (${nac.phase3.fluidD5W})`);
+        p.push(`${pCount}. IV N-Asetilsistein (NAC) 21 Saatlik Protokolü${nac.isPediatricAdjusted ? ' (Pediatrik Sıvı Korumalı)' : ''}:`);
+        p.push(`   - Faz 1 (Yükleme, 1. saat): ${nac.phase1.totalMg} mg (${nac.phase1.fluidD5W})`);
+        p.push(`   - Faz 2 (4 saatlik infüzyon): ${nac.phase2.totalMg} mg (${nac.phase2.fluidD5W})`);
+        p.push(`   - Faz 3 (16 saatlik infüzyon): ${nac.phase3.totalMg} mg (${nac.phase3.fluidD5W})`);
+        p.push(`   - ${nac.oralAlternative}`);
+        pCount++;
+    }
+    if (appState.nephroTox && appState.nephroTox.osmolalGap && appState.nephroTox.osmolalGap.isCriticalGap && appState.nephroTox.osmolalGap.antidoteAdvice) {
+        const anti = appState.nephroTox.osmolalGap.antidoteAdvice;
+        p.push(`${pCount}. Toksik Alkol Zehirlenmesi Acil Protokolü:`);
+        p.push(`   - ${anti.fomepizol}`);
+        p.push(`   - ${anti.etanolAlternative}`);
+        p.push(`   - ${anti.dialysisCriteria}`);
+        pCount++;
+    }
+    if (appState.nephroTox && appState.nephroTox.curb65 && appState.nephroTox.curb65.isValid) {
+        p.push(`${pCount}. Pnömoni Tedavi Planı (CURB-65: ${appState.nephroTox.curb65.score}/5): ${appState.nephroTox.curb65.treatmentSetting}`);
+        p.push(`   - ${appState.nephroTox.curb65.empiricAntibiotic}`);
         pCount++;
     }
     if (appState.neonatology && appState.neonatology.westleyCroup && appState.neonatology.westleyCroup.score >= 3) {

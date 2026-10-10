@@ -17,7 +17,7 @@ import { generateSOAP } from './utils/soapGenerator.js';
 import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db/titckIndexedDB.js';
 import { getDrugBadgesHTML } from './drugEngine.js';
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine.js';
-import { calculateFENa, calculateFEUrea, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine.js';
+import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine.js';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from './engines/neonatologyEngine.js';
 import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from './engines/safetyPrescriptionEngine.js';
 
@@ -1278,20 +1278,26 @@ function updateAllTabs() {
     // ----------------------------------------------------
     // NEFROLOJİ, TOKSİKOLOJİ & PNÖMONİ MOTORLARI
     // ----------------------------------------------------
+    // NEFROLOJİ, TOKSİKOLOJİ & PNÖMONİ MOTORLARI (AŞAMA 2)
+    // ----------------------------------------------------
     // A. FENa & FEUrea
     const fenaSNa = parseNum(document.getElementById('input-fena-s-na')?.value);
     const fenaUNa = parseNum(document.getElementById('input-fena-u-na')?.value);
     const fenaSCr = parseNum(document.getElementById('input-fena-s-cr')?.value);
     const fenaUCr = parseNum(document.getElementById('input-fena-u-cr')?.value);
     const fenaDiuretic = document.getElementById('chk-fena-diuretic')?.checked || false;
+    const feureaUnit = document.getElementById('select-feurea-unit')?.value || 'bun';
     const feureaSBun = parseNum(document.getElementById('input-feurea-s-bun')?.value);
     const feureaUUrea = parseNum(document.getElementById('input-feurea-u-urea')?.value);
     const fenaOut = document.getElementById('output-fena-feurea');
 
     if ((fenaSNa && fenaUNa && fenaSCr && fenaUCr) || (feureaSBun && feureaUUrea && fenaSCr && fenaUCr)) {
         let resHtml = '';
+        let fenaRes = null;
+        let feureaRes = null;
+
         if (fenaSNa && fenaUNa && fenaSCr && fenaUCr) {
-            const fenaRes = calculateFENa({
+            fenaRes = calculateFENa({
                 serumSodium: fenaSNa,
                 urineSodium: fenaUNa,
                 serumCreatinine: fenaSCr,
@@ -1302,27 +1308,49 @@ function updateAllTabs() {
             resHtml += `
                 <div class="flex justify-between items-center font-bold">
                     <span>FENa: %${fenaRes.fenaPercent}</span>
-                    <span class="${fenaRes.alertClass === 'danger' ? 'text-rose-400' : 'text-sky-400'}">${fenaRes.etiology}</span>
+                    <span class="${fenaRes.alertClass === 'text-rose-400' ? 'text-rose-400' : 'text-sky-400'}">${fenaRes.etiology}</span>
                 </div>
                 <div class="text-[10px] text-slate-300">${fenaRes.interpretation}</div>
+                ${fenaRes.diureticWarning ? `<div class="p-1.5 rounded bg-amber-950/50 border border-amber-800 text-amber-200 text-[9px] mt-1">${fenaRes.diureticWarning}</div>` : ''}
             `;
+        } else {
+            appState.nephroTox.fena = null;
         }
+
         if (feureaSBun && feureaUUrea && fenaSCr && fenaUCr) {
-            const feureaRes = calculateFEUrea({
+            feureaRes = calculateFEUrea({
                 serumBUN: feureaSBun,
+                isBun: feureaUnit === 'bun',
                 urineUrea: feureaUUrea,
                 serumCreatinine: fenaSCr,
                 urineCreatinine: fenaUCr
             });
             appState.nephroTox.feurea = feureaRes;
             resHtml += `
-                <div class="flex justify-between items-center font-bold pt-1 border-t border-slate-700/60 mt-1">
+                <div class="flex justify-between items-center font-bold pt-1.5 border-t border-slate-700/60 mt-1.5">
                     <span>FEUrea (Diüretik Güvenli): %${feureaRes.feUreaPercent}</span>
-                    <span class="${feureaRes.alertClass === 'danger' ? 'text-rose-400' : 'text-sky-400'}">${feureaRes.etiology}</span>
+                    <span class="${feureaRes.alertClass === 'text-rose-400' ? 'text-rose-400' : 'text-sky-400'}">${feureaRes.etiology}</span>
                 </div>
                 <div class="text-[10px] text-slate-300">${feureaRes.interpretation}</div>
             `;
+        } else {
+            appState.nephroTox.feurea = null;
         }
+
+        // Birlikte Değerlendirme (Concordance / Diuretic-masked Prerenal)
+        if (fenaRes && feureaRes) {
+            const concordance = evaluateOliguriaDifferential(fenaRes, feureaRes);
+            if (concordance) {
+                const badgeColor = concordance.concordance.includes('PRERENAL') ? 'bg-sky-950/40 border-sky-800 text-sky-200' : (concordance.concordance.includes('ATN') ? 'bg-rose-950/40 border-rose-800 text-rose-200' : 'bg-amber-950/40 border-amber-800 text-amber-200');
+                resHtml += `
+                    <div class="p-2 rounded-lg border mt-2 text-[10px] font-sans ${badgeColor}">
+                        <div class="font-bold mb-0.5">${concordance.summary}</div>
+                        <div class="text-[9px] opacity-90">${concordance.action}</div>
+                    </div>
+                `;
+            }
+        }
+
         if (fenaOut) {
             fenaOut.classList.remove('hidden');
             fenaOut.innerHTML = resHtml;
@@ -1359,16 +1387,27 @@ function updateAllTabs() {
             corrNaOut.classList.remove('hidden');
             corrNaOut.innerHTML = `
                 <div class="flex justify-between items-center font-bold">
-                    <span>Katz Düzeltilmiş Na: ${corrRes.correctedSodium} mEq/L</span>
-                    <span class="text-slate-400">Ölçülen: ${corrRes.measuredSodium}</span>
+                    <span>Katz Düzeltilmiş Na: ${corrRes.correctedSodiumKatz} mEq/L</span>
+                    <span class="text-slate-400 text-[10px]">Ölçülen: ${corrRes.measuredSodium}</span>
                 </div>
-                <div class="text-[10px] text-slate-300">${corrRes.interpretation}</div>
+                <div class="text-[9px] text-cyan-300 font-mono">${corrRes.formulaNotes}</div>
+                <div class="text-[10px] text-slate-300 mt-1">${corrRes.interpretation}</div>
                 ${osmRes ? `
-                    <div class="flex justify-between items-center font-bold pt-1 border-t border-slate-700/60 mt-1">
-                        <span>Osmolal Açık: ${osmRes.osmolalGap} mOsm/kg</span>
-                        <span class="${osmRes.isElevated ? 'text-rose-400 font-bold' : 'text-emerald-400'}">${osmRes.isElevated ? '⚠️ YÜKSEK (Toksik Alkol?)' : '✓ Normal'}</span>
+                    <div class="pt-1.5 border-t border-slate-700/60 mt-1.5 space-y-1">
+                        <div class="flex justify-between items-center font-bold">
+                            <span>Osmolal Açık: ${osmRes.osmolalGap} mOsm/kg</span>
+                            <span class="${osmRes.isCriticalGap ? 'text-rose-400 font-bold' : (osmRes.isHighGap ? 'text-amber-400 font-bold' : 'text-emerald-400')}">${osmRes.isCriticalGap ? '🚨 KRİTİK YÜKSEK' : (osmRes.isHighGap ? '⚠️ YÜKSEK' : '✓ Normal')}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-300">${osmRes.interpretation}</div>
+                        ${osmRes.antidoteAdvice ? `
+                            <div class="p-2 rounded bg-rose-950/60 border border-rose-800 text-[9px] text-rose-200 space-y-1 mt-1 font-sans">
+                                <div class="font-bold text-rose-300">Antidot Protokolü:</div>
+                                <div>• ${osmRes.antidoteAdvice.fomepizol}</div>
+                                <div>• ${osmRes.antidoteAdvice.etanolAlternative}</div>
+                                <div class="text-amber-200">• ${osmRes.antidoteAdvice.dialysisCriteria}</div>
+                            </div>
+                        ` : ''}
                     </div>
-                    <div class="text-[10px] text-slate-300">${osmRes.interpretation}</div>
                 ` : ''}
             `;
         }
@@ -1381,31 +1420,42 @@ function updateAllTabs() {
     // C. Parasetamol (Rumack-Matthew) & NAC
     const apapHours = parseNum(document.getElementById('input-apap-hours')?.value);
     const apapLevel = parseNum(document.getElementById('input-apap-level')?.value);
+    const apapHighRisk = document.getElementById('chk-apap-high-risk')?.checked || false;
     const apapOut = document.getElementById('output-apap-rumack');
 
     if (apapHours && apapLevel) {
         const apapRes = evaluateRumackMatthew({
             hoursPostIngestion: apapHours,
             paracetamolLevelMcgMl: apapLevel,
-            weightKg: appState.biometry.weightKg || undefined
+            weightKg: appState.biometry.weightKg || 70,
+            isHighRisk: apapHighRisk
         });
         appState.nephroTox.paracetamol = apapRes;
         if (apapOut) {
             apapOut.classList.remove('hidden');
-            const alertBg = apapRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (apapRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            apapOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            const alertBg = apapRes.isToxic ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200';
+            apapOut.className = `p-2.5 rounded-lg border font-mono space-y-1.5 text-[10px] ${alertBg}`;
             let nacHtml = '';
             if (apapRes.nacProtocol) {
                 const nac = apapRes.nacProtocol;
                 nacHtml = `
-                    <div class="pt-1 border-t border-rose-700/60 font-semibold text-rose-300">
-                        IV NAC Protokolü: Yükleme: ${nac.phase1.totalMg} mg (${nac.phase1.fluidD5W}) -> 2. Faz: ${nac.phase2.totalMg} mg -> 3. Faz: ${nac.phase3.totalMg} mg
+                    <div class="pt-1.5 border-t border-rose-700/60 font-semibold text-rose-300 space-y-1">
+                        <div class="flex justify-between items-center">
+                            <span>IV NAC 21 Saatlik Protokol:</span>
+                            ${nac.isPediatricAdjusted ? '<span class="px-1.5 py-0.5 rounded bg-amber-900/60 border border-amber-600 text-amber-300 text-[8px]">👶 Pediatrik Sıvı Korumalı</span>' : ''}
+                        </div>
+                        <div class="text-[9px] font-normal leading-relaxed">
+                            <div>• ${nac.loadingDose}</div>
+                            <div>• ${nac.secondDose}</div>
+                            <div>• ${nac.thirdDose}</div>
+                            <div class="text-amber-300 mt-1">• ${nac.oralAlternative}</div>
+                        </div>
                     </div>
                 `;
             }
             apapOut.innerHTML = `
                 <div class="flex justify-between items-center font-bold">
-                    <span>${apapRes.hoursPostIngestion}. Saat: ${apapRes.levelMcgMl} µg/mL</span>
+                    <span>${apapRes.hoursPostIngestion}. Saat: ${apapRes.levelMcgMl} µg/mL (Eşik: ${apapRes.threshold} µg/mL)</span>
                     <span>${apapRes.isToxic ? '🚨 TOKSİK SEVİYE' : '✓ Tedavi Çizgisi Altında'}</span>
                 </div>
                 <div class="text-[10px] leading-relaxed">${apapRes.interpretation}</div>
@@ -1417,12 +1467,22 @@ function updateAllTabs() {
         if (apapOut) apapOut.classList.add('hidden');
     }
 
-    // D. CURB-65
+    // D. CURB-65 & CRB-65 (Yaş ve BUN otomatik eşitleme)
+    const chkCurb65El = document.getElementById('chk-curb-65');
+    if (chkCurb65El && appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined) {
+        chkCurb65El.checked = appState.biometry.ageYears >= 65;
+    }
+    const chkCurbUEl = document.getElementById('chk-curb-u');
+    if (chkCurbUEl && feureaSBun) {
+        if (feureaUnit === 'bun' && feureaSBun > 19) chkCurbUEl.checked = true;
+        if (feureaUnit === 'urea' && feureaSBun > 42) chkCurbUEl.checked = true;
+    }
+
     const curbC = document.getElementById('chk-curb-c')?.checked || false;
     const curbU = document.getElementById('chk-curb-u')?.checked || false;
     const curbR = document.getElementById('chk-curb-r')?.checked || false;
     const curbB = document.getElementById('chk-curb-b')?.checked || false;
-    const curb65 = document.getElementById('chk-curb-65')?.checked || (y !== null && y >= 65);
+    const curb65 = document.getElementById('chk-curb-65')?.checked || false;
     const curbOut = document.getElementById('output-curb65');
 
     if (curbC || curbU || curbR || curbB || curb65) {
@@ -1436,15 +1496,15 @@ function updateAllTabs() {
         appState.nephroTox.curb65 = curbRes;
         if (curbOut) {
             curbOut.classList.remove('hidden');
-            const alertBg = curbRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (curbRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            curbOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
+            const alertBg = curbRes.score >= 3 ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (curbRes.score === 2 ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
+            curbOut.className = `p-2.5 rounded-lg border font-mono space-y-1.5 text-[10px] ${alertBg}`;
             curbOut.innerHTML = `
                 <div class="flex justify-between items-center font-bold">
-                    <span>CURB-65 Skoru: ${curbRes.score}/5</span>
+                    <span>CURB-65: ${curbRes.score}/5 | CRB-65: ${curbRes.crbScore}/4</span>
                     <span>${curbRes.mortalityGroup} (Mortalite: %${curbRes.mortalityPercent})</span>
                 </div>
                 <div class="text-[10px] font-semibold text-sky-300">${curbRes.treatmentSetting}</div>
-                <div class="text-[10px]">${curbRes.recommendations.join(' ')}</div>
+                <div class="text-[9px] text-amber-200 font-sans leading-relaxed">💊 ${curbRes.empiricAntibiotic}</div>
             `;
         }
     } else {
@@ -2094,6 +2154,24 @@ function updateClinicalAlertsInspector() {
             alertCount++;
         } else {
             alertNeoWeight.classList.add('hidden');
+        }
+    }
+
+    // 8. Nephrology, Toxicology & Respiratory Alert
+    const alertNephrotox = document.getElementById('alert-item-nephrotox');
+    const textNephrotox = document.getElementById('alert-text-nephrotox');
+    const nt = appState.nephroTox;
+    if (alertNephrotox && textNephrotox) {
+        const alerts = [];
+        if (nt?.paracetamol?.isToxic) alerts.push('Parasetamol Toksisitesi: Acil IV NAC Protokolü Başlatılmalı');
+        if (nt?.osmolalGap?.isCriticalGap) alerts.push(`Kritik Osmolal Açık (${nt.osmolalGap.osmolalGap} mOsm/kg): Toksik Alkol Zehirlenmesi`);
+        if (nt?.curb65?.score >= 3) alerts.push(`Ağır Pnömoni (CURB-65: ${nt.curb65.score}/5): YBÜ/Yatış gereklidir`);
+        if (alerts.length > 0) {
+            alertNephrotox.classList.remove('hidden');
+            textNephrotox.textContent = alerts.join(' | ');
+            alertCount++;
+        } else {
+            alertNephrotox.classList.add('hidden');
         }
     }
 

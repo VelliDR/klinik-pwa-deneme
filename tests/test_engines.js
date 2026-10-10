@@ -10,7 +10,7 @@ execSync('node -c sw.js');
 console.log('✓ js/app.js and sw.js syntax validated cleanly with zero parse errors\n');
 
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from '../js/engines/thrombosisEngine.js';
-import { calculateFENa, calculateFEUrea, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../js/engines/nephroToxEngine.js';
+import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../js/engines/nephroToxEngine.js';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from '../js/engines/neonatologyEngine.js';
 import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from '../js/engines/safetyPrescriptionEngine.js';
 import { determineAgeGroup, calculateEGFR } from '../js/engines/biometricsEngine.js';
@@ -71,8 +71,8 @@ assert.strictEqual(heartTest.riskCategory, 'Yüksek Risk');
 console.log('✓ HEART Score passed');
 
 
-console.log('\n--- 2. TESTING NEPHROTOX ENGINE ---');
-// FENa
+console.log('\n--- 2. TESTING NEPHROTOX ENGINE (AŞAMA 2) ---');
+// 1. FENa
 const fenaPrerenal = calculateFENa({ serumSodium: 140, urineSodium: 10, serumCreatinine: 2.0, urineCreatinine: 100 });
 assert.strictEqual(fenaPrerenal.fenaPercent, 0.14);
 assert.strictEqual(fenaPrerenal.etiology, 'Prerenal Azotemi');
@@ -82,37 +82,71 @@ assert.strictEqual(fenaATN.fenaPercent, 2.14);
 assert.strictEqual(fenaATN.etiology, 'İntrensek Renal / ATN');
 console.log('✓ FENa passed');
 
-// FEUrea
+// 2. FEUrea & Diuretic-Masked Prerenal Discordance
 const feureaPrerenal = calculateFEUrea({ serumBUN: 50, urineUrea: 400, serumCreatinine: 2.0, urineCreatinine: 100 });
 assert.strictEqual(feureaPrerenal.feUreaPercent, 16);
 assert.strictEqual(feureaPrerenal.etiology, 'Prerenal Azotemi (Diüretik Kullanımında Güvenilir)');
-console.log('✓ FEUrea passed');
 
-// Katz Corrected Sodium
+// BUN to Urea Harmonization check
+const feureaBunHarmonized = calculateFEUrea({ serumBUN: 45, isBun: true, urineUrea: 500, serumCreatinine: 1.8, urineCreatinine: 80 });
+assert.ok(feureaBunHarmonized.feUreaPercent > 0);
+
+// Diuretic concordance check
+const fenaWithDiuretic = calculateFENa({ serumSodium: 140, urineSodium: 35, serumCreatinine: 2.0, urineCreatinine: 40, isOnDiuretics: true });
+const concordance = evaluateOliguriaDifferential(fenaWithDiuretic, feureaPrerenal);
+assert.strictEqual(concordance.concordance, 'DİÜRETİK_MASKELİ_PRERENAL');
+assert.ok(concordance.summary.includes('Diüretik'));
+console.log('✓ FEUrea & Oliguria Concordance passed');
+
+// 3. Katz & Hillier Corrected Sodium
 const katz = calculateCorrectedSodium({ measuredSodium: 125, glucoseMgDl: 600 });
-assert.strictEqual(katz.correctedSodium, 133);
-console.log('✓ Katz Corrected Sodium passed');
+assert.strictEqual(katz.correctedSodium, 133); // Katz
+assert.strictEqual(katz.correctedSodiumHillier, 137); // Hillier
+assert.ok(katz.interpretation.includes('Gerçek Hiponatremi'));
 
-// Osmolal Gap
+const katzPseudo = calculateCorrectedSodium({ measuredSodium: 130, glucoseMgDl: 600 });
+assert.strictEqual(katzPseudo.correctedSodium, 138);
+assert.ok(katzPseudo.interpretation.includes('Yalancı Hiponatremi'));
+console.log(`✓ Katz (${katz.correctedSodium}) & Hillier (${katz.correctedSodiumHillier}) Corrected Sodium passed`);
+
+// 4. Osmolal Gap & Antidote Protocol
 const osmTest = calculateOsmolalGap({ measuredOsmolality: 320, sodium: 140, glucoseMgDl: 100, bunMgDl: 15 });
-assert.strictEqual(osmTest.isElevated, true); // calculated approx 291, gap ~29
-console.log('✓ Osmolal Gap passed');
+assert.strictEqual(osmTest.isElevated, true); // gap ~29 > 20 => critical
+assert.strictEqual(osmTest.isCriticalGap, true);
+assert.ok(osmTest.antidoteAdvice.fomepizol.includes('Fomepizol'));
+assert.ok(osmTest.antidoteAdvice.etanolAlternative.includes('Etanol'));
+console.log(`✓ Critical Osmolal Gap (${osmTest.gap} mOsm/kg) & Toxic Alcohol Antidote passed`);
 
-// Rumack-Matthew
+// 5. Rumack-Matthew & Pediatric Safe NAC Protocol
 const apapEarly = evaluateRumackMatthew({ hoursPostIngestion: 2, paracetamolLevelMcgMl: 200 });
 assert.strictEqual(apapEarly.status, 'TOO_EARLY');
 
-const apapToxic = evaluateRumackMatthew({ hoursPostIngestion: 8, paracetamolLevelMcgMl: 100, weightKg: 70 });
-assert.strictEqual(apapToxic.isToxic, true);
-assert.ok(apapToxic.nacProtocol.phase1.totalMg > 0);
-console.log('✓ Rumack-Matthew & NAC passed');
+// Standard Adult Toxic Dose (70 kg)
+const apapToxicAdult = evaluateRumackMatthew({ hoursPostIngestion: 8, paracetamolLevelMcgMl: 100, weightKg: 70 });
+assert.strictEqual(apapToxicAdult.isToxic, true);
+assert.strictEqual(apapToxicAdult.nacProtocol.isPediatricAdjusted, false);
+assert.strictEqual(apapToxicAdult.nacProtocol.phase1.totalMg, 10500); // 70 * 150
 
-// CURB-65
+// Pediatric Weight Toxic Dose (10 kg infant) -> Fluid Overload Prevention
+const apapToxicChild = evaluateRumackMatthew({ hoursPostIngestion: 6, paracetamolLevelMcgMl: 120, weightKg: 10 });
+assert.strictEqual(apapToxicChild.isToxic, true);
+assert.strictEqual(apapToxicChild.nacProtocol.isPediatricAdjusted, true);
+assert.strictEqual(apapToxicChild.nacProtocol.phase1.totalMg, 1500); // 10 * 150
+assert.ok(apapToxicChild.nacProtocol.phase1.fluidD5W.includes('30 mL')); // 10 * 3 mL/kg
+
+// High-risk line evaluation (100 at 4h)
+const apapHighRisk = evaluateRumackMatthew({ hoursPostIngestion: 4, paracetamolLevelMcgMl: 110, isHighRisk: true });
+assert.strictEqual(apapHighRisk.isToxic, true); // > 100
+assert.strictEqual(apapHighRisk.threshold, 100);
+console.log('✓ Rumack-Matthew, High-Risk Nomogram & Pediatric Fluid-Safe NAC passed');
+
+// 6. CURB-65 & CRB-65
 const curbTest = calculateCURB65({ confusion: true, bunOver19: true, ageGte65: true });
 assert.strictEqual(curbTest.score, 3);
+assert.strictEqual(curbTest.crbScore, 2);
 assert.strictEqual(curbTest.mortalityGroup, 'Şiddetli Pnömoni (Yüksek Risk)');
-console.log('✓ CURB-65 passed');
-
+assert.ok(curbTest.empiricAntibiotic.includes('Seftriakson'));
+console.log(`✓ CURB-65 (${curbTest.score}/5) & CRB-65 (${curbTest.crbScore}/4) with Empiric Antibiotic passed`);
 
 console.log('\n--- 3. TESTING NEONATOLOGY ENGINE ---');
 // Bhutani
@@ -202,9 +236,9 @@ const expectedIds = [
     'select-heart-history', 'select-heart-ecg', 'select-heart-age', 'select-heart-risk', 'select-heart-troponin', 'output-heart-score',
     'chk-af-chf', 'chk-af-htn', 'chk-af-age75', 'chk-af-dm', 'chk-af-stroke', 'chk-af-vasc', 'chk-af-age65', 'chk-af-female', 'output-cha2ds2vasc',
     'chk-bleeding-htn', 'chk-bleeding-renal', 'chk-bleeding-liver', 'chk-bleeding-stroke', 'chk-bleeding-history', 'chk-bleeding-inr', 'chk-bleeding-elderly', 'chk-bleeding-drugs', 'chk-bleeding-alcohol', 'output-hasbled',
-    'input-fena-s-na', 'input-fena-u-na', 'input-fena-s-cr', 'input-fena-u-cr', 'input-feurea-s-bun', 'input-feurea-u-urea', 'chk-fena-diuretic', 'output-fena-feurea',
+    'input-fena-s-na', 'input-fena-u-na', 'input-fena-s-cr', 'input-fena-u-cr', 'select-feurea-unit', 'input-feurea-s-bun', 'input-feurea-u-urea', 'chk-fena-diuretic', 'output-fena-feurea',
     'input-corr-na-meas', 'input-corr-glucose', 'input-osm-measured', 'output-corr-na-osm',
-    'input-apap-hours', 'input-apap-level', 'output-apap-rumack',
+    'input-apap-hours', 'input-apap-level', 'chk-apap-high-risk', 'output-apap-rumack',
     'chk-curb-c', 'chk-curb-u', 'chk-curb-r', 'chk-curb-b', 'chk-curb-65', 'output-curb65',
     'input-bhutani-age-hours', 'input-bhutani-tsb', 'input-bhutani-gw', 'chk-bhutani-risk-factors', 'output-bhutani-result',
     'select-apgar-minute', 'select-apgar-hr', 'select-apgar-resp', 'select-apgar-tone', 'select-apgar-reflex', 'select-apgar-color', 'output-apgar-result',
@@ -216,7 +250,8 @@ const expectedIds = [
     'output-neonatal-weight-loss', 'container-neonatal-fluid-banner',
     'text-neonatal-fluid-day', 'text-neonatal-fluid-target', 'text-neonatal-fluid-desc',
     'alert-item-neonatal-drug', 'alert-text-neonatal-drug',
-    'alert-item-neonatal-weight', 'alert-text-neonatal-weight'
+    'alert-item-neonatal-weight', 'alert-text-neonatal-weight',
+    'alert-item-nephrotox', 'alert-text-nephrotox'
 ];
 
 let missing = 0;

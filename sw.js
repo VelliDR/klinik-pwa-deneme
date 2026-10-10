@@ -1,4 +1,4 @@
-const CACHE_NAME = 'klinik-pwa-v12';
+const CACHE_NAME = 'klinik-pwa-v13';
 
 const ASSETS_TO_CACHE = [
     './index.html',
