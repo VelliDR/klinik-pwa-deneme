@@ -402,7 +402,6 @@ function updateAllTabs() {
 
     // PEDIATRIC IRON ENGINE
     const hb = parseNum(document.getElementById('input-hb').value);
-    const isPreterm = document.getElementById('chk-preterm').checked;
     const ironRes = document.getElementById('output-iron-engine');
     
     if (totalMonths !== null && appState.biometry.weightKg) {
@@ -2281,6 +2280,10 @@ function initResponsiveWorkstation() {
                         setTimeout(() => desktopFb.classList.add('hidden'), 2000);
                     }
                 });
+            }
+        });
+    }
+
     // 6. DOB Preset Buttons Handling
     const presetBtns = document.querySelectorAll('.btn-dob-preset');
     const dobInput = document.getElementById('input-dob');

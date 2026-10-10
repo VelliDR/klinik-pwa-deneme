@@ -2,6 +2,12 @@
 import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
+
+console.log('--- 0. CHECKING SYNTAX OF ES MODULES & SERVICE WORKER ---');
+execSync('node -c js/app.js');
+execSync('node -c sw.js');
+console.log('✓ js/app.js and sw.js syntax validated cleanly with zero parse errors\n');
 
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from '../js/engines/thrombosisEngine.js';
 import { calculateFENa, calculateFEUrea, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../js/engines/nephroToxEngine.js';
