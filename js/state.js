@@ -66,7 +66,6 @@ export const appState = {
     other: {
         active: false,
         cardiac: null,
-        labGuide: null,
         drugPrescription: null
     },
 

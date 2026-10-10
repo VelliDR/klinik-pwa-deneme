@@ -3,13 +3,12 @@ import { calculateBSA, calculateEGFR } from './engines/biometricsEngine.js';
 import { calculatePediatricDose, getVaccineSchedule, classifyPediatricBP, calculateCentorMcIsaac } from './engines/pediatricEngine.js';
 import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from './engines/percentileEngine.js';
 import { calculatePediatricIron } from './engines/ironEngine.js';
-import { calculateAlvarado, calculateParkland, getSutureGuidance, calculateRanson } from './engines/surgeryEngine.js';
+import { calculateAlvarado, calculateParkland, getSutureGuidance } from './engines/surgeryEngine.js';
 import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from './engines/obgynEngine.js';
 import { analyzeBloodGas } from './engines/bloodGasEngine.js';
 import { calculateMaintenanceFluid, calculateSodiumCorrection, calculateNeonatalFluid } from './engines/fluidEngine.js';
 import { calculateNEWS2, calculatePEWS, calculateGCS } from './engines/triageEngine.js';
 import { calculateQTc, calculateAxis } from './engines/cardiacEngine.js';
-import { getLabTubeGuide } from './engines/labGuideEngine.js';
 import { calculateCorrectedCalcium } from './engines/calciumEngine.js';
 import { calculateInfusionRate, calculateGIR } from './engines/infusionEngine.js';
 import { convertSteroids, calculateHOMAIR } from './engines/endocrineEngine.js';
@@ -208,6 +207,39 @@ function calculatePatientAge() {
     }
 
     return { y, m, days, weeks, hours, formatted, ageGroupTag };
+}
+
+/**
+ * Standart Klinik Skor Kartı Render Yardımcısı
+ * Tekrarlayan DOM sınıf atamaları ve HTML şablon kodunu tekilleştirir.
+ */
+function renderClinicalCardResult(el, { title, riskText = '', alertClass = 'slate', subtitle = '', recommendations = '', extraHtml = '' }) {
+    if (!el) return;
+    el.classList.remove('hidden');
+
+    let bgStyle = 'bg-slate-900/60 border-slate-700/50 text-slate-200';
+    if (alertClass === 'danger' || alertClass === 'critical' || alertClass === 'text-rose-400') {
+        bgStyle = 'bg-rose-950/40 border-rose-600/50 text-rose-200';
+    } else if (alertClass === 'warning' || alertClass === 'text-amber-400') {
+        bgStyle = 'bg-amber-950/40 border-amber-600/50 text-amber-200';
+    } else if (alertClass === 'success' || alertClass === 'normal' || alertClass === 'text-emerald-400') {
+        bgStyle = 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200';
+    } else if (alertClass === 'info' || alertClass === 'text-sky-400') {
+        bgStyle = 'bg-sky-950/40 border-sky-600/50 text-sky-200';
+    }
+
+    const recs = Array.isArray(recommendations) ? recommendations.join(' ') : (recommendations || '');
+
+    el.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${bgStyle}`;
+    el.innerHTML = `
+        <div class="flex justify-between items-center font-bold">
+            <span>${title || ''}</span>
+            <span>${riskText || ''}</span>
+        </div>
+        ${subtitle ? `<div class="text-[10px] font-semibold">${subtitle}</div>` : ''}
+        ${recs ? `<div class="text-[10px] text-slate-300 leading-relaxed">${recs}</div>` : ''}
+        ${extraHtml || ''}
+    `;
 }
 
 // Update Logic
@@ -1021,15 +1053,12 @@ function updateAllTabs() {
         });
         const ct = appState.pediatrics.centor;
         if (ct && centorRes) {
-            centorRes.classList.remove('hidden');
-            centorRes.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${ct.score >= 4 ? 'bg-rose-950/40 border-rose-600/50' : ct.score >= 2 ? 'bg-amber-950/40 border-amber-600/50' : 'bg-slate-900/60 border-slate-700/50'}`;
-            centorRes.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <strong class="${ct.alertClass}">Centor Skoru: ${ct.score}</strong>
-                    <span class="text-slate-300">GAS Riski: ${ct.riskPercent}</span>
-                </div>
-                <div class="text-[10px] text-slate-300">${ct.recommendation}</div>
-            `;
+            renderClinicalCardResult(centorRes, {
+                title: `<strong class="${ct.alertClass}">Centor Skoru: ${ct.score}</strong>`,
+                riskText: `GAS Riski: ${ct.riskPercent}`,
+                recommendations: ct.recommendation,
+                alertClass: ct.score >= 4 ? 'danger' : (ct.score >= 2 ? 'warning' : 'slate')
+            });
         } else if (centorRes) {
             centorRes.classList.add('hidden');
         }
@@ -1069,16 +1098,12 @@ function updateAllTabs() {
         });
         appState.thrombosis.wellsDVT = dvtRes;
         if (dvtOut) {
-            dvtOut.classList.remove('hidden');
-            const alertBg = dvtRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (dvtRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            dvtOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            dvtOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>Wells DVT: ${dvtRes.score} Puan</span>
-                    <span>${dvtRes.riskCategory} (%${dvtRes.probability})</span>
-                </div>
-                <div class="text-[10px]">${dvtRes.recommendations.join(' ')}</div>
-            `;
+            renderClinicalCardResult(dvtOut, {
+                title: `Wells DVT: ${dvtRes.score} Puan`,
+                riskText: `${dvtRes.riskCategory} (%${dvtRes.probability})`,
+                recommendations: dvtRes.recommendations,
+                alertClass: dvtRes.alertClass
+            });
         }
     } else {
         appState.thrombosis.wellsDVT = null;
@@ -1107,16 +1132,12 @@ function updateAllTabs() {
         });
         appState.thrombosis.wellsPTE = peRes;
         if (peOut) {
-            peOut.classList.remove('hidden');
-            const alertBg = peRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200';
-            peOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            peOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>Wells PTE: ${peRes.score} Puan</span>
-                    <span>${peRes.twoTierRisk.risk} (${peRes.twoTierRisk.tier})</span>
-                </div>
-                <div class="text-[10px]">${peRes.recommendations.join(' ')}</div>
-            `;
+            renderClinicalCardResult(peOut, {
+                title: `Wells PTE: ${peRes.score} Puan`,
+                riskText: `${peRes.twoTierRisk.risk} (${peRes.twoTierRisk.tier})`,
+                recommendations: peRes.recommendations,
+                alertClass: peRes.alertClass
+            });
         }
     } else {
         appState.thrombosis.wellsPTE = null;
@@ -1147,13 +1168,11 @@ function updateAllTabs() {
         });
         appState.thrombosis.perc = percRes;
         if (percOut) {
-            percOut.classList.remove('hidden');
-            const alertBg = percRes.alertClass === 'success' ? 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200' : 'bg-amber-950/40 border-amber-600/50 text-amber-200';
-            percOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            percOut.innerHTML = `
-                <div class="font-bold">${percRes.isPERCNegative ? '✓ PERC NEGATİF (0 Kriter)' : `⚠️ PERC POZİTİF (${percRes.positiveCount} Kriter)`}</div>
-                <div class="text-[10px]">${percRes.recommendations.join(' ')}</div>
-            `;
+            renderClinicalCardResult(percOut, {
+                title: percRes.isPERCNegative ? '✓ PERC NEGATİF (0 Kriter)' : `⚠️ PERC POZİTİF (${percRes.positiveCount} Kriter)`,
+                recommendations: percRes.recommendations,
+                alertClass: percRes.alertClass
+            });
         }
     } else {
         appState.thrombosis.perc = null;
@@ -1178,16 +1197,12 @@ function updateAllTabs() {
         });
         appState.thrombosis.heart = heartRes;
         if (heartOut) {
-            heartOut.classList.remove('hidden');
-            const alertBg = heartRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (heartRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            heartOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            heartOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>HEART Skoru: ${heartRes.score}/10</span>
-                    <span>${heartRes.riskCategory} (%${heartRes.maceRatePercent} MACE)</span>
-                </div>
-                <div class="text-[10px]">${heartRes.recommendations.join(' ')}</div>
-            `;
+            renderClinicalCardResult(heartOut, {
+                title: `HEART Skoru: ${heartRes.score}/10`,
+                riskText: `${heartRes.riskCategory} (%${heartRes.maceRatePercent} MACE)`,
+                recommendations: heartRes.recommendations,
+                alertClass: heartRes.alertClass
+            });
         }
     } else {
         appState.thrombosis.heart = null;
@@ -1218,16 +1233,12 @@ function updateAllTabs() {
         });
         appState.thrombosis.cha2ds2vasc = afRes;
         if (afOut) {
-            afOut.classList.remove('hidden');
-            const alertBg = afRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (afRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            afOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            afOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>CHA₂DS₂-VASc: ${afRes.score} Puan</span>
-                    <span>Yıllık İnme: %${afRes.annualStrokeRiskPercent}</span>
-                </div>
-                <div class="text-[10px]">${afRes.anticoagulationRecommendation}</div>
-            `;
+            renderClinicalCardResult(afOut, {
+                title: `CHA₂DS₂-VASc: ${afRes.score} Puan`,
+                riskText: `Yıllık İnme: %${afRes.annualStrokeRiskPercent}`,
+                recommendations: afRes.anticoagulationRecommendation,
+                alertClass: afRes.alertClass
+            });
         }
     } else {
         appState.thrombosis.cha2ds2vasc = null;
@@ -1260,16 +1271,12 @@ function updateAllTabs() {
         });
         appState.thrombosis.hasbled = bRes;
         if (hasbledOut) {
-            hasbledOut.classList.remove('hidden');
-            const alertBg = bRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-amber-950/40 border-amber-600/50 text-amber-200';
-            hasbledOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            hasbledOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>HAS-BLED: ${bRes.score} Puan</span>
-                    <span>${bRes.bleedingRiskCategory}</span>
-                </div>
-                <div class="text-[10px]">${bRes.recommendations.join(' ')}</div>
-            `;
+            renderClinicalCardResult(hasbledOut, {
+                title: `HAS-BLED: ${bRes.score} Puan`,
+                riskText: bRes.bleedingRiskCategory,
+                recommendations: bRes.recommendations,
+                alertClass: bRes.alertClass
+            });
         }
     } else {
         appState.thrombosis.hasbled = null;
@@ -1496,17 +1503,13 @@ function updateAllTabs() {
         });
         appState.nephroTox.curb65 = curbRes;
         if (curbOut) {
-            curbOut.classList.remove('hidden');
-            const alertBg = curbRes.score >= 3 ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (curbRes.score === 2 ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            curbOut.className = `p-2.5 rounded-lg border font-mono space-y-1.5 text-[10px] ${alertBg}`;
-            curbOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>CURB-65: ${curbRes.score}/5 | CRB-65: ${curbRes.crbScore}/4</span>
-                    <span>${curbRes.mortalityGroup} (Mortalite: %${curbRes.mortalityPercent})</span>
-                </div>
-                <div class="text-[10px] font-semibold text-sky-300">${curbRes.treatmentSetting}</div>
-                <div class="text-[9px] text-amber-200 font-sans leading-relaxed">💊 ${curbRes.empiricAntibiotic}</div>
-            `;
+            renderClinicalCardResult(curbOut, {
+                title: `CURB-65: ${curbRes.score}/5 | CRB-65: ${curbRes.crbScore}/4`,
+                riskText: `${curbRes.mortalityGroup} (Mortalite: %${curbRes.mortalityPercent})`,
+                subtitle: `<span class="text-sky-300">${curbRes.treatmentSetting}</span>`,
+                extraHtml: `<div class="text-[9px] text-amber-200 font-sans leading-relaxed">💊 ${curbRes.empiricAntibiotic}</div>`,
+                alertClass: curbRes.score >= 3 ? 'danger' : (curbRes.score === 2 ? 'warning' : 'success')
+            });
         }
     } else {
         appState.nephroTox.curb65 = null;
@@ -1532,18 +1535,17 @@ function updateAllTabs() {
         });
         appState.neonatology.bhutani = bRes;
         if (bhutaniOut) {
-            bhutaniOut.classList.remove('hidden');
-            const alertBg = bRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (bRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            bhutaniOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            bhutaniOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>${bRes.ageHours}. Saat: TSB ${bRes.totalBilirubin} mg/dL</span>
-                    <span>${bRes.riskGroupLabel || ''}</span>
-                </div>
+            const extra = `
                 ${bRes.phototherapyThreshold ? `<div class="text-[10px]">Fototerapi Eşiği: ${bRes.phototherapyThreshold} mg/dL | Kan Değişimi: ${bRes.exchangeThreshold} mg/dL</div>` : ''}
                 <div class="text-[10px] font-semibold">${bRes.interpretation}</div>
-                <div class="text-[10px] text-slate-300">${bRes.recommendations.join(' ')}</div>
             `;
+            renderClinicalCardResult(bhutaniOut, {
+                title: `${bRes.ageHours}. Saat: TSB ${bRes.totalBilirubin} mg/dL`,
+                riskText: bRes.riskGroupLabel || '',
+                recommendations: bRes.recommendations,
+                alertClass: bRes.alertClass,
+                extraHtml: extra
+            });
         }
     } else {
         appState.neonatology.bhutani = null;
@@ -1569,17 +1571,13 @@ function updateAllTabs() {
     });
     appState.neonatology.apgar = apgarRes;
     if (apgarOut) {
-        apgarOut.classList.remove('hidden');
-        const alertBg = apgarRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (apgarRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-        apgarOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-        apgarOut.innerHTML = `
-            <div class="flex justify-between items-center font-bold">
-                <span>APGAR (${apgarRes.minute}. Dakika): ${apgarRes.score}/10</span>
-                <span>${apgarRes.status}</span>
-            </div>
-            <div class="text-[10px]">${apgarRes.interpretation}</div>
-            <div class="text-[10px] text-slate-300">${apgarRes.recommendations.join(' ')}</div>
-        `;
+        renderClinicalCardResult(apgarOut, {
+            title: `APGAR (${apgarRes.minute}. Dakika): ${apgarRes.score}/10`,
+            riskText: apgarRes.status,
+            subtitle: `<span class="font-normal text-slate-200">${apgarRes.interpretation}</span>`,
+            recommendations: apgarRes.recommendations,
+            alertClass: apgarRes.alertClass
+        });
     }
 
     // C. Westley Krup
@@ -1600,17 +1598,13 @@ function updateAllTabs() {
         });
         appState.neonatology.westleyCroup = croupRes;
         if (croupOut) {
-            croupOut.classList.remove('hidden');
-            const alertBg = croupRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (croupRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            croupOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            croupOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>Westley Krup Skoru: ${croupRes.score}/17</span>
-                    <span>${croupRes.severity}</span>
-                </div>
-                <div class="text-[10px] leading-relaxed">${croupRes.interpretation}</div>
-                <div class="text-[10px] text-slate-300">${croupRes.recommendations.join(' ')}</div>
-            `;
+            renderClinicalCardResult(croupOut, {
+                title: `Westley Krup Skoru: ${croupRes.score}/17`,
+                riskText: croupRes.severity,
+                subtitle: `<span class="font-normal leading-relaxed text-slate-200">${croupRes.interpretation}</span>`,
+                recommendations: croupRes.recommendations,
+                alertClass: croupRes.alertClass
+            });
         }
     } else {
         appState.neonatology.westleyCroup = null;
@@ -1634,17 +1628,13 @@ function updateAllTabs() {
         });
         appState.neonatology.cdsDehydration = cdsRes;
         if (cdsOut) {
-            cdsOut.classList.remove('hidden');
-            const alertBg = cdsRes.alertClass === 'danger' ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : (cdsRes.alertClass === 'warning' ? 'bg-amber-950/40 border-amber-600/50 text-amber-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200');
-            cdsOut.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${alertBg}`;
-            cdsOut.innerHTML = `
-                <div class="flex justify-between items-center font-bold">
-                    <span>CDS Skoru: ${cdsRes.score}/8</span>
-                    <span>${cdsRes.severity}</span>
-                </div>
-                <div class="text-[10px]">${cdsRes.interpretation}</div>
-                <div class="text-[10px] text-slate-300">${cdsRes.recommendations.join(' ')}</div>
-            `;
+            renderClinicalCardResult(cdsOut, {
+                title: `CDS Skoru: ${cdsRes.score}/8`,
+                riskText: cdsRes.severity,
+                subtitle: `<span class="font-normal text-slate-200">${cdsRes.interpretation}</span>`,
+                recommendations: cdsRes.recommendations,
+                alertClass: cdsRes.alertClass
+            });
         }
     } else {
         appState.neonatology.cdsDehydration = null;
@@ -1789,24 +1779,6 @@ document.addEventListener('change', updateAllTabs);
 
 // Initial call
 updateAllTabs();
-
-// LAB SEARCH
-document.getElementById('input-lab-search').addEventListener('input', (e) => {
-    const q = e.target.value;
-    const res = getLabTubeGuide(q);
-    const el = document.getElementById('container-lab-results');
-    if (res && q.length > 2) {
-        el.classList.remove('hidden');
-        el.innerHTML = res.map(r => `
-            <div class="mb-2 p-2 border-l-4 rounded-r-lg bg-slate-800" style="border-color: ${r.color.includes('Mor') ? 'purple' : r.color.includes('Mavi') ? '#38bdf8' : r.color.includes('Sarı') ? '#facc15' : '#10b981'};">
-                <strong class="text-slate-100">${r.color}</strong> (Sıra: ${r.order})<br>
-                <span class="text-xs text-slate-400">${r.notes}</span>
-            </div>
-        `).join('');
-    } else {
-        el.classList.add('hidden');
-    }
-});
 
 // DRUG SEARCH
 const clearBtn = document.getElementById('btn-clear-search');
