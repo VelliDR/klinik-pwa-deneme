@@ -340,4 +340,8 @@ console.log('\n--- 8. TESTING WORKSTATION PRESET SHORTCUTS & APP RUNTIME RESILIE
 execSync('node tests/test_workstation_shortcuts.js');
 console.log('✓ All 9 workstation preset shortcuts & app.js initial load verified with 0 runtime errors');
 
+console.log('\n--- 9. TESTING TİTCK DRUG SEARCH & PHONETIC EQUIVALENTS ENGINE ---');
+execSync('node tests/test_drug_search.js');
+console.log('✓ TİTCK Drug Search, phonetics, compact matching, and equivalents verified with 100% accuracy');
+
 console.log('\n🎉 ALL VERIFICATION TESTS PASSED SUCCESSFULLY! 100% HEALTHY.');

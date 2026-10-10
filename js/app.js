@@ -14,7 +14,7 @@ import { calculateCorrectedCalcium } from './engines/calciumEngine.js';
 import { calculateInfusionRate, calculateGIR } from './engines/infusionEngine.js';
 import { convertSteroids, calculateHOMAIR } from './engines/endocrineEngine.js';
 import { generateSOAP } from './utils/soapGenerator.js';
-import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db/titckIndexedDB.js';
+import { seedDrugDatabase, searchDrugsInDB, getDrugCount, ensureDrugCatalogReady, isDrugCatalogReady } from './db/titckIndexedDB.js';
 import { getDrugBadgesHTML } from './drugEngine.js';
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine.js';
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine.js';
@@ -24,37 +24,12 @@ import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, ch
 // Utils
 const parseNum = (val) => val === '' || isNaN(val) ? null : Number(val);
 
-// Initialize Drug Database (PWA Akıllı Yükleyici: IndexedDB hazırsa gereksiz ağ indirmesi yapmaz)
+// Initialize Drug Database (PWA Hibrit Hızlı Yükleyici: Bellek İçi + IndexedDB)
 async function initDrugCatalog() {
     try {
-        const count = await getDrugCount();
-        const DB_BUILD_KEY = 'klinik_drug_db_build';
-        const CURRENT_BUILD = 'titck_2026_v18';
-        const savedBuild = localStorage.getItem(DB_BUILD_KEY);
-
-        if (count > 1000 && savedBuild === CURRENT_BUILD) {
-            console.log(`[TİTCK PWA] IndexedDB hazır (${count} ilaç kayıtlı).`);
-            return;
-        }
-
-        console.log('[TİTCK PWA] İlaç kataloğu yükleniyor/güncelleniyor...');
-        let res = null;
-        try {
-            res = await fetch('./data/medicines.json');
-        } catch (e) {
-            console.warn('[TİTCK PWA] medicines.json fetch uyarısı, alternatif dosya deneniyor...');
-        }
-        if (!res || !res.ok) {
-            res = await fetch('./data/titck_skrs_prospektuslu.json');
-        }
-        if (res && res.ok) {
-            const data = await res.json();
-            await seedDrugDatabase(data);
-            localStorage.setItem(DB_BUILD_KEY, CURRENT_BUILD);
-            console.log('[TİTCK PWA] 18.212 TİTCK ilacı ve prospektüs linkleri IndexedDB üzerine indekslendi.');
-        }
+        await ensureDrugCatalogReady();
     } catch (err) {
-        console.warn('[TİTCK PWA] Çevrimdışı modda yerel IndexedDB kataloğu kullanılıyor:', err);
+        console.warn('[TİTCK PWA] İlaç kataloğu başlatma uyarısı:', err);
     }
 }
 initDrugCatalog();
@@ -1838,6 +1813,7 @@ const clearBtn = document.getElementById('btn-clear-search');
 const drugInput = document.getElementById('input-drug-search');
 const drugResult = document.getElementById('container-search-results');
 
+let currentDrugSearchSeq = 0;
 drugInput.addEventListener('input', async (e) => {
     const q = e.target.value.trim();
     if (q.length > 0) {
@@ -1850,8 +1826,17 @@ drugInput.addEventListener('input', async (e) => {
     }
 
     if (q.length >= 2) {
+        const thisSeq = ++currentDrugSearchSeq;
+
+        if (!isDrugCatalogReady()) {
+            drugResult.classList.remove('hidden');
+            drugResult.innerHTML = '<div class="p-3 text-xs text-sky-400 bg-slate-900 text-center rounded flex items-center justify-center gap-2"><span class="inline-block animate-pulse">⏳</span> <span>TİTCK İlaç Kataloğu hazırlanıyor, aranıyor...</span></div>';
+        }
+
         try {
             const res = await searchDrugsInDB(q);
+            if (thisSeq !== currentDrugSearchSeq) return;
+
             if (res && res.length > 0) {
                 drugResult.classList.remove('hidden');
                 drugResult.innerHTML = res.map(r => {
@@ -1912,7 +1897,7 @@ drugInput.addEventListener('input', async (e) => {
             }
         } catch (err) {
             console.error('Arama hatası:', err);
-            drugResult.innerHTML = '';
+            drugResult.innerHTML = '<div class="p-3 text-xs text-rose-400 bg-slate-900 text-center rounded">Arama sırasında bir sorun oluştu</div>';
         }
     } else {
         drugResult.innerHTML = '';

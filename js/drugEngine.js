@@ -1,4 +1,4 @@
-import { initDB, normalizeText } from './db/titckIndexedDB.js';
+import { initDB, normalizeText, ensureDrugCatalogReady } from './db/titckIndexedDB.js';
 
 /**
  * 1. REGEX İLE DOZ VE KONSANTRASYON PARSER'I
@@ -47,16 +47,8 @@ export async function findEquivalents(selectedDrug) {
     }
 
     try {
-        const db = await initDB();
-        
-        // Bütün ilaçları çekip hafızada esnek filtreleme yapıyoruz
-        const allDrugs = await new Promise((resolve) => {
-            const tx = db.transaction('drugs', 'readonly');
-            const store = tx.objectStore('drugs');
-            const req = store.getAll();
-            req.onsuccess = () => resolve(req.result || []);
-            req.onerror = () => resolve([]);
-        });
+        const allDrugs = await ensureDrugCatalogReady();
+        if (!allDrugs || allDrugs.length === 0) return [];
 
         return allDrugs.filter(d => {
             // 1. Kendisini listeden çıkar
