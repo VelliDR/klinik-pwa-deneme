@@ -8,8 +8,12 @@ export function generateSOAP() {
 
     // --- SUBJEKTİF ---
     const ptParts = [];
-    if (appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined) {
+    if (appState.biometry.ageFormatted && appState.biometry.ageFormatted !== '--') {
+        ptParts.push(`Yaş: ${appState.biometry.ageFormatted}`);
+    } else if (appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined) {
         ptParts.push(`Yaş: ${appState.biometry.ageYears} Yıl (${appState.biometry.ageMonths || 0} Ay)`);
+    } else if (appState.biometry.ageMonths !== null) {
+        ptParts.push(`Yaş: ${appState.biometry.ageMonths} Ay`);
     }
     if (appState.pediatrics && appState.pediatrics.correctedAge && appState.pediatrics.correctedAge.isPreterm) {
         ptParts.push(`Düzeltilmiş Yaş: ${appState.pediatrics.correctedAge.correctedMonths} Ay (${appState.pediatrics.correctedAge.gestationalWeeks} GH preterm)`);
@@ -210,6 +214,9 @@ export function generateSOAP() {
         if (neo.cdsDehydration) {
             o.push(`- Klinik Dehidratasyon Skalası (CDS): ${neo.cdsDehydration.score}/8 (${neo.cdsDehydration.interpretation}).`);
         }
+        if (neo.weightLoss && neo.weightLoss.isValid) {
+            o.push(`- Yenidoğan Tartı Takibi: Doğum: ${neo.weightLoss.birthWeightG} g, Mevcut: ${neo.weightLoss.currentWeightG} g -> Tartı Değişimi: %${neo.weightLoss.percentLoss} (${neo.weightLoss.interpretation})`);
+        }
     }
 
     // İlaç Güvenliği & DDI
@@ -223,6 +230,9 @@ export function generateSOAP() {
         }
         if (sp.pregnancySafety && sp.pregnancySafety.alertsCount > 0) {
             o.push(`- Gebelik Güvenlik Uyarısı: ${sp.pregnancySafety.alertsCount} ilaçta fetal risk saptandı.`);
+        }
+        if (sp.neonatalDrugSafety && sp.neonatalDrugSafety.alertsCount > 0) {
+            o.push(`- 🚨 Yenidoğan İlaç Güvenliği: ${sp.neonatalDrugSafety.alertsCount} ilaçta kontrendikasyon/toksisite uyarısı mevcut (${sp.neonatalDrugSafety.alerts.map(a => a.drugName).join(', ')}).`);
         }
     }
 
@@ -287,9 +297,15 @@ export function generateSOAP() {
         if (appState.neonatology.westleyCroup && appState.neonatology.westleyCroup.score >= 6) {
             a.push(`- Ciddi Krup / Yaklaşan Solunum Yetmezliği: Westley Skoru ${appState.neonatology.westleyCroup.score} (Nebülize Epinefrin ve YBÜ gözlemi).`);
         }
+        if (appState.neonatology.weightLoss && (appState.neonatology.weightLoss.status === 'EXCESSIVE_LOSS_CRITICAL' || appState.neonatology.weightLoss.percentLoss > 10)) {
+            a.push(`- YENİDOĞAN AŞIRI TARTI KAYBI: Doğum tartısının %${appState.neonatology.weightLoss.percentLoss}'i kaybedildi. Hipernatremik dehidratasyon riski!`);
+        }
     }
     if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
         a.push(`- İlaç Etkileşim Uyarısı: Triple Whammy kombinasyonu nedeniyle Akut Böbrek Hasarı riski çok yüksektir.`);
+    }
+    if (appState.safetyPrescription && appState.safetyPrescription.neonatalDrugSafety && appState.safetyPrescription.neonatalDrugSafety.hasContraindication) {
+        a.push(`- YENİDOĞAN İLAÇ KONTRENDİKASYONU: Reçetelenen ilaçlarda fatal toksisite riski (Kernikterus/Gri Bebek Sendromu vb.) tespit edildi.`);
     }
 
     // --- PLAN & TEDAVİ ---
@@ -305,8 +321,19 @@ export function generateSOAP() {
     }
     if (appState.medicine && appState.medicine.fluid && appState.medicine.fluid.dailyVolume) {
         const fl = appState.medicine.fluid;
-        p.push(`${pCount}. İdame Sıvısı (Holliday-Segar): ${fl.dailyVolume} mL/gün (${fl.hourlyRate} mL/saat).`);
+        if (fl.isNeonate) {
+            p.push(`${pCount}. Yenidoğan İdame Sıvısı (TND Sıvı Kademesi - ${fl.dayTitle}): ${fl.dailyVolume} mL/gün (${fl.hourlyRate} mL/saat). ${fl.fluidTypeRecommendation}`);
+        } else {
+            p.push(`${pCount}. İdame Sıvısı (Holliday-Segar): ${fl.dailyVolume} mL/gün (${fl.hourlyRate} mL/saat).`);
+        }
         pCount++;
+    }
+    if (appState.neonatology && appState.neonatology.weightLoss && appState.neonatology.weightLoss.isValid) {
+        const wl = appState.neonatology.weightLoss;
+        if (wl.recommendations && wl.recommendations.length > 0) {
+            p.push(`${pCount}. Yenidoğan Tartı & Beslenme İzlemi: ${wl.recommendations[0]}`);
+            pCount++;
+        }
     }
     if (appState.pediatrics && appState.pediatrics.syrupDose) {
         const sy = appState.pediatrics.syrupDose;

@@ -465,3 +465,102 @@ export function calculateCDSDehydration(params = {}) {
     }
   };
 }
+
+/**
+ * 5. Yenidoğan Fizyolojik Tartı Kaybı & Dehidratasyon İzlemi (%7 - %10 Kuralı)
+ * 
+ * Standartlar:
+ * - Türk Neonatoloji Derneği (TND) Yenidoğan Beslenme & Sıvı Rehberi
+ * - AAP Clinical Guidelines on Neonatal Weight Loss and Hypernatremic Dehydration
+ * 
+ * Eşikler:
+ * - <= %7: Normal fizyolojik tartı kaybı (ekstrasellüler sıvı kontraksiyonu).
+ * - %7 - %10: Sınırda / Dikkat gerektiren kayıp. Yakın tartı ve beslenme takibi.
+ * - > %10 (veya ilk 48-72 saatte > %7): Aşırı tartı kaybı / Hipernatremi ve dehidratasyon riski!
+ * 
+ * @param {Object} params
+ * @param {number} params.birthWeightG - Doğum ağırlığı (gram)
+ * @param {number} params.currentWeightKg - Mevcut ağırlık (kg veya gram)
+ * @param {number} [params.ageDays=null] - Bebeğin yaşı (gün)
+ * @returns {Object}
+ */
+export function calculateNeonatalWeightLoss(params = {}) {
+  const birthWeightG = Number(params.birthWeightG);
+  let currentWeightG = Number(params.currentWeightKg);
+  const ageDays = params.ageDays !== null && params.ageDays !== undefined ? Number(params.ageDays) : null;
+
+  if (isNaN(birthWeightG) || birthWeightG <= 0 || isNaN(currentWeightG) || currentWeightG <= 0) {
+    return {
+      isValid: false,
+      message: 'Geçerli bir doğum ağırlığı ve mevcut kilo giriniz.'
+    };
+  }
+
+  // Eğer mevcut ağırlık kg cinsinden girildiyse (örn: 3.1) grama çevir
+  if (currentWeightG < 20) {
+    currentWeightG = Math.round(currentWeightG * 1000);
+  }
+
+  const lossG = birthWeightG - currentWeightG;
+  const percentLoss = +((lossG / birthWeightG) * 100).toFixed(1);
+
+  let status = 'NORMAL';
+  let alertClass = 'success';
+  let interpretation = '';
+  const recommendations = [];
+
+  if (percentLoss <= 0) {
+    status = 'WEIGHT_GAIN';
+    alertClass = 'success';
+    const gainG = Math.abs(lossG);
+    interpretation = `Tartı Kaybı Yok (+${gainG} g kilo alımı, %${Math.abs(percentLoss)} artış).`;
+    recommendations.push('Bebek doğum tartısının üzerindedir. Rutin büyüme takibi ve emzirmeye devam ediniz.');
+  } else if (percentLoss <= 7.0) {
+    status = 'PHYSIOLOGICAL_NORMAL';
+    alertClass = 'success';
+    interpretation = `Fizyolojik Tartı Kaybı: -${lossG} g (%${percentLoss}). Normal sınırlardadır.`;
+    recommendations.push(
+      'Fizyolojik ekstrasellüler sıvı kontraksiyonu ile uyumludur.',
+      'Etkin anne sütü alımı desteklenmeli, günde en az 8-12 kez emzirme sağlanmalıdır.',
+      'Günde 4-6 ıslak bez ve sarılık gelişimi takip edilmelidir.'
+    );
+  } else if (percentLoss <= 10.0) {
+    status = 'ELEVATED_LOSS_WARNING';
+    alertClass = 'warning';
+    interpretation = `Sınırda Tartı Kaybı: -${lossG} g (%${percentLoss}). Dikkatli izlem gerekir.`;
+    recommendations.push(
+      'Kilo kaybı %7-10 bandındadır. Emzirme tekniği, kavrama ve süt miktarı kontrol edilmelidir.',
+      'İlk 48-72 saatte %7 üzeri kayıpta dehidratasyon riski artar. 12-24 saat arayla sık tartı takibi önerilir.',
+      'Bebekte letarji, mukozalarda kuruluk ve sarılık bulguları taranmalıdır.'
+    );
+  } else {
+    status = 'EXCESSIVE_LOSS_CRITICAL';
+    alertClass = 'danger';
+    interpretation = `🚨 AŞIRI TARTI KAYBI: -${lossG} g (%${percentLoss})! HİPERNATREMİK DEHİDRATASYON RİSKİ!`;
+    recommendations.push(
+      'Doğum tartısının >%10 kaybı patolojiktir. Acil serum elektrolitleri (Na, K), BUN, Kreatinin ve kan şekeri bakılmalıdır.',
+      'Hipernatremi (>150 mEq/L) saptanırsa hızlı serbest su verilmesi SEREBRAL ÖDEME yol açabilir; düzeltme hızı <0.5 mEq/L/saat olmalıdır.',
+      'Etkin beslenme yetersizliği; emzirme danışmanlığı, sağılmış anne sütü veya hekim kontrolünde takviye değerlendirilmelidir.'
+    );
+  }
+
+  // 14. gün kuralı: Term bebeklerin 10-14. günde doğum tartısını yakalamış olması beklenir
+  if (ageDays !== null && ageDays >= 14 && percentLoss > 0) {
+    recommendations.push('⚠️ Dikkat: Bebek 14 günlük veya daha büyüktür. Bu dönemde doğum kilosuna dönmüş olması beklenir (Failure to thrive / yetersiz tartı alımı tetkik edilmelidir).');
+    if (alertClass === 'success') {
+      alertClass = 'warning';
+    }
+  }
+
+  return {
+    isValid: true,
+    birthWeightG,
+    currentWeightG,
+    lossG,
+    percentLoss,
+    status,
+    alertClass,
+    interpretation,
+    recommendations
+  };
+}

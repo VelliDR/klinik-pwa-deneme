@@ -5,8 +5,11 @@ import path from 'path';
 
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from '../js/engines/thrombosisEngine.js';
 import { calculateFENa, calculateFEUrea, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../js/engines/nephroToxEngine.js';
-import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration } from '../js/engines/neonatologyEngine.js';
-import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety } from '../js/engines/safetyPrescriptionEngine.js';
+import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from '../js/engines/neonatologyEngine.js';
+import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from '../js/engines/safetyPrescriptionEngine.js';
+import { determineAgeGroup, calculateEGFR } from '../js/engines/biometricsEngine.js';
+import { calculatePercentiles } from '../js/engines/percentileEngine.js';
+import { calculateNeonatalFluid } from '../js/engines/fluidEngine.js';
 
 console.log('--- 1. TESTING THROMBOSIS ENGINE ---');
 // Wells DVT
@@ -202,7 +205,12 @@ const expectedIds = [
     'select-croup-stridor', 'select-croup-retractions', 'select-croup-air', 'select-croup-cyanosis', 'select-croup-consciousness', 'output-croup-result',
     'select-cds-appearance', 'select-cds-eyes', 'select-cds-mucosa', 'select-cds-tears', 'output-cds-result',
     'input-safety-egfr', 'select-safety-trimester', 'badge-safety-status',
-    'output-safety-triple-whammy', 'output-safety-renal', 'output-safety-pregnancy'
+    'output-safety-triple-whammy', 'output-safety-renal', 'output-safety-pregnancy', 'output-safety-neonatal',
+    'input-dob', 'input-birth-time', 'input-birth-weight', 'output-dob-breakdown',
+    'output-neonatal-weight-loss', 'container-neonatal-fluid-banner',
+    'text-neonatal-fluid-day', 'text-neonatal-fluid-target', 'text-neonatal-fluid-desc',
+    'alert-item-neonatal-drug', 'alert-text-neonatal-drug',
+    'alert-item-neonatal-weight', 'alert-text-neonatal-weight'
 ];
 
 let missing = 0;
@@ -218,5 +226,69 @@ if (missing === 0) {
 } else {
     throw new Error(`Failed: ${missing} missing DOM IDs in index.html`);
 }
+
+console.log('\n--- 6. TESTING NEONATAL & DOB DEMOGRAPHY ENGINE ---');
+// 1. determineAgeGroup for days and weeks
+const neonateGroup = determineAgeGroup(14, 'days');
+assert.strictEqual(neonateGroup.id, 'NEONATE');
+const infantGroup = determineAgeGroup(6, 'weeks');
+assert.strictEqual(infantGroup.id, 'INFANT');
+console.log('✓ determineAgeGroup for days and weeks passed');
+
+// 2. Fractional months percentiles for 14-day old neonate
+const neonatePerc = calculatePercentiles({
+    ageMonths: 14 / 30.4375,
+    gender: 'female',
+    weightKg: 3.5,
+    heightCm: 51,
+    headCircCm: 35
+});
+assert.ok(neonatePerc.weightPercentile > 0 && neonatePerc.weightPercentile < 100);
+assert.ok(neonatePerc.heightPercentile > 0 && neonatePerc.heightPercentile < 100);
+console.log(`✓ Neonate Percentile passed (Weight %${neonatePerc.weightPercentile}, Height %${neonatePerc.heightPercentile})`);
+
+// 3. Neonate eGFR with Schwartz
+const neonateEgfr = calculateEGFR(0.4, 14 / 365.25, 'F', 51);
+assert.strictEqual(neonateEgfr, 53); // (0.413 * 51) / 0.4 = 52.65 => 53
+console.log('✓ Neonate eGFR passed (53 mL/dk)');
+
+console.log('\n--- 7. TESTING NEONATAL AUTOMATED ENGINES (TND FLUID, WEIGHT LOSS & DRUG SHIELD) ---');
+// 1. Neonatal Fluid Step-up
+const neoFluidD1 = calculateNeonatalFluid({ ageDays: 0, weightKg: 3.2, isPreterm: false, isPhototherapy: false });
+assert.strictEqual(neoFluidD1.dayNumber, 1);
+assert.strictEqual(neoFluidD1.mlPerKgRange, '60-70');
+assert.ok(neoFluidD1.soluteAdvice.includes('Dekstroz'));
+assert.ok(neoFluidD1.girMgKgMin >= 4.0 && neoFluidD1.girMgKgMin <= 6.0);
+
+const neoFluidD3 = calculateNeonatalFluid({ ageDays: 2, weightKg: 3.0, isPreterm: false, isPhototherapy: false });
+assert.strictEqual(neoFluidD3.dayNumber, 3);
+assert.strictEqual(neoFluidD3.mlPerKgRange, '80-90');
+assert.ok(neoFluidD3.soluteAdvice.includes('Elektrolit'));
+console.log(`✓ TND Neonatal Fluid Step-up passed (D1: ${neoFluidD1.totalDailyMl} mL, GIR: ${neoFluidD1.girMgKgMin} mg/kg/dk | D3: ${neoFluidD3.totalDailyMl} mL)`);
+
+// 2. Neonatal Weight Loss
+const wlNormal = calculateNeonatalWeightLoss({ birthWeightG: 3200, currentWeightKg: 3.0, ageDays: 3 });
+assert.strictEqual(wlNormal.percentLoss, 6.3);
+assert.strictEqual(wlNormal.status, 'PHYSIOLOGICAL_NORMAL');
+assert.strictEqual(wlNormal.alertClass, 'success');
+
+const wlExcessive = calculateNeonatalWeightLoss({ birthWeightG: 3200, currentWeightKg: 2.8, ageDays: 3 });
+assert.strictEqual(wlExcessive.percentLoss, 12.5);
+assert.strictEqual(wlExcessive.status, 'EXCESSIVE_LOSS_CRITICAL');
+assert.strictEqual(wlExcessive.alertClass, 'danger');
+console.log(`✓ Physiological Weight Loss passed (Normal: %${wlNormal.percentLoss} | Critical: %${wlExcessive.percentLoss})`);
+
+// 3. Neonatal Drug Safety Shield
+const neoDrugAlerts = checkNeonatalDrugSafety([
+    { brand: 'Rocephin 1g', generic: 'ceftriaxone' },
+    { brand: 'Bactrim Susp', generic: 'cotrimoxazole' },
+    { brand: 'Kemicetine', generic: 'chloramphenicol' },
+    { brand: 'Parol 120mg', generic: 'paracetamol' }
+]);
+assert.strictEqual(neoDrugAlerts.hasContraindication, true);
+assert.strictEqual(neoDrugAlerts.alertsCount, 3); // Ceftriaxone, Bactrim, Chloramphenicol
+assert.ok(neoDrugAlerts.alerts.some(a => a.warning.includes('KERNİKTERUS')));
+assert.ok(neoDrugAlerts.alerts.some(a => a.warning.includes('Gri Bebek Sendromu')));
+console.log(`✓ Neonatal Drug Safety Shield passed (${neoDrugAlerts.alertsCount} contraindications caught)`);
 
 console.log('\n🎉 ALL VERIFICATION TESTS PASSED SUCCESSFULLY! 100% HEALTHY.');

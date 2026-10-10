@@ -88,3 +88,92 @@ export function calculateSodiumCorrection(measuredNa, targetNa, weightKg, tbwFac
     };
 }
 
+/**
+ * TND (Türk Neonatoloji Derneği) 2022 Yenidoğan Sıvı Kademesi & GIR Hesaplayıcı
+ * 
+ * Yaşamın ilk haftasında Holliday-Segar (100 mL/kg) aşırı sıvı yüklenmesi, PDA ve BPD
+ * riski nedeniyle KONTRENDİKEDİR! TND protokolü kademeli günlük artış gerektirir.
+ * 
+ * @param {Object} params
+ * @param {number} params.ageDays - Bebeğin yaşam günü (0 - 28 gün)
+ * @param {number} params.weightKg - Mevcut ağırlık (kg)
+ * @param {boolean} [params.isPreterm=false] - Preterm bebek (gestasyon < 37 hf)
+ * @param {boolean} [params.isPhototherapy=false] - Fototerapi alıyor mu? (Sıvı ihtiyacı +10-20 mL/kg artar)
+ * @returns {Object|null}
+ */
+export function calculateNeonatalFluid({ ageDays, weightKg, isPreterm = false, isPhototherapy = false }) {
+    if (weightKg === null || weightKg === undefined || weightKg <= 0 || ageDays === null || ageDays === undefined || ageDays < 0) {
+        return null;
+    }
+
+    const day = Math.floor(ageDays);
+    let dayTitle = '';
+    let minRate = 60;
+    let maxRate = 70;
+    let soluteAdvice = '';
+
+    if (day === 0) {
+        dayTitle = '1. Yaşam Günü (0-24s)';
+        minRate = isPreterm ? 70 : 60;
+        maxRate = isPreterm ? 85 : 70;
+        soluteAdvice = 'Yalnızca %10 Dekstroz. Diürez başlayana kadar Na ve K KONTRENDİKEDİR.';
+    } else if (day === 1) {
+        dayTitle = '2. Yaşam Günü (24-48s)';
+        minRate = isPreterm ? 80 : 70;
+        maxRate = isPreterm ? 95 : 80;
+        soluteAdvice = 'Yalnızca %10 Dekstroz. İdrar çıkışı teyit edilmeden elektrolit eklenmez.';
+    } else if (day === 2) {
+        dayTitle = '3. Yaşam Günü (48-72s)';
+        minRate = isPreterm ? 90 : 80;
+        maxRate = isPreterm ? 105 : 90;
+        soluteAdvice = '%10 Dekstroz + Elektrolit Başla: Na (2-3 mEq/kg/gün), K (1-2 mEq/kg/gün - idrar çıkışı normalse).';
+    } else if (day === 3) {
+        dayTitle = '4. Yaşam Günü';
+        minRate = isPreterm ? 110 : 100;
+        maxRate = isPreterm ? 125 : 120;
+        soluteAdvice = 'Dengeli idame solüsyonu (%5-10 Dekstroz + Na 2-3 mEq/kg + K 1-2 mEq/kg).';
+    } else if (day === 4) {
+        dayTitle = '5. Yaşam Günü';
+        minRate = isPreterm ? 130 : 120;
+        maxRate = isPreterm ? 145 : 140;
+        soluteAdvice = 'Dengeli idame solüsyonu. GIR ve kan şekeri izlenmelidir.';
+    } else {
+        dayTitle = `${day + 1}. Yaşam Günü (Kararlı İdame)`;
+        minRate = isPreterm ? 150 : 140;
+        maxRate = isPreterm ? 170 : 160;
+        soluteAdvice = 'Tam idame sıvısı (140-160 mL/kg/gün) + Na/K elektrolit desteği.';
+    }
+
+    if (isPhototherapy) {
+        minRate += 15;
+        maxRate += 15;
+        soluteAdvice += ' (Fototerapiye bağlı artmış trans-epidermal kayıp: +15 mL/kg/gün eklendi).';
+    }
+
+    const avgRate = Math.round((minRate + maxRate) / 2);
+    const totalDailyMl = Math.round(weightKg * avgRate);
+    const hourlyRateMl = +(totalDailyMl / 24).toFixed(1);
+
+    // %10 Dekstroz ile GIR hesabı: GIR = (hourlyRate * conc% * 10) / (weightKg * 60)
+    // conc = 10 -> (hourlyRate * 100) / (weightKg * 60)
+    const girMgKgMin = +((hourlyRateMl * 100) / (weightKg * 60)).toFixed(1);
+
+    return {
+        isNeonate: true,
+        dayNumber: day + 1,
+        dayTitle,
+        mlPerKgMin: minRate,
+        mlPerKgMax: maxRate,
+        mlPerKgAvg: avgRate,
+        mlPerKgRange: `${minRate}-${maxRate}`,
+        totalDailyMl,
+        hourlyRateMl,
+        girMgKgMin,
+        targetGirRange: isPreterm ? '4 - 8 mg/kg/dk' : '4 - 6 mg/kg/dk',
+        soluteAdvice,
+        isPreterm,
+        isPhototherapy,
+        contraindicationNotice: '⚠️ Yenidoğan Dönemi: Klasik Holliday-Segar (100 mL/kg) KONTRENDİKEDİR! TND kademeli günlük sıvı protokolü uygulanmaktadır.'
+    };
+}
+

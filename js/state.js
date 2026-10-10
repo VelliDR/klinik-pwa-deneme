@@ -3,6 +3,15 @@ export const appState = {
     biometry: {
         ageYears: null,
         ageMonths: null,
+        ageWeeks: null,
+        ageDays: null,
+        ageHours: null,
+        dob: null,
+        birthTime: null,
+        ageFormatted: null,
+        ageGroupTag: null,
+        isNeonate: false,
+        birthWeightG: null,
         gender: null, // 'M' or 'F'
         weightKg: null,
         heightCm: null,
@@ -43,6 +52,7 @@ export const appState = {
         active: false,
         bloodGas: null,
         fluid: null,
+        neonatalFluid: null,
         sodium: null,
         calcium: null,
         infusion: null,
@@ -86,7 +96,8 @@ export const appState = {
         bhutani: null,
         apgar: null,
         westleyCroup: null,
-        cdsDehydration: null
+        cdsDehydration: null,
+        weightLoss: null
     },
 
     safetyPrescription: {
@@ -94,6 +105,7 @@ export const appState = {
         renalAdjustments: null,
         tripleWhammy: null,
         pregnancySafety: null,
+        neonatalDrugSafety: null,
         selectedSafetyDrugs: []
     }
 };

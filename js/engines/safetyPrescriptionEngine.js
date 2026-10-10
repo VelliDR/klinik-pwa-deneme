@@ -491,3 +491,100 @@ export function checkPregnancySafety(drugs = [], options = {}) {
     alerts
   };
 }
+
+/**
+ * 4. Yenidoğan İlaç Toksisite ve Kontrendikasyon Kalkanı
+ * 
+ * Standartlar:
+ * - Türk Neonatoloji Derneği (TND) Yenidoğan Farmakoterapi İlkeleri
+ * - AAP / FDA Neonatal Drug Safety Warnings
+ * - TİTCK Onaylı Kısa Ürün Bilgileri (KÜB)
+ */
+export const NEONATAL_CONTRAINDICATED_DRUGS = [
+  {
+    name: 'Seftriakson (Ceftriaxone / Rocephin)',
+    keywords: ['ceftriaxone', 'seftriakson', 'rocephin', 'unacefin', 'novosef', 'ceftinex', 'forsef'],
+    status: 'CONTRAINDICATED',
+    severity: 'CRITICAL',
+    title: '🚨 YENİDOĞANDA KESİN KONTRENDİKE (Fatal Kernikterus & Presipitasyon Riski)',
+    warning: 'Bilirubini albüminden ayırarak fatal KERNİKTERUS riskini katlar. Kalsiyumlu IV solüsyonlarla (Ringer Laktat vb.) kalsiyum-seftriakson kristal presipitasyonu yaparak akciğer ve böbreklerde ölümcül embolizasyona yol açar! Güvenli Alternatif: Sefotaksim veya Ampisilin + Gentamisin.'
+  },
+  {
+    name: 'Ko-trimoksazol / Sülfonamidler (Bactrim / Trimetoprim-Sulfametoksazol)',
+    keywords: ['cotrimoxazole', 'co-trimoxazole', 'trimethoprim', 'sulfamethoxazole', 'bactrim', 'kemoprim', 'trifen', 'sulfonamid'],
+    status: 'CONTRAINDICATED',
+    severity: 'CRITICAL',
+    title: '🚨 YENİDOĞANDA KONTRENDİKE (Bilirubin Deplasmanı & Kernikterus)',
+    warning: 'Yaşamın ilk 6-8 haftasında kontrendikedir. Bilirubini plazma albümin bağlama bölgelerinden ayırarak serbest bilirubini artırır ve kernikterusa yol açar.'
+  },
+  {
+    name: 'Kloramfenikol (Chloramphenicol / Kemicetine)',
+    keywords: ['chloramphenicol', 'kloramfenikol', 'kemicetine'],
+    status: 'CONTRAINDICATED',
+    severity: 'CRITICAL',
+    title: '🚨 YENİDOĞANDA KESİN KONTRENDİKE (Ölümcül Gri Bebek Sendromu)',
+    warning: 'Yenidoğanlarda immatür hepatik glukuronidasyon (glukuronil transferaz eksikliği) ve düşük renal klirens ilacın toksik birikimine yol açar. Gri Bebek Sendromu: Asidoz, hipotermi, siyanoz, kardiyovasküler kollaps ve ölüm.'
+  },
+  {
+    name: 'Benzil Alkol İçeren Preparatlar (Benzyl Alcohol)',
+    keywords: ['benzyl alcohol', 'benzil alkol'],
+    status: 'CONTRAINDICATED',
+    severity: 'CRITICAL',
+    title: '🚨 YENİDOĞANDA KONTRENDİKE (Gasping Sendromu)',
+    warning: 'Yenidoğan ve prematürelerde koruyucu olarak benzil alkol içeren IV solüsyon/ilaçlar fatal Gasping Sendromuna (metabolik asidoz, solunum yetmezliği, hipotansiyon) neden olur.'
+  },
+  {
+    name: 'Florokinolonlar (Siprofloksasin / Levofloksasin)',
+    keywords: ['ciprofloxacin', 'siprofloksasin', 'cipro', 'ciflosin', 'levofloxacin', 'levofloksasin', 'tavanic'],
+    status: 'WARNING',
+    severity: 'WARNING',
+    title: '⚠️ Yenidoğanda Dikkat / Rölatif Kontrendikasyon (Kıkırdak ve Eklem Toksisitesi)',
+    warning: 'Gelişmekte olan eklem kıkırdaklarında artropati ve erozyon riski. Yalnızca çoklu dirençli Gram-negatif sepsiste güvenli alternatif bulunmadığında kullanılabilir.'
+  },
+  {
+    name: 'Tetrasiklinler / Doksisiklin (Tetracycline / Doxycycline)',
+    keywords: ['doxycycline', 'doksisiklin', 'monodox', 'tetradox', 'tetracycline', 'tetrasiklin'],
+    status: 'CONTRAINDICATED',
+    severity: 'CRITICAL',
+    title: '🚨 YENİDOĞAN & SÜT ÇOCUĞUNDA KONTRENDİKE (Kemik Büyüme & Diş Mine Toksisitesi)',
+    warning: 'Kalsiyumla şelat oluşturarak kemiklerde büyüme duraklaması ve diş germlerinde kalıcı sarı-gri-kahverengi renk değişimi ile mine hipoplazisine yol açar.'
+  }
+];
+
+export function checkNeonatalDrugSafety(drugs = [], options = {}) {
+  const alerts = [];
+  if (!Array.isArray(drugs)) return { alerts: [] };
+
+  for (const drugInput of drugs) {
+    let name = '';
+    if (typeof drugInput === 'string') {
+      name = drugInput;
+    } else if (drugInput && typeof drugInput === 'object') {
+      name = `${drugInput.brand || ''} ${drugInput.brandName || ''} ${drugInput.name || ''} ${drugInput.generic || ''}`.trim();
+    }
+
+    const normName = normalizeStr(name);
+
+    for (const entry of NEONATAL_CONTRAINDICATED_DRUGS) {
+      const isMatched = entry.keywords.some(k => normName.includes(normalizeStr(k)));
+      if (isMatched) {
+        alerts.push({
+          drugName: entry.name,
+          userDrug: name,
+          status: entry.status,
+          severity: entry.severity,
+          title: entry.title,
+          warning: entry.warning
+        });
+      }
+    }
+  }
+
+  return {
+    totalChecked: drugs.length,
+    alertsCount: alerts.length,
+    hasContraindication: alerts.some(a => a.status === 'CONTRAINDICATED'),
+    alertClass: alerts.some(a => a.status === 'CONTRAINDICATED') ? 'danger' : (alerts.length > 0 ? 'warning' : 'success'),
+    alerts
+  };
+}

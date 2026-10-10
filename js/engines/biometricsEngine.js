@@ -16,17 +16,19 @@ export function calculateBSA(heightCm, weightKg) {
 
 export function determineAgeGroup(ageValue, ageUnit) {
     if (!ageValue || ageValue <= 0) return null;
-    if (!['years', 'months', 'days'].includes(ageUnit)) return null;
+    if (!['years', 'months', 'weeks', 'days'].includes(ageUnit)) return null;
 
     // 1. Gelen değeri matematiksel kıyaslama için aya çeviriyoruz
     let totalMonths = 0;
     if (ageUnit === 'years') totalMonths = ageValue * 12;
     else if (ageUnit === 'months') totalMonths = ageValue;
+    else if (ageUnit === 'weeks') totalMonths = ageValue / 4.345;
     else if (ageUnit === 'days') totalMonths = ageValue / 30; 
 
     // 2. Yenidoğan Sınırı (Gün seçildiyse 28 gün kuralı katı işler)
     if (ageUnit === 'days' && ageValue <= 28) return AGE_GROUPS.NEONATE;
-    if (ageUnit !== 'days' && totalMonths <= 1) return AGE_GROUPS.NEONATE;
+    if (ageUnit === 'weeks' && ageValue <= 4) return AGE_GROUPS.NEONATE;
+    if (totalMonths <= 1) return AGE_GROUPS.NEONATE;
 
     // 3. Diğer Yaş Grupları
     if (totalMonths <= 12) return AGE_GROUPS.INFANT;

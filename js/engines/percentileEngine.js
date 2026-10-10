@@ -150,7 +150,9 @@ function getGrowthNorms(totalMonths, gender = 'male') {
  */
 export function calculatePercentiles(params) {
     if (!params) return null;
-    const { totalMonths, gender, heightCm, weightKg, headCircumferenceCm, isPediatric } = params;
+    const totalMonths = params.totalMonths ?? params.ageMonths;
+    const { gender, heightCm, weightKg, headCircumferenceCm } = params;
+    const isPediatric = params.isPediatric !== undefined ? params.isPediatric : (totalMonths !== null && totalMonths !== undefined && totalMonths <= 216);
 
     if (!isPediatric || totalMonths === null || totalMonths === undefined || totalMonths < 0 || totalMonths > 216) {
         return null;

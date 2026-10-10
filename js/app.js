@@ -6,7 +6,7 @@ import { calculatePediatricIron } from './engines/ironEngine.js';
 import { calculateAlvarado, calculateParkland, getSutureGuidance, calculateRanson } from './engines/surgeryEngine.js';
 import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from './engines/obgynEngine.js';
 import { analyzeBloodGas } from './engines/bloodGasEngine.js';
-import { calculateMaintenanceFluid, calculateSodiumCorrection } from './engines/fluidEngine.js';
+import { calculateMaintenanceFluid, calculateSodiumCorrection, calculateNeonatalFluid } from './engines/fluidEngine.js';
 import { calculateNEWS2, calculatePEWS, calculateGCS } from './engines/triageEngine.js';
 import { calculateQTc, calculateAxis } from './engines/cardiacEngine.js';
 import { getLabTubeGuide } from './engines/labGuideEngine.js';
@@ -18,8 +18,8 @@ import { seedDrugDatabase, searchDrugsInDB, getDrugCount } from './db/titckIndex
 import { getDrugBadgesHTML } from './drugEngine.js';
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine.js';
 import { calculateFENa, calculateFEUrea, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine.js';
-import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration } from './engines/neonatologyEngine.js';
-import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety } from './engines/safetyPrescriptionEngine.js';
+import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from './engines/neonatologyEngine.js';
+import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from './engines/safetyPrescriptionEngine.js';
 
 // Utils
 const parseNum = (val) => val === '' || isNaN(val) ? null : Number(val);
@@ -59,24 +59,179 @@ async function initDrugCatalog() {
 }
 initDrugCatalog();
 
+// Helper: Hasta Yaşını Yıl, Ay, Hafta, Gün veya Doğum Tarihinden (DOB) Hesapla
+function calculatePatientAge() {
+    const dobInput = document.getElementById('input-dob');
+    const timeInput = document.getElementById('input-birth-time');
+    const ageInput = document.getElementById('input-age');
+    const ageUnitSelect = document.getElementById('select-age-unit');
+    const containerNumeric = document.getElementById('container-age-numeric');
+    const containerDob = document.getElementById('container-age-dob');
+    const labelNumeric = document.getElementById('label-age-numeric');
+    const breakdownEl = document.getElementById('output-dob-breakdown');
+    const textBreakdown = document.getElementById('text-dob-breakdown');
+    const badgeDobTag = document.getElementById('badge-dob-tag');
+
+    // DOB-First: Doğum tarihi girildiyse veya select-age-unit dob ise
+    const hasDob = Boolean(dobInput?.value);
+    const ageUnit = hasDob ? 'dob' : (ageUnitSelect?.value || (ageInput?.value ? 'years' : 'dob'));
+    const ageVal = parseNum(ageInput?.value);
+
+    // UI görünürlük ve etiket yönetimi
+    if (ageUnit === 'dob') {
+        if (containerNumeric) containerNumeric.classList.add('hidden');
+        if (containerDob) containerDob.classList.remove('hidden');
+    } else {
+        if (containerNumeric) containerNumeric.classList.remove('hidden');
+        if (containerDob) containerDob.classList.add('hidden');
+        if (breakdownEl) breakdownEl.classList.add('hidden');
+        
+        // Etiket ve yer tutucu güncelleme
+        if (labelNumeric && ageInput) {
+            if (ageUnit === 'years') {
+                labelNumeric.textContent = 'Yaş (Yıl)';
+                ageInput.placeholder = '5';
+            } else if (ageUnit === 'months') {
+                labelNumeric.textContent = 'Ay (Süt Çocuğu)';
+                ageInput.placeholder = '6';
+            } else if (ageUnit === 'weeks') {
+                labelNumeric.textContent = 'Hafta';
+                ageInput.placeholder = '8';
+            } else if (ageUnit === 'days') {
+                labelNumeric.textContent = 'Gün (Yenidoğan)';
+                ageInput.placeholder = '14';
+            }
+        }
+    }
+
+    let y = null, m = null, days = null, weeks = null, hours = null;
+    let formatted = '--';
+    let ageGroupTag = '';
+
+    if (ageUnit === 'dob') {
+        const dobVal = dobInput?.value;
+        if (dobVal) {
+            const birthDate = new Date(dobVal);
+            const timeVal = timeInput?.value;
+            if (timeVal) {
+                const [hh, mm] = timeVal.split(':').map(Number);
+                birthDate.setHours(hh || 0, mm || 0, 0, 0);
+            } else {
+                birthDate.setHours(0, 0, 0, 0);
+            }
+
+            const now = new Date();
+            const diffMs = now.getTime() - birthDate.getTime();
+            if (diffMs >= 0) {
+                hours = Math.floor(diffMs / (1000 * 60 * 60));
+                days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                weeks = +(days / 7).toFixed(1);
+                m = +(days / 30.4375).toFixed(2);
+                y = +(days / 365.25).toFixed(2);
+
+                if (days <= 28) {
+                    ageGroupTag = '🍼 Yenidoğan (0-28G)';
+                    formatted = `${days} Günlük Yenidoğan (${hours} saat)`;
+                } else if (days < 365) {
+                    ageGroupTag = '👶 Süt Çocuğu (1-12A)';
+                    formatted = `${Math.floor(m)} Aylık (${weeks} Hf / ${days}G)`;
+                } else if (y < 6) {
+                    ageGroupTag = '🧒 Oyun Çocuğu (1-5Y)';
+                    const remM = Math.floor((days % 365.25) / 30.4375);
+                    formatted = `${Math.floor(y)} Yaş ${remM ? remM + ' Ay' : ''}`;
+                } else if (y < 12) {
+                    ageGroupTag = '🎒 Okul Çocuğu (6-12Y)';
+                    formatted = `${Math.floor(y)} Yaş`;
+                } else if (y < 18) {
+                    ageGroupTag = '🧑 Ergen / Adölesan';
+                    formatted = `${Math.floor(y)} Yaş`;
+                } else if (y < 65) {
+                    ageGroupTag = '👤 Erişkin';
+                    formatted = `${Math.floor(y)} Yaş`;
+                } else {
+                    ageGroupTag = '🧓 Geriatrik (65Y+)';
+                    formatted = `${Math.floor(y)} Yaş`;
+                }
+
+                if (breakdownEl && textBreakdown && badgeDobTag) {
+                    breakdownEl.classList.remove('hidden');
+                    textBreakdown.textContent = `📅 ${formatted}`;
+                    badgeDobTag.textContent = ageGroupTag;
+                }
+            } else if (breakdownEl) {
+                breakdownEl.classList.add('hidden');
+            }
+        } else if (breakdownEl) {
+            breakdownEl.classList.add('hidden');
+        }
+    } else if (ageVal !== null && !isNaN(ageVal)) {
+        if (ageUnit === 'years') {
+            y = ageVal;
+            m = null;
+            days = Math.round(ageVal * 365.25);
+            weeks = Math.round(ageVal * 52.14);
+            hours = days * 24;
+            formatted = `${y} Yaş`;
+            ageGroupTag = y < 1 ? '👶 Süt Çocuğu' : (y < 6 ? '🧒 Oyun Çocuğu' : (y < 12 ? '🎒 Okul Çocuğu' : (y < 18 ? '🧑 Ergen' : (y < 65 ? '👤 Erişkin' : '🧓 Geriatrik'))));
+        } else if (ageUnit === 'months') {
+            y = +(ageVal / 12).toFixed(2);
+            m = ageVal;
+            days = Math.round(ageVal * 30.4375);
+            weeks = +(days / 7).toFixed(1);
+            hours = days * 24;
+            formatted = `${m} Aylık`;
+            ageGroupTag = ageVal <= 1 ? '🍼 Yenidoğan / Süt Çocuğu' : (ageVal <= 12 ? '👶 Süt Çocuğu (1-12A)' : '🧒 Oyun Çocuğu');
+        } else if (ageUnit === 'weeks') {
+            weeks = ageVal;
+            days = Math.round(ageVal * 7);
+            hours = days * 24;
+            m = +(days / 30.4375).toFixed(2);
+            y = +(days / 365.25).toFixed(2);
+            formatted = `${weeks} Haftalık`;
+            ageGroupTag = days <= 28 ? '🍼 Yenidoğan (0-28G)' : '👶 Süt Çocuğu (1-12A)';
+        } else if (ageUnit === 'days') {
+            days = ageVal;
+            hours = ageVal * 24;
+            weeks = +(ageVal / 7).toFixed(1);
+            m = +(ageVal / 30.4375).toFixed(2);
+            y = +(ageVal / 365.25).toFixed(2);
+            formatted = `${days} Günlük Yenidoğan`;
+            ageGroupTag = days <= 28 ? '🍼 Yenidoğan (0-28G)' : '👶 Süt Çocuğu (1-12A)';
+        }
+    }
+
+    // Yenidoğanda (<= 14 gün) Bhutani Sarılık Postnatal Saati Otomatik Doldurma
+    if (hours !== null && days !== null && days <= 14) {
+        const bhutaniInput = document.getElementById('input-bhutani-age-hours');
+        if (bhutaniInput && (!bhutaniInput.value || bhutaniInput.dataset.autofilled === 'true')) {
+            bhutaniInput.value = Math.min(168, Math.max(1, hours));
+            bhutaniInput.dataset.autofilled = 'true';
+        }
+    }
+
+    return { y, m, days, weeks, hours, formatted, ageGroupTag };
+}
+
 // Update Logic
 function updateAllTabs() {
     // 1. BIOMETRY & DEMOGRAPHY
-    const ageVal = parseNum(document.getElementById('input-age').value);
-    const ageUnit = document.getElementById('select-age-unit').value;
-    
-    let y = 0, m = 0;
-    if (ageVal !== null) {
-        if (ageUnit === 'years') y = ageVal;
-        if (ageUnit === 'months') m = ageVal;
-    } else {
-        y = null;
-        m = null;
-    }
+    const ageData = calculatePatientAge();
+    const y = ageData.y;
+    const m = ageData.m;
+    const totalMonths = (y === null && m === null) ? null : (m !== null ? m : (y * 12));
+    const isNeonate = (ageData.days !== null && ageData.days !== undefined && ageData.days <= 28);
 
     appState.biometry.ageYears = y;
     appState.biometry.ageMonths = m;
-    const totalMonths = (y === null && m === null) ? null : (y || 0) * 12 + (m || 0);
+    appState.biometry.ageWeeks = ageData.weeks;
+    appState.biometry.ageDays = ageData.days;
+    appState.biometry.ageHours = ageData.hours;
+    appState.biometry.ageFormatted = ageData.formatted;
+    appState.biometry.ageGroupTag = ageData.ageGroupTag;
+    appState.biometry.isNeonate = isNeonate;
+    appState.biometry.dob = document.getElementById('input-dob')?.value || null;
+    appState.biometry.birthTime = document.getElementById('input-birth-time')?.value || null;
+    appState.biometry.birthWeightG = parseNum(document.getElementById('input-birth-weight')?.value);
     
     appState.biometry.gender = document.getElementById('select-gender').value || null;
     appState.biometry.weightKg = parseNum(document.getElementById('input-weight').value);
@@ -133,6 +288,38 @@ function updateAllTabs() {
     } else {
         appState.pediatrics.correctedAge = null;
         if (correctedAgeEl) correctedAgeEl.classList.add('hidden');
+    }
+
+    // Neonatal Tartı Kaybı & Dehidratasyon İzlemi (%7-%10 Kuralı)
+    const weightLossEl = document.getElementById('output-neonatal-weight-loss');
+    if (isNeonate && appState.biometry.birthWeightG && appState.biometry.weightKg) {
+        appState.neonatology.weightLoss = calculateNeonatalWeightLoss({
+            birthWeightG: appState.biometry.birthWeightG,
+            currentWeightKg: appState.biometry.weightKg,
+            ageDays: ageData.days
+        });
+        const wl = appState.neonatology.weightLoss;
+        if (wl && wl.isValid && weightLossEl) {
+            weightLossEl.classList.remove('hidden');
+            const alertBg = wl.alertClass === 'danger'
+                ? 'bg-rose-950/50 border-rose-600/70 text-rose-200'
+                : (wl.alertClass === 'warning'
+                    ? 'bg-amber-950/50 border-amber-600/70 text-amber-200'
+                    : 'bg-emerald-950/40 border-emerald-700/50 text-emerald-300');
+            weightLossEl.className = `text-[10px] font-mono p-2 rounded-lg border space-y-0.5 ${alertBg}`;
+            weightLossEl.innerHTML = `
+                <div class="flex items-center justify-between font-bold">
+                    <span>⚖️ ${wl.interpretation}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-black/40 font-sans">${wl.percentLoss > 0 ? '%' + wl.percentLoss + ' Kayıp' : 'Kazanç'}</span>
+                </div>
+                <div class="text-[9px] text-slate-300 leading-tight pt-0.5">${wl.recommendations[0] || ''}</div>
+            `;
+        } else if (weightLossEl) {
+            weightLossEl.classList.add('hidden');
+        }
+    } else {
+        appState.neonatology.weightLoss = null;
+        if (weightLossEl) weightLossEl.classList.add('hidden');
     }
 
     // Persentil & Baş Çevresi
@@ -472,11 +659,47 @@ function updateAllTabs() {
 
     // IONS & FLUIDS
     const fTemp = parseNum(document.getElementById('input-temp').value); // reuse temp
-    if (appState.biometry.weightKg) {
+    const neoFluidBanner = document.getElementById('container-neonatal-fluid-banner');
+    const neoFluidDayText = document.getElementById('text-neonatal-fluid-day');
+    const neoFluidTargetText = document.getElementById('text-neonatal-fluid-target');
+    const neoFluidDescText = document.getElementById('text-neonatal-fluid-desc');
+
+    if (isNeonate && appState.biometry.weightKg) {
+        const isPhototherapy = Boolean(appState.neonatology?.bhutani && (appState.neonatology.bhutani.status === 'PHOTOTHERAPY_REQUIRED' || appState.neonatology.bhutani.status === 'EXCHANGE_TRANSFUSION_REQUIRED'));
+        const neoFluid = calculateNeonatalFluid({
+            ageDays: ageData.days,
+            weightKg: appState.biometry.weightKg,
+            isPreterm: isPreterm,
+            isPhototherapy: isPhototherapy
+        });
+        appState.medicine.neonatalFluid = neoFluid;
+        appState.medicine.fluid = {
+            dailyVolume: neoFluid.totalDailyMl,
+            hourlyRate: neoFluid.hourlyRateMl,
+            fluidTypeRecommendation: neoFluid.soluteAdvice,
+            isNeonate: true,
+            dayTitle: neoFluid.dayTitle,
+            contraindicationNotice: neoFluid.contraindicationNotice
+        };
+
+        document.getElementById('output-daily-fluid').textContent = `${neoFluid.totalDailyMl} mL (TND)`;
+        document.getElementById('output-hourly-fluid').textContent = `${neoFluid.hourlyRateMl} mL/s`;
+
+        if (neoFluidBanner) {
+            neoFluidBanner.classList.remove('hidden');
+            if (neoFluidDayText) neoFluidDayText.textContent = `🍼 ${neoFluid.dayTitle} (${neoFluid.mlPerKgRange} mL/kg)`;
+            if (neoFluidTargetText) neoFluidTargetText.textContent = `GIR: ${neoFluid.girMgKgMin} mg/kg/dk (%10D)`;
+            if (neoFluidDescText) neoFluidDescText.innerHTML = `${neoFluid.soluteAdvice} <span class="text-rose-400 font-semibold block mt-0.5">${neoFluid.contraindicationNotice}</span>`;
+        }
+    } else if (appState.biometry.weightKg) {
+        if (neoFluidBanner) neoFluidBanner.classList.add('hidden');
+        appState.medicine.neonatalFluid = null;
         appState.medicine.fluid = calculateMaintenanceFluid(appState.biometry.weightKg, fTemp);
         document.getElementById('output-daily-fluid').textContent = `${appState.medicine.fluid.dailyVolume} mL`;
         document.getElementById('output-hourly-fluid').textContent = `${appState.medicine.fluid.hourlyRate} mL/s`;
     } else {
+        if (neoFluidBanner) neoFluidBanner.classList.add('hidden');
+        appState.medicine.neonatalFluid = null;
         appState.medicine.fluid = null;
         document.getElementById('output-daily-fluid').textContent = '--';
         document.getElementById('output-hourly-fluid').textContent = '--';
@@ -1438,13 +1661,37 @@ function updateAllTabs() {
             outPreg.classList.add('hidden');
         }
 
+        // 4. Yenidoğan İlaç Toksisite ve Kontrendikasyon Kalkanı
+        const outNeoDrug = document.getElementById('output-safety-neonatal');
+        if (isNeonate) {
+            const neoDrugRes = checkNeonatalDrugSafety(selectedDrugs, { ageDays: ageData.days });
+            appState.safetyPrescription.neonatalDrugSafety = neoDrugRes;
+            if (neoDrugRes.alertsCount > 0) {
+                if (outNeoDrug) {
+                    outNeoDrug.classList.remove('hidden');
+                    outNeoDrug.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${neoDrugRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                    outNeoDrug.innerHTML = `
+                        <div class="font-bold text-xs">🍼 Yenidoğan İlaç Güvenlik Kalkanı</div>
+                        ${neoDrugRes.alerts.map(a => `<div class="text-[10px] leading-relaxed">• <strong>${a.drugName}</strong>: ${a.warning}</div>`).join('')}
+                    `;
+                }
+            } else if (outNeoDrug) {
+                outNeoDrug.classList.add('hidden');
+            }
+        } else {
+            appState.safetyPrescription.neonatalDrugSafety = null;
+            if (outNeoDrug) outNeoDrug.classList.add('hidden');
+        }
+
         // Status Badge Update
         if (badgeSafety) {
             const hasDanger = (appState.safetyPrescription.tripleWhammy?.isTripleWhammy) ||
                               (appState.safetyPrescription.renalAdjustments?.hasContraindication) ||
-                              (appState.safetyPrescription.pregnancySafety?.hasSevereFetalRisk);
+                              (appState.safetyPrescription.pregnancySafety?.hasSevereFetalRisk) ||
+                              (appState.safetyPrescription.neonatalDrugSafety?.hasContraindication);
             const totalWarns = (appState.safetyPrescription.renalAdjustments?.alertsCount || 0) +
                                (appState.safetyPrescription.pregnancySafety?.alertsCount || 0) +
+                               (appState.safetyPrescription.neonatalDrugSafety?.alertsCount || 0) +
                                (appState.safetyPrescription.tripleWhammy?.isTripleWhammy ? 1 : (appState.safetyPrescription.tripleWhammy?.isDoubleRisk ? 1 : 0));
             if (hasDanger) {
                 badgeSafety.textContent = '🚨 Kritik Uyarı';
@@ -1458,14 +1705,20 @@ function updateAllTabs() {
             }
         }
     } else {
+        const outNeoDrug = document.getElementById('output-safety-neonatal');
         if (outWhammy) outWhammy.classList.add('hidden');
         if (outRenal) outRenal.classList.add('hidden');
         if (outPreg) outPreg.classList.add('hidden');
+        if (outNeoDrug) outNeoDrug.classList.add('hidden');
         if (badgeSafety) {
             badgeSafety.textContent = 'Aktif';
             badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700';
         }
     }
+
+    // Sticky Patient Context Banner & Live Alerts Inspector Sync
+    updatePatientBanner();
+    updateClinicalAlertsInspector();
 
     // Live SOAP Update
     updateLiveSOAP();
@@ -1664,20 +1917,440 @@ function renderSelectedDrugs() {
     `).join('');
 }
 
-// SOAP COPY INLINE
-function updateLiveSOAP() {
-    const soapText = generateSOAP();
-    document.getElementById('text-soap-output').value = soapText;
+// ==========================================
+// RESPONSIVE WORKSTATION & PATIENT CONTEXT CONTROLLERS
+// ==========================================
+
+function updatePatientBanner() {
+    const bannerAge = document.getElementById('banner-age');
+    const bannerGender = document.getElementById('banner-gender');
+    const bannerBiometry = document.getElementById('banner-biometry');
+    const bannerBSA = document.getElementById('banner-bsa');
+    const bannerEGFR = document.getElementById('banner-egfr');
+
+    if (bannerAge) {
+        if (appState.biometry.ageFormatted && appState.biometry.ageFormatted !== '--') {
+            bannerAge.textContent = appState.biometry.ageFormatted;
+        } else {
+            const y = appState.biometry.ageYears;
+            const m = appState.biometry.ageMonths;
+            if (y !== null && y !== undefined) {
+                bannerAge.textContent = `${y}Y`;
+            } else if (m !== null && m !== undefined) {
+                bannerAge.textContent = `${m}A`;
+            } else {
+                bannerAge.textContent = '--';
+            }
+        }
+    }
+
+    const badgeAgeGroup = document.getElementById('badge-age-group');
+    if (badgeAgeGroup) {
+        if (appState.biometry.ageGroupTag) {
+            badgeAgeGroup.textContent = appState.biometry.ageGroupTag;
+            badgeAgeGroup.classList.remove('hidden');
+        } else {
+            badgeAgeGroup.classList.add('hidden');
+        }
+    }
+
+    if (bannerGender) {
+        bannerGender.textContent = appState.biometry.gender === 'male' ? 'Erkek' : (appState.biometry.gender === 'female' ? 'Kadın' : '--');
+    }
+
+    if (bannerBiometry) {
+        const w = appState.biometry.weightKg;
+        const h = appState.biometry.heightCm;
+        if (w && h) {
+            bannerBiometry.textContent = `${w}kg / ${h}cm`;
+        } else if (w) {
+            bannerBiometry.textContent = `${w} kg`;
+        } else if (h) {
+            bannerBiometry.textContent = `${h} cm`;
+        } else {
+            bannerBiometry.textContent = '--';
+        }
+    }
+
+    if (bannerBSA) {
+        bannerBSA.textContent = appState.biometry.bsa ? `${appState.biometry.bsa.toFixed(2)} m²` : '--';
+    }
+
+    if (bannerEGFR) {
+        const egfr = appState.biometry.egfr;
+        if (egfr !== null && egfr !== undefined) {
+            bannerEGFR.textContent = `${egfr} mL/dk`;
+            if (egfr >= 90) bannerEGFR.className = 'font-bold text-emerald-400';
+            else if (egfr >= 60) bannerEGFR.className = 'font-bold text-cyan-400';
+            else if (egfr >= 30) bannerEGFR.className = 'font-bold text-amber-400';
+            else bannerEGFR.className = 'font-bold text-rose-400';
+        } else {
+            bannerEGFR.textContent = '--';
+            bannerEGFR.className = 'font-bold text-slate-400';
+        }
+    }
 }
 
-document.getElementById('btn-copy-soap').addEventListener('click', () => {
-    const text = document.getElementById('text-soap-output').value;
-    navigator.clipboard.writeText(text).then(() => {
-        const fb = document.getElementById('copy-feedback');
-        fb.classList.remove('hidden');
-        setTimeout(() => fb.classList.add('hidden'), 2000);
+function updateClinicalAlertsInspector() {
+    let alertCount = 0;
+
+    // 1. eGFR Renal Risk Alert
+    const alertEgfr = document.getElementById('alert-item-egfr');
+    const textEgfr = document.getElementById('alert-text-egfr');
+    const egfr = appState.biometry.egfr;
+    if (alertEgfr && textEgfr) {
+        if (egfr !== null && egfr !== undefined && egfr < 60) {
+            alertEgfr.classList.remove('hidden');
+            const stage = egfr < 15 ? '5 (Böbrek Yetmezliği / Diyaliz)' : (egfr < 30 ? '4 (Ciddi eGFR Kaybı)' : '3 (Orta Derece Azalma)');
+            textEgfr.textContent = `eGFR: ${egfr} mL/dk - Evre ${stage}. Dozaj kısıtlamalarını kontrol edin.`;
+            alertCount++;
+        } else {
+            alertEgfr.classList.add('hidden');
+        }
+    }
+
+    // 2. Triple Whammy AKI Alert
+    const alertTw = document.getElementById('alert-item-tw');
+    const textTw = document.getElementById('alert-text-tw');
+    const tw = appState.safetyPrescription?.tripleWhammy;
+    if (alertTw && textTw) {
+        if (tw?.isTripleWhammy) {
+            alertTw.classList.remove('hidden');
+            textTw.textContent = `ACEi/ARB + Diüretik + NSAİİ üçlüsü saptandı! Akut böbrek hasarı (AKI) riski çok yüksek.`;
+            alertCount++;
+        } else if (tw?.isDoubleRisk) {
+            alertTw.classList.remove('hidden');
+            textTw.textContent = `İkili riskli kombinasyon: ${tw.mechanism || 'Renal perfüzyon bozulabilir'}`;
+            alertCount++;
+        } else {
+            alertTw.classList.add('hidden');
+        }
+    }
+
+    // 3. QTc Prolongation Alert
+    const alertQtc = document.getElementById('alert-item-qtc');
+    const textQtc = document.getElementById('alert-text-qtc');
+    const cardiac = appState.other?.cardiac;
+    if (alertQtc && textQtc) {
+        if (cardiac && (cardiac.colorCode === 'danger' || cardiac.interpretation?.toLowerCase().includes('uzamış') || cardiac.status === 'BLOCKED')) {
+            alertQtc.classList.remove('hidden');
+            textQtc.textContent = `${cardiac.interpretation || 'Uzamış QTc aralığı'} (QTcB: ${cardiac.qtcBazett || '--'} ms) - Torsades de Pointes riski!`;
+            alertCount++;
+        } else {
+            alertQtc.classList.add('hidden');
+        }
+    }
+
+    // 4. Neonatal Jaundice / Hyperbilirubinemia Alert
+    const alertJaundice = document.getElementById('alert-item-jaundice');
+    const textJaundice = document.getElementById('alert-text-jaundice');
+    const bhutani = appState.neonatology?.bhutani;
+    if (alertJaundice && textJaundice) {
+        if (bhutani && (bhutani.alertClass === 'danger' || bhutani.alertClass === 'warning')) {
+            alertJaundice.classList.remove('hidden');
+            textJaundice.textContent = `TSB: ${bhutani.totalBilirubin} mg/dL (${bhutani.riskGroupLabel || ''}) - ${bhutani.interpretation}`;
+            alertCount++;
+        } else {
+            alertJaundice.classList.add('hidden');
+        }
+    }
+
+    // 5. Thrombosis / Embolism Alert
+    const alertThrombosis = document.getElementById('alert-item-thrombosis');
+    const textThrombosis = document.getElementById('alert-text-thrombosis');
+    const pte = appState.thrombosis?.wellsPTE;
+    const dvt = appState.thrombosis?.wellsDVT;
+    if (alertThrombosis && textThrombosis) {
+        if ((pte && pte.alertClass === 'danger') || (dvt && dvt.alertClass === 'danger')) {
+            alertThrombosis.classList.remove('hidden');
+            textThrombosis.textContent = `${pte && pte.alertClass === 'danger' ? `PTE: ${pte.riskCategory} (${pte.score}p)` : ''} ${dvt && dvt.alertClass === 'danger' ? `DVT: ${dvt.riskCategory} (${dvt.score}p)` : ''}`.trim();
+            alertCount++;
+        } else {
+            alertThrombosis.classList.add('hidden');
+        }
+    }
+
+    // 6. Neonatal Toxic/Contraindicated Drug Alert
+    const alertNeoDrug = document.getElementById('alert-item-neonatal-drug');
+    const textNeoDrug = document.getElementById('alert-text-neonatal-drug');
+    const neoDrug = appState.safetyPrescription?.neonatalDrugSafety;
+    if (alertNeoDrug && textNeoDrug) {
+        if (neoDrug && neoDrug.alertsCount > 0) {
+            alertNeoDrug.classList.remove('hidden');
+            textNeoDrug.textContent = neoDrug.alerts.map(a => `${a.drugName}: ${a.title}`).join(' | ');
+            alertCount++;
+        } else {
+            alertNeoDrug.classList.add('hidden');
+        }
+    }
+
+    // 7. Neonatal Excessive Weight Loss Alert
+    const alertNeoWeight = document.getElementById('alert-item-neonatal-weight');
+    const textNeoWeight = document.getElementById('alert-text-neonatal-weight');
+    const neoWeight = appState.neonatology?.weightLoss;
+    if (alertNeoWeight && textNeoWeight) {
+        if (neoWeight && (neoWeight.alertClass === 'danger' || neoWeight.alertClass === 'warning')) {
+            alertNeoWeight.classList.remove('hidden');
+            textNeoWeight.textContent = `${neoWeight.interpretation} (Doğum: ${neoWeight.birthWeightG}g, Mevcut: ${neoWeight.currentWeightG}g)`;
+            alertCount++;
+        } else {
+            alertNeoWeight.classList.add('hidden');
+        }
+    }
+
+    // Counter & Empty state update
+    const badgeTotal = document.getElementById('badge-total-alerts');
+    const emptyState = document.getElementById('alert-item-empty');
+    const bannerRisk = document.getElementById('banner-risk-badge');
+    const bannerRiskText = document.getElementById('banner-risk-text');
+
+    if (badgeTotal) badgeTotal.textContent = `${alertCount} Uyarı`;
+    if (emptyState) {
+        if (alertCount > 0) emptyState.classList.add('hidden');
+        else emptyState.classList.remove('hidden');
+    }
+
+    if (bannerRisk && bannerRiskText) {
+        if (alertCount > 0) {
+            bannerRisk.classList.remove('hidden');
+            bannerRisk.classList.add('flex');
+            bannerRiskText.textContent = `${alertCount} Risk`;
+        } else {
+            bannerRisk.classList.add('hidden');
+            bannerRisk.classList.remove('flex');
+        }
+    }
+}
+
+// SOAP COPY INLINE & MODAL DUAL SYNC
+function updateLiveSOAP() {
+    const soapText = generateSOAP();
+    const mainOutput = document.getElementById('text-soap-output');
+    if (mainOutput) mainOutput.value = soapText;
+    const modalOutput = document.getElementById('text-soap-modal');
+    if (modalOutput) modalOutput.value = soapText;
+}
+
+const btnCopyDesktop = document.getElementById('btn-copy-soap');
+if (btnCopyDesktop) {
+    btnCopyDesktop.addEventListener('click', () => {
+        const text = document.getElementById('text-soap-output').value;
+        navigator.clipboard.writeText(text).then(() => {
+            const fb = document.getElementById('copy-feedback');
+            if (fb) {
+                fb.classList.remove('hidden');
+                setTimeout(() => fb.classList.add('hidden'), 2000);
+            }
+        });
     });
-});
+}
+
+function initResponsiveWorkstation() {
+    // 1. Mobile Category Pills Filtering & Smooth Jump
+    const pills = document.querySelectorAll('.cat-pill');
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            pills.forEach(p => {
+                p.classList.remove('active', 'bg-rose-600', 'text-white');
+                p.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            pill.classList.remove('bg-slate-800', 'text-slate-300');
+            pill.classList.add('active', 'bg-rose-600', 'text-white');
+
+            const cat = pill.getAttribute('data-cat');
+            const cards = document.querySelectorAll('#clinical-workspace details');
+            if (cat === 'all') {
+                cards.forEach(c => c.classList.remove('hidden'));
+                const ws = document.getElementById('clinical-workspace');
+                if (ws) ws.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                let firstMatch = null;
+                cards.forEach(c => {
+                    const cardCat = c.getAttribute('data-category');
+                    if (cardCat === cat || cardCat === 'all') {
+                        c.classList.remove('hidden');
+                        c.open = true;
+                        if (!firstMatch) firstMatch = c;
+                    } else {
+                        c.classList.add('hidden');
+                    }
+                });
+                if (firstMatch) {
+                    firstMatch.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    firstMatch.classList.add('card-highlight');
+                    setTimeout(() => firstMatch.classList.remove('card-highlight'), 1800);
+                }
+            }
+        });
+    });
+
+    // 2. Desktop Left Sidebar Navigation Links
+    document.querySelectorAll('.nav-sidebar-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const href = link.getAttribute('href');
+            if (!href || !href.startsWith('#')) return;
+            const targetId = href.substring(1);
+            const targetCard = document.getElementById(targetId);
+            if (targetCard) {
+                targetCard.classList.remove('hidden');
+                targetCard.open = true;
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                targetCard.classList.add('card-highlight');
+                setTimeout(() => targetCard.classList.remove('card-highlight'), 1800);
+            }
+        });
+    });
+
+    // 3. Reset Patient Data
+    const btnReset = document.getElementById('btn-reset-patient');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if (confirm('Tüm hasta verileri ve hesaplamalar sıfırlansın mı?')) {
+                window.location.reload();
+            }
+        });
+    }
+
+    // 4. Online/Offline Network Status Indicator
+    const badgeOffline = document.getElementById('badge-offline-status');
+    function updateNetworkStatus() {
+        if (!badgeOffline) return;
+        if (navigator.onLine) {
+            badgeOffline.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span class="hidden sm:inline">Çevrimdışı</span> PWA Aktif';
+            badgeOffline.className = 'text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
+        } else {
+            badgeOffline.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Çevrimdışı Mod';
+            badgeOffline.className = 'text-[10px] font-mono bg-amber-950/80 text-amber-300 border border-amber-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
+        }
+    }
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+
+    // 5. Mobile Bottom Sheet Drawer Interactions
+    const btnOpenSheet = document.getElementById('btn-open-soap-sheet');
+    const modalSheet = document.getElementById('modal-soap-sheet');
+    const sheetContent = document.getElementById('soap-sheet-content');
+    const btnCloseSheet = document.getElementById('btn-close-soap-sheet');
+    const backdrop = document.getElementById('soap-sheet-backdrop');
+    const handle = document.getElementById('soap-sheet-handle');
+    const btnCopyModal = document.getElementById('btn-copy-soap-modal');
+    const modalFeedback = document.getElementById('copy-feedback-modal');
+
+    function openSoapSheet() {
+        if (!modalSheet || !sheetContent) return;
+        updateLiveSOAP();
+        modalSheet.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            sheetContent.classList.remove('translate-y-full');
+        });
+    }
+
+    function closeSoapSheet() {
+        if (!modalSheet || !sheetContent) return;
+        sheetContent.classList.add('translate-y-full');
+        setTimeout(() => {
+            modalSheet.classList.add('hidden');
+        }, 300);
+    }
+
+    if (btnOpenSheet) btnOpenSheet.addEventListener('click', openSoapSheet);
+    if (btnCloseSheet) btnCloseSheet.addEventListener('click', closeSoapSheet);
+    if (backdrop) backdrop.addEventListener('click', closeSoapSheet);
+    if (handle) handle.addEventListener('click', closeSoapSheet);
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalSheet && !modalSheet.classList.contains('hidden')) {
+            closeSoapSheet();
+        }
+    });
+
+    if (btnCopyModal) {
+        btnCopyModal.addEventListener('click', () => {
+            const modalText = document.getElementById('text-soap-modal');
+            const textToCopy = modalText ? modalText.value : (document.getElementById('text-soap-output')?.value || '');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    if (modalFeedback) {
+                        modalFeedback.classList.remove('hidden');
+                        setTimeout(() => modalFeedback.classList.add('hidden'), 2000);
+                    }
+                    const desktopFb = document.getElementById('copy-feedback');
+                    if (desktopFb) {
+                        desktopFb.classList.remove('hidden');
+                        setTimeout(() => desktopFb.classList.add('hidden'), 2000);
+                    }
+                });
+    // 6. DOB Preset Buttons Handling
+    const presetBtns = document.querySelectorAll('.btn-dob-preset');
+    const dobInput = document.getElementById('input-dob');
+    const birthTimeInput = document.getElementById('input-birth-time');
+    
+    presetBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const preset = btn.getAttribute('data-preset');
+            const now = new Date();
+            let targetDate = new Date();
+            
+            if (preset === '0d') {
+                targetDate = new Date();
+            } else if (preset === '1d') {
+                targetDate.setDate(now.getDate() - 1);
+            } else if (preset === '3d') {
+                targetDate.setDate(now.getDate() - 3);
+            } else if (preset === '7d') {
+                targetDate.setDate(now.getDate() - 7);
+            } else if (preset === '14d') {
+                targetDate.setDate(now.getDate() - 14);
+            } else if (preset === '1m') {
+                targetDate.setMonth(now.getMonth() - 1);
+            } else if (preset === '1y') {
+                targetDate.setFullYear(now.getFullYear() - 1);
+            } else if (preset === '5y') {
+                targetDate.setFullYear(now.getFullYear() - 5);
+            } else if (preset === '25y') {
+                targetDate.setFullYear(now.getFullYear() - 25);
+            }
+            
+            const yyyy = targetDate.getFullYear();
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+            const formattedDate = `${yyyy}-${mm}-${dd}`;
+            
+            if (dobInput) {
+                dobInput.value = formattedDate;
+                
+                if (preset === '0d' && birthTimeInput && !birthTimeInput.value) {
+                    const curHours = String(now.getHours()).padStart(2, '0');
+                    const curMinutes = String(now.getMinutes()).padStart(2, '0');
+                    birthTimeInput.value = `${curHours}:${curMinutes}`;
+                }
+
+                presetBtns.forEach(b => {
+                    b.classList.remove('bg-rose-900/60', 'text-rose-200', 'border-rose-700', 'font-bold');
+                    b.classList.add('bg-slate-900', 'text-slate-300', 'border-slate-750');
+                });
+                btn.classList.remove('bg-slate-900', 'text-slate-300', 'border-slate-750');
+                btn.classList.add('bg-rose-900/60', 'text-rose-200', 'border-rose-700', 'font-bold');
+
+                updateAllTabs();
+            }
+        });
+    });
+
+    if (dobInput) {
+        dobInput.addEventListener('input', () => {
+            presetBtns.forEach(b => {
+                b.classList.remove('bg-rose-900/60', 'text-rose-200', 'border-rose-700', 'font-bold');
+                b.classList.add('bg-slate-900', 'text-slate-300', 'border-slate-750');
+            });
+        });
+    }
+}
+
+// Responsive workstation başlatıcı
+initResponsiveWorkstation();
 
 // PWA Service Worker Registration (Çevrimdışı Çalışma)
 if ('serviceWorker' in navigator) {

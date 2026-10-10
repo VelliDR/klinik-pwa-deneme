@@ -1,74 +1,271 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="dark scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Klinik Karar Destek Asistanı</title>
     
     <!-- PWA & Mobile Desteği -->
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#090d16">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-3 md:p-6 max-w-7xl mx-auto space-y-4">
+    <style>
+        /* Standart temiz kaydırma çubuğu gizleme */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Monospace ve düşey sayısal hizalama standardı */
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        
+        /* Dokunma hedefleri ve mobil form ergonomisi */
+        input[type="number"], select {
+            min-height: 38px;
+        }
+        @media (max-width: 640px) {
+            input[type="number"], select, button {
+                min-height: 42px;
+            }
+        }
 
-    <!-- Header -->
-    <header class="border-b border-slate-700 pb-2 flex justify-between items-center">
-        <h1 class="text-sm font-bold tracking-wider text-rose-500 uppercase">Klinik Asistan <span class="text-[10px] text-slate-500 lowercase">v2</span></h1>
-        <span id="badge-age-group" class="hidden text-[10px] font-mono bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded-full">--</span>
+        /* Kart vurgulama nabız animasyonu */
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+        }
+        .card-highlight {
+            animation: pulse-ring 1.8s ease-out;
+            border-color: rgba(244, 63, 94, 0.9) !important;
+        }
+
+        /* Safe area iOS ve Android alt çubuk */
+        .safe-bottom-pad {
+            padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-rose-500 selection:text-white safe-bottom-pad lg:pb-10">
+
+    <!-- 1. ÜST BAŞLIK, DURUM VE HASTA BİLGİ ŞERİDİ (STICKY) -->
+    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md transition-all">
+        <div class="max-w-[1700px] mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                    <h1 class="text-sm font-black tracking-wider text-rose-500 uppercase flex items-center gap-1.5">
+                        KLİNİK ASİSTAN
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono font-normal lowercase border border-slate-700">v2.5</span>
+                    </h1>
+                </div>
+                <span id="badge-age-group" class="hidden text-[10px] font-mono bg-rose-950/80 text-rose-300 border border-rose-800/80 px-2 py-0.5 rounded-full font-semibold">--</span>
+            </div>
+
+            <!-- Sağ Hızlı Eylemler & Hasta Durum Butonları -->
+            <div class="flex items-center gap-2">
+                <button type="button" id="btn-reset-patient" class="text-[11px] text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm" title="Tüm form verilerini sıfırla">
+                    <span>🔄</span> <span class="hidden sm:inline">Yeni Hasta</span>
+                </button>
+                <div id="badge-offline-status" class="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span class="hidden sm:inline">Çevrimdışı</span> PWA Aktif
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. STICKY HASTA BİLGİ ŞERİDİ (PATIENT CONTEXT BANNER) -->
+        <div id="patient-context-banner" class="bg-slate-950/95 border-t border-slate-800/80 px-3 sm:px-6 py-1.5 text-xs text-slate-300 overflow-x-auto no-scrollbar shadow-inner">
+            <div class="max-w-[1700px] mx-auto flex items-center justify-between gap-4 min-w-max sm:min-w-0">
+                <div class="flex items-center gap-2 sm:gap-4 font-mono text-[11px]">
+                    <span class="text-slate-500 uppercase text-[10px] tracking-wider font-sans font-bold flex items-center gap-1">
+                        <span>👤</span> HASTA:
+                    </span>
+                    <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                        <span class="text-slate-400 text-[10px]">Yaş:</span>
+                        <span id="banner-age" class="font-bold text-slate-200">--</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                        <span class="text-slate-400 text-[10px]">Cins:</span>
+                        <span id="banner-gender" class="font-bold text-slate-200">--</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                        <span class="text-slate-400 text-[10px]">Kilo/Boy:</span>
+                        <span id="banner-biometry" class="font-bold text-slate-200">--</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                        <span class="text-slate-400 text-[10px]">BSA:</span>
+                        <span id="banner-bsa" class="font-bold text-emerald-400">--</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
+                        <span class="text-slate-400 text-[10px]">eGFR:</span>
+                        <span id="banner-egfr" class="font-bold text-cyan-400">--</span>
+                    </div>
+                </div>
+
+                <!-- Banner Sağ: Aktif Risk Rozeti Göstergesi -->
+                <div id="banner-risk-badge" class="hidden items-center gap-1.5 bg-rose-950/80 text-rose-300 border border-rose-800/80 px-2.5 py-0.5 rounded text-[10px] font-semibold animate-pulse font-mono">
+                    <span>⚠️</span> <span id="banner-risk-text">Aktif Uyarı</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. MOBİL / TABLET KATEGORİ HAPLARI (CATEGORY PILLS) -->
+        <nav id="category-pills" class="bg-slate-900/95 border-t border-slate-800/60 px-3 sm:px-6 py-2 overflow-x-auto no-scrollbar flex items-center gap-1.5 text-xs select-none">
+            <button type="button" data-cat="all" class="cat-pill active px-3 py-1.5 rounded-xl font-medium text-[11px] bg-rose-600 text-white shadow-sm transition-all whitespace-nowrap">Tümü</button>
+            <button type="button" data-cat="acil" class="cat-pill px-3 py-1.5 rounded-xl font-medium text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all whitespace-nowrap">🚨 Acil & Tromboz</button>
+            <button type="button" data-cat="demografi" class="cat-pill px-3 py-1.5 rounded-xl font-medium text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all whitespace-nowrap">👤 Demografi & Vitaller</button>
+            <button type="button" data-cat="lab" class="cat-pill px-3 py-1.5 rounded-xl font-medium text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all whitespace-nowrap">🧪 Lab & Sıvı</button>
+            <button type="button" data-cat="pediatri" class="cat-pill px-3 py-1.5 rounded-xl font-medium text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all whitespace-nowrap">👶 Pediatri & Neonatoloji</button>
+            <button type="button" data-cat="ilac" class="cat-pill px-3 py-1.5 rounded-xl font-medium text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all whitespace-nowrap">💊 İlaç & TİTCK</button>
+            <button type="button" data-cat="dahiliye" class="cat-pill px-3 py-1.5 rounded-xl font-medium text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all whitespace-nowrap">🩺 Dahiliye & Endokrin</button>
+            <button type="button" data-cat="cerrahi" class="cat-pill px-3 py-1.5 rounded-xl font-medium text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 transition-all whitespace-nowrap">🔪 Cerrahi & OBGYN</button>
+        </nav>
     </header>
 
-    <!-- RESPONSIVE GRID KAPSAYICI -->
-    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-        <!-- SOL SÜTUN: DEMOGRAFİ, BİYOMETRİ & VİTALLER -->
-        <div class="space-y-3">
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
+    <!-- 4. ANA ÇALIŞMA ALANI: 3-PANELLİ KLİNİK İŞ İSTASYONU -->
+    <div class="max-w-[1700px] mx-auto px-3 sm:px-6 py-4 flex flex-col lg:flex-row gap-5 items-start">
+        
+        <!-- SOL KENAR PANEL (Desktop XL 1280px+ Sticky İndeks / Klinik Ağaç) -->
+        <aside class="w-56 hidden xl:block shrink-0 sticky top-32 self-start bg-slate-900/70 border border-slate-800/80 rounded-2xl p-3 backdrop-blur-md space-y-1 shadow-sm">
+            <div class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 mb-2 flex items-center justify-between">
+                <span>KLİNİK MODÜLLER</span>
+                <span class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-mono">11 Dal</span>
+            </div>
+            <nav class="space-y-0.5 text-xs font-medium">
+                <a href="#card-demografi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>👤</span> Demografi & Biyometri</span>
+                </a>
+                <a href="#card-vitaller" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🩺</span> Vitaller & GCS</span>
+                </a>
+                <a href="#card-tromboz" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🚨</span> Tromboz & Acil</span>
+                </a>
+                <a href="#card-elektrolit" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🧪</span> Elektrolit & Sıvı</span>
+                </a>
+                <a href="#card-kangazi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🫁</span> Kan Gazı Analizi</span>
+                </a>
+                <a href="#card-nefro" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🔬</span> Nefroloji & Toksik</span>
+                </a>
+                <a href="#card-cerrahi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🔪</span> Cerrahi & Yanık</span>
+                </a>
+                <a href="#card-obgyn" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🤰</span> Kadın Doğum (OBGYN)</span>
+                </a>
+                <a href="#card-endokrin" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🩸</span> Endokrin & ÇEDD</span>
+                </a>
+                <a href="#card-pediatri-surup" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>👶</span> Pediatri & Aşı</span>
+                </a>
+                <a href="#card-neonatoloji" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>🍼</span> Neonatoloji</span>
+                </a>
+                <a href="#card-ilac" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>💊</span> İlaç & TİTCK</span>
+                </a>
+                <a href="#card-infuzyon" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                    <span class="flex items-center gap-2"><span>💧</span> İnfüzyon & GIR</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- ORTA ÇALIŞMA ALANI: 2-SÜTUNLU DENGELİ KART IZGARASI -->
+        <main id="clinical-workspace" class="flex-1 min-w-0">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                
+                <!-- SÜTUN A (Sol Çalışma Grubu: Demografi, Vitaller, GCS, Kardiyo, Tromboz, Cerrahi, OBGYN, Endokrin, Notlar) -->
+                <div class="space-y-3">
+            <details id="card-demografi" data-category="demografi" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Hasta Yaş & Demografi</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <div class="grid grid-cols-3 gap-2 pt-2">
-                        <div>
-                            <label class="text-[10px] text-slate-400 block mb-1">Giriş Tipi</label>
-                            <select id="select-age-unit" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
-                                <option value="years">Yaş</option>
-                                <option value="months">Ay</option>
-                            </select>
+                    <!-- Hızlı Yaş Kısayolları -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 text-[10px]">
+                        <span class="text-[9px] text-slate-500 font-mono flex-shrink-0">Hızlı:</span>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="today">Bugün (0G)</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="1d">1 Günlük</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="3d">3 Günlük</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="7d">7 Günlük</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="14d">14 Günlük</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="1m">1 Aylık</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="1y">1 Yaş</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="5y">5 Yaş</button>
+                        <button type="button" class="btn-dob-preset px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-750 transition-colors whitespace-nowrap" data-preset="25y">Erişkin (25Y)</button>
+                    </div>
+
+                    <!-- Ana Giriş Alanı: Doğum Tarihi + Doğum Saati + Cinsiyet -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div class="sm:col-span-2">
+                            <label class="text-[10px] text-slate-400 block mb-1 font-semibold flex items-center justify-between">
+                                <span>📅 Doğum Tarihi & Saati</span>
+                                <span class="text-[9px] text-slate-500 font-normal">Saat opsiyonel (İlk 72 saat sarılık için)</span>
+                            </label>
+                            <div class="flex gap-1.5">
+                                <input type="date" id="input-dob" class="w-2/3 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500">
+                                <input type="time" id="input-birth-time" class="w-1/3 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500" title="İsteğe Bağlı: Doğum Saati">
+                            </div>
                         </div>
                         <div>
-                            <label class="text-[10px] text-slate-400 block mb-1">Yaş / Ay</label>
-                            <input type="number" id="input-age" placeholder="5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono">
-                        </div>
-                        <div>
-                            <label class="text-[10px] text-slate-400 block mb-1">Cinsiyet</label>
-                            <select id="select-gender" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
+                            <label class="text-[10px] text-slate-400 block mb-1 font-semibold">Cinsiyet</label>
+                            <select id="select-gender" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200">
                                 <option value="">- Seç -</option>
                                 <option value="male">Erkek</option>
                                 <option value="female">Kız</option>
                             </select>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-700/40">
-                        <label class="flex items-center gap-1.5 text-[10px] text-slate-300 cursor-pointer">
-                            <input type="checkbox" id="chk-preterm" class="accent-rose-500 bg-slate-900 border-slate-700 rounded">
-                            <span>Preterm Doğum</span>
-                        </label>
-                        <div id="container-preterm-gw" class="hidden items-center gap-1">
-                            <label class="text-[10px] text-slate-400">Doğum Haftası:</label>
-                            <input type="number" id="input-gestational-weeks" placeholder="32" min="24" max="36" class="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono text-center">
-                        </div>
+
+                    <!-- Geriye dönük uyumluluk için korunan gizli alanlar -->
+                    <div class="hidden">
+                        <select id="select-age-unit"><option value="dob">DOB</option><option value="years">Yaş</option><option value="months">Ay</option><option value="days">Gün</option></select>
+                        <input type="number" id="input-age">
                     </div>
-                    <div id="output-corrected-age" class="hidden text-[10px] font-mono text-amber-300 bg-amber-950/40 border border-amber-700/50 p-2 rounded-lg"></div>
+
+                    <!-- Anlık Hesaplanan Yaş Bilgisi Rozeti -->
+                    <div id="output-dob-breakdown" class="hidden text-[11px] font-mono p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/60 text-sky-300 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm">👶</span>
+                            <span id="text-dob-breakdown" class="font-bold">--</span>
+                        </div>
+                        <span id="badge-dob-tag" class="text-[9px] px-2 py-0.5 rounded-full bg-sky-900 text-sky-200 border border-sky-700 font-semibold font-sans">Yenidoğan</span>
+                    </div>
+
+                    <!-- Doğum Ağırlığı & Preterm Doğum Bölümü -->
+                    <div class="pt-2 border-t border-slate-700/40 space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Doğum Ağırlığı (gram)</label>
+                                <input type="number" id="input-birth-weight" placeholder="3200" min="400" max="6000" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono" inputmode="numeric">
+                            </div>
+                            <div class="flex flex-col justify-end">
+                                <label class="flex items-center gap-1.5 text-[10px] text-slate-300 cursor-pointer pb-1.5">
+                                    <input type="checkbox" id="chk-preterm" class="accent-rose-500 bg-slate-900 border-slate-700 rounded">
+                                    <span>Preterm Doğum</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="container-preterm-gw" class="hidden items-center justify-between p-2 rounded-lg bg-amber-950/30 border border-amber-800/50 text-[10px]">
+                            <label class="text-amber-300 font-semibold">Gestasyonel Doğum Haftası:</label>
+                            <input type="number" id="input-gestational-weeks" placeholder="32" min="24" max="36" class="w-20 bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono text-center" inputmode="numeric">
+                        </div>
+                        <div id="output-corrected-age" class="hidden text-[10px] font-mono text-amber-300 bg-amber-950/40 border border-amber-700/50 p-2 rounded-lg"></div>
+                        <div id="output-neonatal-weight-loss" class="hidden text-[10px] font-mono p-2 rounded-lg border space-y-0.5"></div>
+                    </div>
                 </div>
             </details>
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
+
+            <details id="card-biyometri" data-category="demografi" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Biyometri, eGFR & Persentil</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -77,19 +274,19 @@
                     <div class="grid grid-cols-4 gap-2 pt-2">
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Boy (cm)</label>
-                            <input type="number" id="input-height" placeholder="110" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono">
+                            <input type="number" id="input-height" placeholder="110" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Kilo (kg)</label>
-                            <input type="number" id="input-weight" placeholder="20" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono">
+                            <input type="number" id="input-weight" placeholder="20" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Baş Çev (cm)</label>
-                            <input type="number" step="0.1" id="input-head-circ" placeholder="45" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono">
+                            <input type="number" step="0.1" id="input-head-circ" placeholder="45" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Kreatinin</label>
-                            <input type="number" step="0.01" id="input-creatinine" placeholder="0.8" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono">
+                            <input type="number" step="0.01" id="input-creatinine" placeholder="0.8" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                     </div>
 
@@ -127,18 +324,19 @@
                         <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800">
                             <div>
                                 <label class="text-[9px] text-slate-400 block mb-1">Anne Boyu (cm)</label>
-                                <input type="number" id="input-mother-height" placeholder="162" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono">
+                                <input type="number" id="input-mother-height" placeholder="162" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                             </div>
                             <div>
                                 <label class="text-[9px] text-slate-400 block mb-1">Baba Boyu (cm)</label>
-                                <input type="number" id="input-father-height" placeholder="176" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono">
+                                <input type="number" id="input-father-height" placeholder="176" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                             </div>
                         </div>
                         <div id="output-target-height" class="hidden mt-2 p-2 bg-slate-950/80 rounded border border-slate-800 text-[10px] font-mono space-y-1"></div>
                     </details>
                 </div>
             </details>
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
+
+            <details id="card-vitaller" data-category="demografi" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Vital Bulgular & Skorlama</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -148,26 +346,26 @@
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Tansiyon (Sys / Dia)</label>
                             <div class="flex gap-1">
-                                <input type="number" id="input-sys-bp" placeholder="120" class="w-1/2 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono text-center">
+                                <input type="number" id="input-sys-bp" placeholder="120" class="w-1/2 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono text-center" inputmode="numeric">
                                 <span class="text-slate-500 text-xs self-center">/</span>
-                                <input type="number" id="input-dia-bp" placeholder="80" class="w-1/2 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono text-center">
+                                <input type="number" id="input-dia-bp" placeholder="80" class="w-1/2 bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono text-center" inputmode="numeric">
                             </div>
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Nabız (/dk)</label>
-                            <input type="number" id="input-hr" placeholder="75" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" id="input-hr" placeholder="75" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="numeric">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Solunum (/dk)</label>
-                            <input type="number" id="input-rr" placeholder="16" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" id="input-rr" placeholder="16" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="numeric">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Ateş (°C)</label>
-                            <input type="number" step="0.1" id="input-temp" placeholder="36.6" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" step="0.1" id="input-temp" placeholder="36.6" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">SpO2 (%)</label>
-                            <input type="number" id="input-spo2" placeholder="98" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" id="input-spo2" placeholder="98" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="numeric">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Bilinç</label>
@@ -188,9 +386,9 @@
                     </div>
                     
                     <div id="container-pews-inputs" class="hidden grid-cols-3 gap-2 pt-2 border-t border-slate-700/40">
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Davr (0-3)</label><input type="number" id="input-pews-behavior" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" min="0" max="3"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Kard (0-3)</label><input type="number" id="input-pews-cv" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" min="0" max="3"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Solu (0-3)</label><input type="number" id="input-pews-resp" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" min="0" max="3"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Davr (0-3)</label><input type="number" id="input-pews-behavior" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" min="0" max="3" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Kard (0-3)</label><input type="number" id="input-pews-cv" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" min="0" max="3" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Solu (0-3)</label><input type="number" id="input-pews-resp" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" min="0" max="3" inputmode="decimal"></div>
                     </div>
 
                     <div id="container-vitals-risk" class="hidden p-3 rounded-xl border flex flex-col gap-1">
@@ -202,7 +400,8 @@
                     </div>
                 </div>
             </details>
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+
+            <details id="card-gcs" data-category="acil" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Glasgow Koma Skalası (GCS)</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -247,120 +446,8 @@
                     </div>
                 </div>
             </details>
-        </div>
 
-        <!-- ORTA SÜTUN: LABORATUVAR & SIVILAR -->
-        <div class="space-y-3">
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
-                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
-                    <span>Majör İyonlar & Elektrolit</span>
-                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
-                </summary>
-                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    
-                    <div class="grid grid-cols-4 gap-2 pt-2">
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Na⁺</label><input type="number" id="input-serum-na" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">K⁺</label><input type="number" step="0.1" id="input-serum-k" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Ca²⁺</label><input type="number" step="0.1" id="input-serum-ca" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Alb</label><input type="number" step="0.1" id="input-albumin" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                    </div>
-
-                    <div class="p-2.5 bg-slate-900/60 rounded-lg border border-slate-700/50 space-y-2">
-                        <span class="text-[10px] font-bold text-sky-400 block">Sodyum Düzeltme</span>
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><label class="text-[10px] text-slate-400 block mb-1">Hedef Δ Na⁺</label><input type="number" id="input-target-na-change" value="8" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        </div>
-
-                        <div class="flex justify-between items-center pt-1 border-t border-slate-800">
-                            <span class="text-[10px] text-slate-400">Na Açığı:</span>
-                            <span id="output-na-deficit" class="text-xs font-bold font-mono text-cyan-400">--</span>
-                        </div>
-                    </div>
-                    <div id="container-ion-warnings" class="hidden text-[10px] p-2 bg-amber-950/40 border border-amber-600/50 text-amber-200 rounded-lg space-y-1 font-mono">
-                    </div>
-                </div>
-            </details>
-
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
-                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
-                    <span>Kan Gazı Analizi</span>
-                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
-                </summary>
-                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <div class="grid grid-cols-4 gap-2 pt-2">
-                        <div class="col-span-4 sm:col-span-1">
-                            <label class="text-[10px] text-slate-400 block mb-1">Tip</label>
-                            <select id="select-bg-type" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-[10px] font-mono">
-                                <option value="ABG">Arteriyel</option>
-                                <option value="VBG">Venöz</option>
-                            </select>
-                        </div>
-                        <div class="col-span-4 sm:col-span-1"><label class="text-[10px] text-slate-400 block mb-1">pH</label><input type="number" step="0.01" id="input-bg-ph" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div class="col-span-4 sm:col-span-1"><label class="text-[10px] text-slate-400 block mb-1">pCO2</label><input type="number" id="input-bg-pco2" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div class="col-span-4 sm:col-span-1"><label class="text-[10px] text-slate-400 block mb-1">HCO3</label><input type="number" step="0.1" id="input-bg-hco3" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div class="col-span-2"><label class="text-[10px] text-slate-400 block mb-1">Na</label><input type="number" id="input-bg-na" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div class="col-span-2"><label class="text-[10px] text-slate-400 block mb-1">Cl</label><input type="number" id="input-bg-cl" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                    </div>
-                    <div id="container-bg-warnings" class="hidden text-[10px] p-2 bg-rose-950/40 border border-rose-600/50 text-rose-200 rounded-lg space-y-1 font-mono"></div>
-                </div>
-            </details>
-
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-nephro-tox">
-                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
-                    <span>Nefroloji, Toksikoloji & Pnömoni</span>
-                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
-                </summary>
-                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <!-- FENa & FEUrea -->
-                    <span class="text-[10px] font-bold text-sky-400 block pt-2">FENa & FEUrea (Akut Böbrek Hasarı Ayrımı)</span>
-                    <div class="grid grid-cols-4 gap-2">
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Na</label><input type="number" id="input-fena-s-na" placeholder="140" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Na</label><input type="number" id="input-fena-u-na" placeholder="15" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Kr</label><input type="number" step="0.01" id="input-fena-s-cr" placeholder="1.8" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Kr</label><input type="number" id="input-fena-u-cr" placeholder="80" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum BUN (mg/dL)</label><input type="number" id="input-feurea-s-bun" placeholder="45" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Üre (mg/dL)</label><input type="number" id="input-feurea-u-urea" placeholder="500" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                    </div>
-                    <label class="flex items-center gap-1.5 text-[10px] text-amber-300 cursor-pointer">
-                        <input type="checkbox" id="chk-fena-diuretic" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
-                        <span>Hasta Diüretik / Furosemid Alıyor (FENa yanıltıcı olabilir)</span>
-                    </label>
-                    <div id="output-fena-feurea" class="hidden text-[10px] p-2 bg-slate-900/60 rounded-lg border font-mono space-y-1"></div>
-
-                    <!-- Düzeltilmiş Sodyum & Osmolal Gap -->
-                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Düzeltilmiş Na (Katz) & Osmolal Açık</span>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Ölçülen Na</label><input type="number" id="input-corr-na-meas" placeholder="130" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Glukoz (mg/dL)</label><input type="number" id="input-corr-glucose" placeholder="380" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Ölçülen Osmol.</label><input type="number" id="input-osm-measured" placeholder="310" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                    </div>
-                    <div id="output-corr-na-osm" class="hidden text-[10px] p-2 bg-slate-900/60 rounded-lg border font-mono space-y-1"></div>
-
-                    <!-- Parasetamol Toksisitesi & IV NAC -->
-                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Parasetamol Toksisitesi (Rumack-Matthew & NAC)</span>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Alımdan Geçen Süre (Saat: 4-24)</label><input type="number" id="input-apap-hours" placeholder="6" min="4" max="24" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Parasetamol (µg/mL)</label><input type="number" id="input-apap-level" placeholder="160" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono"></div>
-                    </div>
-                    <div id="output-apap-rumack" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
-
-                    <!-- CURB-65 Pnömoni -->
-                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">CURB-65 Toplum Kökenli Pnömoni Triyajı</span>
-                    <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-300">
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-c" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Konfüzyon (Yeni)</label>
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-u" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Üre &gt; 7 mmol/L (BUN &gt; 19)</label>
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-r" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Solunum Sayısı ≥ 30/dk</label>
-                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-b" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Hipotansiyon (&lt;90 veya ≤60)</label>
-                        <label class="flex items-center gap-1 cursor-pointer col-span-2"><input type="checkbox" id="chk-curb-65" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş ≥ 65 Yıl</label>
-                    </div>
-                    <div id="output-curb65" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
-                </div>
-            </details>
-
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-kardiyo" data-category="acil" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Kardiyoloji & Tüp Rehberi</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -368,9 +455,9 @@
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
                     <span class="text-[10px] font-bold text-sky-400 block pt-2">EKG QTc & Aks & Tisdale</span>
                     <div class="grid grid-cols-3 gap-2">
-                        <div><label class="text-[10px] text-slate-400 block mb-1">QT (ms)</label><input type="number" id="input-ecg-qt" placeholder="Örn: 380" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">RR (ms)</label><input type="number" id="input-ecg-rr" placeholder="Nabızdan otm." class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">QRS (ms)</label><input type="number" id="input-ecg-qrs" placeholder="Örn: 90" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">QT (ms)</label><input type="number" id="input-ecg-qt" placeholder="Örn: 380" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">RR (ms)</label><input type="number" id="input-ecg-rr" placeholder="Nabızdan otm." class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">QRS (ms)</label><input type="number" id="input-ecg-qrs" placeholder="Örn: 90" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
                     </div>
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">QRS Morfolojisi / İleti Tipi</label>
@@ -390,8 +477,8 @@
                     <div id="output-ecg-qtc" class="hidden text-[10px] p-2 rounded-lg space-y-1 font-mono mt-2"></div>
                     
                     <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-700/40">
-                        <div><label class="text-[10px] text-slate-400 block mb-1">D1 (mm)</label><input type="number" id="input-ecg-d1" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">aVF (mm)</label><input type="number" id="input-ecg-avf" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">D1 (mm)</label><input type="number" id="input-ecg-d1" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">aVF (mm)</label><input type="number" id="input-ecg-avf" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
                     </div>
                     <div id="output-ecg-axis" class="hidden text-[10px] font-mono text-amber-400 font-bold mb-2 mt-1"></div>
 
@@ -403,7 +490,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-thrombosis">
+            <details id="card-tromboz" data-category="acil" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-thrombosis">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Tromboemboli & Kardiyak Acil</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -540,7 +627,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-cerrahi" data-category="cerrahi" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Cerrahi Skorlar & Yanık</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -560,7 +647,7 @@
                     <div id="output-alvarado" class="hidden text-[10px] font-mono text-rose-400 font-bold mb-2"></div>
 
                     <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Parkland Yanık Sıvısı</span>
-                    <div><label class="text-[10px] text-slate-400 block mb-1">Yanık Yüzdesi (TBSA %)</label><input type="number" id="input-parkland-tbsa" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
+                    <div><label class="text-[10px] text-slate-400 block mb-1">Yanık Yüzdesi (TBSA %)</label><input type="number" id="input-parkland-tbsa" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
                     <div id="output-parkland" class="hidden text-[10px] p-2 bg-amber-950/40 border border-amber-600/50 text-amber-200 rounded-lg space-y-1 font-mono"></div>
 
                     <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Sütür & Yara Bakım</span>
@@ -577,7 +664,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-obgyn" data-category="cerrahi" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Kadın Doğum (OBGYN)</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -596,17 +683,17 @@
 
                     <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Bishop Skoru</span>
                     <div class="grid grid-cols-5 gap-1">
-                        <div><label class="text-[9px] text-slate-400 block">Açık</label><input type="number" id="input-bishop-dil" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block">Silin</label><input type="number" id="input-bishop-eff" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block">İst.</label><input type="number" id="input-bishop-sta" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block">Kıv.</label><input type="number" id="input-bishop-con" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono"></div>
-                        <div><label class="text-[9px] text-slate-400 block">Poz.</label><input type="number" id="input-bishop-pos" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono"></div>
+                        <div><label class="text-[9px] text-slate-400 block">Açık</label><input type="number" id="input-bishop-dil" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block">Silin</label><input type="number" id="input-bishop-eff" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block">İst.</label><input type="number" id="input-bishop-sta" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block">Kıv.</label><input type="number" id="input-bishop-con" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block">Poz.</label><input type="number" id="input-bishop-pos" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal"></div>
                     </div>
                     <div id="output-bishop" class="hidden text-[10px] font-mono text-emerald-400 font-bold mt-2"></div>
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-endokrin" data-category="dahiliye" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Endokrin & Metabolizma (ÇEDD)</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -629,7 +716,7 @@
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Doz (mg)</label>
-                            <input type="number" step="0.5" id="input-steroid-dose" placeholder="Örn: 20" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" step="0.5" id="input-steroid-dose" placeholder="Örn: 20" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                     </div>
                     <div id="output-steroid-table" class="hidden text-[10px] p-2 bg-slate-900/60 rounded-lg border border-slate-700/60 font-mono space-y-1"></div>
@@ -638,11 +725,11 @@
                     <div class="grid grid-cols-3 gap-2">
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Açlık Glukoz (mg/dL)</label>
-                            <input type="number" id="input-homa-glucose" placeholder="95" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" id="input-homa-glucose" placeholder="95" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Açlık İnsülin (µIU/mL)</label>
-                            <input type="number" step="0.1" id="input-homa-insulin" placeholder="12" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" step="0.1" id="input-homa-insulin" placeholder="12" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Puberte Evresi</label>
@@ -655,12 +742,130 @@
                     <div id="output-homa-result" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
                 </div>
             </details>
-            
-        </div>
 
-        <!-- SAĞ SÜTUN: TEDAVİ & SOAP -->
-        <div class="space-y-3 md:col-span-2 lg:col-span-1">
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
+            <details id="card-notlar" data-category="all" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
+                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
+                    <span>Ekstra Anamnez & Not</span>
+                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                </summary>
+                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
+                    <textarea id="input-custom-notes" rows="3" placeholder="Muayene bulguları..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 resize-none focus:outline-none focus:border-rose-500 mt-2"></textarea>
+                </div>
+            </details>
+                </div>
+
+                <!-- SÜTUN B (Sağ Çalışma Grubu: Elektrolit, Kan Gazı, Nefro, Pediatri, Antibiyotik, Demir, Neonatoloji, İlaç, İnfüzyon, İdame) -->
+                <div class="space-y-3">
+            <details id="card-elektrolit" data-category="lab" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
+                    <span>Majör İyonlar & Elektrolit</span>
+                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                </summary>
+                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
+                    
+                    <div class="grid grid-cols-4 gap-2 pt-2">
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Na⁺</label><input type="number" id="input-serum-na" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">K⁺</label><input type="number" step="0.1" id="input-serum-k" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Ca²⁺</label><input type="number" step="0.1" id="input-serum-ca" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Alb</label><input type="number" step="0.1" id="input-albumin" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                    </div>
+
+                    <div class="p-2.5 bg-slate-900/60 rounded-lg border border-slate-700/50 space-y-2">
+                        <span class="text-[10px] font-bold text-sky-400 block">Sodyum Düzeltme</span>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-[10px] text-slate-400 block mb-1">Hedef Δ Na⁺</label><input type="number" id="input-target-na-change" value="8" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-1 border-t border-slate-800">
+                            <span class="text-[10px] text-slate-400">Na Açığı:</span>
+                            <span id="output-na-deficit" class="text-xs font-bold font-mono text-cyan-400">--</span>
+                        </div>
+                    </div>
+                    <div id="container-ion-warnings" class="hidden text-[10px] p-2 bg-amber-950/40 border border-amber-600/50 text-amber-200 rounded-lg space-y-1 font-mono">
+                    </div>
+                </div>
+            </details>
+
+            <details id="card-kangazi" data-category="lab" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
+                    <span>Kan Gazı Analizi</span>
+                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                </summary>
+                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
+                    <div class="grid grid-cols-4 gap-2 pt-2">
+                        <div class="col-span-4 sm:col-span-1">
+                            <label class="text-[10px] text-slate-400 block mb-1">Tip</label>
+                            <select id="select-bg-type" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-[10px] font-mono">
+                                <option value="ABG">Arteriyel</option>
+                                <option value="VBG">Venöz</option>
+                            </select>
+                        </div>
+                        <div class="col-span-4 sm:col-span-1"><label class="text-[10px] text-slate-400 block mb-1">pH</label><input type="number" step="0.01" id="input-bg-ph" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div class="col-span-4 sm:col-span-1"><label class="text-[10px] text-slate-400 block mb-1">pCO2</label><input type="number" id="input-bg-pco2" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div class="col-span-4 sm:col-span-1"><label class="text-[10px] text-slate-400 block mb-1">HCO3</label><input type="number" step="0.1" id="input-bg-hco3" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div class="col-span-2"><label class="text-[10px] text-slate-400 block mb-1">Na</label><input type="number" id="input-bg-na" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div class="col-span-2"><label class="text-[10px] text-slate-400 block mb-1">Cl</label><input type="number" id="input-bg-cl" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                    </div>
+                    <div id="container-bg-warnings" class="hidden text-[10px] p-2 bg-rose-950/40 border border-rose-600/50 text-rose-200 rounded-lg space-y-1 font-mono"></div>
+                </div>
+            </details>
+
+            <details id="card-nefro" data-category="dahiliye" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-nephro-tox">
+                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
+                    <span>Nefroloji, Toksikoloji & Pnömoni</span>
+                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
+                </summary>
+                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
+                    <!-- FENa & FEUrea -->
+                    <span class="text-[10px] font-bold text-sky-400 block pt-2">FENa & FEUrea (Akut Böbrek Hasarı Ayrımı)</span>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Na</label><input type="number" id="input-fena-s-na" placeholder="140" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Na</label><input type="number" id="input-fena-u-na" placeholder="15" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Kr</label><input type="number" step="0.01" id="input-fena-s-cr" placeholder="1.8" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Kr</label><input type="number" id="input-fena-u-cr" placeholder="80" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum BUN (mg/dL)</label><input type="number" id="input-feurea-s-bun" placeholder="45" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">İdrar Üre (mg/dL)</label><input type="number" id="input-feurea-u-urea" placeholder="500" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-[10px] text-amber-300 cursor-pointer">
+                        <input type="checkbox" id="chk-fena-diuretic" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
+                        <span>Hasta Diüretik / Furosemid Alıyor (FENa yanıltıcı olabilir)</span>
+                    </label>
+                    <div id="output-fena-feurea" class="hidden text-[10px] p-2 bg-slate-900/60 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- Düzeltilmiş Sodyum & Osmolal Gap -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Düzeltilmiş Na (Katz) & Osmolal Açık</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Ölçülen Na</label><input type="number" id="input-corr-na-meas" placeholder="130" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Glukoz (mg/dL)</label><input type="number" id="input-corr-glucose" placeholder="380" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Ölçülen Osmol.</label><input type="number" id="input-osm-measured" placeholder="310" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                    </div>
+                    <div id="output-corr-na-osm" class="hidden text-[10px] p-2 bg-slate-900/60 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- Parasetamol Toksisitesi & IV NAC -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Parasetamol Toksisitesi (Rumack-Matthew & NAC)</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Alımdan Geçen Süre (Saat: 4-24)</label><input type="number" id="input-apap-hours" placeholder="6" min="4" max="24" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[9px] text-slate-400 block mb-1">Serum Parasetamol (µg/mL)</label><input type="number" id="input-apap-level" placeholder="160" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal"></div>
+                    </div>
+                    <div id="output-apap-rumack" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+
+                    <!-- CURB-65 Pnömoni -->
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">CURB-65 Toplum Kökenli Pnömoni Triyajı</span>
+                    <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-300">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-c" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Konfüzyon (Yeni)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-u" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Üre &gt; 7 mmol/L (BUN &gt; 19)</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-r" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Solunum Sayısı ≥ 30/dk</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-curb-b" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Hipotansiyon (&lt;90 veya ≤60)</label>
+                        <label class="flex items-center gap-1 cursor-pointer col-span-2"><input type="checkbox" id="chk-curb-65" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş ≥ 65 Yıl</label>
+                    </div>
+                    <div id="output-curb65" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
+                </div>
+            </details>
+
+            <details id="card-pediatri-surup" data-category="pediatri" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Pediatrik Şurup & Aşı</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -680,7 +885,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-antibiyotik" data-category="pediatri" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Akılcı Antibiyotik & Centor-McIsaac</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -697,7 +902,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-iron-engine">
+            <details id="card-demir" data-category="pediatri" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-iron-engine">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Pediatrik Demir & Anemi</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -706,7 +911,7 @@
                     <div class="grid grid-cols-2 gap-2 pt-2">
                         <div>
                             <label class="text-[10px] text-slate-400 block mb-1">Hemoglobin (Hb)</label>
-                            <input type="number" step="0.1" id="input-hb" placeholder="11.5" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                            <input type="number" step="0.1" id="input-hb" placeholder="11.5" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div class="flex items-center">
                             <span id="badge-iron-preterm" class="text-[10px] font-mono text-slate-400 pt-4"></span>
@@ -716,7 +921,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-neonatology">
+            <details id="card-neonatoloji" data-category="pediatri" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" id="details-neonatology">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>Neonatoloji & Pediatrik Acil</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -727,15 +932,15 @@
                     <div class="grid grid-cols-3 gap-2">
                         <div>
                             <label class="text-[9px] text-slate-400 block mb-1">Bebeğin Yaşı (Saat)</label>
-                            <input type="number" id="input-bhutani-age-hours" placeholder="48" min="1" max="168" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                            <input type="number" id="input-bhutani-age-hours" placeholder="48" min="1" max="168" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[9px] text-slate-400 block mb-1">Total Bilirubin (mg/dL)</label>
-                            <input type="number" step="0.1" id="input-bhutani-tsb" placeholder="13.2" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                            <input type="number" step="0.1" id="input-bhutani-tsb" placeholder="13.2" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[9px] text-slate-400 block mb-1">Gestasyon Haftası</label>
-                            <input type="number" id="input-bhutani-gw" placeholder="38" min="35" max="42" value="38" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                            <input type="number" id="input-bhutani-gw" placeholder="38" min="35" max="42" value="38" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                         </div>
                     </div>
                     <label class="flex items-center gap-1.5 text-[10px] text-amber-300 cursor-pointer">
@@ -883,7 +1088,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-ilac" data-category="ilac" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>İlaç, TİTCK & Prospektüs</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -914,7 +1119,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[9px] text-slate-400 block mb-1">eGFR Değeri (mL/dk)</label>
-                                <input type="number" id="input-safety-egfr" placeholder="Biyometriden otm." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono">
+                                <input type="number" id="input-safety-egfr" placeholder="Biyometriden otm." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                             </div>
                             <div>
                                 <label class="text-[9px] text-slate-400 block mb-1">Gebelik / Trimester</label>
@@ -931,22 +1136,23 @@
                         <div id="output-safety-triple-whammy" class="hidden text-[10px] p-2.5 rounded-lg border font-mono space-y-1"></div>
                         <div id="output-safety-renal" class="hidden text-[10px] p-2.5 rounded-lg border font-mono space-y-1"></div>
                         <div id="output-safety-pregnancy" class="hidden text-[10px] p-2.5 rounded-lg border font-mono space-y-1"></div>
+                        <div id="output-safety-neonatal" class="hidden text-[10px] p-2.5 rounded-lg border font-mono space-y-1"></div>
                     </div>
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-infuzyon" data-category="ilac" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>İnfüzyon Hızı (Perfüzör & GIR)</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
                     <div class="grid grid-cols-2 gap-2 pt-2">
-                        <div><label class="text-[10px] text-slate-400 block mb-1">İlaç Miktarı (mg)</label><input type="number" id="input-inf-mg" placeholder="4" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Hacim (ml)</label><input type="number" id="input-inf-vol" value="50" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">İlaç Miktarı (mg)</label><input type="number" id="input-inf-mg" placeholder="4" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Hacim (ml)</label><input type="number" id="input-inf-vol" value="50" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="text-[10px] text-slate-400 block mb-1">Hedef Doz</label><input type="number" step="0.01" id="input-inf-dose" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono"></div>
+                        <div><label class="text-[10px] text-slate-400 block mb-1">Hedef Doz</label><input type="number" step="0.01" id="input-inf-dose" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
                         <div><label class="text-[10px] text-slate-400 block mb-1">Doz Birimi</label>
                             <select id="select-inf-unit" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-[10px] font-mono">
                                 <option value="mcg_kg_min">mcg/kg/dk</option>
@@ -973,7 +1179,7 @@
                             </div>
                             <div>
                                 <label class="text-[10px] text-slate-400 block mb-1">Sıvı Hızı (mL/saat)</label>
-                                <input type="number" id="input-gir-rate" placeholder="İdame hızından" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono">
+                                <input type="number" id="input-gir-rate" placeholder="İdame hızından" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
                             </div>
                         </div>
                         <div id="output-gir-result" class="hidden p-2 rounded-lg border text-[10px] font-mono space-y-1"></div>
@@ -981,7 +1187,7 @@
                 </div>
             </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-idame" data-category="lab" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>İdame Sıvı Hesabı</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
@@ -997,20 +1203,71 @@
                             <span id="output-hourly-fluid" class="text-xs font-bold font-mono text-emerald-400">--</span>
                         </div>
                     </div>
+                    <div id="container-neonatal-fluid-banner" class="hidden p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/60 text-[10px] font-mono space-y-1">
+                        <div class="flex items-center justify-between font-bold text-sky-300">
+                            <span id="text-neonatal-fluid-day">🍼 TND Yenidoğan Sıvı Kademesi</span>
+                            <span id="text-neonatal-fluid-target" class="text-[9px] px-1.5 py-0.5 rounded bg-sky-900 text-sky-200">GIR: 4-6 mg/kg/dk</span>
+                        </div>
+                        <div id="text-neonatal-fluid-desc" class="text-slate-300 text-[9px] leading-tight">--</div>
+                    </div>
                 </div>
             </details>
-
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
-                <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
-                    <span>Ekstra Anamnez & Not</span>
-                    <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
-                </summary>
-                <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <textarea id="input-custom-notes" rows="3" placeholder="Muayene bulguları..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 resize-none focus:outline-none focus:border-rose-500 mt-2"></textarea>
                 </div>
-            </details>
 
-            <details class="bg-slate-800 rounded-xl border border-slate-700 group transition-all mb-8" open>
+            </div>
+        </main>
+
+        <!-- SAĞ SABİT GÖZLEMCİ PANELİ (LG/XL 1024px+ Sticky Klinik Uyarılar & Canlı SOAP) -->
+        <aside id="inspector-panel" class="w-full lg:w-96 lg:sticky lg:top-32 lg:self-start shrink-0 space-y-4">
+            
+            <!-- 1. KLİNİK GÜVENLİK & RİSK ROZETLERİ -->
+            <div id="panel-clinical-alerts" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-sm backdrop-blur-md space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-rose-400">
+                        <span>🛡️</span>
+                        <span>Klinik Güvenlik & Risk Takibi</span>
+                    </div>
+                    <span id="badge-total-alerts" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">0 Uyarı</span>
+                </div>
+                
+                <div id="container-live-alerts-list" class="space-y-2 text-xs">
+                    <div id="alert-item-empty" class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-emerald-400 text-[11px] flex items-center gap-2">
+                        <span>✓</span>
+                        <span>Aktif klinik güvenlik riski veya kontraendikasyon saptanmadı.</span>
+                    </div>
+                    <div id="alert-item-egfr" class="hidden p-2.5 rounded-xl bg-amber-950/40 border border-amber-850 text-amber-300 text-[11px] space-y-1">
+                        <div class="font-bold flex items-center gap-1.5"><span>⚠️</span> <span>Renal Risk / eGFR Azalması</span></div>
+                        <div id="alert-text-egfr" class="text-[10px] text-amber-200/90 font-mono">--</div>
+                    </div>
+                    <div id="alert-item-tw" class="hidden p-2.5 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-200 text-[11px] space-y-1">
+                        <div class="font-bold flex items-center gap-1.5"><span>🚨</span> <span>Triple Whammy (Akut Böbrek Hasarı)</span></div>
+                        <div id="alert-text-tw" class="text-[10px] text-rose-300/90 font-mono">ACEi/ARB + Diüretik + NSAİİ kombinasyonu!</div>
+                    </div>
+                    <div id="alert-item-qtc" class="hidden p-2.5 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-200 text-[11px] space-y-1">
+                        <div class="font-bold flex items-center gap-1.5"><span>⚡</span> <span>Uzamış QTc (Torsades de Pointes)</span></div>
+                        <div id="alert-text-qtc" class="text-[10px] text-rose-300/90 font-mono">--</div>
+                    </div>
+                    <div id="alert-item-jaundice" class="hidden p-2.5 rounded-xl bg-amber-950/50 border border-amber-800 text-amber-200 text-[11px] space-y-1">
+                        <div class="font-bold flex items-center gap-1.5"><span>🍼</span> <span>Neonatal Hiperbilirubinemi</span></div>
+                        <div id="alert-text-jaundice" class="text-[10px] text-amber-300/90 font-mono">--</div>
+                    </div>
+                    <div id="alert-item-thrombosis" class="hidden p-2.5 rounded-xl bg-rose-950/50 border border-rose-800 text-rose-200 text-[11px] space-y-1">
+                        <div class="font-bold flex items-center gap-1.5"><span>🩸</span> <span>Yüksek Tromboemboli Riski</span></div>
+                        <div id="alert-text-thrombosis" class="text-[10px] text-rose-300/90 font-mono">--</div>
+                    </div>
+                    <div id="alert-item-neonatal-drug" class="hidden p-2.5 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-200 text-[11px] space-y-1">
+                        <div class="font-bold flex items-center gap-1.5"><span>🚨</span> <span>Yenidoğanda Toksik / Kontrendike İlaç</span></div>
+                        <div id="alert-text-neonatal-drug" class="text-[10px] text-rose-300/90 font-mono">--</div>
+                    </div>
+                    <div id="alert-item-neonatal-weight" class="hidden p-2.5 rounded-xl bg-amber-950/60 border border-amber-800 text-amber-200 text-[11px] space-y-1">
+                        <div class="font-bold flex items-center gap-1.5"><span>⚖️</span> <span>Yenidoğan Aşırı Tartı Kaybı</span></div>
+                        <div id="alert-text-neonatal-weight" class="text-[10px] text-amber-300/90 font-mono">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. CANLI SOAP NOTU (HER ZAMAN GÖRÜNÜR) -->
+            <details id="card-soap" data-category="all" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all mb-8" open>
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <div class="flex justify-between items-center w-full pr-2">
                         <span>SOAP Hasta Notu</span>
@@ -1025,19 +1282,74 @@
                     </button>
                 </div>
             </details>
+
+        </aside>
+
+    </div>
+
+    <!-- MOBİL FLOATING ACTION BAR (Başparmak Bölgesi) -->
+    <div id="mobile-floating-bar" class="fixed bottom-3 inset-x-3 z-40 lg:hidden pointer-events-none">
+        <div class="max-w-md mx-auto pointer-events-auto">
+            <button type="button" id="btn-open-soap-sheet" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-3 px-4 rounded-2xl shadow-xl shadow-rose-950/70 border border-rose-400/30 flex items-center justify-between backdrop-blur-md active:scale-[0.98] transition-all">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">📋</span>
+                    <span class="tracking-wide">SOAP Hasta Notu</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-mono text-[11px] bg-rose-700/80 px-2.5 py-1 rounded-xl border border-rose-400/20">
+                    <span>Önizle & Kopyala</span>
+                    <span>▲</span>
+                </div>
+            </button>
         </div>
-    </main>
+    </div>
+
+    <!-- MOBİL SOAP BOTTOM SHEET MODAL -->
+    <div id="modal-soap-sheet" class="fixed inset-0 z-50 hidden transition-opacity duration-300">
+        <!-- Backdrop -->
+        <div id="soap-sheet-backdrop" class="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity"></div>
+        
+        <!-- Drawer Container -->
+        <div class="absolute bottom-0 inset-x-0 max-w-2xl mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl shadow-2xl p-4 sm:p-6 space-y-4 max-h-[85vh] flex flex-col transform transition-transform duration-300 translate-y-full" id="soap-sheet-content">
+            <!-- Handle bar -->
+            <div class="w-12 h-1.5 bg-slate-700 rounded-full mx-auto -mt-1 cursor-pointer" id="soap-sheet-handle"></div>
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-rose-400 text-base">📋</span>
+                    <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wider">SOAP Hasta Notu (Mobil)</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="copy-feedback-modal" class="hidden text-[10px] font-bold text-emerald-400 font-mono">✓ Kopyalandı!</span>
+                    <button type="button" id="btn-close-soap-sheet" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg text-xs leading-none" title="Kapat">✕</button>
+                </div>
+            </div>
+
+            <!-- Note Textarea -->
+            <div class="flex-1 min-h-[220px]">
+                <textarea id="text-soap-modal" readonly rows="12" class="w-full h-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 leading-relaxed resize-none focus:outline-none focus:border-rose-500"></textarea>
+            </div>
+
+            <!-- Copy Action Button -->
+            <button type="button" id="btn-copy-soap-modal" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-3.5 rounded-xl transition-colors shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 active:scale-[0.99]">
+                <span>📋</span>
+                <span>Notu Panoya Kopyala (HBYS / HIS)</span>
+            </button>
+        </div>
+    </div>
 
     <!-- Footer -->
-    <footer class="bg-slate-900/80 p-4 rounded-xl border border-slate-800/80 text-[10px] text-slate-400 space-y-2.5 mb-6">
-        <div class="flex items-center gap-1.5 text-amber-400 font-semibold uppercase text-[11px]">
-            <span>⚠️</span> Yasal Uyarı & Sorumluluk Reddi
-        </div>
-        <p class="leading-relaxed">
-            Bu uygulama yalnızca <strong>klinik decision support (karar destek) ve eğitim</strong> amacıyla geliştirilmiştir. Hesaplanan biyometri, eGFR, sıvı, insülin, infüzyon ve dozaj verileri tıbbi kanaat yerine geçmez.
-        </p>
-        <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-[9px] text-slate-500 font-mono">
-            <span>🔒 KVKK Uyumlu: Hasta verileri tamamen cihazınızda yerel işlenir.</span>
+    <footer class="max-w-[1700px] mx-auto mt-6 px-3 sm:px-6">
+        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800/80 text-[10px] text-slate-400 space-y-2.5">
+            <div class="flex items-center gap-1.5 text-amber-400 font-semibold uppercase text-[11px]">
+                <span>⚠️</span> Yasal Uyarı & Sorumluluk Reddi
+            </div>
+            <p class="leading-relaxed">
+                Bu uygulama yalnızca <strong>klinik decision support (karar destek) ve eğitim</strong> amacıyla geliştirilmiştir. Hesaplanan biyometri, eGFR, sıvı, insülin, infüzyon ve dozaj verileri tıbbi kanaat yerine geçmez.
+            </p>
+            <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-[9px] text-slate-500 font-mono">
+                <span>🔒 KVKK Uyumlu: Hasta verileri tamamen cihazınızda yerel işlenir.</span>
+            </div>
         </div>
     </footer>
 
