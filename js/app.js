@@ -416,11 +416,14 @@ function updateAllTabs() {
     }
 
     // Vaccines
-    if (ageVal !== null) {
+    if (totalMonths !== null) {
         const vax = getVaccineSchedule(totalMonths);
-        document.getElementById('output-ped-vaccines').innerHTML = vax && vax.length 
-            ? `<ul class="list-disc pl-4 text-slate-300">${vax.map(v => `<li>${v}</li>`).join('')}</ul>`
-            : 'Bu ay için planlı aşı bulunamadı.';
+        const vaxEl = document.getElementById('output-ped-vaccines');
+        if (vaxEl) {
+            vaxEl.innerHTML = vax && vax.length 
+                ? `<ul class="list-disc pl-4 text-slate-300">${vax.map(v => `<li>${v}</li>`).join('')}</ul>`
+                : 'Bu ay için planlı aşı bulunamadı.';
+        }
     }
 
     // PEDIATRIC IRON ENGINE
@@ -2477,6 +2480,8 @@ function initResponsiveWorkstation() {
                     const curHours = String(now.getHours()).padStart(2, '0');
                     const curMinutes = String(now.getMinutes()).padStart(2, '0');
                     birthTimeInput.value = `${curHours}:${curMinutes}`;
+                } else if (preset !== '0d' && preset !== 'today' && birthTimeInput) {
+                    birthTimeInput.value = '';
                 }
 
                 if (ageInput && ageUnitSelect) {
@@ -2542,7 +2547,13 @@ function initResponsiveWorkstation() {
 }
 
 // Responsive workstation başlatıcı
-initResponsiveWorkstation();
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initResponsiveWorkstation);
+    } else {
+        initResponsiveWorkstation();
+    }
+}
 
 // PWA Service Worker Registration (Çevrimdışı Çalışma)
 if ('serviceWorker' in navigator) {

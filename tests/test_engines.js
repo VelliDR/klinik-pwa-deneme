@@ -336,4 +336,8 @@ assert.ok(neoDrugAlerts.alerts.some(a => a.warning.includes('KERNİKTERUS')));
 assert.ok(neoDrugAlerts.alerts.some(a => a.warning.includes('Gri Bebek Sendromu')));
 console.log(`✓ Neonatal Drug Safety Shield passed (${neoDrugAlerts.alertsCount} contraindications caught)`);
 
+console.log('\n--- 8. TESTING WORKSTATION PRESET SHORTCUTS & APP RUNTIME RESILIENCE ---');
+execSync('node tests/test_workstation_shortcuts.js');
+console.log('✓ All 9 workstation preset shortcuts & app.js initial load verified with 0 runtime errors');
+
 console.log('\n🎉 ALL VERIFICATION TESTS PASSED SUCCESSFULLY! 100% HEALTHY.');
