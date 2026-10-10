@@ -72,108 +72,48 @@ function calculatePatientAge() {
     const textBreakdown = document.getElementById('text-dob-breakdown');
     const badgeDobTag = document.getElementById('badge-dob-tag');
 
-    // DOB-First: Doğum tarihi girildiyse veya select-age-unit dob ise
-    const hasDob = Boolean(dobInput?.value);
-    const ageUnit = hasDob ? 'dob' : (ageUnitSelect?.value || (ageInput?.value ? 'years' : 'dob'));
+    const dobVal = dobInput?.value;
     const ageVal = parseNum(ageInput?.value);
+    const unitVal = ageUnitSelect?.value || 'years';
 
-    // UI görünürlük ve etiket yönetimi
-    if (ageUnit === 'dob') {
-        if (containerNumeric) containerNumeric.classList.add('hidden');
-        if (containerDob) containerDob.classList.remove('hidden');
-    } else {
-        if (containerNumeric) containerNumeric.classList.remove('hidden');
-        if (containerDob) containerDob.classList.add('hidden');
-        if (breakdownEl) breakdownEl.classList.add('hidden');
-        
-        // Etiket ve yer tutucu güncelleme
-        if (labelNumeric && ageInput) {
-            if (ageUnit === 'years') {
-                labelNumeric.textContent = 'Yaş (Yıl)';
-                ageInput.placeholder = '5';
-            } else if (ageUnit === 'months') {
-                labelNumeric.textContent = 'Ay (Süt Çocuğu)';
-                ageInput.placeholder = '6';
-            } else if (ageUnit === 'weeks') {
-                labelNumeric.textContent = 'Hafta';
-                ageInput.placeholder = '8';
-            } else if (ageUnit === 'days') {
-                labelNumeric.textContent = 'Gün (Yenidoğan)';
-                ageInput.placeholder = '14';
-            }
+    // Label and placeholder sync for direct numeric input
+    if (labelNumeric && ageInput) {
+        if (unitVal === 'years') {
+            labelNumeric.textContent = 'Yaş (Yıl)';
+            ageInput.placeholder = 'Örn: 25';
+        } else if (unitVal === 'months') {
+            labelNumeric.textContent = 'Ay (Süt Çocuğu)';
+            ageInput.placeholder = 'Örn: 6';
+        } else if (unitVal === 'weeks') {
+            labelNumeric.textContent = 'Hafta';
+            ageInput.placeholder = 'Örn: 8';
+        } else if (unitVal === 'days') {
+            labelNumeric.textContent = 'Gün (Yenidoğan)';
+            ageInput.placeholder = 'Örn: 14';
         }
     }
+
+    // Determine data source priority:
+    // If user is actively typing numeric age, prioritize numeric input
+    const isAgeInputActive = (document.activeElement === ageInput || document.activeElement === ageUnitSelect);
+    const hasNumeric = (ageVal !== null && !isNaN(ageVal));
+    const useNumeric = hasNumeric && (isAgeInputActive || !dobVal || unitVal !== 'dob');
 
     let y = null, m = null, days = null, weeks = null, hours = null;
     let formatted = '--';
     let ageGroupTag = '';
 
-    if (ageUnit === 'dob') {
-        const dobVal = dobInput?.value;
-        if (dobVal) {
-            const birthDate = new Date(dobVal);
-            const timeVal = timeInput?.value;
-            if (timeVal) {
-                const [hh, mm] = timeVal.split(':').map(Number);
-                birthDate.setHours(hh || 0, mm || 0, 0, 0);
-            } else {
-                birthDate.setHours(0, 0, 0, 0);
-            }
-
-            const now = new Date();
-            const diffMs = now.getTime() - birthDate.getTime();
-            if (diffMs >= 0) {
-                hours = Math.floor(diffMs / (1000 * 60 * 60));
-                days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                weeks = +(days / 7).toFixed(1);
-                m = +(days / 30.4375).toFixed(2);
-                y = +(days / 365.25).toFixed(2);
-
-                if (days <= 28) {
-                    ageGroupTag = '🍼 Yenidoğan (0-28G)';
-                    formatted = `${days} Günlük Yenidoğan (${hours} saat)`;
-                } else if (days < 365) {
-                    ageGroupTag = '👶 Süt Çocuğu (1-12A)';
-                    formatted = `${Math.floor(m)} Aylık (${weeks} Hf / ${days}G)`;
-                } else if (y < 6) {
-                    ageGroupTag = '🧒 Oyun Çocuğu (1-5Y)';
-                    const remM = Math.floor((days % 365.25) / 30.4375);
-                    formatted = `${Math.floor(y)} Yaş ${remM ? remM + ' Ay' : ''}`;
-                } else if (y < 12) {
-                    ageGroupTag = '🎒 Okul Çocuğu (6-12Y)';
-                    formatted = `${Math.floor(y)} Yaş`;
-                } else if (y < 18) {
-                    ageGroupTag = '🧑 Ergen / Adölesan';
-                    formatted = `${Math.floor(y)} Yaş`;
-                } else if (y < 65) {
-                    ageGroupTag = '👤 Erişkin';
-                    formatted = `${Math.floor(y)} Yaş`;
-                } else {
-                    ageGroupTag = '🧓 Geriatrik (65Y+)';
-                    formatted = `${Math.floor(y)} Yaş`;
-                }
-
-                if (breakdownEl && textBreakdown && badgeDobTag) {
-                    breakdownEl.classList.remove('hidden');
-                    textBreakdown.textContent = `📅 ${formatted}`;
-                    badgeDobTag.textContent = ageGroupTag;
-                }
-            } else if (breakdownEl) {
-                breakdownEl.classList.add('hidden');
-            }
-        } else if (breakdownEl) {
-            breakdownEl.classList.add('hidden');
-        }
-    } else if (ageVal !== null && !isNaN(ageVal)) {
-        if (ageUnit === 'years') {
+    if (useNumeric) {
+        const unit = (unitVal === 'dob') ? 'years' : unitVal;
+        if (unit === 'years') {
             y = ageVal;
-            m = null;
+            m = +(ageVal * 12).toFixed(1);
             days = Math.round(ageVal * 365.25);
             weeks = Math.round(ageVal * 52.14);
             hours = days * 24;
             formatted = `${y} Yaş`;
-            ageGroupTag = y < 1 ? '👶 Süt Çocuğu' : (y < 6 ? '🧒 Oyun Çocuğu' : (y < 12 ? '🎒 Okul Çocuğu' : (y < 18 ? '🧑 Ergen' : (y < 65 ? '👤 Erişkin' : '🧓 Geriatrik'))));
-        } else if (ageUnit === 'months') {
+            ageGroupTag = y < 1 ? '👶 Süt Çocuğu' : (y < 6 ? '🧒 Oyun Çocuğu' : (y < 12 ? '🎒 Okul Çocuğu' : (y < 18 ? '🧑 Ergen' : (y < 65 ? '👤 Erişkin' : '🧓 Geriatrik (65Y+)'))));
+        } else if (unit === 'months') {
             y = +(ageVal / 12).toFixed(2);
             m = ageVal;
             days = Math.round(ageVal * 30.4375);
@@ -181,7 +121,7 @@ function calculatePatientAge() {
             hours = days * 24;
             formatted = `${m} Aylık`;
             ageGroupTag = ageVal <= 1 ? '🍼 Yenidoğan / Süt Çocuğu' : (ageVal <= 12 ? '👶 Süt Çocuğu (1-12A)' : '🧒 Oyun Çocuğu');
-        } else if (ageUnit === 'weeks') {
+        } else if (unit === 'weeks') {
             weeks = ageVal;
             days = Math.round(ageVal * 7);
             hours = days * 24;
@@ -189,15 +129,98 @@ function calculatePatientAge() {
             y = +(days / 365.25).toFixed(2);
             formatted = `${weeks} Haftalık`;
             ageGroupTag = days <= 28 ? '🍼 Yenidoğan (0-28G)' : '👶 Süt Çocuğu (1-12A)';
-        } else if (ageUnit === 'days') {
+        } else if (unit === 'days') {
             days = ageVal;
             hours = ageVal * 24;
             weeks = +(ageVal / 7).toFixed(1);
             m = +(ageVal / 30.4375).toFixed(2);
             y = +(ageVal / 365.25).toFixed(2);
-            formatted = `${days} Günlük Yenidoğan`;
+            formatted = days <= 28 ? `${days} Günlük Yenidoğan` : `${days} Günlük`;
             ageGroupTag = days <= 28 ? '🍼 Yenidoğan (0-28G)' : '👶 Süt Çocuğu (1-12A)';
         }
+
+        // Approximate DOB sync when user types numeric age
+        if (dobInput && document.activeElement !== dobInput) {
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() - days);
+            const yyyy = targetDate.getFullYear();
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+            dobInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        if (breakdownEl && textBreakdown && badgeDobTag) {
+            breakdownEl.classList.remove('hidden');
+            textBreakdown.textContent = `📅 ${formatted}`;
+            badgeDobTag.textContent = ageGroupTag;
+        }
+    } else if (dobVal) {
+        const birthDate = new Date(dobVal);
+        const timeVal = timeInput?.value;
+        if (timeVal) {
+            const [hh, mm_val] = timeVal.split(':').map(Number);
+            birthDate.setHours(hh || 0, mm_val || 0, 0, 0);
+        } else {
+            birthDate.setHours(0, 0, 0, 0);
+        }
+
+        const now = new Date();
+        const diffMs = now.getTime() - birthDate.getTime();
+        if (diffMs >= 0) {
+            hours = Math.floor(diffMs / (1000 * 60 * 60));
+            days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            weeks = +(days / 7).toFixed(1);
+            m = +(days / 30.4375).toFixed(2);
+            y = +(days / 365.25).toFixed(2);
+
+            if (days <= 28) {
+                ageGroupTag = '🍼 Yenidoğan (0-28G)';
+                formatted = `${days} Günlük Yenidoğan (${hours} saat)`;
+            } else if (days < 365) {
+                ageGroupTag = '👶 Süt Çocuğu (1-12A)';
+                formatted = `${Math.floor(m)} Aylık (${weeks} Hf / ${days}G)`;
+            } else if (y < 6) {
+                ageGroupTag = '🧒 Oyun Çocuğu (1-5Y)';
+                const remM = Math.floor((days % 365.25) / 30.4375);
+                formatted = `${Math.floor(y)} Yaş ${remM ? remM + ' Ay' : ''}`;
+            } else if (y < 12) {
+                ageGroupTag = '🎒 Okul Çocuğu (6-12Y)';
+                formatted = `${Math.floor(y)} Yaş`;
+            } else if (y < 18) {
+                ageGroupTag = '🧑 Ergen / Adölesan';
+                formatted = `${Math.floor(y)} Yaş`;
+            } else if (y < 65) {
+                ageGroupTag = '👤 Erişkin';
+                formatted = `${Math.floor(y)} Yaş`;
+            } else {
+                ageGroupTag = '🧓 Geriatrik (65Y+)';
+                formatted = `${Math.floor(y)} Yaş`;
+            }
+
+            // Sync to numeric inputs
+            if (ageInput && ageUnitSelect && document.activeElement !== ageInput) {
+                if (days <= 28) {
+                    ageInput.value = days;
+                    ageUnitSelect.value = 'days';
+                } else if (days < 365) {
+                    ageInput.value = Math.floor(m);
+                    ageUnitSelect.value = 'months';
+                } else {
+                    ageInput.value = Math.floor(y);
+                    ageUnitSelect.value = 'years';
+                }
+            }
+
+            if (breakdownEl && textBreakdown && badgeDobTag) {
+                breakdownEl.classList.remove('hidden');
+                textBreakdown.textContent = `📅 ${formatted}`;
+                badgeDobTag.textContent = ageGroupTag;
+            }
+        } else if (breakdownEl) {
+            breakdownEl.classList.add('hidden');
+        }
+    } else {
+        if (breakdownEl) breakdownEl.classList.add('hidden');
     }
 
     // Yenidoğanda (<= 14 gün) Bhutani Sarılık Postnatal Saati Otomatik Doldurma
@@ -1987,23 +2010,72 @@ function updatePatientBanner() {
     const bannerBSA = document.getElementById('banner-bsa');
     const bannerEGFR = document.getElementById('banner-egfr');
 
+    const headerPatientInfo = document.getElementById('header-patient-info');
+    const headerPatientAge = document.getElementById('header-patient-age');
+    const headerPatientGender = document.getElementById('header-patient-gender');
+    const badgeAgeGroup = document.getElementById('badge-age-group');
+
+    // 1. Yaş Metni
+    let ageDisplay = '--';
+    let shortAgeDisplay = '--';
+    const y = appState.biometry.ageYears;
+    const m = appState.biometry.ageMonths;
+    const d = appState.biometry.ageDays;
+
+    if (d !== null && d !== undefined && d <= 28) {
+        shortAgeDisplay = `${d} Günlük`;
+        ageDisplay = appState.biometry.ageFormatted && appState.biometry.ageFormatted !== '--' 
+            ? appState.biometry.ageFormatted 
+            : `${d} Günlük Yenidoğan`;
+    } else if (m !== null && m !== undefined && (y === null || y < 1)) {
+        shortAgeDisplay = `${Math.floor(m)} Aylık`;
+        ageDisplay = `${Math.floor(m)} Aylık`;
+    } else if (y !== null && y !== undefined) {
+        shortAgeDisplay = `${Math.floor(y)} Yaş`;
+        ageDisplay = `${Math.floor(y)} Yaş`;
+    } else if (appState.biometry.ageFormatted && appState.biometry.ageFormatted !== '--') {
+        ageDisplay = appState.biometry.ageFormatted;
+        shortAgeDisplay = appState.biometry.ageFormatted;
+    }
+
     if (bannerAge) {
-        if (appState.biometry.ageFormatted && appState.biometry.ageFormatted !== '--') {
-            bannerAge.textContent = appState.biometry.ageFormatted;
-        } else {
-            const y = appState.biometry.ageYears;
-            const m = appState.biometry.ageMonths;
-            if (y !== null && y !== undefined) {
-                bannerAge.textContent = `${y}Y`;
-            } else if (m !== null && m !== undefined) {
-                bannerAge.textContent = `${m}A`;
-            } else {
-                bannerAge.textContent = '--';
+        bannerAge.textContent = ageDisplay;
+    }
+
+    // 2. Cinsiyet Metni
+    let genderDisplay = '--';
+    if (appState.biometry.gender === 'male') {
+        genderDisplay = 'Erkek';
+    } else if (appState.biometry.gender === 'female') {
+        genderDisplay = (y !== null && y !== undefined && y >= 18) ? 'Kadın' : 'Kız';
+    }
+
+    if (bannerGender) {
+        bannerGender.textContent = genderDisplay;
+    }
+
+    // 3. Üst Bar (Header) Hasta Yaş & Cinsiyet Rozeti
+    const hasAge = (shortAgeDisplay !== '--');
+    const hasGender = (genderDisplay !== '--');
+
+    if (headerPatientInfo) {
+        if (hasAge || hasGender) {
+            headerPatientInfo.classList.remove('hidden');
+            headerPatientInfo.classList.add('flex');
+
+            if (headerPatientAge) {
+                headerPatientAge.textContent = hasAge ? shortAgeDisplay : 'Yaş: --';
             }
+            if (headerPatientGender) {
+                headerPatientGender.textContent = hasGender ? genderDisplay : 'Cins: Belirtilmedi';
+            }
+        } else {
+            headerPatientInfo.classList.add('hidden');
+            headerPatientInfo.classList.remove('flex');
         }
     }
 
-    const badgeAgeGroup = document.getElementById('badge-age-group');
+    // 4. Kategori / Yaş Grubu Rozeti
     if (badgeAgeGroup) {
         if (appState.biometry.ageGroupTag) {
             badgeAgeGroup.textContent = appState.biometry.ageGroupTag;
@@ -2013,10 +2085,7 @@ function updatePatientBanner() {
         }
     }
 
-    if (bannerGender) {
-        bannerGender.textContent = appState.biometry.gender === 'male' ? 'Erkek' : (appState.biometry.gender === 'female' ? 'Kadın' : '--');
-    }
-
+    // 5. Biyometri, BSA, eGFR
     if (bannerBiometry) {
         const w = appState.biometry.weightKg;
         const h = appState.biometry.heightCm;
@@ -2366,6 +2435,8 @@ function initResponsiveWorkstation() {
     const presetBtns = document.querySelectorAll('.btn-dob-preset');
     const dobInput = document.getElementById('input-dob');
     const birthTimeInput = document.getElementById('input-birth-time');
+    const ageInput = document.getElementById('input-age');
+    const ageUnitSelect = document.getElementById('select-age-unit');
     
     presetBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2374,7 +2445,7 @@ function initResponsiveWorkstation() {
             const now = new Date();
             let targetDate = new Date();
             
-            if (preset === '0d') {
+            if (preset === '0d' || preset === 'today') {
                 targetDate = new Date();
             } else if (preset === '1d') {
                 targetDate.setDate(now.getDate() - 1);
@@ -2402,10 +2473,41 @@ function initResponsiveWorkstation() {
             if (dobInput) {
                 dobInput.value = formattedDate;
                 
-                if (preset === '0d' && birthTimeInput && !birthTimeInput.value) {
+                if ((preset === '0d' || preset === 'today') && birthTimeInput && !birthTimeInput.value) {
                     const curHours = String(now.getHours()).padStart(2, '0');
                     const curMinutes = String(now.getMinutes()).padStart(2, '0');
                     birthTimeInput.value = `${curHours}:${curMinutes}`;
+                }
+
+                if (ageInput && ageUnitSelect) {
+                    if (preset === '0d' || preset === 'today') {
+                        ageInput.value = 0;
+                        ageUnitSelect.value = 'days';
+                    } else if (preset === '1d') {
+                        ageInput.value = 1;
+                        ageUnitSelect.value = 'days';
+                    } else if (preset === '3d') {
+                        ageInput.value = 3;
+                        ageUnitSelect.value = 'days';
+                    } else if (preset === '7d') {
+                        ageInput.value = 7;
+                        ageUnitSelect.value = 'days';
+                    } else if (preset === '14d') {
+                        ageInput.value = 14;
+                        ageUnitSelect.value = 'days';
+                    } else if (preset === '1m') {
+                        ageInput.value = 1;
+                        ageUnitSelect.value = 'months';
+                    } else if (preset === '1y') {
+                        ageInput.value = 1;
+                        ageUnitSelect.value = 'years';
+                    } else if (preset === '5y') {
+                        ageInput.value = 5;
+                        ageUnitSelect.value = 'years';
+                    } else if (preset === '25y') {
+                        ageInput.value = 25;
+                        ageUnitSelect.value = 'years';
+                    }
                 }
 
                 presetBtns.forEach(b => {
@@ -2422,6 +2524,15 @@ function initResponsiveWorkstation() {
 
     if (dobInput) {
         dobInput.addEventListener('input', () => {
+            presetBtns.forEach(b => {
+                b.classList.remove('bg-rose-900/60', 'text-rose-200', 'border-rose-700', 'font-bold');
+                b.classList.add('bg-slate-900', 'text-slate-300', 'border-slate-750');
+            });
+        });
+    }
+
+    if (ageInput) {
+        ageInput.addEventListener('input', () => {
             presetBtns.forEach(b => {
                 b.classList.remove('bg-rose-900/60', 'text-rose-200', 'border-rose-700', 'font-bold');
                 b.classList.add('bg-slate-900', 'text-slate-300', 'border-slate-750');

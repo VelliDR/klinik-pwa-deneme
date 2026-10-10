@@ -251,7 +251,9 @@ const expectedIds = [
     'text-neonatal-fluid-day', 'text-neonatal-fluid-target', 'text-neonatal-fluid-desc',
     'alert-item-neonatal-drug', 'alert-text-neonatal-drug',
     'alert-item-neonatal-weight', 'alert-text-neonatal-weight',
-    'alert-item-nephrotox', 'alert-text-nephrotox'
+    'alert-item-nephrotox', 'alert-text-nephrotox',
+    'header-patient-info', 'header-patient-age', 'header-patient-gender',
+    'input-age', 'select-age-unit', 'label-age-numeric'
 ];
 
 let missing = 0;
@@ -274,7 +276,9 @@ const neonateGroup = determineAgeGroup(14, 'days');
 assert.strictEqual(neonateGroup.id, 'NEONATE');
 const infantGroup = determineAgeGroup(6, 'weeks');
 assert.strictEqual(infantGroup.id, 'INFANT');
-console.log('✓ determineAgeGroup for days and weeks passed');
+const adultGroup = determineAgeGroup(45, 'years');
+assert.strictEqual(adultGroup.id, 'ADULT');
+console.log('✓ determineAgeGroup for days, weeks and years passed');
 
 // 2. Fractional months percentiles for 14-day old neonate
 const neonatePerc = calculatePercentiles({
