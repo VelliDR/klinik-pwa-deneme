@@ -221,11 +221,11 @@ export const MOTOR_DEPENDENCIES: Record<string, string[]> = {
   // Tromboz yaş/cinsiyet (demografi) ve nabız vitalleri gerektirir
   'card-tromboz': ['card-demografi', 'card-vitaller'],
   
-  // Parkland yanık doğrudan kilo ve yaşa (çocukta 3mL, erişkinde 2mL) dayanır
-  'card-cerrahi': ['card-biyometri', 'card-demografi'],
+  // Parkland yanık doğrudan kilo ve yaşa dayanır, Alvarado apendisit ateş vitali gerektirir
+  'card-cerrahi': ['card-biyometri', 'card-demografi', 'card-vitaller'],
   
-  // OB/GYN preeklampsi için tansiyon vitallerini ve gebelik ilaç kalkanını gerektirir
-  'card-obgyn': ['card-vitaller', 'card-ilac'],
+  // OB/GYN preeklampsi için tansiyon vitallerini, demografiyi ve gebelik ilaç kalkanını gerektirir
+  'card-obgyn': ['card-demografi', 'card-vitaller', 'card-ilac'],
   
   // Kan gazı anyon açığı için elektrolitleri (Na, Cl, Albümin) ve vitalleri gerektirir
   'card-kangazi': ['card-elektrolit', 'card-vitaller'],
@@ -244,12 +244,24 @@ export const MOTOR_DEPENDENCIES: Record<string, string[]> = {
   
   // Biyometri persentil için yaş ve cinsiyeti (demografi) gerektirir
   'card-biyometri': ['card-demografi'],
+
+  // Vitaller AAP 2017 pediatrik kan basıncı ve PEWS için demografi (yaş) gerektirir
+  'card-vitaller': ['card-demografi'],
+
+  // Elektrolit Adrogué-Madias sodyum açığı ve TBW için kilo (biyometri) ve yaş/cinsiyet (demografi) gerektirir
+  'card-elektrolit': ['card-biyometri', 'card-demografi'],
   
-  // Aşı takvimi yaşa (demografi) bağlıdır
-  'card-antibiyotik': ['card-demografi'],
+  // Aşı takvimi yaşa (demografi) ve Centor tonsillit skoru ateşe (vitaller) bağlıdır
+  'card-antibiyotik': ['card-demografi', 'card-vitaller'],
   
   // Endokrin (HOMA-IR) glukoz ve biyometriye bağlıdır
-  'card-endokrin': ['card-biyometri', 'card-demografi']
+  'card-endokrin': ['card-biyometri', 'card-demografi'],
+
+  // Klinik notlar hasta demografisine aittir
+  'card-notlar': ['card-demografi'],
+
+  // SOAP Raporu hastanın demografi, biyometri ve vitallerini kapsar
+  'card-soap': ['card-demografi', 'card-biyometri', 'card-vitaller']
 };
 
 // 3. REKÜRSİF / DERİN BAĞIMLILIK ÇÖZÜCÜ (DEPENDENCY RESOLVER)

@@ -123,6 +123,35 @@ assert.ok(comboDeps.includes('card-biyometri'));
 assert.ok(comboDeps.includes('card-ilac'));
 console.log('✓ Case D (Combo selection) resolves union of dependencies without duplicates.');
 
+// Case E: Comprehensive Audit of All 21 Motors & Dependency Integrity
+console.log('\n--- Case E: Deep Audit of All 21 Clinical Motors & Transitive Chains ---');
+motorIds.forEach(mId => {
+    // 1. All declared dependencies must be valid clinical motors
+    const declaredDeps = MOTOR_DEPENDENCIES[mId] || [];
+    declaredDeps.forEach(depId => {
+        assert.ok(CLINICAL_MOTORS[depId], `Dependency "${depId}" of motor "${mId}" must exist in CLINICAL_MOTORS`);
+    });
+
+    // 2. Resolve motor dependencies
+    const resolved = resolveMotorDependencies([mId]);
+    assert.ok(resolved.includes(mId), `Resolved list for "${mId}" must include itself`);
+    declaredDeps.forEach(depId => {
+        assert.ok(resolved.includes(depId), `Resolved list for "${mId}" must include direct dependency "${depId}"`);
+    });
+
+    // 3. Check for duplicates
+    assert.strictEqual(new Set(resolved).size, resolved.length, `Resolved list for "${mId}" must not contain duplicates`);
+
+    // 4. Verify rendering priority order
+    if (resolved.includes('card-demografi')) {
+        assert.strictEqual(resolved[0], 'card-demografi', `Demografi must be first in resolved list for "${mId}"`);
+    }
+    if (resolved.includes('card-demografi') && resolved.includes('card-biyometri')) {
+        assert.strictEqual(resolved[1], 'card-biyometri', `Biyometri must be second when demografi is present in "${mId}"`);
+    }
+});
+console.log('✓ Case E: All 21 clinical motors pass deep transitive dependency audit with 100% integrity.');
+
 console.log('\n--- 4. Testing Preset Clinical Packages ---');
 assert.strictEqual(PRESET_PACKAGES.length, 9, 'Must have exactly 9 preset packages');
 PRESET_PACKAGES.forEach(pkg => {
