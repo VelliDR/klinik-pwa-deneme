@@ -27,6 +27,8 @@ export interface PresetPackage {
   isCustom?: boolean;
 }
 
+export type WorkstationPackage = PresetPackage;
+
 // 1. TÜM KLİNİK MOTORLAR LİSTESİ VE TANIMLARI
 export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
   'card-demografi': {

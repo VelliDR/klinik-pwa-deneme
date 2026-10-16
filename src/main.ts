@@ -3,7 +3,8 @@
 // ============================================================================
 import './styles/main.css';
 
-// Mevcut klinik uygulama motoru ve UI başlatıcı
-import '../js/app.js';
+// TypeScript klinik uygulama motoru ve UI başlatıcı
+import './app';
 
-console.log('[KlinikPWA] Vite + TypeScript hibrit altyapısı başarıyla yüklendi.');
+console.log('[KlinikPWA] Vite + TypeScript altyapısı başarıyla yüklendi.');
+

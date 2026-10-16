@@ -147,11 +147,13 @@ function getGrowthNorms(totalMonths: number, gender: 'male' | 'female' = 'male')
 }
 
 export interface PercentilesInput {
-    ageMonths: number | null | undefined;
+    ageMonths?: number | null | undefined;
+    totalMonths?: number | null | undefined;
     gender: 'male' | 'female' | string;
     heightCm?: number | null;
     weightKg?: number | null;
     headCircumferenceCm?: number | null;
+    isPediatric?: boolean;
 }
 
 export interface PercentilesResult {
@@ -173,14 +175,16 @@ export interface PercentilesResult {
 
 export function calculatePercentiles({
     ageMonths,
+    totalMonths,
     gender,
     heightCm = null,
     weightKg = null,
     headCircumferenceCm = null
 }: PercentilesInput): PercentilesResult | null {
-    if (ageMonths === null || ageMonths === undefined || isNaN(ageMonths)) return null;
+    const effectiveMonths = (ageMonths !== undefined && ageMonths !== null) ? ageMonths : totalMonths;
+    if (effectiveMonths === null || effectiveMonths === undefined || isNaN(effectiveMonths)) return null;
     const sex: 'male' | 'female' = gender === 'female' ? 'female' : 'male';
-    const norms = getGrowthNorms(ageMonths, sex);
+    const norms = getGrowthNorms(effectiveMonths, sex);
 
     let heightZ: number | null = null;
     let heightP: number | null = null;
@@ -208,7 +212,7 @@ export function calculatePercentiles({
 
     let headCircZ: number | null = null;
     let headCircP: number | null = null;
-    if (headCircumferenceCm !== null && headCircumferenceCm > 0 && ageMonths <= 36) {
+    if (headCircumferenceCm !== null && headCircumferenceCm > 0 && effectiveMonths <= 36) {
         headCircZ = calculateLMSZScore(headCircumferenceCm, norms.headCirc.l, norms.headCirc.m, norms.headCirc.s);
         headCircP = zToPercentile(headCircZ);
     }

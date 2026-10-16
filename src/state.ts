@@ -108,5 +108,11 @@ export const appState: AppState = {
         pregnancySafety: null,
         neonatalDrugSafety: null,
         selectedSafetyDrugs: []
+    },
+
+    treatment: {
+        active: false,
+        selectedDrugs: []
     }
 };
+
