@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node tests/test_engines.js && node tests/test_drug_search.js && node tests/test_workstation_shortcuts.js && node tests/test_workstation_packages.js && tsx tests/test_ts_engines.ts && tsx tests/test_ts_app.ts",
+    "test": "tsx tests/test_engines.js && tsx tests/test_drug_search.js && tsx tests/test_workstation_shortcuts.js && tsx tests/test_workstation_packages.js && tsx tests/test_ts_engines.ts && tsx tests/test_ts_app.ts",
     "test:ts": "tsx tests/test_ts_engines.ts && tsx tests/test_ts_app.ts",
     "typecheck": "tsc --noEmit"
   },

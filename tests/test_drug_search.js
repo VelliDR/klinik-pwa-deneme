@@ -1,7 +1,7 @@
 import assert from 'assert';
 import fs from 'fs';
-import { normalizeText, normalizeDrugRecord, setMemoryDrugsCache, searchDrugsInDB, isDrugCatalogReady } from '../js/db/titckIndexedDB.js';
-import { findEquivalents, getDrugBadgesHTML } from '../js/drugEngine.js';
+import { normalizeText, normalizeDrugRecord, setMemoryDrugsCache, searchDrugsInDB, isDrugCatalogReady } from '../src/db/titckIndexedDB.js';
+import { findEquivalents, getDrugBadgesHTML } from '../src/drugEngine.js';
 
 console.log('--- TESTING TİTCK DRUG SEARCH ENGINE & HYBRID CATALOG ---');
 

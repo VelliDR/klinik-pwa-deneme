@@ -11,7 +11,7 @@ import {
     getCustomPackages,
     saveCustomPackage,
     deleteCustomPackage
-} from '../js/workstationPackages.js';
+} from '../src/workstationPackages.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

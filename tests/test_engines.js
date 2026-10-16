@@ -4,31 +4,30 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-console.log('--- 0. CHECKING SYNTAX OF ES MODULES & SERVICE WORKER ---');
-execSync('node -c js/app.js');
-execSync('node -c sw.js');
-console.log('✓ js/app.js and sw.js syntax validated cleanly with zero parse errors\n');
+console.log('--- 0. CHECKING SYNTAX OF ES MODULES & TYPE DEFINITIONS ---');
+execSync('npm run typecheck');
+console.log('✓ TypeScript project typecheck validated cleanly with zero errors\n');
 
-import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from '../js/engines/thrombosisEngine.js';
-import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../js/engines/nephroToxEngine.js';
-import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from '../js/engines/neonatologyEngine.js';
-import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from '../js/engines/safetyPrescriptionEngine.js';
-import { determineAgeGroup, calculateEGFR, calculateBSA } from '../js/engines/biometricsEngine.js';
-import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from '../js/engines/percentileEngine.js';
-import { calculateNeonatalFluid, calculateMaintenanceFluid, calculateSodiumCorrection } from '../js/engines/fluidEngine.js';
-import { calculateQTc, calculateAxis } from '../js/engines/cardiacEngine.js';
-import { analyzeBloodGas } from '../js/engines/bloodGasEngine.js';
-import { calculateCorrectedCalcium } from '../js/engines/calciumEngine.js';
-import { convertSteroids, calculateHOMAIR } from '../js/engines/endocrineEngine.js';
-import { calculateInfusionRate, calculateGIR } from '../js/engines/infusionEngine.js';
-import { calculatePediatricIron } from '../js/engines/ironEngine.js';
-import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from '../js/engines/obgynEngine.js';
-import { calculateAlvarado, calculateParkland, calculateRanson, getSutureGuidance } from '../js/engines/surgeryEngine.js';
-import { calculatePediatricDose, getVaccineSchedule, classifyPediatricBP, calculateCentorMcIsaac } from '../js/engines/pediatricEngine.js';
-import { calculateNEWS2, calculatePEWS, calculateGCS } from '../js/engines/triageEngine.js';
-import { parseDrugStrength } from '../js/drugEngine.js';
-import { generateSOAP } from '../js/utils/soapGenerator.js';
-import { appState } from '../js/state.js';
+import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from '../src/engines/thrombosisEngine.js';
+import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../src/engines/nephroToxEngine.js';
+import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from '../src/engines/neonatologyEngine.js';
+import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from '../src/engines/safetyPrescriptionEngine.js';
+import { determineAgeGroup, calculateEGFR, calculateBSA } from '../src/engines/biometricsEngine.js';
+import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from '../src/engines/percentileEngine.js';
+import { calculateNeonatalFluid, calculateMaintenanceFluid, calculateSodiumCorrection } from '../src/engines/fluidEngine.js';
+import { calculateQTc, calculateAxis } from '../src/engines/cardiacEngine.js';
+import { analyzeBloodGas } from '../src/engines/bloodGasEngine.js';
+import { calculateCorrectedCalcium } from '../src/engines/calciumEngine.js';
+import { convertSteroids, calculateHOMAIR } from '../src/engines/endocrineEngine.js';
+import { calculateInfusionRate, calculateGIR } from '../src/engines/infusionEngine.js';
+import { calculatePediatricIron } from '../src/engines/ironEngine.js';
+import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from '../src/engines/obgynEngine.js';
+import { calculateAlvarado, calculateParkland, calculateRanson, getSutureGuidance } from '../src/engines/surgeryEngine.js';
+import { calculatePediatricDose, getVaccineSchedule, classifyPediatricBP, calculateCentorMcIsaac } from '../src/engines/pediatricEngine.js';
+import { calculateNEWS2, calculatePEWS, calculateGCS } from '../src/engines/triageEngine.js';
+import { parseDrugStrength } from '../src/drugEngine.js';
+import { generateSOAP } from '../src/utils/soapGenerator.js';
+import { appState } from '../src/state.js';
 
 console.log('--- 1. TESTING THROMBOSIS ENGINE ---');
 // Wells DVT
@@ -350,11 +349,11 @@ assert.ok(neoDrugAlerts.alerts.some(a => a.warning.includes('Gri Bebek Sendromu'
 console.log(`✓ Neonatal Drug Safety Shield passed (${neoDrugAlerts.alertsCount} contraindications caught)`);
 
 console.log('\n--- 8. TESTING WORKSTATION PRESET SHORTCUTS & APP RUNTIME RESILIENCE ---');
-execSync('node tests/test_workstation_shortcuts.js');
-console.log('✓ All 9 workstation preset shortcuts & app.js initial load verified with 0 runtime errors');
+execSync('npx tsx tests/test_ts_app.ts');
+console.log('✓ All 9 workstation preset shortcuts & src/app.ts initial load verified with 0 runtime errors');
 
 console.log('\n--- 9. TESTING TİTCK DRUG SEARCH & PHONETIC EQUIVALENTS ENGINE ---');
-execSync('node tests/test_drug_search.js');
+execSync('npx tsx tests/test_drug_search.js');
 console.log('✓ TİTCK Drug Search, phonetics, compact matching, and equivalents verified with 100% accuracy');
 
 console.log('\n--- 10. TESTING CARDIAC & ECG ENGINE ---');

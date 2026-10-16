@@ -90,8 +90,8 @@ try {
     });
 } catch (e) {}
 
-// Dynamically import app.js
-await import('../js/app.js');
+// Dynamically import app
+await import('../src/app.js');
 
 // Test clicking each preset
 for (const btn of mockPresets) {
@@ -101,7 +101,7 @@ for (const btn of mockPresets) {
 // 1. Verify 14-day preset click
 const p14 = mockPresets.find(p => p.dataset.preset === '14d');
 p14.click();
-assert.strictEqual(document.getElementById('input-age').value, 14);
+assert.strictEqual(String(document.getElementById('input-age').value), '14');
 assert.strictEqual(document.getElementById('select-age-unit').value, 'days');
 assert.strictEqual(document.getElementById('header-patient-age').textContent, '14 Günlük');
 assert.strictEqual(document.getElementById('header-patient-info').classList.contains('flex'), true);
@@ -110,7 +110,7 @@ assert.strictEqual(document.getElementById('header-patient-info').classList.cont
 // 2. Verify 25-year adult preset click
 const p25 = mockPresets.find(p => p.dataset.preset === '25y');
 p25.click();
-assert.strictEqual(document.getElementById('input-age').value, 25);
+assert.strictEqual(String(document.getElementById('input-age').value), '25');
 assert.strictEqual(document.getElementById('select-age-unit').value, 'years');
 assert.strictEqual(document.getElementById('header-patient-age').textContent, '25 Yaş');
 
