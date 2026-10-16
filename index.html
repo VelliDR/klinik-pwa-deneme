@@ -14,41 +14,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Standart temiz kaydırma çubuğu gizleme */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Monospace ve düşey sayısal hizalama standardı */
-        .tabular-nums { font-variant-numeric: tabular-nums; }
-        
-        /* Dokunma hedefleri ve mobil form ergonomisi */
-        input[type="number"], select {
-            min-height: 38px;
-        }
-        @media (max-width: 640px) {
-            input[type="number"], select, button {
-                min-height: 42px;
-            }
-        }
-
-        /* Kart vurgulama nabız animasyonu */
-        @keyframes pulse-ring {
-            0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
-            70% { box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
-        }
-        .card-highlight {
-            animation: pulse-ring 1.8s ease-out;
-            border-color: rgba(244, 63, 94, 0.9) !important;
-        }
-
-        /* Safe area iOS ve Android alt çubuk */
-        .safe-bottom-pad {
-            padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
-        }
-    </style>
+    <link rel="stylesheet" href="/src/styles/main.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-rose-500 selection:text-white safe-bottom-pad lg:pb-10">
 
@@ -1524,6 +1490,6 @@
         </div>
     </footer>
 
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
