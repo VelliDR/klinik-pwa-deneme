@@ -26,6 +26,12 @@ function createElement(tag) {
             }
             return null;
         },
+        setAttribute: function(name, val) {
+            if (name.startsWith('data-')) {
+                const key = name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+                this.dataset[key] = val;
+            }
+        },
         children: [],
         appendChild: (c) => c,
         addEventListener: function(event, handler) {
@@ -60,6 +66,7 @@ globalThis.indexedDB = { open: () => ({ onupgradeneeded: null, onsuccess: null, 
 globalThis.document = {
     readyState: 'complete',
     addEventListener: () => {},
+    createElement: createElement,
     getElementById: (id) => {
         if (!elements.has(id)) {
             elements.set(id, createElement('div'));

@@ -19,6 +19,15 @@ import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VAS
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine.js';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from './engines/neonatologyEngine.js';
 import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from './engines/safetyPrescriptionEngine.js';
+import { 
+    CLINICAL_MOTORS, 
+    MOTOR_DEPENDENCIES, 
+    PRESET_PACKAGES, 
+    resolveMotorDependencies, 
+    getCustomPackages, 
+    saveCustomPackage, 
+    deleteCustomPackage 
+} from './workstationPackages.js';
 
 // Utils
 const parseNum = (val) => val === '' || isNaN(val) ? null : Number(val);
@@ -689,6 +698,39 @@ function updateAllTabs() {
         preRes.classList.add('hidden');
     }
 
+    // NEONATOLOGY: Bhutani Sarılık (TND / AAP) - Sıvı Kademesi Öncesi Hesaplanır
+    const bAgeH = parseNum(document.getElementById('input-bhutani-age-hours')?.value);
+    const bTsb = parseNum(document.getElementById('input-bhutani-tsb')?.value);
+    const bGw = parseNum(document.getElementById('input-bhutani-gw')?.value) || 38;
+    const bRisk = document.getElementById('chk-bhutani-risk-factors')?.checked || false;
+    const bhutaniOut = document.getElementById('output-bhutani-result');
+
+    if (bAgeH && bTsb) {
+        const bRes = calculateBhutaniJaundice({
+            ageHours: bAgeH,
+            totalBilirubin: bTsb,
+            gestationalWeeks: bGw,
+            hasRiskFactors: bRisk
+        });
+        appState.neonatology.bhutani = bRes;
+        if (bhutaniOut) {
+            const extra = `
+                ${bRes.phototherapyThreshold ? `<div class="text-[10px]">Fototerapi Eşiği: ${bRes.phototherapyThreshold} mg/dL | Kan Değişimi: ${bRes.exchangeThreshold} mg/dL</div>` : ''}
+                <div class="text-[10px] font-semibold">${bRes.interpretation}</div>
+            `;
+            renderClinicalCardResult(bhutaniOut, {
+                title: `${bRes.ageHours}. Saat: TSB ${bRes.totalBilirubin} mg/dL`,
+                riskText: bRes.riskGroupLabel || '',
+                recommendations: bRes.recommendations,
+                alertClass: bRes.alertClass,
+                extraHtml: extra
+            });
+        }
+    } else {
+        appState.neonatology.bhutani = null;
+        if (bhutaniOut) bhutaniOut.classList.add('hidden');
+    }
+
     // IONS & FLUIDS
     const fTemp = parseNum(document.getElementById('input-temp').value); // reuse temp
     const neoFluidBanner = document.getElementById('container-neonatal-fluid-banner');
@@ -744,9 +786,12 @@ function updateAllTabs() {
     let warnings = [];
     if (ionCa !== null) {
         const caObj = calculateCorrectedCalcium({ totalCalcium: ionCa, albumin: ionAlb });
+        appState.medicine.calcium = caObj;
         if (caObj && caObj.correctedCa) {
             warnings.push(`Düzeltilmiş Ca: ${caObj.correctedCa} ${caObj.alertMsg ? '('+caObj.alertMsg+')' : ''}`);
         }
+    } else {
+        appState.medicine.calcium = null;
     }
 
     // Sodium
@@ -761,6 +806,7 @@ function updateAllTabs() {
         const targetNa = ionNa + targetNaDrop;
         
         const naObj = calculateSodiumCorrection(ionNa, targetNa, appState.biometry.weightKg, tbwFraction);
+        appState.medicine.sodium = naObj;
         if (naObj) {
             document.getElementById('output-na-deficit').textContent = `${naObj.deficit.toFixed(0)} mEq`;
             if (naObj.warning) warnings.push(naObj.warning);
@@ -768,6 +814,7 @@ function updateAllTabs() {
             warnings.push(`1L %0.9 NaCl: +${naObj.deltaNa09Percent.toFixed(1)} mEq artırır`);
         }
     } else {
+        appState.medicine.sodium = null;
         document.getElementById('output-na-deficit').textContent = '--';
     }
 
@@ -810,10 +857,12 @@ function updateAllTabs() {
             targetDose: infDose,
             doseUnit: 'mcg_kg_min'
         });
+        appState.medicine.infusion = infObj;
         if (infObj) {
             document.getElementById('output-infusion-rate').textContent = `${infObj.rateMlHr} mL/saat`;
         }
     } else {
+        appState.medicine.infusion = null;
         document.getElementById('output-infusion-rate').textContent = '--';
     }
 
@@ -898,7 +947,7 @@ function updateAllTabs() {
            is_ami: document.getElementById('chk-tisdale-ami').checked,
            is_sepsis: document.getElementById('chk-tisdale-sepsis').checked,
            is_hf: document.getElementById('chk-tisdale-hf').checked,
-           drugs: appState.treatment && appState.treatment.selectedDrugs ? appState.treatment.selectedDrugs.map(d => d.atcCode || d.atc) : []
+           drugs: appState.treatment && appState.treatment.selectedDrugs ? appState.treatment.selectedDrugs : []
         });
         
         const c = appState.other.cardiac;
@@ -1519,38 +1568,7 @@ function updateAllTabs() {
     // ----------------------------------------------------
     // NEONATOLOJİ & PEDİATRİK ACİL MOTORLARI
     // ----------------------------------------------------
-    // A. Bhutani Sarılık (TND / AAP)
-    const bAgeH = parseNum(document.getElementById('input-bhutani-age-hours')?.value);
-    const bTsb = parseNum(document.getElementById('input-bhutani-tsb')?.value);
-    const bGw = parseNum(document.getElementById('input-bhutani-gw')?.value) || 38;
-    const bRisk = document.getElementById('chk-bhutani-risk-factors')?.checked || false;
-    const bhutaniOut = document.getElementById('output-bhutani-result');
-
-    if (bAgeH && bTsb) {
-        const bRes = calculateBhutaniJaundice({
-            ageHours: bAgeH,
-            totalBilirubin: bTsb,
-            gestationalWeeks: bGw,
-            hasRiskFactors: bRisk
-        });
-        appState.neonatology.bhutani = bRes;
-        if (bhutaniOut) {
-            const extra = `
-                ${bRes.phototherapyThreshold ? `<div class="text-[10px]">Fototerapi Eşiği: ${bRes.phototherapyThreshold} mg/dL | Kan Değişimi: ${bRes.exchangeThreshold} mg/dL</div>` : ''}
-                <div class="text-[10px] font-semibold">${bRes.interpretation}</div>
-            `;
-            renderClinicalCardResult(bhutaniOut, {
-                title: `${bRes.ageHours}. Saat: TSB ${bRes.totalBilirubin} mg/dL`,
-                riskText: bRes.riskGroupLabel || '',
-                recommendations: bRes.recommendations,
-                alertClass: bRes.alertClass,
-                extraHtml: extra
-            });
-        }
-    } else {
-        appState.neonatology.bhutani = null;
-        if (bhutaniOut) bhutaniOut.classList.add('hidden');
-    }
+    // A. Bhutani Sarılık (TND / AAP) - Sıvı kademesi ile tam senkronizasyon için yukarıda hesaplanmıştır.
 
     // B. APGAR Skoru
     const aMin = parseNum(document.getElementById('select-apgar-minute')?.value) || 1;
@@ -1645,8 +1663,9 @@ function updateAllTabs() {
     // AKILCI REÇETE & İLAÇ GÜVENLİĞİ MOTORU
     // ----------------------------------------------------
     const selectedDrugs = (appState.treatment && appState.treatment.selectedDrugs) ? appState.treatment.selectedDrugs : [];
+    appState.safetyPrescription.selectedSafetyDrugs = selectedDrugs;
     const safetyEgfr = parseNum(document.getElementById('input-safety-egfr')?.value) ?? appState.biometry.egfr;
-    const safetyTrim = parseNum(document.getElementById('select-safety-trimester')?.value) || 0;
+    const safetyTrim = parseNum(document.getElementById('select-safety-trimester')?.value) || (appState.obgyn.eddData?.trimester || 0);
 
     const outWhammy = document.getElementById('output-safety-triple-whammy');
     const outRenal = document.getElementById('output-safety-renal');
@@ -2241,17 +2260,449 @@ const btnCopyDesktop = document.getElementById('btn-copy-soap');
 if (btnCopyDesktop) {
     btnCopyDesktop.addEventListener('click', () => {
         const text = document.getElementById('text-soap-output').value;
-        navigator.clipboard.writeText(text).then(() => {
-            const fb = document.getElementById('copy-feedback');
-            if (fb) {
-                fb.classList.remove('hidden');
-                setTimeout(() => fb.classList.add('hidden'), 2000);
-            }
-        });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                const fb = document.getElementById('copy-feedback');
+                if (fb) {
+                    fb.classList.remove('hidden');
+                    setTimeout(() => fb.classList.add('hidden'), 2000);
+                }
+            });
+        }
     });
 }
 
+// ============================================================================
+// 7. AKILLI MOTOR PAKETLERİ VE ÖZELLEŞTİRİLEBİLİR KISAYOLLAR
+// ============================================================================
+export function initWorkstationPackages() {
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+
+    const cardShortcuts = document.getElementById('card-custom-shortcuts');
+    if (!cardShortcuts) return;
+
+    const btnShowAll = document.getElementById('btn-show-all-motors');
+    const btnToggleCustom = document.getElementById('btn-toggle-custom-pack');
+    const drawerCustom = document.getElementById('drawer-custom-pack');
+    const containerButtons = document.getElementById('container-package-buttons');
+    const containerInfo = document.getElementById('container-package-info');
+    const badgeActive = document.getElementById('badge-active-pack');
+    const packIcon = document.getElementById('pack-info-icon');
+    const packName = document.getElementById('pack-info-name');
+    const packBadge = document.getElementById('pack-info-badge');
+    const packDesc = document.getElementById('pack-info-desc');
+    const packPills = document.getElementById('pack-info-pills');
+
+    // Drawer inputs & controls
+    const inputPackName = document.getElementById('input-custom-pack-name');
+    const btnSavePack = document.getElementById('btn-save-custom-pack');
+    const btnApplyNow = document.getElementById('btn-apply-custom-pack-now');
+    const btnClearSelection = document.getElementById('btn-clear-selection');
+    const containerChecklist = document.getElementById('container-motor-checklist');
+    const labelResolvedCount = document.getElementById('label-resolved-count');
+    const boxResolvedSummary = document.getElementById('box-resolved-summary');
+    const textResolvedList = document.getElementById('text-resolved-list');
+    const sectionSavedPacks = document.getElementById('section-saved-packs');
+    const containerSavedList = document.getElementById('container-saved-packs-list');
+
+    let currentActivePackId = null;
+
+    // A. Kartları Paket Motorlarına Göre Aç / Kapat & Vurgula
+    function activatePackage(packOrMotors, optName, optDesc, optIcon, packId) {
+        let motors = [];
+        let title = optName || '';
+        let desc = optDesc || '';
+        let icon = optIcon || '📦';
+        let primaryId = null;
+
+        if (Array.isArray(packOrMotors)) {
+            motors = resolveMotorDependencies(packOrMotors);
+            title = optName || `${motors.length} Motor Paketi`;
+            desc = optDesc || `${motors.length} klinik motor hazır`;
+            primaryId = packOrMotors[0];
+            currentActivePackId = packId || null;
+        } else if (packOrMotors && typeof packOrMotors === 'object') {
+            motors = resolveMotorDependencies(packOrMotors.baseMotors || packOrMotors.fullMotors || []);
+            title = packOrMotors.name || '';
+            desc = packOrMotors.desc || '';
+            icon = packOrMotors.icon || '📦';
+            primaryId = (packOrMotors.baseMotors && packOrMotors.baseMotors[0]) || motors[0];
+            currentActivePackId = packOrMotors.id || null;
+        }
+
+        if (!motors || motors.length === 0) return;
+
+        // Workspace içindeki tüm <details> kartlarını filtrele
+        const allCards = document.querySelectorAll('#clinical-workspace details');
+        allCards.forEach(card => {
+            if (motors.includes(card.id)) {
+                card.classList.remove('hidden');
+                card.open = true;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        // Birincil karta yumuşak geçiş ve nabız animasyonu
+        const targetCard = document.getElementById(primaryId) || document.getElementById(motors[0]);
+        if (targetCard) {
+            if (typeof targetCard.scrollIntoView === 'function') {
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            targetCard.classList.add('card-highlight');
+            setTimeout(() => targetCard.classList.remove('card-highlight'), 1800);
+        }
+
+        // Paket Butonları Aktiflik Durumunu Güncelle
+        if (containerButtons) {
+            containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
+                const bId = btn.getAttribute('data-pack-id');
+                if (bId && bId === currentActivePackId) {
+                    btn.classList.add('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/50');
+                    btn.classList.remove('bg-slate-800', 'text-slate-200');
+                } else {
+                    btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/50');
+                    btn.classList.add('bg-slate-800', 'text-slate-200');
+                }
+            });
+        }
+
+        // Üst Bar Durum Rozetini Güncelle
+        if (badgeActive) {
+            const cleanTitle = title.replace(/^[^\w\sğüşöçıİĞÜŞÖÇ]+/, '').trim();
+            badgeActive.textContent = `${cleanTitle} (${motors.length} Motor Aktif)`;
+            badgeActive.className = 'text-[10px] px-2.5 py-0.5 rounded-full font-mono font-medium bg-rose-950/80 text-rose-300 border border-rose-800/60';
+        }
+
+        // Aktif Paket Bilgi Şeridini Doldur
+        if (containerInfo) {
+            containerInfo.classList.remove('hidden');
+            if (packIcon) packIcon.textContent = icon;
+            if (packName) packName.textContent = title;
+            if (packBadge) packBadge.textContent = `${motors.length} Motor Bağlı`;
+            if (packDesc) packDesc.textContent = desc;
+
+            if (packPills) {
+                packPills.innerHTML = '';
+                motors.forEach(mId => {
+                    const mDef = CLINICAL_MOTORS[mId];
+                    if (!mDef) return;
+                    const pill = document.createElement('button');
+                    pill.type = 'button';
+                    pill.className = 'btn-jump-motor px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750 text-[10px] flex items-center gap-1 transition-colors';
+                    pill.innerHTML = `<span>${mDef.icon}</span><span>${mDef.shortName}</span>`;
+                    pill.title = `${mDef.name} motoruna git`;
+                    pill.addEventListener('click', () => {
+                        const targetEl = document.getElementById(mId);
+                        if (targetEl) {
+                            targetEl.open = true;
+                            if (typeof targetEl.scrollIntoView === 'function') {
+                                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                            targetEl.classList.add('card-highlight');
+                            setTimeout(() => targetEl.classList.remove('card-highlight'), 1800);
+                        }
+                    });
+                    packPills.appendChild(pill);
+                });
+            }
+        }
+    }
+
+    // B. Tüm Motorları Göster & Sıfırla
+    function showAllMotors() {
+        const allCards = document.querySelectorAll('#clinical-workspace details');
+        allCards.forEach(c => c.classList.remove('hidden'));
+
+        currentActivePackId = null;
+
+        if (containerButtons) {
+            containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
+                btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/50');
+                btn.classList.add('bg-slate-800', 'text-slate-200');
+            });
+        }
+
+        if (badgeActive) {
+            badgeActive.textContent = 'Tüm Motorlar Açık (21/21)';
+            badgeActive.className = 'text-[10px] px-2 py-0.5 rounded-full font-mono font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60';
+        }
+
+        if (containerInfo) {
+            containerInfo.classList.add('hidden');
+        }
+
+        // Kategori haplarını da 'Tümü' aktif olacak şekilde senkronize et
+        const pills = document.querySelectorAll('.cat-pill');
+        pills.forEach(p => {
+            if (p.getAttribute('data-cat') === 'all') {
+                p.classList.add('active', 'bg-rose-600', 'text-white');
+                p.classList.remove('bg-slate-800', 'text-slate-300');
+            } else {
+                p.classList.remove('active', 'bg-rose-600', 'text-white');
+                p.classList.add('bg-slate-800', 'text-slate-300');
+            }
+        });
+    }
+
+    if (btnShowAll) {
+        btnShowAll.addEventListener('click', showAllMotors);
+    }
+
+    // C. Paket Butonlarını Render Et
+    function renderPackageButtons() {
+        if (!containerButtons) return;
+        containerButtons.innerHTML = '';
+
+        const customPacks = getCustomPackages();
+        const allPacks = [...PRESET_PACKAGES, ...customPacks];
+
+        allPacks.forEach(pack => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-workstation-pack px-2.5 sm:px-3 py-1.5 rounded-xl font-medium text-[11px] sm:text-xs flex items-center gap-1.5 transition-all bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 shadow-sm whitespace-nowrap';
+            btn.setAttribute('data-pack-id', pack.id);
+            btn.title = pack.desc || pack.badge || pack.name;
+
+            btn.innerHTML = `
+                <span>${pack.icon || '📦'}</span>
+                <span>${pack.name}</span>
+                ${pack.isCustom ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full font-mono">Özel</span>' : ''}
+            `;
+
+            btn.addEventListener('click', () => {
+                activatePackage(pack);
+            });
+
+            containerButtons.appendChild(btn);
+        });
+    }
+
+    // D. Motor Seçim Listesini (Checklist) Doldur
+    function renderMotorChecklist() {
+        if (!containerChecklist) return;
+        containerChecklist.innerHTML = '';
+
+        Object.values(CLINICAL_MOTORS).forEach(m => {
+            const label = document.createElement('label');
+            label.className = 'flex items-start gap-2 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer text-xs select-none transition-colors';
+            label.innerHTML = `
+                <input type="checkbox" class="chk-custom-motor mt-0.5 rounded border-slate-700 text-rose-600 focus:ring-0 focus:ring-offset-0 bg-slate-800" value="${m.id}">
+                <div class="min-w-0 flex-1">
+                    <div class="font-medium text-slate-200 flex items-center gap-1.5">
+                        <span>${m.icon}</span>
+                        <span class="truncate">${m.shortName}</span>
+                        <span id="dep-badge-${m.id}" class="hidden text-[9px] px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">🔗 Bağımlı</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 truncate">${m.name}</p>
+                </div>
+            `;
+            containerChecklist.appendChild(label);
+        });
+
+        // Checkbox değişim dinleyicisi
+        const checkBoxes = containerChecklist.querySelectorAll('.chk-custom-motor');
+        checkBoxes.forEach(cb => {
+            cb.addEventListener('change', updateChecklistDependencies);
+        });
+    }
+
+    // E. Canlı Bağımlılık Hesaplayıcı & Checkbox Güncelleyici
+    function updateChecklistDependencies() {
+        if (!containerChecklist) return;
+        const checkBoxes = containerChecklist.querySelectorAll('.chk-custom-motor');
+        
+        // Kullanıcının elle işaretlediği motorları topla (disabled olmayanlar)
+        const explicitlyChecked = [];
+        checkBoxes.forEach(cb => {
+            if (cb.checked && !cb.disabled) {
+                explicitlyChecked.push(cb.value);
+            }
+        });
+
+        // Rekürsif bağımlılıkları çöz
+        const fullResolved = resolveMotorDependencies(explicitlyChecked);
+
+        // Her kutucuğu durumuna göre senkronize et
+        checkBoxes.forEach(cb => {
+            const depBadge = document.getElementById(`dep-badge-${cb.value}`);
+            const isExplicit = explicitlyChecked.includes(cb.value);
+            const isResolved = fullResolved.includes(cb.value);
+
+            if (isExplicit) {
+                cb.checked = true;
+                cb.disabled = false;
+                if (depBadge) depBadge.classList.add('hidden');
+            } else if (isResolved) {
+                // Bu motor başka bir motorun bağımlılığı olduğu için otomatik işaretlendi
+                cb.checked = true;
+                cb.disabled = true;
+                if (depBadge) depBadge.classList.remove('hidden');
+            } else {
+                cb.checked = false;
+                cb.disabled = false;
+                if (depBadge) depBadge.classList.add('hidden');
+            }
+        });
+
+        // Sayı ve Açıklama Alanını Güncelle
+        if (labelResolvedCount) {
+            labelResolvedCount.textContent = `${fullResolved.length} motor pakete dahil`;
+        }
+
+        if (boxResolvedSummary && textResolvedList) {
+            if (fullResolved.length > 0) {
+                boxResolvedSummary.classList.remove('hidden');
+                textResolvedList.textContent = fullResolved.map(m => CLINICAL_MOTORS[m]?.shortName || m).join(' + ');
+            } else {
+                boxResolvedSummary.classList.add('hidden');
+                textResolvedList.textContent = '';
+            }
+        }
+    }
+
+    // F. Kaydedilmiş Özel Paketleri Listele
+    function renderSavedCustomPacks() {
+        if (!containerSavedList || !sectionSavedPacks) return;
+        const customPacks = getCustomPackages();
+        if (customPacks.length === 0) {
+            sectionSavedPacks.classList.add('hidden');
+            containerSavedList.innerHTML = '';
+            return;
+        }
+
+        sectionSavedPacks.classList.remove('hidden');
+        containerSavedList.innerHTML = '';
+
+        customPacks.forEach(pack => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs';
+            row.innerHTML = `
+                <div class="flex items-center gap-2 min-w-0">
+                    <span>${pack.icon || '⭐'}</span>
+                    <span class="font-medium text-slate-200 truncate">${pack.name}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">(${pack.fullMotors ? pack.fullMotors.length : pack.baseMotors.length} motor)</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <button type="button" class="btn-run-saved-pack px-2 py-1 rounded bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] transition-colors" data-pack-id="${pack.id}">
+                        Çalıştır
+                    </button>
+                    <button type="button" class="btn-del-saved-pack px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 text-[10px] transition-colors" data-pack-id="${pack.id}" title="Paketi Sil">
+                        🗑️
+                    </button>
+                </div>
+            `;
+
+            row.querySelector('.btn-run-saved-pack')?.addEventListener('click', () => {
+                activatePackage(pack);
+                drawerCustom?.classList.add('hidden');
+            });
+
+            row.querySelector('.btn-del-saved-pack')?.addEventListener('click', () => {
+                if (confirm(`"${pack.name}" paketi silinsin mi?`)) {
+                    deleteCustomPackage(pack.id);
+                    renderPackageButtons();
+                    renderSavedCustomPacks();
+                    showAllMotors();
+                }
+            });
+
+            containerSavedList.appendChild(row);
+        });
+    }
+
+    // G. Çekmece Aç/Kapa
+    if (btnToggleCustom && drawerCustom) {
+        btnToggleCustom.addEventListener('click', () => {
+            const isHidden = drawerCustom.classList.contains('hidden');
+            if (isHidden) {
+                drawerCustom.classList.remove('hidden');
+                renderMotorChecklist();
+                renderSavedCustomPacks();
+                if (typeof drawerCustom.scrollIntoView === 'function') {
+                    drawerCustom.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                drawerCustom.classList.add('hidden');
+            }
+        });
+    }
+
+    // H. Seçimi Temizle
+    if (btnClearSelection) {
+        btnClearSelection.addEventListener('click', () => {
+            if (containerChecklist) {
+                containerChecklist.querySelectorAll('.chk-custom-motor').forEach(cb => {
+                    cb.checked = false;
+                    cb.disabled = false;
+                });
+            }
+            if (inputPackName) inputPackName.value = '';
+            updateChecklistDependencies();
+        });
+    }
+
+    // I. Hemen Uygula (Kaydetmeden)
+    if (btnApplyNow) {
+        btnApplyNow.addEventListener('click', () => {
+            if (!containerChecklist) return;
+            const checked = [];
+            containerChecklist.querySelectorAll('.chk-custom-motor:checked').forEach(cb => {
+                checked.push(cb.value);
+            });
+            if (checked.length === 0) {
+                alert('Lütfen en az bir klinik motor seçin.');
+                return;
+            }
+            const resolved = resolveMotorDependencies(checked);
+            activatePackage(resolved, 'Özel Seçim Paketi', `${resolved.length} motor ekranda aktif`, '⚡');
+            if (drawerCustom) drawerCustom.classList.add('hidden');
+        });
+    }
+
+    // J. Paketi Kaydet & Ekle
+    if (btnSavePack) {
+        btnSavePack.addEventListener('click', () => {
+            const name = inputPackName ? inputPackName.value.trim() : '';
+            if (!name) {
+                alert('Lütfen özel paketiniz için bir isim yazın (Örn: Nöbetçi Pediatri / Acil Sıvı Paketi).');
+                if (inputPackName && typeof inputPackName.focus === 'function') inputPackName.focus();
+                return;
+            }
+
+            if (!containerChecklist) return;
+            const checkedBase = [];
+            containerChecklist.querySelectorAll('.chk-custom-motor').forEach(cb => {
+                // Yalnızca kullanıcının doğrudan tıkladığı motorları temel al
+                if (cb.checked && !cb.disabled) {
+                    checkedBase.push(cb.value);
+                }
+            });
+
+            if (checkedBase.length === 0) {
+                alert('Lütfen pakete eklenecek en az bir klinik motor seçin.');
+                return;
+            }
+
+            const newPack = saveCustomPackage(name, checkedBase);
+            if (newPack) {
+                renderPackageButtons();
+                renderSavedCustomPacks();
+                activatePackage(newPack);
+                if (inputPackName) inputPackName.value = '';
+                if (drawerCustom) drawerCustom.classList.add('hidden');
+            }
+        });
+    }
+
+    // Başlangıçta Butonları ve Özel Paketleri Çiz
+    renderPackageButtons();
+}
+
 function initResponsiveWorkstation() {
+    // 0. Akıllı Motor Paketleri ve Kısayol Kartı Başlatıcı
+    initWorkstationPackages();
+
     // 1. Mobile Category Pills Filtering & Smooth Jump
     const pills = document.querySelectorAll('.cat-pill');
     pills.forEach(pill => {

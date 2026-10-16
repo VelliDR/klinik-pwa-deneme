@@ -13,9 +13,22 @@ import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VAS
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../js/engines/nephroToxEngine.js';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from '../js/engines/neonatologyEngine.js';
 import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from '../js/engines/safetyPrescriptionEngine.js';
-import { determineAgeGroup, calculateEGFR } from '../js/engines/biometricsEngine.js';
-import { calculatePercentiles } from '../js/engines/percentileEngine.js';
-import { calculateNeonatalFluid } from '../js/engines/fluidEngine.js';
+import { determineAgeGroup, calculateEGFR, calculateBSA } from '../js/engines/biometricsEngine.js';
+import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from '../js/engines/percentileEngine.js';
+import { calculateNeonatalFluid, calculateMaintenanceFluid, calculateSodiumCorrection } from '../js/engines/fluidEngine.js';
+import { calculateQTc, calculateAxis } from '../js/engines/cardiacEngine.js';
+import { analyzeBloodGas } from '../js/engines/bloodGasEngine.js';
+import { calculateCorrectedCalcium } from '../js/engines/calciumEngine.js';
+import { convertSteroids, calculateHOMAIR } from '../js/engines/endocrineEngine.js';
+import { calculateInfusionRate, calculateGIR } from '../js/engines/infusionEngine.js';
+import { calculatePediatricIron } from '../js/engines/ironEngine.js';
+import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from '../js/engines/obgynEngine.js';
+import { calculateAlvarado, calculateParkland, calculateRanson, getSutureGuidance } from '../js/engines/surgeryEngine.js';
+import { calculatePediatricDose, getVaccineSchedule, classifyPediatricBP, calculateCentorMcIsaac } from '../js/engines/pediatricEngine.js';
+import { calculateNEWS2, calculatePEWS, calculateGCS } from '../js/engines/triageEngine.js';
+import { parseDrugStrength } from '../js/drugEngine.js';
+import { generateSOAP } from '../js/utils/soapGenerator.js';
+import { appState } from '../js/state.js';
 
 console.log('--- 1. TESTING THROMBOSIS ENGINE ---');
 // Wells DVT
@@ -343,5 +356,230 @@ console.log('✓ All 9 workstation preset shortcuts & app.js initial load verifi
 console.log('\n--- 9. TESTING TİTCK DRUG SEARCH & PHONETIC EQUIVALENTS ENGINE ---');
 execSync('node tests/test_drug_search.js');
 console.log('✓ TİTCK Drug Search, phonetics, compact matching, and equivalents verified with 100% accuracy');
+
+console.log('\n--- 10. TESTING CARDIAC & ECG ENGINE ---');
+// QTc normal & formula difference
+const qtcNormal = calculateQTc({ hr: 80, qt: 400, gender: 'male' });
+assert.strictEqual(qtcNormal.status, 'OK');
+assert.strictEqual(qtcNormal.qtcBazett, 462);
+assert.strictEqual(qtcNormal.qtcFridericia, 440);
+assert.strictEqual(qtcNormal.colorCode, 'success');
+
+// Bogossian wide QRS
+const qtcWide = calculateQTc({ hr: 75, qt: 460, qrs: 140, qrsPattern: 'lbbb', gender: 'male' });
+assert.strictEqual(qtcWide.activeFormula, 'Bogossian');
+assert.strictEqual(qtcWide.qtcBogossian, 420);
+assert.ok(qtcWide.warnings.some(w => w.includes('Sol Dal Bloğu')));
+
+// Tisdale Score & Drug Warnings (IKr Blocker + Na+ Channel Blocker)
+const qtcToxic = calculateQTc({
+    hr: 110, qt: 520, gender: 'female', age: 72, k_level: 3.2, is_ami: true,
+    drugs: [
+        { brand: 'Cipro 500mg', atc: 'J01MA02' },
+        { brand: 'Rytmonorm 150mg', generic: 'propafenone', atc: 'C01BC03' }
+    ]
+});
+assert.strictEqual(qtcToxic.colorCode, 'danger');
+assert.ok(qtcToxic.tisdaleScore >= 11);
+assert.ok(qtcToxic.drugFlags.some(f => f.includes('TdP Riski')));
+assert.ok(qtcToxic.drugFlags.some(f => f.includes('Sodyum')));
+
+// Cardiac Axis
+const axisNormal = calculateAxis(10, 10);
+assert.strictEqual(axisNormal.degrees, 45);
+assert.ok(axisNormal.axisCategory.includes('Normal Aks'));
+
+const axisLAD = calculateAxis(10, -10);
+assert.strictEqual(axisLAD.degrees, -45);
+assert.ok(axisLAD.axisCategory.includes('Sol Aks Sapması'));
+console.log('✓ Cardiac QTc (Bazett, Fridericia, Bogossian), Tisdale, Drug Warnings & ECG Axis passed');
+
+console.log('\n--- 11. TESTING FLUID, SODIUM & CALCIUM ENGINES ---');
+// Maintenance Fluid & Fever Adjustment
+const fluidBaseline = calculateMaintenanceFluid(70);
+assert.strictEqual(fluidBaseline.dailyVolume, 2500); // capped at 2500 for adult
+assert.strictEqual(fluidBaseline.hourlyRate, 104);
+
+const fluidFever = calculateMaintenanceFluid(70, 39.5); // 2°C over 37.5 => +24%
+assert.strictEqual(fluidFever.feverExtraVolume, 600);
+assert.strictEqual(fluidFever.dailyVolume, 3100);
+
+// Sodium Correction & Adrogue-Madias
+const naCorrection = calculateSodiumCorrection(120, 128, 70, 0.6);
+assert.strictEqual(naCorrection.deficit, 336);
+assert.ok(naCorrection.deltaNa3Percent > 0);
+assert.ok(naCorrection.required3PercentMl > 0);
+
+// Corrected Calcium
+const caHypo = calculateCorrectedCalcium({ totalCalcium: 7.0, albumin: 2.0 });
+assert.strictEqual(caHypo.correctedCa, 8.6); // 7.0 + 0.8 * (4 - 2) = 8.6 (Normal range)
+const caTrueHypo = calculateCorrectedCalcium({ totalCalcium: 6.5, albumin: 4.0 });
+assert.strictEqual(caTrueHypo.correctedCa, 6.5);
+assert.ok(caTrueHypo.flags.includes('ALERT_HYPOCALCEMIA'));
+console.log('✓ Maintenance Fluid (Holliday-Segar + Fever), Sodium Deficit (Adrogué-Madias) & Corrected Calcium passed');
+
+console.log('\n--- 12. TESTING BLOOD GAS & ENDOCRINE ENGINES ---');
+// Blood gas: Pure HAGMA with Winter formula
+const bgHagma = analyzeBloodGas({ pH: 7.20, pCO2: 24, HCO3: 10, Na: 140, Cl: 100, Albumin: 4.0, sampleType: 'ABG' });
+assert.strictEqual(bgHagma.primaryDisorder, 'Metabolik Asidoz');
+assert.strictEqual(bgHagma.AG, 30);
+assert.ok(bgHagma.hagmaStatus.includes('Saf HAGMA'));
+
+// VBG to ABG harmonization
+const bgVbg = analyzeBloodGas({ pH: 7.30, pCO2: 45, HCO3: 24, sampleType: 'VBG' });
+assert.strictEqual(bgVbg.pH, 7.335); // 7.30 + 0.035
+assert.strictEqual(bgVbg.pCO2, 40);   // 45 - 5
+
+// Steroid conversion
+const predConv = convertSteroids({ sourceDrug: 'prednisolone', doseMg: 20 });
+const dexMatch = predConv.conversions.find(c => c.id === 'dexamethasone');
+assert.strictEqual(dexMatch.equivalentDoseMg, 3); // 20mg prednisolone = 3mg dexamethasone
+
+// HOMA-IR
+const homaNormal = calculateHOMAIR({ fastingGlucoseMgDl: 90, fastingInsulinUuMl: 8 });
+assert.strictEqual(homaNormal.isResistant, false);
+
+const homaPubertal = calculateHOMAIR({ fastingGlucoseMgDl: 110, fastingInsulinUuMl: 25, tannerStage: 'pubertal' });
+assert.strictEqual(homaPubertal.cutoff, 3.16);
+assert.strictEqual(homaPubertal.isResistant, true);
+console.log('✓ Blood Gas (ABG/VBG, Winter, HAGMA/NAGMA), Steroid Equivalence & HOMA-IR passed');
+
+console.log('\n--- 13. TESTING INFUSION, GIR & PEDIATRIC ENGINES ---');
+// Infusion rate
+const infRate = calculateInfusionRate({ drugAmountMg: 200, totalVolumeMl: 50, weightKg: 70, targetDose: 5, doseUnit: 'mcg_kg_min' });
+assert.strictEqual(infRate.rateMlHr, 5.3);
+
+// GIR & Hypoglycemia bolus
+const girTest = calculateGIR({ dextrosePercent: 10, rateMlHr: 15, weightKg: 3.0 });
+assert.strictEqual(girTest.gir, 8.3);
+assert.strictEqual(girTest.hypoglycemiaBolus.doseMl, 6.0); // 2 mL/kg
+
+// Pediatric Syrup Doses
+const syrupParol = calculatePediatricDose(15, 'paracetamol');
+assert.strictEqual(syrupParol.targetDoseMg, 225); // 15 * 15
+assert.strictEqual(syrupParol.volumeMl, 9.4);
+
+// Pediatric BP
+const bpCheck = classifyPediatricBP({ ageYears: 6, gender: 'male', sbp: 115, dbp: 75 });
+assert.ok(bpCheck.stage.includes('Hipertansiyon'));
+
+// Centor-McIsaac
+const centorTest = calculateCentorMcIsaac({ feverOver38: true, tenderCervicalNodes: true, tonsillarExudate: true, ageYears: 8 });
+assert.strictEqual(centorTest.score, 4); // 3 criteria + 1 for age 3-14
+assert.ok(centorTest.recommendation.includes('Amoksisilin') || centorTest.recommendation.includes('antibiyotik'));
+console.log('✓ Infusion Rate, GIR, Pediatric Syrup, AAP 2017 BP & Centor-McIsaac passed');
+
+console.log('\n--- 14. TESTING OB/GYN, SURGERY & TRIAGE ENGINES ---');
+// Naegele OB/GYN
+const obTest = calculateObstetrics('2026-05-01');
+assert.ok(obTest.edd.length === 10);
+assert.ok(obTest.trimester >= 1 && obTest.trimester <= 3);
+
+// Bishop Score
+const bishopTest = calculateBishop(2, 2, 2, 2, 1);
+assert.strictEqual(bishopTest.score, 9);
+assert.ok(bishopTest.interpretation.includes('Elverişli'));
+
+// Preeclampsia
+const preeclampsiaTest = calculatePreeclampsia(165, 100, true, ['severe']);
+assert.strictEqual(preeclampsiaTest.diagnosis, 'Preeklampsi (Ağır Özellikli)');
+
+// Alvarado
+const alvTest = calculateAlvarado({ rlqPain: true, rebound: true, leukocytosis: true });
+assert.strictEqual(alvTest.score, 5);
+assert.strictEqual(alvTest.risk, 'Orta');
+
+// ATLS 10 Parkland
+const parklandAdult = calculateParkland(70, 20, 30);
+assert.strictEqual(parklandAdult.multiplierUsed, 2);
+assert.strictEqual(parklandAdult.totalVolume, 2800);
+
+const parklandChild = calculateParkland(20, 20, 8);
+assert.strictEqual(parklandChild.multiplierUsed, 3);
+assert.strictEqual(parklandChild.totalVolume, 1200);
+
+// Suture guidance
+const sutureTest = getSutureGuidance('yuz');
+assert.strictEqual(sutureTest.removalDays, '3-5 gün');
+
+// NEWS2 & PEWS & GCS
+const newsTest = calculateNEWS2(135, 88, 26, 39.2, 90, true, 'V');
+assert.ok(newsTest.score >= 10);
+assert.strictEqual(newsTest.risk, 'Yüksek Klinik Risk');
+
+const pewsTest = calculatePEWS(2, 2, 2);
+assert.strictEqual(pewsTest.score, 6);
+
+const gcsComa = calculateGCS(1, 1, 1);
+assert.strictEqual(gcsComa.total, 3);
+assert.ok(gcsComa.airwayRisk.includes('Entübasyon'));
+console.log('✓ Obstetrics (Naegele, Bishop, Preeclampsia), Surgery (Alvarado, Parkland ATLS 10, Suture) & Triage (NEWS2, PEWS, GCS) passed');
+
+console.log('\n--- 15. TESTING CROSS-ENGINE COMMUNICATION & SOAP INTEGRATION ---');
+// Test 1: Bhutani -> Neonatal Fluid Step-up Communication
+const bhutaniCritical = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 18, gestationalWeeks: 38 });
+assert.strictEqual(bhutaniCritical.status, 'PHOTOTHERAPY_REQUIRED');
+const neoFluidWithPhoto = calculateNeonatalFluid({
+    ageDays: 2, weightKg: 3.0, isPreterm: false,
+    isPhototherapy: bhutaniCritical.status === 'PHOTOTHERAPY_REQUIRED'
+});
+const neoFluidWithoutPhoto = calculateNeonatalFluid({
+    ageDays: 2, weightKg: 3.0, isPreterm: false,
+    isPhototherapy: false
+});
+// Phototherapy adds +15 mL/kg/day to neonatal fluid requirement
+assert.strictEqual(neoFluidWithPhoto.mlPerKgAvg - neoFluidWithoutPhoto.mlPerKgAvg, 15);
+assert.ok(neoFluidWithPhoto.soluteAdvice.includes('Fototerapiye bağlı artmış'));
+console.log('✓ Bhutani -> Neonatal Fluid Phototherapy Step-up communication verified');
+
+// Test 2: eGFR -> Smart Renal Prescription Shield Communication
+const pedEgfr = calculateEGFR(2.0, 6, 'M', 110); // Low eGFR in child: (0.413 * 110)/2.0 = 23 mL/dk
+const renalShield = checkRenalDoseAdjustments({
+    egfr: pedEgfr,
+    drugs: [{ brand: 'Cipro 500mg', generic: 'ciprofloxacin' }]
+});
+assert.strictEqual(renalShield.alertsCount, 1);
+console.log('✓ eGFR -> Smart Renal Dose Adjustment communication verified');
+
+// Test 3: Gestational Age -> Preterm Percentiles Communication
+const pretermAge = calculateCorrectedAge({ chronologicalMonths: 8, gestationalWeeks: 30 });
+assert.strictEqual(pretermAge.isPreterm, true);
+assert.strictEqual(pretermAge.weeksMissing, 10);
+const pretermPerc = calculatePercentiles({
+    totalMonths: pretermAge.correctedMonths, // 8 - 10/4.348 ~ 5.7 months
+    gender: 'male',
+    weightKg: 7.2,
+    heightCm: 65,
+    isPediatric: true
+});
+assert.ok(pretermPerc.weightPercentile > 0);
+console.log('✓ Gestational Age -> Preterm Corrected Growth communication verified');
+
+// Test 4: End-to-end SOAP Generation covering all engines
+appState.biometry.ageYears = 58;
+appState.biometry.gender = 'male';
+appState.biometry.weightKg = 75;
+appState.biometry.heightCm = 175;
+appState.biometry.egfr = 45;
+appState.medicine.sodium = { deficit: 280, deltaNa3Percent: 8.5, deltaNa09Percent: 0.8, warning: '' };
+appState.medicine.calcium = { correctedCa: 9.2, measuredCa: 8.4, alertMsg: '' };
+appState.surgery.parkland = { totalVolume: 3000, first8HrsRate: 188, next16HrsRate: 94 };
+appState.pediatrics.iron = {
+    status: 'SUCCESS',
+    hbEvaluation: { isAnemic: false, text: 'Normal Hb düzeyi (12.5 g/dL)' },
+    treatment: { text: '' },
+    prophylaxis: { eligible: true, mgDay: 15, text: 'Profilaktik destek' }
+};
+appState.obgyn.eddData = { gestationalAge: '28 Hafta + 2 Gün', edd: '15.01.2027' };
+
+const soapOutput = generateSOAP();
+assert.ok(soapOutput.includes('75 kg'));
+assert.ok(soapOutput.includes('eGFR: 45'));
+assert.ok(soapOutput.includes('Sodyum Düzeltme & Açık'));
+assert.ok(soapOutput.includes('Düzeltilmiş Kalsiyum: 9.2'));
+assert.ok(soapOutput.includes('Parkland Yanık Sıvı Resüsitasyonu'));
+assert.ok(soapOutput.includes('Demir Takviyesi / Profilaksi'));
+assert.ok(soapOutput.includes('Obstetrik: SAT\'a göre Gebelik Haftası'));
+console.log('✓ End-to-end SOAP Generation with complete multi-engine data verified');
 
 console.log('\n🎉 ALL VERIFICATION TESTS PASSED SUCCESSFULLY! 100% HEALTHY.');

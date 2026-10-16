@@ -32,7 +32,7 @@ export function generateSOAP() {
         s.push(`Hasta Bilgileri: ${ptParts.join(', ')}.`);
     }
 
-    const anamnez = document.getElementById('input-custom-notes')?.value;
+    const anamnez = (typeof document !== 'undefined') ? document.getElementById('input-custom-notes')?.value : null;
     if (anamnez && anamnez.trim()) {
         s.push(`Ana Şikayet / Öykü: ${anamnez.trim()}`);
     }
@@ -68,7 +68,10 @@ export function generateSOAP() {
     // Pediatrik Demir / Anemi
     if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.status === 'SUCCESS') {
         const ir = appState.pediatrics.iron;
-        o.push(`- Demir & Anemi Durumu: ${ir.anemiaStatus || 'Normal'}${ir.hb !== null ? ' (Hb: ' + ir.hb + ' g/dL)' : ''}. ${ir.treatmentRecommendation || ''}`);
+        const anemiaDesc = ir.hbEvaluation?.text || ir.anemiaStatus || ir.hbCategory || 'Normal';
+        const treatDesc = ir.treatment?.text ? ` | Tedavi: ${ir.treatment.text}` : (ir.treatmentRecommendation ? ` | Tedavi: ${ir.treatmentRecommendation}` : '');
+        const prophDesc = ir.prophylaxis?.text ? ` | Profilaksi: ${ir.prophylaxis.text}` : '';
+        o.push(`- Demir & Anemi Durumu: ${anemiaDesc}${treatDesc}${prophDesc}.`);
     }
 
     // Triage / Vitals / Tansiyon
@@ -119,6 +122,16 @@ export function generateSOAP() {
         o.push(bgStr + '.');
     }
 
+    // Elektrolitler & İyonlar (Sodyum & Kalsiyum)
+    if (appState.medicine && appState.medicine.sodium) {
+        const na = appState.medicine.sodium;
+        o.push(`- Sodyum Düzeltme & Açık: Açık: ${na.deficit} mEq (3% NaCl: +${na.deltaNa3Percent} mEq/L, 0.9% NaCl: +${na.deltaNa09Percent} mEq/L)${na.warning ? ' [' + na.warning + ']' : ''}.`);
+    }
+    if (appState.medicine && appState.medicine.calcium) {
+        const ca = appState.medicine.calcium;
+        o.push(`- Düzeltilmiş Kalsiyum: ${ca.correctedCa} mg/dL (Ölçülen: ${ca.measuredCa} mg/dL)${ca.alertMsg ? ' [' + ca.alertMsg + ']' : ''}.`);
+    }
+
     // İnfüzyon & GIR
     if (appState.medicine && appState.medicine.gir) {
         const g = appState.medicine.gir;
@@ -148,7 +161,7 @@ export function generateSOAP() {
     }
 
     // Obstetrik
-    if (appState.obgyn && appState.obgyn.eddData && appState.obgyn.eddData.status === 'OK') {
+    if (appState.obgyn && appState.obgyn.eddData && (appState.obgyn.eddData.status === 'OK' || appState.obgyn.eddData.edd)) {
         const edd = appState.obgyn.eddData;
         o.push(`- Obstetrik: SAT'a göre Gebelik Haftası: ${edd.gestationalAge || '--'}, Tahmini Doğum Tarihi (TDT): ${edd.edd || '--'}.`);
     }
@@ -334,9 +347,12 @@ export function generateSOAP() {
         p.push(`${pCount}. Hipoglisemi Acil Protokolü: ${appState.medicine.gir.hypoglycemiaBolus.instructions}`);
         pCount++;
     }
-    if (appState.surgery && appState.surgery.parkland && appState.surgery.parkland.status === 'OK') {
+    if (appState.surgery && appState.surgery.parkland && (appState.surgery.parkland.status === 'OK' || appState.surgery.parkland.totalVolume)) {
         const pk = appState.surgery.parkland;
-        p.push(`${pCount}. Parkland Yanık Sıvı Resüsitasyonu: Toplam 24s Sıvı: ${pk.totalFluid24h} mL (İlk 8s: ${pk.first8hRate} mL/s, Sonraki 16s: ${pk.next16hRate} mL/s).`);
+        const totVol = pk.totalVolume ?? pk.totalFluid24h;
+        const r1 = pk.first8HrsRate ?? pk.first8hRate;
+        const r2 = pk.next16HrsRate ?? pk.next16hRate;
+        p.push(`${pCount}. Parkland Yanık Sıvı Resüsitasyonu: Toplam 24s Sıvı: ${totVol} mL (İlk 8s: ${r1} mL/s, Sonraki 16s: ${r2} mL/s).`);
         pCount++;
     }
     if (appState.medicine && appState.medicine.fluid && appState.medicine.fluid.dailyVolume) {
@@ -360,9 +376,10 @@ export function generateSOAP() {
         p.push(`${pCount}. Pediatrik Dozaj: ${sy.name || 'Şurup'}: ${sy.targetDoseMg || ''} mg tek doz (${sy.olcekText || ''}, ${sy.freq || ''}).`);
         pCount++;
     }
-    if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.prophylaxisDose) {
+    if (appState.pediatrics && appState.pediatrics.iron && (appState.pediatrics.iron.prophylaxis?.eligible || appState.pediatrics.iron.prophylaxisDose)) {
         const ir = appState.pediatrics.iron;
-        p.push(`${pCount}. Demir Takviyesi / Profilaksi: ${ir.prophylaxisDose}`);
+        const doseStr = ir.prophylaxis?.text ? `${ir.prophylaxis.mgDay} mg/gün (${ir.prophylaxis.text})` : (ir.prophylaxisDose || '');
+        p.push(`${pCount}. Demir Takviyesi / Profilaksi: ${doseStr}`);
         pCount++;
     }
     if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
