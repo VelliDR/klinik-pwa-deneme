@@ -18,7 +18,8 @@ assert.strictEqual(normalizeText('AMOKLAVIN-BID'), 'amoklavin bid');
 console.log('✓ Phonetic & Turkish/Latin medical normalizations verified');
 
 // 2. Load and Prepare In-Memory Catalog from medicines.json
-const rawData = JSON.parse(fs.readFileSync('data/medicines.json', 'utf8'));
+const medicinesPath = fs.existsSync('public/data/medicines.json') ? 'public/data/medicines.json' : 'data/medicines.json';
+const rawData = JSON.parse(fs.readFileSync(medicinesPath, 'utf8'));
 assert.strictEqual(rawData.length, 18212);
 
 console.time('Catalog indexing 18,212 items');

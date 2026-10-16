@@ -3100,13 +3100,4 @@ if (typeof document !== 'undefined') {
     }
 }
 
-// ----------------------------------------------------------------------------
-// PWA Service Worker Registration (Çevrimdışı Çalışma)
-// ----------------------------------------------------------------------------
-if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && typeof window !== 'undefined') {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('[PWA] Service Worker aktif:', reg.scope))
-            .catch(err => console.error('[PWA] Service Worker kayıt hatası:', err));
-    });
-}
+

@@ -1,5 +1,5 @@
 # Large raw data dumps & backups
-data/*.raw.json
+**/*.raw.json
 
 # Operating System Files
 .DS_Store
