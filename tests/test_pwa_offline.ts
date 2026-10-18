@@ -29,9 +29,10 @@ assert.ok(!fs.existsSync('sw.js'), 'Legacy sw.js in root must not exist');
 assert.ok(fs.existsSync('archive/legacy_js/sw.js'), 'Legacy sw.js must be archived in archive/legacy_js/');
 console.log('✓ Legacy sw.js cleanly isolated in archive/legacy_js/');
 
-// 4. Verify vite.config.ts PWA Setup
+// 4. Verify vite.config.ts PWA Setup & Relative Base
 const viteConfigContent = fs.readFileSync('vite.config.ts', 'utf8');
 assert.ok(viteConfigContent.includes('VitePWA'), 'VitePWA plugin must be present');
+assert.ok(viteConfigContent.includes("base: './'"), 'vite.config.ts must have base: \'./\' for GitHub Pages compatibility');
 assert.ok(viteConfigContent.includes('maximumFileSizeToCacheInBytes: 30 * 1024 * 1024'), 'Cache limit must be >= 30MB');
 assert.ok(viteConfigContent.includes('data/medicines.json'), 'medicines.json must be in includeAssets');
 assert.ok(viteConfigContent.includes('CacheFirst'), 'CacheFirst runtime caching must be configured for medical data');
