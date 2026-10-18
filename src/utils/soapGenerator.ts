@@ -43,7 +43,7 @@ export function generateSOAP(): string {
   if (appState.biometry.egfr) bioParts.push(`eGFR: ${appState.biometry.egfr} mL/dk`);
   
   if (appState.pediatrics && appState.pediatrics.percentiles) {
-    const perc = appState.pediatrics.percentiles as unknown as Record<string, unknown>;
+    const perc = appState.pediatrics.percentiles;
     if (perc.weightPercentile !== null && perc.weightPercentile !== undefined) {
       bioParts.push(`Kilo/Yaş: %${perc.weightPercentile}${perc.weightZ !== null ? ' (Z: ' + perc.weightZ + ')' : ''}`);
     }
@@ -58,7 +58,7 @@ export function generateSOAP(): string {
     }
   }
   if (appState.pediatrics && appState.pediatrics.targetHeight) {
-    const th = appState.pediatrics.targetHeight as unknown as Record<string, unknown>;
+    const th = appState.pediatrics.targetHeight;
     bioParts.push(`Hedef Boy (Tanner): ${th.targetHeightCm} cm (${th.targetRangeCm}, %${th.targetPercentile})`);
   }
   if (bioParts.length > 0) {
@@ -66,35 +66,35 @@ export function generateSOAP(): string {
   }
 
   // Pediatrik Demir / Anemi
-  if (appState.pediatrics && appState.pediatrics.iron && (appState.pediatrics.iron as unknown as Record<string, unknown>).status === 'SUCCESS') {
-    const ir = appState.pediatrics.iron as unknown as Record<string, any>;
-    const anemiaDesc = ir.hbEvaluation?.text || ir.anemiaStatus || ir.hbCategory || 'Normal';
-    const treatDesc = ir.treatment?.text ? ` | Tedavi: ${ir.treatment.text}` : (ir.treatmentRecommendation ? ` | Tedavi: ${ir.treatmentRecommendation}` : '');
+  if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.status === 'SUCCESS') {
+    const ir = appState.pediatrics.iron;
+    const anemiaDesc = ir.hbEvaluation?.text || ir.hbCategory || 'Normal';
+    const treatDesc = ir.treatment?.text ? ` | Tedavi: ${ir.treatment.text}` : '';
     const prophDesc = ir.prophylaxis?.text ? ` | Profilaksi: ${ir.prophylaxis.text}` : '';
     o.push(`- Demir & Anemi Durumu: ${anemiaDesc}${treatDesc}${prophDesc}.`);
   }
 
   // Triage / Vitals / Tansiyon
   if (appState.pediatrics && appState.pediatrics.bp) {
-    const bp = appState.pediatrics.bp as unknown as Record<string, unknown>;
+    const bp = appState.pediatrics.bp;
     o.push(`- Pediatrik Tansiyon (AAP 2017): ${bp.stage}${bp.thresholds ? ' [' + bp.thresholds + ']' : ''}`);
   }
   if (appState.medicine && appState.medicine.news2) {
-    const news2 = appState.medicine.news2 as unknown as Record<string, unknown>;
+    const news2 = appState.medicine.news2;
     o.push(`- Vital / Triyaj (NEWS2): Skor ${news2.score || 0} (${news2.risk || 'Düşük Risk'})`);
   }
   if (appState.pediatrics && appState.pediatrics.pews) {
-    const pews = appState.pediatrics.pews as unknown as Record<string, unknown>;
+    const pews = appState.pediatrics.pews;
     o.push(`- Vital / Triyaj (PEWS): Skor ${pews.score || 0} (${pews.risk || 'Düşük Risk'})`);
   }
   if (appState.medicine && appState.medicine.gcs) {
-    const gcs = appState.medicine.gcs as unknown as Record<string, unknown>;
+    const gcs = appState.medicine.gcs;
     o.push(`- GCS (Glasgow Koma Skalası): Toplam ${gcs.total || 15} (E${gcs.e || 4}V${gcs.v || 5}M${gcs.m || 6})`);
   }
 
   // Kardiyoloji & EKG
-  if (appState.other && appState.other.cardiac && (appState.other.cardiac as unknown as Record<string, unknown>).status === 'OK') {
-    const c = appState.other.cardiac as unknown as Record<string, any>;
+  if (appState.other && appState.other.cardiac && appState.other.cardiac.status === 'OK') {
+    const c = appState.other.cardiac;
     let cardStr = `- EKG & Kardiyak: Nabız: ${c.hr || '--'} bpm`;
     if (c.rrMs) cardStr += ` (RR: ${c.rrMs} ms)`;
     if (c.qt) cardStr += `, QT: ${c.qt} ms`;
@@ -112,13 +112,13 @@ export function generateSOAP(): string {
     }
   }
   if (appState.other && appState.other.axis) {
-    const ax = appState.other.axis as unknown as Record<string, unknown>;
+    const ax = appState.other.axis;
     o.push(`- EKG Aksı: ${ax.degrees}° (${ax.axisCategory}).`);
   }
 
   // Kan Gazı
-  if (appState.medicine && appState.medicine.bloodGas && (appState.medicine.bloodGas as unknown as Record<string, unknown>).status !== 'INCOMPLETE') {
-    const bg = appState.medicine.bloodGas as unknown as Record<string, any>;
+  if (appState.medicine && appState.medicine.bloodGas) {
+    const bg = appState.medicine.bloodGas;
     let bgStr = `- Kan Gazı (ABG/VBG): pH: ${bg.pH || '--'}, pCO2: ${bg.pCO2 || '--'}, HCO3: ${bg.HCO3 || '--'}`;
     if (bg.primaryDisorder) {
       bgStr += ` -> Tanı: ${bg.primaryDisorder} ${bg.compensationText ? '(' + bg.compensationText + ')' : ''}`;
@@ -128,51 +128,51 @@ export function generateSOAP(): string {
 
   // Elektrolitler & İyonlar (Sodyum & Kalsiyum)
   if (appState.medicine && appState.medicine.sodium) {
-    const na = appState.medicine.sodium as unknown as Record<string, any>;
+    const na = appState.medicine.sodium;
     o.push(`- Sodyum Düzeltme & Açık: Açık: ${na.deficit} mEq (3% NaCl: +${na.deltaNa3Percent} mEq/L, 0.9% NaCl: +${na.deltaNa09Percent} mEq/L)${na.warning ? ' [' + na.warning + ']' : ''}.`);
   }
   if (appState.medicine && appState.medicine.calcium) {
-    const ca = appState.medicine.calcium as unknown as Record<string, any>;
+    const ca = appState.medicine.calcium;
     o.push(`- Düzeltilmiş Kalsiyum: ${ca.correctedCa} mg/dL (Ölçülen: ${ca.measuredCa} mg/dL)${ca.alertMsg ? ' [' + ca.alertMsg + ']' : ''}.`);
   }
 
   // İnfüzyon & GIR
   if (appState.medicine && appState.medicine.gir) {
-    const g = appState.medicine.gir as unknown as Record<string, any>;
+    const g = appState.medicine.gir;
     o.push(`- Glukoz İnfüzyon Hızı (GIR): ${g.gir} mg/kg/dk (${g.interpretation}).`);
   }
 
   // Endokrin & Metabolizma
   if (appState.medicine && appState.medicine.homaIR) {
-    const hm = appState.medicine.homaIR as unknown as Record<string, any>;
+    const hm = appState.medicine.homaIR;
     o.push(`- HOMA-IR İnsülin Direnci: ${hm.homaIR} [${hm.tannerStage}, Eşik: ${hm.cutoff}] -> ${hm.isResistant ? 'İnsülin Direnci Pozitif' : 'Normal'}.`);
   }
   if (appState.medicine && appState.medicine.steroid) {
-    const st = appState.medicine.steroid as unknown as Record<string, any>;
+    const st = appState.medicine.steroid;
     o.push(`- Glukokortikoid Eşdeğerlik: ${st.sourceDrug} ${st.inputDoseMg} mg bazında hesaplandı.`);
   }
 
   // Akılcı Antibiyotik & Centor-McIsaac
   if (appState.pediatrics && appState.pediatrics.centor) {
-    const ct = appState.pediatrics.centor as unknown as Record<string, any>;
+    const ct = appState.pediatrics.centor;
     o.push(`- Centor / McIsaac Faranjit Skoru: ${ct.score} (GAS Riski: ${ct.riskPercent}). ${ct.recommendation}`);
   }
 
   // Cerrahi Skorlar
-  if (appState.surgery && appState.surgery.alvarado && (appState.surgery.alvarado as unknown as Record<string, any>).score > 0) {
-    const alv = appState.surgery.alvarado as unknown as Record<string, any>;
+  if (appState.surgery && appState.surgery.alvarado && appState.surgery.alvarado.score > 0) {
+    const alv = appState.surgery.alvarado;
     o.push(`- Cerrahi (Alvarado Apendisit Skoru): ${alv.score}/10 (${alv.risk || ''}).`);
   }
 
   // Obstetrik
-  if (appState.obgyn && appState.obgyn.eddData && ((appState.obgyn.eddData as unknown as Record<string, any>).status === 'OK' || (appState.obgyn.eddData as unknown as Record<string, any>).edd)) {
-    const edd = appState.obgyn.eddData as unknown as Record<string, any>;
+  if (appState.obgyn && appState.obgyn.eddData && appState.obgyn.eddData.edd) {
+    const edd = appState.obgyn.eddData;
     o.push(`- Obstetrik: SAT'a göre Gebelik Haftası: ${edd.gestationalAge || '--'}, Tahmini Doğum Tarihi (TDT): ${edd.edd || '--'}.`);
   }
 
   // Tromboemboli & Kardiyak Acil
   if (appState.thrombosis) {
-    const th = appState.thrombosis as unknown as Record<string, any>;
+    const th = appState.thrombosis;
     if (th.wellsDVT && th.wellsDVT.isValid) {
       o.push(`- Wells DVT Skoru: ${th.wellsDVT.score} Puan (${th.wellsDVT.riskCategory} - DVT İhtimali: ${th.wellsDVT.probability}).`);
     }
@@ -195,7 +195,7 @@ export function generateSOAP(): string {
 
   // Nefroloji, Toksikoloji & Solunum
   if (appState.nephroTox) {
-    const nt = appState.nephroTox as unknown as Record<string, any>;
+    const nt = appState.nephroTox;
     if (nt.fena && nt.fena.isValid) {
       o.push(`- FENa: %${nt.fena.fenaPercent} (${nt.fena.category})${nt.fena.isOnDiuretics ? ' [Hasta Diüretik Alıyor - FENa Yalancı Yüksek Olabilir]' : ''}.`);
     }
@@ -218,7 +218,7 @@ export function generateSOAP(): string {
 
   // Neonatoloji & Pediatrik Acil
   if (appState.neonatology) {
-    const neo = appState.neonatology as unknown as Record<string, any>;
+    const neo = appState.neonatology;
     if (neo.bhutani && neo.bhutani.isValid) {
       o.push(`- Bhutani Sarılık: Yaş: ${neo.bhutani.ageHours}s, TSB: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`);
     }
@@ -238,50 +238,50 @@ export function generateSOAP(): string {
 
   // İlaç Güvenliği & DDI
   if (appState.safetyPrescription) {
-    const sp = appState.safetyPrescription as unknown as Record<string, any>;
+    const sp = appState.safetyPrescription;
     if (sp.tripleWhammy && sp.tripleWhammy.isTripleWhammy) {
       o.push(`- 🚨 İlaç Güvenliği: Triple Whammy AKI Riski Tespit Edildi (RAS Blokörü + Diüretik + NSAİİ).`);
     }
-    if (sp.renalAdjustments && sp.renalAdjustments.alertsCount > 0) {
+    if (sp.renalAdjustments && (sp.renalAdjustments.alertsCount ?? 0) > 0) {
       o.push(`- Renal Dozaj Uyarısı (${sp.renalAdjustments.egfr} mL/dk): ${sp.renalAdjustments.alertsCount} ilaçta doz kısıtlaması/kontrendikasyon mevcut.`);
     }
     if (sp.pregnancySafety && sp.pregnancySafety.alertsCount > 0) {
       o.push(`- Gebelik Güvenlik Uyarısı: ${sp.pregnancySafety.alertsCount} ilaçta fetal risk saptandı.`);
     }
     if (sp.neonatalDrugSafety && sp.neonatalDrugSafety.alertsCount > 0) {
-      o.push(`- 🚨 Yenidoğan İlaç Güvenliği: ${sp.neonatalDrugSafety.alertsCount} ilaçta kontrendikasyon/toksisite uyarısı mevcut (${sp.neonatalDrugSafety.alerts.map((a: any) => a.drugName).join(', ')}).`);
+      o.push(`- 🚨 Yenidoğan İlaç Güvenliği: ${sp.neonatalDrugSafety.alertsCount} ilaçta kontrendikasyon/toksisite uyarısı mevcut (${sp.neonatalDrugSafety.alerts.map((a) => a.drugName).join(', ')}).`);
     }
   }
 
   // --- DEĞERLENDİRME ---
-  if (appState.pediatrics && appState.pediatrics.targetHeight && (appState.pediatrics.targetHeight as unknown as Record<string, any>).deviationAlert) {
-    a.push(`- ${(appState.pediatrics.targetHeight as unknown as Record<string, any>).deviationAlert}`);
+  if (appState.pediatrics && appState.pediatrics.targetHeight && appState.pediatrics.targetHeight.deviationAlert) {
+    a.push(`- ${appState.pediatrics.targetHeight.deviationAlert}`);
   }
-  if (appState.pediatrics && appState.pediatrics.bp && (appState.pediatrics.bp as unknown as Record<string, any>).stage.includes('Hipertansiyon')) {
-    a.push(`- Pediatrik Kan Basıncı Uyarısı: ${(appState.pediatrics.bp as unknown as Record<string, any>).stage}. Doğrulayıcı ölçümler ve etiyolojik tarama önerilir.`);
+  if (appState.pediatrics && appState.pediatrics.bp && appState.pediatrics.bp.stage.includes('Hipertansiyon')) {
+    a.push(`- Pediatrik Kan Basıncı Uyarısı: ${appState.pediatrics.bp.stage}. Doğrulayıcı ölçümler ve etiyolojik tarama önerilir.`);
   }
-  if (appState.medicine && appState.medicine.gir && ((appState.medicine.gir as unknown as Record<string, any>).status === 'LOW' || (appState.medicine.gir as unknown as Record<string, any>).gir < 4)) {
-    a.push(`- Neonatal Hipoglisemi Riski: Glukoz infüzyon hızı kritik düşük (${(appState.medicine.gir as unknown as Record<string, any>).gir} mg/kg/dk).`);
+  if (appState.medicine && appState.medicine.gir && (appState.medicine.gir.status === 'LOW' || appState.medicine.gir.gir < 4)) {
+    a.push(`- Neonatal Hipoglisemi Riski: Glukoz infüzyon hızı kritik düşük (${appState.medicine.gir.gir} mg/kg/dk).`);
   }
-  if (appState.medicine && appState.medicine.homaIR && (appState.medicine.homaIR as unknown as Record<string, any>).isResistant) {
-    a.push(`- ${(appState.medicine.homaIR as unknown as Record<string, any>).interpretation}`);
+  if (appState.medicine && appState.medicine.homaIR && appState.medicine.homaIR.isResistant) {
+    a.push(`- ${appState.medicine.homaIR.interpretation}`);
   }
-  if (appState.pediatrics && appState.pediatrics.centor && (appState.pediatrics.centor as unknown as Record<string, any>).score >= 4) {
-    a.push(`- Akut Tonsillofaranjit: Yüksek Streptokok olasılığı (Centor Skoru: ${(appState.pediatrics.centor as unknown as Record<string, any>).score}).`);
+  if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
+    a.push(`- Akut Tonsillofaranjit: Yüksek Streptokok olasılığı (Centor Skoru: ${appState.pediatrics.centor.score}).`);
   }
-  if (appState.surgery && appState.surgery.alvarado && (appState.surgery.alvarado as unknown as Record<string, any>).score >= 7) {
-    a.push(`- Yüksek Apendisit Olasılığı (Alvarado Skoru: ${(appState.surgery.alvarado as unknown as Record<string, any>).score}/10). Cerrahi konsültasyonu önerilir.`);
+  if (appState.surgery && appState.surgery.alvarado && appState.surgery.alvarado.score >= 7) {
+    a.push(`- Yüksek Apendisit Olasılığı (Alvarado Skoru: ${appState.surgery.alvarado.score}/10). Cerrahi konsültasyonu önerilir.`);
   }
-  if (appState.other && appState.other.cardiac && (appState.other.cardiac as unknown as Record<string, any>).colorCode === 'danger') {
-    a.push(`- Kardiyak Uyarı: ${(appState.other.cardiac as unknown as Record<string, any>).interpretation}`);
+  if (appState.other && appState.other.cardiac && appState.other.cardiac.colorCode === 'danger') {
+    a.push(`- Kardiyak Uyarı: ${appState.other.cardiac.interpretation}`);
   }
-  if (appState.medicine && appState.medicine.bloodGas && (appState.medicine.bloodGas as unknown as Record<string, any>).primaryDisorder) {
-    a.push(`- Asit-Baz Bozukluğu: ${(appState.medicine.bloodGas as unknown as Record<string, any>).primaryDisorder}.`);
+  if (appState.medicine && appState.medicine.bloodGas && appState.medicine.bloodGas.primaryDisorder) {
+    a.push(`- Asit-Baz Bozukluğu: ${appState.medicine.bloodGas.primaryDisorder}.`);
   }
 
   // Yeni Klinik Modül Değerlendirmeleri
   if (appState.thrombosis) {
-    const th = appState.thrombosis as unknown as Record<string, any>;
+    const th = appState.thrombosis;
     if (th.wellsDVT && th.wellsDVT.score >= 2) {
       a.push(`- Yüksek DVT Şüphesi: Wells Skoru ${th.wellsDVT.score} (Acil Kompresyon Doppler USG önerilir).`);
     }
@@ -296,7 +296,7 @@ export function generateSOAP(): string {
     }
   }
   if (appState.nephroTox) {
-    const nt = appState.nephroTox as unknown as Record<string, any>;
+    const nt = appState.nephroTox;
     if (nt.fena && nt.feurea) {
       if (nt.fena.isOnDiuretics && nt.fena.fenaPercent >= 1.0 && nt.feurea.feUreaPercent < 35.0) {
         a.push(`- Oligüri / Azotemi Değerlendirmesi: Diüretik etkisiyle FENa yalancı yüksek çıkmıştır; FEUrea <%35 Prerenal Hipoperfüzyonu doğrulamaktadır.`);
@@ -326,7 +326,7 @@ export function generateSOAP(): string {
     }
   }
   if (appState.neonatology) {
-    const neo = appState.neonatology as unknown as Record<string, any>;
+    const neo = appState.neonatology;
     if (neo.bhutani && neo.bhutani.status === 'EXCHANGE_TRANSFUSION_REQUIRED') {
       a.push(`- KRİTİK HİPERBİLİRUBİNEMİ: Acil Kan Değişimi (Exchange Transfusion) ve yoğun fototerapi endikasyonu!`);
     } else if (neo.bhutani && neo.bhutani.status === 'PHOTOTHERAPY_REQUIRED') {
@@ -335,33 +335,30 @@ export function generateSOAP(): string {
     if (neo.westleyCroup && neo.westleyCroup.score >= 6) {
       a.push(`- Ciddi Krup / Yaklaşan Solunum Yetmezliği: Westley Skoru ${neo.westleyCroup.score} (Nebülize Epinefrin ve YBÜ gözlemi).`);
     }
-    if (neo.weightLoss && (neo.weightLoss.status === 'EXCESSIVE_LOSS_CRITICAL' || neo.weightLoss.percentLoss > 10)) {
+    if (neo.weightLoss && (neo.weightLoss.status === 'EXCESSIVE_LOSS_CRITICAL' || (neo.weightLoss.percentLoss ?? 0) > 10)) {
       a.push(`- YENİDOĞAN AŞIRI TARTI KAYBI: Doğum tartısının %${neo.weightLoss.percentLoss}'i kaybedildi. Hipernatremik dehidratasyon riski!`);
     }
   }
-  if (appState.safetyPrescription && (appState.safetyPrescription as unknown as Record<string, any>).tripleWhammy && (appState.safetyPrescription as unknown as Record<string, any>).tripleWhammy.isTripleWhammy) {
+  if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
     a.push(`- İlaç Etkileşim Uyarısı: Triple Whammy kombinasyonu nedeniyle Akut Böbrek Hasarı riski çok yüksektir.`);
   }
-  if (appState.safetyPrescription && (appState.safetyPrescription as unknown as Record<string, any>).neonatalDrugSafety && (appState.safetyPrescription as unknown as Record<string, any>).neonatalDrugSafety.hasContraindication) {
+  if (appState.safetyPrescription && appState.safetyPrescription.neonatalDrugSafety && appState.safetyPrescription.neonatalDrugSafety.hasContraindication) {
     a.push(`- YENİDOĞAN İLAÇ KONTRENDİKASYONU: Reçetelenen ilaçlarda fatal toksisite riski (Kernikterus/Gri Bebek Sendromu vb.) tespit edildi.`);
   }
 
   // --- PLAN & TEDAVİ ---
   let pCount = 1;
-  if (appState.medicine && appState.medicine.gir && ((appState.medicine.gir as unknown as Record<string, any>).status === 'LOW' || (appState.medicine.gir as unknown as Record<string, any>).gir < 4)) {
-    p.push(`${pCount}. Hipoglisemi Acil Protokolü: ${(appState.medicine.gir as unknown as Record<string, any>).hypoglycemiaBolus.instructions}`);
+  if (appState.medicine && appState.medicine.gir && (appState.medicine.gir.status === 'LOW' || appState.medicine.gir.gir < 4)) {
+    p.push(`${pCount}. Hipoglisemi Acil Protokolü: ${appState.medicine.gir.hypoglycemiaBolus.instructions}`);
     pCount++;
   }
-  if (appState.surgery && appState.surgery.parkland && ((appState.surgery.parkland as unknown as Record<string, any>).status === 'OK' || (appState.surgery.parkland as unknown as Record<string, any>).totalVolume)) {
-    const pk = appState.surgery.parkland as unknown as Record<string, any>;
-    const totVol = pk.totalVolume ?? pk.totalFluid24h;
-    const r1 = pk.first8HrsRate ?? pk.first8hRate;
-    const r2 = pk.next16HrsRate ?? pk.next16hRate;
-    p.push(`${pCount}. Parkland Yanık Sıvı Resüsitasyonu: Toplam 24s Sıvı: ${totVol} mL (İlk 8s: ${r1} mL/s, Sonraki 16s: ${r2} mL/s).`);
+  if (appState.surgery && appState.surgery.parkland && appState.surgery.parkland.totalVolume) {
+    const pk = appState.surgery.parkland;
+    p.push(`${pCount}. Parkland Yanık Sıvı Resüsitasyonu: Toplam 24s Sıvı: ${pk.totalVolume} mL (İlk 8s: ${pk.first8HrsRate} mL/s, Sonraki 16s: ${pk.next16HrsRate} mL/s).`);
     pCount++;
   }
-  if (appState.medicine && appState.medicine.fluid && (appState.medicine.fluid as unknown as Record<string, any>).dailyVolume) {
-    const fl = appState.medicine.fluid as unknown as Record<string, any>;
+  if (appState.medicine && appState.medicine.fluid && appState.medicine.fluid.dailyVolume) {
+    const fl = appState.medicine.fluid;
     if (fl.isNeonate) {
       p.push(`${pCount}. Yenidoğan İdame Sıvısı (TND Sıvı Kademesi - ${fl.dayTitle}): ${fl.dailyVolume} mL/gün (${fl.hourlyRate} mL/saat). ${fl.fluidTypeRecommendation}`);
     } else {
@@ -369,32 +366,32 @@ export function generateSOAP(): string {
     }
     pCount++;
   }
-  if (appState.neonatology && appState.neonatology.weightLoss && (appState.neonatology.weightLoss as unknown as Record<string, any>).isValid) {
-    const wl = appState.neonatology.weightLoss as unknown as Record<string, any>;
+  if (appState.neonatology && appState.neonatology.weightLoss && appState.neonatology.weightLoss.isValid) {
+    const wl = appState.neonatology.weightLoss;
     if (wl.recommendations && wl.recommendations.length > 0) {
       p.push(`${pCount}. Yenidoğan Tartı & Beslenme İzlemi: ${wl.recommendations[0]}`);
       pCount++;
     }
   }
   if (appState.pediatrics && appState.pediatrics.syrupDose) {
-    const sy = appState.pediatrics.syrupDose as unknown as Record<string, any>;
+    const sy = appState.pediatrics.syrupDose;
     p.push(`${pCount}. Pediatrik Dozaj: ${sy.name || 'Şurup'}: ${sy.targetDoseMg || ''} mg tek doz (${sy.olcekText || ''}, ${sy.freq || ''}).`);
     pCount++;
   }
-  if (appState.pediatrics && appState.pediatrics.iron && ((appState.pediatrics.iron as unknown as Record<string, any>).prophylaxis?.eligible || (appState.pediatrics.iron as unknown as Record<string, any>).prophylaxisDose)) {
-    const ir = appState.pediatrics.iron as unknown as Record<string, any>;
-    const doseStr = ir.prophylaxis?.text ? `${ir.prophylaxis.mgDay} mg/gün (${ir.prophylaxis.text})` : (ir.prophylaxisDose || '');
+  if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.prophylaxis?.eligible) {
+    const ir = appState.pediatrics.iron;
+    const doseStr = ir.prophylaxis.text ? `${ir.prophylaxis.mgDay} mg/gün (${ir.prophylaxis.text})` : `${ir.prophylaxis.mgDay} mg/gün`;
     p.push(`${pCount}. Demir Takviyesi / Profilaksi: ${doseStr}`);
     pCount++;
   }
-  if (appState.pediatrics && appState.pediatrics.centor && (appState.pediatrics.centor as unknown as Record<string, any>).score >= 4) {
+  if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
     p.push(`${pCount}. Akılcı Antibiyotik Protokolü: AGBHS şüphesi nedeniyle Amoksisilin 50 mg/kg/gün (2 dozda, 10 gün) veya Penisilin V değerlendiriniz.`);
     pCount++;
   }
 
   // Yeni Plan & Tedavi Adımları (Aşama 2)
-  if (appState.nephroTox && (appState.nephroTox as unknown as Record<string, any>).paracetamol && (appState.nephroTox as unknown as Record<string, any>).paracetamol.isToxic && (appState.nephroTox as unknown as Record<string, any>).paracetamol.nacProtocol) {
-    const nac = (appState.nephroTox as unknown as Record<string, any>).paracetamol.nacProtocol;
+  if (appState.nephroTox && appState.nephroTox.paracetamol && appState.nephroTox.paracetamol.isToxic && appState.nephroTox.paracetamol.nacProtocol) {
+    const nac = appState.nephroTox.paracetamol.nacProtocol;
     p.push(`${pCount}. IV N-Asetilsistein (NAC) 21 Saatlik Protokolü${nac.isPediatricAdjusted ? ' (Pediatrik Sıvı Korumalı)' : ''}:`);
     p.push(`   - Faz 1 (Yükleme, 1. saat): ${nac.phase1.totalMg} mg (${nac.phase1.fluidD5W})`);
     p.push(`   - Faz 2 (4 saatlik infüzyon): ${nac.phase2.totalMg} mg (${nac.phase2.fluidD5W})`);
@@ -402,33 +399,33 @@ export function generateSOAP(): string {
     p.push(`   - ${nac.oralAlternative}`);
     pCount++;
   }
-  if (appState.nephroTox && (appState.nephroTox as unknown as Record<string, any>).osmolalGap && (appState.nephroTox as unknown as Record<string, any>).osmolalGap.isCriticalGap && (appState.nephroTox as unknown as Record<string, any>).osmolalGap.antidoteAdvice) {
-    const anti = (appState.nephroTox as unknown as Record<string, any>).osmolalGap.antidoteAdvice;
+  if (appState.nephroTox && appState.nephroTox.osmolalGap && appState.nephroTox.osmolalGap.isCriticalGap && appState.nephroTox.osmolalGap.antidoteAdvice) {
+    const anti = appState.nephroTox.osmolalGap.antidoteAdvice;
     p.push(`${pCount}. Toksik Alkol Zehirlenmesi Acil Protokolü:`);
     p.push(`   - ${anti.fomepizol}`);
     p.push(`   - ${anti.etanolAlternative}`);
     p.push(`   - ${anti.dialysisCriteria}`);
     pCount++;
   }
-  if (appState.nephroTox && (appState.nephroTox as unknown as Record<string, any>).curb65 && (appState.nephroTox as unknown as Record<string, any>).curb65.isValid) {
-    p.push(`${pCount}. Pnömoni Tedavi Planı (CURB-65: ${(appState.nephroTox as unknown as Record<string, any>).curb65.score}/5): ${(appState.nephroTox as unknown as Record<string, any>).curb65.treatmentSetting}`);
-    p.push(`   - ${(appState.nephroTox as unknown as Record<string, any>).curb65.empiricAntibiotic}`);
+  if (appState.nephroTox && appState.nephroTox.curb65 && appState.nephroTox.curb65.isValid) {
+    p.push(`${pCount}. Pnömoni Tedavi Planı (CURB-65: ${appState.nephroTox.curb65.score}/5): ${appState.nephroTox.curb65.treatmentSetting}`);
+    p.push(`   - ${appState.nephroTox.curb65.empiricAntibiotic}`);
     pCount++;
   }
-  if (appState.neonatology && (appState.neonatology as unknown as Record<string, any>).westleyCroup && (appState.neonatology as unknown as Record<string, any>).westleyCroup.score >= 3) {
-    p.push(`${pCount}. Krup Tedavisi: Tek doz Deksametazon 0.60 mg/kg oral/IM${(appState.neonatology as unknown as Record<string, any>).westleyCroup.score >= 6 ? ' + Nebülize L-Epinefrin 0.5 mL/kg (1:1000, maks 5 mL)' : ''}.`);
+  if (appState.neonatology && appState.neonatology.westleyCroup && appState.neonatology.westleyCroup.score >= 3) {
+    p.push(`${pCount}. Krup Tedavisi: Tek doz Deksametazon 0.60 mg/kg oral/IM${appState.neonatology.westleyCroup.score >= 6 ? ' + Nebülize L-Epinefrin 0.5 mL/kg (1:1000, maks 5 mL)' : ''}.`);
     pCount++;
   }
-  if (appState.neonatology && (appState.neonatology as unknown as Record<string, any>).cdsDehydration && (appState.neonatology as unknown as Record<string, any>).cdsDehydration.orsRecommendedMl) {
-    p.push(`${pCount}. Dehidratasyon Sıvı Protokolü: ${(appState.neonatology as unknown as Record<string, any>).cdsDehydration.orsRecommendedMl}`);
+  if (appState.neonatology && appState.neonatology.cdsDehydration && appState.neonatology.cdsDehydration.orsRecommendedMl) {
+    p.push(`${pCount}. Dehidratasyon Sıvı Protokolü: ${appState.neonatology.cdsDehydration.orsRecommendedMl}`);
     pCount++;
   }
-  if (appState.safetyPrescription && (appState.safetyPrescription as unknown as Record<string, any>).tripleWhammy && (appState.safetyPrescription as unknown as Record<string, any>).tripleWhammy.isTripleWhammy) {
+  if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
     p.push(`${pCount}. İlaç Güvenliği Eylemi: NSAİİ kesilmeli, analjezi için Parasetamol tercih edilmeli ve böbrek fonksiyonları (kreatinin, K+) kontrol edilmelidir.`);
     pCount++;
   }
   if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {
-    const drugsStr = appState.treatment.selectedDrugs.map((d: any) => (d as any).brand || (d as any).generic).join(', ');
+    const drugsStr = appState.treatment.selectedDrugs.map((d) => d.brand || d.generic).join(', ');
     p.push(`${pCount}. Reçete / Tedavi Protokolü: ${drugsStr}.`);
     pCount++;
   }

@@ -41,90 +41,157 @@ export interface PatientBiometry {
   egfr: number | null;
 }
 
+import type {
+  PercentilesResult,
+  TargetHeightResult,
+  CorrectedAgeResult,
+  PediatricBPResult,
+  CentorResult,
+  PediatricDoseResult,
+  PEWSResult,
+  GCSResult,
+  PediatricIronResult,
+  AlvaradoResult,
+  RansonResult,
+  ParklandResult,
+  SutureGuidance,
+  ObstetricsResult,
+  BishopResult,
+  PreeclampsiaResult,
+  BloodGasResult,
+  MaintenanceFluidResult,
+  NeonatalFluidResult,
+  SodiumCorrectionResult,
+  CalciumResult,
+  InfusionRateResult,
+  GIRResult,
+  SteroidConversionResult,
+  HOMAIRResult,
+  NEWS2Result,
+  QTcResult,
+  AxisResult,
+  WellsDVTResult,
+  WellsPTEResult,
+  PERCResult,
+  CHA2DS2VAScResult,
+  HASBLEDResult,
+  HEARTResult,
+  FENaResult,
+  FEUreaResult,
+  CorrectedSodiumResult,
+  OsmolalGapResult,
+  RumackMatthewResult,
+  CURB65Result,
+  BhutaniResult,
+  APGARResult,
+  WestleyCroupResult,
+  CDSDehydrationResult,
+  NeonatalWeightLossResult,
+  RenalDoseCheckResult,
+  TripleWhammyResult,
+  PregnancySafetyResult,
+  NeonatalDrugSafetyResult
+} from './engines';
+
+export interface SelectedDrugItem {
+  brand?: string;
+  brandName?: string;
+  name?: string;
+  generic?: string;
+  atc?: string;
+  atcCode?: string;
+  barcode?: string;
+  rx?: string;
+  company?: string;
+  kt?: string | null;
+  kub?: string | null;
+  [key: string]: unknown;
+}
+
 export interface AppState {
   biometry: PatientBiometry;
   pediatrics: {
     active: boolean;
-    percentiles: any;
-    targetHeight: any;
-    correctedAge: any;
-    bp: any;
-    centor: any;
-    vaccines: any;
-    syrupDose: any;
-    pews: any;
-    pgcs: any;
-    iron?: any;
+    percentiles: PercentilesResult | null;
+    targetHeight: TargetHeightResult | null;
+    correctedAge: CorrectedAgeResult | null;
+    bp: PediatricBPResult | null;
+    centor: CentorResult | null;
+    vaccines: string[] | null;
+    syrupDose: PediatricDoseResult | null;
+    pews: PEWSResult | null;
+    pgcs: GCSResult | null;
+    iron?: PediatricIronResult | null;
   };
   surgery: {
     active: boolean;
-    alvarado: any;
-    ranson: any;
-    parkland: any;
-    suture: any;
+    alvarado: AlvaradoResult | null;
+    ranson: RansonResult | null;
+    parkland: ParklandResult | null;
+    suture: SutureGuidance | null;
   };
   obgyn: {
     active: boolean;
-    eddData: any;
-    bishop: any;
-    preeclampsia: any;
+    eddData: ObstetricsResult | null;
+    bishop: BishopResult | null;
+    preeclampsia: PreeclampsiaResult | null;
   };
   medicine: {
     active: boolean;
-    bloodGas: any;
-    fluid: any;
-    neonatalFluid: any;
-    sodium: any;
-    calcium: any;
-    infusion: any;
-    gir: any;
-    steroid: any;
-    homaIR: any;
-    news2: any;
-    gcs: any;
+    bloodGas: BloodGasResult | null;
+    fluid: MaintenanceFluidResult | null;
+    neonatalFluid: NeonatalFluidResult | null;
+    sodium: SodiumCorrectionResult | null;
+    calcium: CalciumResult | null;
+    infusion: InfusionRateResult | null;
+    gir: GIRResult | null;
+    steroid: SteroidConversionResult | null;
+    homaIR: HOMAIRResult | null;
+    news2: NEWS2Result | null;
+    gcs: GCSResult | null;
   };
   other: {
     active: boolean;
-    cardiac: any;
-    axis?: any;
-    drugPrescription: any;
+    cardiac: QTcResult | null;
+    axis?: AxisResult | null;
+    drugPrescription: SelectedDrugItem[] | null;
   };
   thrombosis: {
     active: boolean;
-    wellsDVT: any;
-    wellsPTE: any;
-    perc: any;
-    cha2ds2vasc: any;
-    hasbled: any;
-    heart: any;
+    wellsDVT: WellsDVTResult | null;
+    wellsPTE: WellsPTEResult | null;
+    perc: PERCResult | null;
+    cha2ds2vasc: CHA2DS2VAScResult | null;
+    hasbled: HASBLEDResult | null;
+    heart: HEARTResult | null;
   };
   nephroTox: {
     active: boolean;
-    fena: any;
-    feurea: any;
-    correctedSodium: any;
-    osmolalGap: any;
-    paracetamol: any;
-    curb65: any;
+    fena: FENaResult | null;
+    feurea: FEUreaResult | null;
+    correctedSodium: CorrectedSodiumResult | null;
+    osmolalGap: OsmolalGapResult | null;
+    paracetamol: RumackMatthewResult | null;
+    curb65: CURB65Result | null;
   };
   neonatology: {
     active: boolean;
-    bhutani: any;
-    apgar: any;
-    westleyCroup: any;
-    cdsDehydration: any;
-    weightLoss: any;
+    bhutani: BhutaniResult | null;
+    apgar: APGARResult | null;
+    westleyCroup: WestleyCroupResult | null;
+    cdsDehydration: CDSDehydrationResult | null;
+    weightLoss: NeonatalWeightLossResult | null;
   };
   safetyPrescription: {
     active: boolean;
-    renalAdjustments: any;
-    tripleWhammy: any;
-    pregnancySafety: any;
-    neonatalDrugSafety: any;
-    selectedSafetyDrugs: any[];
+    renalAdjustments: RenalDoseCheckResult | null;
+    tripleWhammy: TripleWhammyResult | null;
+    pregnancySafety: PregnancySafetyResult | null;
+    neonatalDrugSafety: NeonatalDrugSafetyResult | null;
+    selectedSafetyDrugs: SelectedDrugItem[];
   };
   treatment?: {
     active?: boolean;
-    selectedDrugs?: any[];
+    selectedDrugs?: SelectedDrugItem[];
   };
 }

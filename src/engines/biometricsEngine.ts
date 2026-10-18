@@ -17,8 +17,9 @@ export function calculateBSA(heightCm: number | null | undefined, weightKg: numb
 }
 
 export function determineAgeGroup(ageValue: number | null | undefined, ageUnit: string | null | undefined): AgeGroupDefinition | null {
-    if (!ageValue || ageValue <= 0) return null;
+    if (ageValue === null || ageValue === undefined || isNaN(ageValue) || ageValue < 0) return null;
     if (!ageUnit || !['years', 'months', 'weeks', 'days'].includes(ageUnit)) return null;
+    if (ageValue === 0) return AGE_GROUPS.NEONATE;
 
     // 1. Gelen değeri matematiksel kıyaslama için aya çeviriyoruz
     let totalMonths = 0;
@@ -61,7 +62,7 @@ export function calculateEGFR(
     if (!ageYears || !gender) return null;
     
     // CKD-EPI 2021 for Adults
-    const isFemale = gender === 'F';
+    const isFemale = gender === 'F' || gender === 'female';
     const kappa = isFemale ? 0.7 : 0.9;
     const alpha = isFemale ? -0.241 : -0.302;
     

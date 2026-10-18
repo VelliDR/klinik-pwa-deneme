@@ -133,7 +133,8 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
             }
         } else if (ageMonths > 144) {
             // > 12 yaş
-            const cutoff = gender === 'male' && ageMonths >= 180 ? 13.0 : 12.0;
+            const isMale = gender === 'male' || gender === 'M';
+            const cutoff = isMale && ageMonths >= 180 ? 13.0 : 12.0;
             if (hemoglobin < cutoff) {
                 result.hbCategory = 'Patolojik Anemi';
                 result.hbEvaluation = { isAnemic: true, text: `Anemi (Hb ${hemoglobin} < ${cutoff.toFixed(1)} g/dL).`, badgeColor: 'rose' };

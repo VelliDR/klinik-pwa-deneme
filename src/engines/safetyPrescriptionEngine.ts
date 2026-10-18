@@ -156,11 +156,21 @@ export const RENAL_DRUG_DATABASE: RenalDrugEntry[] = [
   },
   {
     generic: 'clarithromycin',
-    aliases: ['klaritromisin', 'klacid', 'claricide', 'macrol', 'largopen'],
+    aliases: ['klaritromisin', 'klacid', 'claricide', 'macrol'],
     atcPrefix: 'J01FA09',
     name: 'Klaritromisin (Clarithromycin)',
     rules: [
       { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'eGFR < 30 mL/dk: Doz %50 azaltılmalıdır (Günde 250 mg veya şiddetli enfeksiyonda günde iki kez 250 mg).' }
+    ]
+  },
+  {
+    generic: 'amoxicillin',
+    aliases: ['amoksisilin', 'largopen', 'alfoxil', 'amoklavin', 'augmentin', 'klavunat', 'bioment'],
+    atcPrefix: 'J01CA04',
+    name: 'Amoksisilin (Amoxicillin)',
+    rules: [
+      { maxEgfr: 9, status: 'DOSE_REDUCTION', message: 'eGFR < 10 mL/dk: Doz aralığı 24 saate çıkarılmalıdır (250-500 mg / 24 saat). Yüksek doz ve uzatılmış salımlı formlardan kaçınılmalıdır.' },
+      { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'eGFR 10-29 mL/dk: Doz aralığı 12 saate çıkarılmalıdır (250-500 mg / 12 saat).' }
     ]
   }
 ];
@@ -191,7 +201,7 @@ const TRIPLE_WHAMMY_CLASSES = {
     label: 'NSAİİ (Non-Steroid Antiinflamatuar İlaç)',
     atcPrefixes: ['M01A'],
     keywords: [
-      'ibuprofen', 'naproxen', 'naproksen', 'diclofenac', 'diklofenak', 'meloxicam', 'meloksikam',
+      'ibuprofen', 'ibufen', 'naproxen', 'naproksen', 'diclofenac', 'diklofenak', 'meloxicam', 'meloksikam',
       'etodolac', 'etodolak', 'ketoprofen', 'dexketoprofen', 'deksketoprofen', 'flurbiprofen', 'celecoxib',
       'selekoksib', 'indomethacin', 'indometazin', 'arveles', 'apranax', 'voltaren', 'dolorex', 'majezik',
       'advil', 'nurofen', 'iprofen', 'tilcotil', 'bi-profenid'
@@ -242,7 +252,7 @@ const PREGNANCY_RISK_DATABASE = [
   {
     category: 'D',
     name: 'NSAİİ\'ler (3. Trimesterde İbuprofen, Diklofenak vb.)',
-    keywords: ['ibuprofen', 'naproxen', 'naproksen', 'diclofenac', 'diklofenak', 'dexketoprofen', 'deksketoprofen', 'ketoprofen', 'etodolac', 'etodolak', 'meloxicam', 'meloksikam', 'flurbiprofen', 'celecoxib', 'selekoksib', 'arveles', 'apranax', 'voltaren', 'dolorex', 'majezik'],
+    keywords: ['ibuprofen', 'ibufen', 'naproxen', 'naproksen', 'diclofenac', 'diklofenak', 'dexketoprofen', 'deksketoprofen', 'ketoprofen', 'etodolac', 'etodolak', 'meloxicam', 'meloksikam', 'flurbiprofen', 'celecoxib', 'selekoksib', 'indomethacin', 'indometazin', 'arveles', 'apranax', 'voltaren', 'dolorex', 'majezik'],
     warning: '3. TRİMESTERDE KONTRENDİKE (≥28. Hafta). Fetal duktus arteriozusun erken kapanması, pulmoner hipertansiyon ve oligohidramniyoz riski.'
   },
   {
@@ -254,13 +264,16 @@ const PREGNANCY_RISK_DATABASE = [
 ];
 
 /**
- * Metin normalizasyonu (Türkçe karakter ve küçük harf)
+ * Metin normalizasyonu (Türkçe büyük İ/I ve küçük harf uyumlu)
  */
 function normalizeStr(str: unknown): string {
   if (!str) return '';
   return String(str)
     .trim()
-    .toLowerCase()
+    .replace(/İ/g, 'i')
+    .replace(/I/g, 'ı')
+    .toLocaleLowerCase('tr-TR')
+    .normalize('NFC')
     .replace(/ğ/g, 'g')
     .replace(/ü/g, 'u')
     .replace(/ş/g, 's')
@@ -492,12 +505,17 @@ export function checkPregnancySafety(
           isRelevant = false;
         }
 
+        const isCatX = entry.category.includes('X');
+        const warningText = (!isRelevant && entry.name.includes('3. Trimesterde'))
+          ? `1. ve 2. Trimesterde yalnızca zorunluysa en düşük etkin dozda kullanılmalıdır. ${entry.warning}`
+          : entry.warning;
+
         alerts.push({
           drugName: entry.name,
           userDrug: name,
           category: entry.category,
-          warning: entry.warning,
-          isHighRisk: entry.category === 'X' || (entry.category === 'D' && isRelevant)
+          warning: warningText,
+          isHighRisk: isCatX || (entry.category.includes('D') && isRelevant)
         });
       }
     }
@@ -506,7 +524,7 @@ export function checkPregnancySafety(
   return {
     totalChecked: drugs.length,
     alertsCount: alerts.length,
-    hasSevereFetalRisk: alerts.some(a => a.category === 'X'),
+    hasSevereFetalRisk: alerts.some(a => a.category.includes('X')),
     alerts
   };
 }

@@ -180,8 +180,8 @@ export function classifyPediatricBP({
     dbp: number | null | undefined; 
 }): PediatricBPResult | null {
     if (!sbp || !dbp || sbp <= 0 || dbp <= 0 || ageYears === null || ageYears === undefined || isNaN(sbp) || isNaN(dbp)) return null;
-    const isMale = gender !== 'female';
-    const sex: 'male' | 'female' = isMale ? 'male' : 'female';
+    const isFemale = gender === 'female' || gender === 'F';
+    const sex: 'male' | 'female' = isFemale ? 'female' : 'male';
 
     // 13 yaş ve üzeri adolesanlarda yetişkin kılavuz eşikleri geçerlidir
     if (ageYears >= 13) {

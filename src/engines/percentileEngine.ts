@@ -111,8 +111,8 @@ const NEYZI_2015_DATA = {
     }
 };
 
-function getGrowthNorms(totalMonths: number, gender: 'male' | 'female' = 'male') {
-    const sex = gender === 'female' ? 'female' : 'male';
+function getGrowthNorms(totalMonths: number, gender: 'male' | 'female' | string = 'male') {
+    const sex = (gender === 'female' || gender === 'F') ? 'female' : 'male';
     const data = NEYZI_2015_DATA[sex];
     const m = Math.min(216, Math.max(0, totalMonths));
 
@@ -183,7 +183,7 @@ export function calculatePercentiles({
 }: PercentilesInput): PercentilesResult | null {
     const effectiveMonths = (ageMonths !== undefined && ageMonths !== null) ? ageMonths : totalMonths;
     if (effectiveMonths === null || effectiveMonths === undefined || isNaN(effectiveMonths)) return null;
-    const sex: 'male' | 'female' = gender === 'female' ? 'female' : 'male';
+    const sex: 'male' | 'female' = (gender === 'female' || gender === 'F') ? 'female' : 'male';
     const norms = getGrowthNorms(effectiveMonths, sex);
 
     let heightZ: number | null = null;

@@ -7,11 +7,14 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'data/medicines.json', 'data/titck_skrs_prospektuslu.json'],
+      manifestFilename: 'manifest.json',
+      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'data/medicines.json'],
       manifest: {
         name: 'Klinik Karar Destek Asistanı',
         short_name: 'KlinikPWA',
         description: 'Çevrimdışı Klinik Anamnez, Dozaj ve Triyaj Asistanı',
+        start_url: './index.html',
+        scope: './',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
@@ -21,18 +24,31 @@ export default defineConfig({
             src: 'icons/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'icons/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
           },
           {
             src: 'icons/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globIgnores: ['**/titck_skrs_prospektuslu.json'],
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
         runtimeCaching: [
           {

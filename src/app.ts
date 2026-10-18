@@ -18,7 +18,7 @@ import { calculateInfusionRate, calculateGIR } from './engines/infusionEngine';
 import { convertSteroids, calculateHOMAIR } from './engines/endocrineEngine';
 import { generateSOAP } from './utils/soapGenerator';
 import { ensureDrugCatalogReady, isDrugCatalogReady, searchDrugsInDB } from './db/titckIndexedDB';
-import { getDrugBadgesHTML } from './drugEngine';
+import { getDrugBadgesHTML, findEquivalents } from './drugEngine';
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine';
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from './engines/neonatologyEngine';
@@ -42,8 +42,18 @@ declare global {
 }
 
 // ----------------------------------------------------------------------------
-// Type-Safe DOM & Number Helpers
+// Type-Safe DOM, Escaping & Number Helpers
 // ----------------------------------------------------------------------------
+const escapeHtml = (val: unknown): string => {
+    if (val === null || val === undefined) return '';
+    return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
 const parseNum = (val: unknown): number | null => {
     if (val === null || val === undefined || val === '') return null;
     const num = Number(val);
@@ -428,9 +438,9 @@ export function updateAllTabs(): void {
             weightLossEl.innerHTML = `
                 <div class="flex items-center justify-between font-bold">
                     <span>⚖️ ${wl.interpretation}</span>
-                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-black/40 font-sans">${wl.percentLoss > 0 ? '%' + wl.percentLoss + ' Kayıp' : 'Kazanç'}</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-black/40 font-sans">${(wl.percentLoss ?? 0) > 0 ? '%' + wl.percentLoss + ' Kayıp' : 'Kazanç'}</span>
                 </div>
-                <div class="text-[9px] text-slate-300 leading-tight pt-0.5">${wl.recommendations[0] || ''}</div>
+                <div class="text-[9px] text-slate-300 leading-tight pt-0.5">${wl.recommendations?.[0] || ''}</div>
             `;
         } else if (weightLossEl) {
             weightLossEl.classList.add('hidden');
@@ -505,7 +515,7 @@ export function updateAllTabs(): void {
             let thHtml = `<div><strong>Hedef Boy:</strong> ${th.targetHeightCm} cm <span class="text-slate-400">(${th.targetRangeCm})</span></div>`;
             thHtml += `<div><strong>Genetik Potansiyel Persentili:</strong> %${th.targetPercentile} (Z: ${th.targetZ})</div>`;
             if (th.deviationAlert) {
-                thHtml += `<div class="${th.deviationValue < -1.5 ? 'text-rose-400 font-bold' : 'text-sky-400'} pt-1 border-t border-slate-800">${th.deviationAlert}</div>`;
+                thHtml += `<div class="${(th.deviationValue ?? 0) < -1.5 ? 'text-rose-400 font-bold' : 'text-sky-400'} pt-1 border-t border-slate-800">${th.deviationAlert}</div>`;
             }
             targetHContainer.innerHTML = thHtml;
         } else if (targetHContainer) {
@@ -532,11 +542,13 @@ export function updateAllTabs(): void {
     const ironRes = getEl('output-iron-engine');
     
     if (totalMonths !== null && appState.biometry.weightKg) {
+        const ironGender = (appState.biometry.gender === 'female' || appState.biometry.gender === 'F') ? 'female' : 'male';
         appState.pediatrics.iron = calculatePediatricIron({
             ageMonths: totalMonths,
             isPreterm: isPreterm,
             hb: hb,
-            weightKg: appState.biometry.weightKg
+            weightKg: appState.biometry.weightKg,
+            gender: ironGender
         });
         const ir = appState.pediatrics.iron;
         if (ir && ir.status === 'SUCCESS' && ironRes) {
@@ -589,11 +601,16 @@ export function updateAllTabs(): void {
     const syrupRes = getEl('output-ped-syrup');
     if (syrupVal && syrupRes) {
         if (appState.biometry.weightKg) {
-            appState.pediatrics.syrupDose = calculatePediatricDose(appState.biometry.weightKg, syrupVal);
-            syrupRes.classList.remove('hidden');
-            syrupRes.innerHTML = `<strong>Doz:</strong> ${appState.pediatrics.syrupDose.targetDoseMg} mg<br>
-                               <strong>Hacim:</strong> ${appState.pediatrics.syrupDose.volumeMl} ml<br>
-                               <strong>Ölçek:</strong> ${appState.pediatrics.syrupDose.olcekText} (${appState.pediatrics.syrupDose.freq})`;
+            const syrupDose = calculatePediatricDose(appState.biometry.weightKg, syrupVal);
+            appState.pediatrics.syrupDose = syrupDose;
+            if (syrupDose) {
+                syrupRes.classList.remove('hidden');
+                syrupRes.innerHTML = `<strong>Doz:</strong> ${syrupDose.targetDoseMg} mg<br>
+                                   <strong>Hacim:</strong> ${syrupDose.volumeMl} ml<br>
+                                   <strong>Ölçek:</strong> ${syrupDose.olcekText} (${syrupDose.freq})`;
+            } else {
+                syrupRes.classList.add('hidden');
+            }
         } else {
             syrupRes.classList.remove('hidden');
             syrupRes.innerHTML = `⚠️ Lütfen hesaplama için Kilo giriniz.`;
@@ -639,7 +656,7 @@ export function updateAllTabs(): void {
         const pedAgeY = y !== null ? y : (m ? m / 12 : 5);
         appState.pediatrics.bp = classifyPediatricBP({
             ageYears: pedAgeY,
-            gender: appState.biometry.gender || 'M',
+            gender: (appState.biometry.gender === 'female' || appState.biometry.gender === 'F') ? 'female' : 'male',
             sbp: nSbp,
             dbp: nDbp
         });
@@ -657,26 +674,28 @@ export function updateAllTabs(): void {
     }
     
     if (totalMonths !== null && totalMonths < 192 && pewsB !== null && pewsC !== null && pewsR !== null) {
-        appState.pediatrics.pews = calculatePEWS(pewsB, pewsC, pewsR);
-        if (riskContainer && badgeRiskType && textRiskScore && flagContainer) {
+        const pewsRes = calculatePEWS(pewsB, pewsC, pewsR);
+        appState.pediatrics.pews = pewsRes;
+        if (pewsRes && riskContainer && badgeRiskType && textRiskScore && flagContainer) {
             riskContainer.classList.remove('hidden');
-            riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${appState.pediatrics.pews.score >= 3 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-emerald-950/40 border-emerald-600/50'}`;
+            riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${pewsRes.score >= 3 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-emerald-950/40 border-emerald-600/50'}`;
             badgeRiskType.textContent = 'PEWS';
-            badgeRiskType.className = `text-xs font-bold font-mono ${appState.pediatrics.pews.score >= 3 ? 'text-rose-400' : 'text-emerald-400'}`;
-            textRiskScore.textContent = `Skor: ${appState.pediatrics.pews.score}`;
-            flagContainer.innerHTML = appState.pediatrics.pews.recommendation;
+            badgeRiskType.className = `text-xs font-bold font-mono ${pewsRes.score >= 3 ? 'text-rose-400' : 'text-emerald-400'}`;
+            textRiskScore.textContent = `Skor: ${pewsRes.score}`;
+            flagContainer.innerHTML = pewsRes.recommendation;
         }
         appState.medicine.news2 = null;
     } else if (nHr !== null && nSbp !== null && nRr !== null && nTemp !== null && nSpo2 !== null) {
         // PARAMETRE SIRASI: calculateNEWS2(hr, sbp, rr, temp, spo2, oxygen, avpu)
-        appState.medicine.news2 = calculateNEWS2(nHr, nSbp, nRr, nTemp, nSpo2, nOx, nAvpu);
-        if (riskContainer && badgeRiskType && textRiskScore && flagContainer) {
+        const news2Res = calculateNEWS2(nHr, nSbp, nRr, nTemp, nSpo2, nOx, nAvpu);
+        appState.medicine.news2 = news2Res;
+        if (news2Res && riskContainer && badgeRiskType && textRiskScore && flagContainer) {
             riskContainer.classList.remove('hidden');
-            riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${appState.medicine.news2.score >= 5 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-slate-800 border-slate-700/50'}`;
+            riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${news2Res.score >= 5 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-slate-800 border-slate-700/50'}`;
             badgeRiskType.textContent = 'NEWS2';
-            badgeRiskType.className = `text-xs font-bold font-mono ${appState.medicine.news2.score >= 5 ? 'text-rose-400' : 'text-slate-300'}`;
-            textRiskScore.textContent = `Skor: ${appState.medicine.news2.score}`;
-            flagContainer.innerHTML = `${appState.medicine.news2.risk} — ${appState.medicine.news2.recommendation}`;
+            badgeRiskType.className = `text-xs font-bold font-mono ${news2Res.score >= 5 ? 'text-rose-400' : 'text-slate-300'}`;
+            textRiskScore.textContent = `Skor: ${news2Res.score}`;
+            flagContainer.innerHTML = `${news2Res.risk} — ${news2Res.recommendation}`;
         }
         appState.pediatrics.pews = null;
     } else {
@@ -691,9 +710,14 @@ export function updateAllTabs(): void {
     const gcsM = getNum('select-gcs-m');
     const gRes = getEl('container-gcs-warnings');
     if (gcsE && gcsV && gcsM && gRes) {
-        appState.medicine.gcs = calculateGCS(gcsE, gcsV, gcsM);
-        gRes.classList.remove('hidden');
-        gRes.innerHTML = `GCS: ${appState.medicine.gcs.total} (${appState.medicine.gcs.interpretation}) <br> <span class="text-rose-400">${appState.medicine.gcs.airwayRisk || ''}</span>`;
+        const gcsVal = calculateGCS(gcsE, gcsV, gcsM);
+        appState.medicine.gcs = gcsVal;
+        if (gcsVal) {
+            gRes.classList.remove('hidden');
+            gRes.innerHTML = `GCS: ${gcsVal.total} (${gcsVal.interpretation}) <br> <span class="text-rose-400">${gcsVal.airwayRisk || ''}</span>`;
+        } else {
+            gRes.classList.add('hidden');
+        }
     } else {
         appState.medicine.gcs = null;
         if (gRes) gRes.classList.add('hidden');
@@ -710,12 +734,13 @@ export function updateAllTabs(): void {
         leukocytosis: getChk('chk-alv-leu'),
         leftShift: getChk('chk-alv-shi')
     };
-    appState.surgery.alvarado = calculateAlvarado(alvParams);
+    const alvVal = calculateAlvarado(alvParams);
+    appState.surgery.alvarado = alvVal;
     const alvRes = getEl('output-alvarado');
     if (alvRes) {
-        if (appState.surgery.alvarado.score > 0) {
+        if (alvVal && alvVal.score > 0) {
             alvRes.classList.remove('hidden');
-            alvRes.textContent = `Skor: ${appState.surgery.alvarado.score}/10 (${appState.surgery.alvarado.risk}). ${appState.surgery.alvarado.recommendation}`;
+            alvRes.textContent = `Skor: ${alvVal.score}/10 (${alvVal.risk}). ${alvVal.recommendation}`;
         } else {
             alvRes.classList.add('hidden');
         }
@@ -724,11 +749,16 @@ export function updateAllTabs(): void {
     const tbsa = getNum('input-parkland-tbsa');
     const pkRes = getEl('output-parkland');
     if (tbsa && appState.biometry.weightKg && pkRes) {
-        appState.surgery.parkland = calculateParkland(appState.biometry.weightKg, tbsa, appState.biometry.ageYears || undefined);
-        pkRes.classList.remove('hidden');
-        pkRes.innerHTML = `<strong>Total (24s):</strong> ${appState.surgery.parkland.totalVolume} mL <span class="text-[9px] text-slate-400">(ATLS 10. Baskı: ${appState.surgery.parkland.multiplierUsed}mL/kg)</span><br>
-                           <strong>İlk 8 Saat:</strong> ${appState.surgery.parkland.first8HrsVolume} mL (${appState.surgery.parkland.first8HrsRate} mL/s)<br>
-                           <strong>Kalan 16 Saat:</strong> ${appState.surgery.parkland.next16HrsVolume} mL (${appState.surgery.parkland.next16HrsRate} mL/s)`;
+        const pkVal = calculateParkland(appState.biometry.weightKg, tbsa, appState.biometry.ageYears || undefined);
+        appState.surgery.parkland = pkVal;
+        if (pkVal) {
+            pkRes.classList.remove('hidden');
+            pkRes.innerHTML = `<strong>Total (24s):</strong> ${pkVal.totalVolume} mL <span class="text-[9px] text-slate-400">(ATLS 10. Baskı: ${pkVal.multiplierUsed}mL/kg)</span><br>
+                               <strong>İlk 8 Saat:</strong> ${pkVal.first8HrsVolume} mL (${pkVal.first8HrsRate} mL/s)<br>
+                               <strong>Kalan 16 Saat:</strong> ${pkVal.next16HrsVolume} mL (${pkVal.next16HrsRate} mL/s)`;
+        } else {
+            pkRes.classList.add('hidden');
+        }
     } else {
         appState.surgery.parkland = null;
         if (pkRes) pkRes.classList.add('hidden');
@@ -737,11 +767,16 @@ export function updateAllTabs(): void {
     const sutureLoc = getVal('select-suture-loc');
     const sutureRes = getEl('output-suture');
     if (sutureLoc && sutureRes) {
-        appState.surgery.suture = getSutureGuidance(sutureLoc);
-        sutureRes.classList.remove('hidden');
-        sutureRes.innerHTML = `<strong>Materyal:</strong> ${appState.surgery.suture.material}<br>
-                               <strong>Boyut:</strong> ${appState.surgery.suture.size}<br>
-                               <strong>Alınma:</strong> ${appState.surgery.suture.removalDays}`;
+        const sutureVal = getSutureGuidance(sutureLoc);
+        appState.surgery.suture = sutureVal;
+        if (sutureVal) {
+            sutureRes.classList.remove('hidden');
+            sutureRes.innerHTML = `<strong>Materyal:</strong> ${sutureVal.material}<br>
+                                   <strong>Boyut:</strong> ${sutureVal.size}<br>
+                                   <strong>Alınma:</strong> ${sutureVal.removalDays}`;
+        } else {
+            sutureRes.classList.add('hidden');
+        }
     } else {
         appState.surgery.suture = null;
         if (sutureRes) sutureRes.classList.add('hidden');
@@ -751,9 +786,14 @@ export function updateAllTabs(): void {
     const lmp = getVal('input-lmp');
     const eddRes = getEl('output-edd');
     if (lmp && eddRes) {
-        appState.obgyn.eddData = calculateObstetrics(lmp);
-        eddRes.classList.remove('hidden');
-        eddRes.innerHTML = `GH: ${appState.obgyn.eddData.gestationalAge} | TDT: ${appState.obgyn.eddData.edd}`;
+        const eddVal = calculateObstetrics(lmp);
+        appState.obgyn.eddData = eddVal;
+        if (eddVal) {
+            eddRes.classList.remove('hidden');
+            eddRes.innerHTML = `GH: ${eddVal.gestationalAge} | TDT: ${eddVal.edd}`;
+        } else {
+            eddRes.classList.add('hidden');
+        }
     } else {
         appState.obgyn.eddData = null;
         if (eddRes) eddRes.classList.add('hidden');
@@ -766,9 +806,14 @@ export function updateAllTabs(): void {
     const bPos = getNum('input-bishop-pos');
     const bRes = getEl('output-bishop');
     if (bDil !== null && bEff !== null && bSta !== null && bCon !== null && bPos !== null && bRes) {
-        appState.obgyn.bishop = calculateBishop(bDil, bEff, bSta, bCon, bPos);
-        bRes.classList.remove('hidden');
-        bRes.textContent = `Skor: ${appState.obgyn.bishop.score}. ${appState.obgyn.bishop.interpretation}`;
+        const bishopVal = calculateBishop(bDil, bEff, bSta, bCon, bPos);
+        appState.obgyn.bishop = bishopVal;
+        if (bishopVal) {
+            bRes.classList.remove('hidden');
+            bRes.textContent = `Skor: ${bishopVal.score}. ${bishopVal.interpretation}`;
+        } else {
+            bRes.classList.add('hidden');
+        }
     } else {
         appState.obgyn.bishop = null;
         if (bRes) bRes.classList.add('hidden');
@@ -779,17 +824,20 @@ export function updateAllTabs(): void {
     const prePro = getChk('chk-pre-pro');
     const preSym = getChk('chk-pre-sym');
     const preRes = getEl('output-pre');
-    if (preSbp !== null && preDbp !== null && appState.biometry.gender !== 'male' && preRes) {
+    const isFemalePatient = appState.biometry.gender === 'female' || appState.biometry.gender === 'F';
+    const hasObgynContext = Boolean(appState.obgyn.eddData) || prePro || preSym;
+    if (preSbp !== null && preDbp !== null && isFemalePatient && hasObgynContext && preRes) {
         const symptoms = preSym ? ['symptom'] : [];
         appState.obgyn.preeclampsia = calculatePreeclampsia(preSbp, preDbp, prePro, symptoms);
-        if (appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+        if (appState.obgyn.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
             preRes.classList.remove('hidden');
             preRes.innerHTML = `${appState.obgyn.preeclampsia.diagnosis}<br><span class="text-xs text-rose-300 font-normal">${appState.obgyn.preeclampsia.alert || ''}</span>`;
         } else {
             preRes.classList.add('hidden');
         }
-    } else if (preRes) {
-        preRes.classList.add('hidden');
+    } else {
+        appState.obgyn.preeclampsia = null;
+        if (preRes) preRes.classList.add('hidden');
     }
 
     // NEONATOLOGY: Bhutani Sarılık (TND / AAP) - Sıvı Kademesi Öncesi Hesaplanır
@@ -866,9 +914,12 @@ export function updateAllTabs(): void {
     } else if (appState.biometry.weightKg) {
         if (neoFluidBanner) neoFluidBanner.classList.add('hidden');
         appState.medicine.neonatalFluid = null;
-        appState.medicine.fluid = calculateMaintenanceFluid(appState.biometry.weightKg, fTemp || undefined);
-        if (outDailyFluid) outDailyFluid.textContent = `${appState.medicine.fluid.dailyVolume} mL`;
-        if (outHourlyFluid) outHourlyFluid.textContent = `${appState.medicine.fluid.hourlyRate} mL/s`;
+        const maintFluid = calculateMaintenanceFluid(appState.biometry.weightKg, fTemp || undefined);
+        appState.medicine.fluid = maintFluid;
+        if (maintFluid) {
+            if (outDailyFluid) outDailyFluid.textContent = `${maintFluid.dailyVolume} mL`;
+            if (outHourlyFluid) outHourlyFluid.textContent = `${maintFluid.hourlyRate} mL/s`;
+        }
     } else {
         if (neoFluidBanner) neoFluidBanner.classList.add('hidden');
         appState.medicine.neonatalFluid = null;
@@ -895,7 +946,7 @@ export function updateAllTabs(): void {
     // Sodium
     const ionNa = getNum('input-serum-na');
     const parsedTargetDrop = getNum('input-target-na-change');
-    const targetNaDrop = parsedTargetDrop !== null ? parsedTargetDrop : 8;
+    const targetNaDelta = parsedTargetDrop !== null ? Math.abs(parsedTargetDrop) : 8;
     const outNaDeficit = getEl('output-na-deficit');
 
     if (ionNa !== null && appState.biometry.weightKg && appState.biometry.gender) {
@@ -903,15 +954,17 @@ export function updateAllTabs(): void {
         const ageYears = appState.biometry.ageYears || 30; // fallback
         const tbwFraction = isMale ? (ageYears > 65 ? 0.5 : 0.6) : (ageYears > 65 ? 0.45 : 0.5);
         
-        const targetNa = ionNa + targetNaDrop;
+        const targetNa = ionNa < 135
+            ? ionNa + targetNaDelta
+            : (ionNa > 145 ? ionNa - targetNaDelta : ionNa);
         
         const naObj = calculateSodiumCorrection(ionNa, targetNa, appState.biometry.weightKg, tbwFraction);
         appState.medicine.sodium = naObj;
         if (naObj) {
             if (outNaDeficit) outNaDeficit.textContent = `${naObj.deficit.toFixed(0)} mEq`;
             if (naObj.warning) warnings.push(naObj.warning);
-            warnings.push(`1L %3 NaCl: +${naObj.deltaNa3Percent.toFixed(1)} mEq artırır`);
-            warnings.push(`1L %0.9 NaCl: +${naObj.deltaNa09Percent.toFixed(1)} mEq artırır`);
+            warnings.push(`1L %3 NaCl: ${naObj.deltaNa3Percent >= 0 ? '+' : ''}${naObj.deltaNa3Percent.toFixed(1)} mEq değiştirir`);
+            warnings.push(`1L %0.9 NaCl: ${naObj.deltaNa09Percent >= 0 ? '+' : ''}${naObj.deltaNa09Percent.toFixed(1)} mEq değiştirir`);
         }
     } else {
         appState.medicine.sodium = null;
@@ -933,17 +986,23 @@ export function updateAllTabs(): void {
     const hco3 = getNum('input-bg-hco3');
     const bgRes = getEl('container-bg-warnings');
     if (ph && pco2 && hco3 && bgRes) {
-        appState.medicine.bloodGas = analyzeBloodGas({
+        const bgAnalysis = analyzeBloodGas({
             pH: ph, 
             pCO2: pco2, 
             HCO3: hco3, 
             Na: getNum('input-bg-na') ?? undefined, 
             Cl: getNum('input-bg-cl') ?? undefined, 
             Albumin: getNum('input-albumin') ?? undefined, 
-            sampleType: (getVal('select-bg-type') as 'arterial' | 'venous') || 'arterial'
+            sampleType: (getVal('select-bg-type') as 'ABG' | 'VBG') || 'ABG'
         });
-        bgRes.classList.remove('hidden');
-        bgRes.innerHTML = `${appState.medicine.bloodGas.primaryDisorder}<br><span class="text-xs text-slate-400">${appState.medicine.bloodGas.compensationText || ''}</span>`;
+        appState.medicine.bloodGas = bgAnalysis;
+        if (bgAnalysis) {
+            bgRes.classList.remove('hidden');
+            const agHtml = bgAnalysis.corrected_AG !== null
+                ? `<br><span class="text-[10px] text-amber-300">Anyon Açığı (AG): ${bgAnalysis.AG?.toFixed(1)}${bgAnalysis.hasAlbumin ? ` (Düz. AG: ${bgAnalysis.corrected_AG.toFixed(1)})` : ''}${bgAnalysis.deltaRatio !== null ? ` | Δ/Δ: ${bgAnalysis.deltaRatio}` : ''} — ${bgAnalysis.hagmaStatus}</span>`
+                : '';
+            bgRes.innerHTML = `<strong>${bgAnalysis.primaryDisorder}</strong>${bgAnalysis.compensationText ? `<br><span class="text-xs text-slate-300">${bgAnalysis.compensationText}</span>` : ''}${agHtml}`;
+        }
     } else {
         appState.medicine.bloodGas = null;
         if (bgRes) bgRes.classList.add('hidden');
@@ -953,6 +1012,7 @@ export function updateAllTabs(): void {
     const infDose = getNum('input-inf-dose');
     const infMg = getNum('input-inf-mg');
     const infVol = getNum('input-inf-vol');
+    const infUnit = (getVal('select-inf-unit') as 'mcg_kg_min' | 'mcg_min' | 'mg_kg_hr') || 'mcg_kg_min';
     const outInfRate = getEl('output-infusion-rate');
     if (infDose !== null && infMg !== null && infVol !== null && appState.biometry.weightKg) {
         const infObj = calculateInfusionRate({
@@ -960,7 +1020,7 @@ export function updateAllTabs(): void {
             totalVolumeMl: infVol,
             weightKg: appState.biometry.weightKg,
             targetDose: infDose,
-            doseUnit: 'mcg_kg_min'
+            doseUnit: infUnit
         });
         appState.medicine.infusion = infObj;
         if (infObj && outInfRate) {
@@ -1627,9 +1687,8 @@ export function updateAllTabs(): void {
         chkCurb65El.checked = appState.biometry.ageYears >= 65;
     }
     const chkCurbUEl = getEl<HTMLInputElement>('chk-curb-u');
-    if (chkCurbUEl && feureaSBun) {
-        if (feureaUnit === 'bun' && feureaSBun > 19) chkCurbUEl.checked = true;
-        if (feureaUnit === 'urea' && feureaSBun > 42) chkCurbUEl.checked = true;
+    if (chkCurbUEl && feureaSBun !== null) {
+        chkCurbUEl.checked = (feureaUnit === 'bun' && feureaSBun > 19) || (feureaUnit === 'urea' && feureaSBun > 42);
     }
 
     const curbC = getChk('chk-curb-c');
@@ -1638,8 +1697,9 @@ export function updateAllTabs(): void {
     const curbB = getChk('chk-curb-b');
     const curb65 = getChk('chk-curb-65');
     const curbOut = getEl('output-curb65');
+    const hasClinicalCurbFindings = curbC || curbU || curbR || curbB;
 
-    if (curbC || curbU || curbR || curbB || curb65) {
+    if (hasClinicalCurbFindings || curb65) {
         const curbRes = calculateCURB65({
             confusion: curbC,
             bunOver19: curbU,
@@ -1647,7 +1707,8 @@ export function updateAllTabs(): void {
             hypotension: curbB,
             ageGte65: curb65
         });
-        appState.nephroTox.curb65 = curbRes;
+        // Yalnızca yaş >= 65 olduğu için pnömoni bulgusu olmayan her hastanın SOAP epikrizine antibiyotik eklenmesini önle
+        appState.nephroTox.curb65 = hasClinicalCurbFindings ? curbRes : null;
         if (curbOut) {
             renderClinicalCardResult(curbOut, {
                 title: `CURB-65: ${curbRes.score}/5 | CRB-65: ${curbRes.crbScore}/4`,
@@ -1673,6 +1734,7 @@ export function updateAllTabs(): void {
     const aReflex = getNum('select-apgar-reflex') ?? 2;
     const aColor = getNum('select-apgar-color') ?? 2;
     const apgarOut = getEl('output-apgar-result');
+    const isApgarModified = aMin !== 1 || aHr !== 2 || aResp !== 2 || aTone !== 2 || aReflex !== 2 || aColor !== 2;
 
     const apgarRes = calculateAPGAR({
         minute: aMin,
@@ -1682,7 +1744,8 @@ export function updateAllTabs(): void {
         reflexIrritability: aReflex,
         color: aColor
     });
-    appState.neonatology.apgar = apgarRes;
+    // Erişkin/çocuk hastalarda varsayılan APGAR 10/10 değerinin otomatik olarak SOAP epikrizine yazılmasını önle
+    appState.neonatology.apgar = (isNeonate || isApgarModified) ? apgarRes : null;
     if (apgarOut) {
         renderClinicalCardResult(apgarOut, {
             title: `APGAR (${apgarRes.minute}. Dakika): ${apgarRes.score}/10`,
@@ -1891,9 +1954,19 @@ export function updateAllTabs(): void {
 // ----------------------------------------------------------------------------
 // Event Listeners for Input & Change
 // ----------------------------------------------------------------------------
+const NON_CLINICAL_INPUT_IDS = new Set(['input-drug-search', 'input-custom-pack-name', 'input-custom-pack-icon']);
+
 if (typeof document !== 'undefined') {
-    document.addEventListener('input', updateAllTabs);
-    document.addEventListener('change', updateAllTabs);
+    document.addEventListener('input', (e: Event) => {
+        const targetId = (e.target as HTMLElement | null)?.id;
+        if (targetId && NON_CLINICAL_INPUT_IDS.has(targetId)) return;
+        updateAllTabs();
+    });
+    document.addEventListener('change', (e: Event) => {
+        const targetId = (e.target as HTMLElement | null)?.id;
+        if (targetId && NON_CLINICAL_INPUT_IDS.has(targetId)) return;
+        updateAllTabs();
+    });
 }
 
 // Initial Call
@@ -1907,8 +1980,102 @@ const drugInput = getEl<HTMLInputElement>('input-drug-search');
 const drugResult = getEl('container-search-results');
 
 let currentDrugSearchSeq = 0;
+let drugSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 if (drugInput) {
-    drugInput.addEventListener('input', async (e: Event) => {
+    const executeDrugSearch = async (q: string) => {
+        if (!drugResult) return;
+        if (q.length < 2) {
+            drugResult.innerHTML = '';
+            drugResult.classList.add('hidden');
+            return;
+        }
+
+        const thisSeq = ++currentDrugSearchSeq;
+
+        if (!isDrugCatalogReady()) {
+            drugResult.classList.remove('hidden');
+            drugResult.innerHTML = '<div class="p-3 text-xs text-sky-400 bg-slate-900 text-center rounded flex items-center justify-center gap-2"><span class="inline-block animate-pulse">⏳</span> <span>TİTCK İlaç Kataloğu hazırlanıyor, aranıyor...</span></div>';
+        }
+
+        try {
+            const res = await searchDrugsInDB(q);
+            if (thisSeq !== currentDrugSearchSeq) return;
+
+            if (res && res.length > 0) {
+                drugResult.classList.remove('hidden');
+                drugResult.innerHTML = res.map((r: any) => {
+                        const ktUrl = r.kt_pdf_prospektus_url || r.kt || '';
+                        const kubUrl = r.kub_pdf_url || r.kub || '';
+                        const rxBorder = r.prescriptionType === 'Kırmızı' ? 'border-red-500' :
+                                         r.prescriptionType === 'Yeşil' ? 'border-emerald-500' :
+                                         (r.prescriptionType === 'Mor' || r.prescriptionType === 'Turuncu') ? 'border-purple-500' :
+                                         'border-rose-500';
+
+                        const safeBrand = escapeHtml(r.brand);
+                        const safeGeneric = escapeHtml(r.generic);
+                        const safeAtc = escapeHtml(r.atcCode || '');
+                        const safeBarcode = escapeHtml(r.barcode || '');
+                        const safeRx = escapeHtml(r.prescriptionType || 'Normal');
+                        const safeCompany = escapeHtml(r.company || '');
+                        const safeKtUrl = escapeHtml(ktUrl);
+                        const safeKubUrl = escapeHtml(kubUrl);
+
+                        return `
+                        <div class="mb-2 p-2.5 border-l-2 ${rxBorder} bg-slate-900 rounded-r-lg shadow-sm space-y-1.5 transition-all hover:bg-slate-850">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="cursor-pointer flex-1 drug-item-add" 
+                                     data-brand="${safeBrand}" 
+                                     data-generic="${safeGeneric}" 
+                                     data-atc="${safeAtc}"
+                                     data-barcode="${safeBarcode}"
+                                     data-rx="${safeRx}"
+                                     data-company="${safeCompany}"
+                                     data-kt="${safeKtUrl}"
+                                     data-kub="${safeKubUrl}">
+                                    <div class="text-rose-300 text-xs sm:text-sm font-bold flex flex-wrap items-center gap-1.5 leading-snug">
+                                        <span>${safeBrand}</span>
+                                        ${getDrugBadgesHTML(r)}
+                                    </div>
+                                    <div class="text-[11px] text-slate-300 font-medium mt-0.5">
+                                        <span class="text-emerald-400 font-semibold">${safeGeneric}</span>
+                                        ${r.atcCode ? `<span class="text-slate-500 font-mono text-[10px]"> | ATC: ${safeAtc}</span>` : ''}
+                                        ${r.barcode ? `<span class="text-slate-500 font-mono text-[10px]"> | Barkod: ${safeBarcode}</span>` : ''}
+                                    </div>
+                                    ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">🏢 ${safeCompany}</div>` : ''}
+                                </div>
+                                <div class="flex items-center gap-1 flex-shrink-0">
+                                    <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-id="${escapeHtml(r.id || '')}" data-atc="${safeAtc}" data-generic="${safeGeneric}" title="Eşdeğer / Muadil İlaçları Bul">Muadil</button>
+                                </div>
+                            </div>
+                            ${(ktUrl || kubUrl) ? `
+                            <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
+                                ${ktUrl ? `
+                                    <a href="${safeKtUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 hover:border-amber-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" title="Resmi TİTCK Kullanma Talimatı (Prospektüs)">
+                                        <span>📄 Prospektüs (KT)</span>
+                                    </a>
+                                ` : ''}
+                                ${kubUrl ? `
+                                    <a href="${safeKubUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-700/60 hover:border-sky-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" title="Resmi TİTCK Kısa Ürün Bilgisi (KÜB)">
+                                        <span>📋 KÜB</span>
+                                    </a>
+                                ` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                        `;
+                    }).join('');
+            } else {
+                drugResult.classList.remove('hidden');
+                drugResult.innerHTML = '<div class="p-3 text-xs text-gray-500 bg-slate-900 text-center rounded">Eşleşen ilaç bulunamadı</div>';
+            }
+        } catch (err) {
+            console.error('Arama hatası:', err);
+            drugResult.innerHTML = '<div class="p-3 text-xs text-rose-400 bg-slate-900 text-center rounded">Arama sırasında bir sorun oluştu</div>';
+        }
+    };
+
+    drugInput.addEventListener('input', (e: Event) => {
         const target = e.target as HTMLInputElement;
         const q = target.value.trim();
         if (clearBtn) {
@@ -1918,90 +2085,27 @@ if (drugInput) {
                 clearBtn.classList.add('hidden');
             }
         }
-        
-        if (q.length === 0 && drugResult) {
-            drugResult.innerHTML = '';
-            drugResult.classList.add('hidden');
+
+        if (drugSearchDebounceTimer) {
+            clearTimeout(drugSearchDebounceTimer);
+            drugSearchDebounceTimer = null;
+        }
+
+        if (q.length < 2) {
+            if (drugResult) {
+                drugResult.innerHTML = '';
+                drugResult.classList.add('hidden');
+            }
             return;
         }
 
-        if (q.length >= 2 && drugResult) {
-            const thisSeq = ++currentDrugSearchSeq;
-
-            if (!isDrugCatalogReady()) {
-                drugResult.classList.remove('hidden');
-                drugResult.innerHTML = '<div class="p-3 text-xs text-sky-400 bg-slate-900 text-center rounded flex items-center justify-center gap-2"><span class="inline-block animate-pulse">⏳</span> <span>TİTCK İlaç Kataloğu hazırlanıyor, aranıyor...</span></div>';
-            }
-
-            try {
-                const res = await searchDrugsInDB(q);
-                if (thisSeq !== currentDrugSearchSeq) return;
-
-                if (res && res.length > 0) {
-                    drugResult.classList.remove('hidden');
-                    drugResult.innerHTML = res.map((r: any) => {
-                        const ktUrl = r.kt_pdf_prospektus_url || r.kt || '';
-                        const kubUrl = r.kub_pdf_url || r.kub || '';
-                        const rxBorder = r.prescriptionType === 'Kırmızı' ? 'border-red-500' :
-                                         r.prescriptionType === 'Yeşil' ? 'border-emerald-500' :
-                                         (r.prescriptionType === 'Mor' || r.prescriptionType === 'Turuncu') ? 'border-purple-500' :
-                                         'border-rose-500';
-
-                        return `
-                        <div class="mb-2 p-2.5 border-l-2 ${rxBorder} bg-slate-900 rounded-r-lg shadow-sm space-y-1.5 transition-all hover:bg-slate-850">
-                            <div class="flex items-start justify-between gap-2">
-                                <div class="cursor-pointer flex-1 drug-item-add" 
-                                     data-brand="${r.brand}" 
-                                     data-generic="${r.generic}" 
-                                     data-atc="${r.atcCode}"
-                                     data-barcode="${r.barcode || ''}"
-                                     data-rx="${r.prescriptionType || 'Normal'}"
-                                     data-company="${r.company || ''}"
-                                     data-kt="${ktUrl}"
-                                     data-kub="${kubUrl}">
-                                    <div class="text-rose-300 text-xs sm:text-sm font-bold flex flex-wrap items-center gap-1.5 leading-snug">
-                                        <span>${r.brand}</span>
-                                        ${getDrugBadgesHTML(r)}
-                                    </div>
-                                    <div class="text-[11px] text-slate-300 font-medium mt-0.5">
-                                        <span class="text-emerald-400 font-semibold">${r.generic}</span>
-                                        ${r.atcCode ? `<span class="text-slate-500 font-mono text-[10px]"> | ATC: ${r.atcCode}</span>` : ''}
-                                        ${r.barcode ? `<span class="text-slate-500 font-mono text-[10px]"> | Barkod: ${r.barcode}</span>` : ''}
-                                    </div>
-                                    ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">🏢 ${r.company}</div>` : ''}
-                                </div>
-                                <div class="flex items-center gap-1 flex-shrink-0">
-                                    <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-atc="${r.atcCode}" data-generic="${r.generic}" title="Eşdeğer / Muadil İlaçları Bul">Muadil</button>
-                                </div>
-                            </div>
-                            ${(ktUrl || kubUrl) ? `
-                            <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
-                                ${ktUrl ? `
-                                    <a href="${ktUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 hover:border-amber-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" title="Resmi TİTCK Kullanma Talimatı (Prospektüs)">
-                                        <span>📄 Prospektüs (KT)</span>
-                                    </a>
-                                ` : ''}
-                                ${kubUrl ? `
-                                    <a href="${kubUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-700/60 hover:border-sky-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" title="Resmi TİTCK Kısa Ürün Bilgisi (KÜB)">
-                                        <span>📋 KÜB</span>
-                                    </a>
-                                ` : ''}
-                            </div>
-                            ` : ''}
-                        </div>
-                        `;
-                    }).join('');
-                } else {
-                    drugResult.classList.remove('hidden');
-                    drugResult.innerHTML = '<div class="p-3 text-xs text-gray-500 bg-slate-900 text-center rounded">Eşleşen ilaç bulunamadı</div>';
-                }
-            } catch (err) {
-                console.error('Arama hatası:', err);
-                drugResult.innerHTML = '<div class="p-3 text-xs text-rose-400 bg-slate-900 text-center rounded">Arama sırasında bir sorun oluştu</div>';
-            }
-        } else if (drugResult) {
-            drugResult.innerHTML = '';
-            drugResult.classList.add('hidden');
+        // Programatik (örn. Muadil butonu) tetiklemelerde anında, klavye yazımında 150ms debounce ile çalıştır
+        if (e.isTrusted === false) {
+            void executeDrugSearch(q);
+        } else {
+            drugSearchDebounceTimer = setTimeout(() => {
+                void executeDrugSearch(q);
+            }, 150);
         }
     });
 }
@@ -2016,7 +2120,7 @@ if (clearBtn && drugInput && drugResult) {
 }
 
 if (drugResult) {
-    drugResult.addEventListener('click', (e: MouseEvent) => {
+    drugResult.addEventListener('click', async (e: MouseEvent) => {
         const target = e.target as HTMLElement;
         // PDF linklerine tıklanınca ilaç seçimini tetiklemesin
         if (target.closest('.btn-pdf-link')) {
@@ -2025,11 +2129,15 @@ if (drugResult) {
 
         const btnMuadil = target.closest('.btn-muadil');
         if (btnMuadil && drugInput) {
-            const atc = btnMuadil.getAttribute('data-atc');
-            const generic = btnMuadil.getAttribute('data-generic');
+            const id = btnMuadil.getAttribute('data-id') || '';
+            const atc = btnMuadil.getAttribute('data-atc') || '';
+            const generic = btnMuadil.getAttribute('data-generic') || '';
+            const eqList = await findEquivalents({ id, atcCode: atc, generic });
             const query = (atc && atc !== 'Belirtilmedi') ? atc : generic;
-            
-            if (query) {
+            if (eqList.length > 0 && query) {
+                drugInput.value = query;
+                drugInput.dispatchEvent(new Event('input'));
+            } else if (query) {
                 drugInput.value = query;
                 drugInput.dispatchEvent(new Event('input'));
             }
@@ -2082,14 +2190,14 @@ export function renderSelectedDrugs(): void {
         <div class="flex justify-between items-center bg-slate-900 p-2.5 rounded-lg border border-slate-700/80 mb-1.5">
             <div class="flex flex-col flex-1 pr-2">
                 <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-xs text-rose-300 font-bold">${d.brand}</span>
-                    ${d.rx && d.rx !== 'Normal' ? `<span class="text-[9px] px-1 py-0.5 rounded ${d.rx === 'Kırmızı' ? 'bg-red-950 text-red-300 border border-red-700' : 'bg-emerald-950 text-emerald-300 border border-emerald-700'} font-semibold">${d.rx}</span>` : ''}
+                    <span class="text-xs text-rose-300 font-bold">${escapeHtml(d.brand)}</span>
+                    ${d.rx && d.rx !== 'Normal' ? `<span class="text-[9px] px-1 py-0.5 rounded ${d.rx === 'Kırmızı' ? 'bg-red-950 text-red-300 border border-red-700' : 'bg-emerald-950 text-emerald-300 border border-emerald-700'} font-semibold">${escapeHtml(d.rx)}</span>` : ''}
                 </div>
-                <span class="text-[10px] text-slate-400 mt-0.5">${d.generic}${d.company ? ` • <span class="text-slate-500">${d.company}</span>` : ''}</span>
+                <span class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(d.generic)}${d.company ? ` • <span class="text-slate-500">${escapeHtml(d.company)}</span>` : ''}</span>
                 ${(d.kt || d.kub) ? `
                     <div class="flex gap-2 mt-1">
-                        ${d.kt ? `<a href="${d.kt}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline">📄 Prospektüs</a>` : ''}
-                        ${d.kub ? `<a href="${d.kub}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline">📋 KÜB</a>` : ''}
+                        ${d.kt ? `<a href="${escapeHtml(d.kt)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline">📄 Prospektüs</a>` : ''}
+                        ${d.kub ? `<a href="${escapeHtml(d.kub)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline">📋 KÜB</a>` : ''}
                     </div>
                 ` : ''}
             </div>
@@ -2288,9 +2396,11 @@ export function updateClinicalAlertsInspector(): void {
     const pte = appState.thrombosis?.wellsPTE;
     const dvt = appState.thrombosis?.wellsDVT;
     if (alertThrombosis && textThrombosis) {
-        if ((pte && pte.alertClass === 'danger') || (dvt && dvt.alertClass === 'danger')) {
+        const isPteHigh = Boolean(pte && (pte.alertClass === 'danger' || pte.alertClass.includes('rose') || pte.isPELikely));
+        const isDvtHigh = Boolean(dvt && (dvt.alertClass === 'danger' || dvt.alertClass.includes('rose') || dvt.score >= 3));
+        if (isPteHigh || isDvtHigh) {
             alertThrombosis.classList.remove('hidden');
-            textThrombosis.textContent = `${pte && pte.alertClass === 'danger' ? `PTE: ${pte.riskCategory} (${pte.score}p)` : ''} ${dvt && dvt.alertClass === 'danger' ? `DVT: ${dvt.riskCategory} (${dvt.score}p)` : ''}`.trim();
+            textThrombosis.textContent = `${isPteHigh && pte ? `PTE: ${pte.riskCategory} (${pte.score}p)` : ''} ${isDvtHigh && dvt ? `DVT: ${dvt.riskCategory} (${dvt.score}p)` : ''}`.trim();
             alertCount++;
         } else {
             alertThrombosis.classList.add('hidden');
@@ -2304,7 +2414,7 @@ export function updateClinicalAlertsInspector(): void {
     if (alertNeoDrug && textNeoDrug) {
         if (neoDrug && neoDrug.alertsCount > 0) {
             alertNeoDrug.classList.remove('hidden');
-            textNeoDrug.textContent = neoDrug.alerts.map((a: any) => `${a.drugName}: ${a.title}`).join(' | ');
+            textNeoDrug.textContent = neoDrug.alerts.map((a) => `${a.drugName}: ${a.title}`).join(' | ');
             alertCount++;
         } else {
             alertNeoDrug.classList.add('hidden');
@@ -2333,7 +2443,7 @@ export function updateClinicalAlertsInspector(): void {
         const alerts: string[] = [];
         if (nt?.paracetamol?.isToxic) alerts.push('Parasetamol Toksisitesi: Acil IV NAC Protokolü Başlatılmalı');
         if (nt?.osmolalGap?.isCriticalGap) alerts.push(`Kritik Osmolal Açık (${nt.osmolalGap.osmolalGap} mOsm/kg): Toksik Alkol Zehirlenmesi`);
-        if (nt?.curb65?.score >= 3) alerts.push(`Ağır Pnömoni (CURB-65: ${nt.curb65.score}/5): YBÜ/Yatış gereklidir`);
+        if (nt?.curb65 && nt.curb65.score >= 3) alerts.push(`Ağır Pnömoni (CURB-65: ${nt.curb65.score}/5): YBÜ/Yatış gereklidir`);
         if (alerts.length > 0) {
             alertNephrotox.classList.remove('hidden');
             textNephrotox.textContent = alerts.join(' | ');
@@ -2585,8 +2695,8 @@ export function initWorkstationPackages(): void {
             btn.title = pack.desc || pack.badge || pack.name;
 
             btn.innerHTML = `
-                <span>${pack.icon || '📦'}</span>
-                <span>${pack.name}</span>
+                <span>${escapeHtml(pack.icon || '📦')}</span>
+                <span>${escapeHtml(pack.name)}</span>
                 ${pack.isCustom ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full font-mono">Özel</span>' : ''}
             `;
 
@@ -2699,15 +2809,15 @@ export function initWorkstationPackages(): void {
             row.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs';
             row.innerHTML = `
                 <div class="flex items-center gap-2 min-w-0">
-                    <span>${pack.icon || '⭐'}</span>
-                    <span class="font-medium text-slate-200 truncate">${pack.name}</span>
+                    <span>${escapeHtml(pack.icon || '⭐')}</span>
+                    <span class="font-medium text-slate-200 truncate">${escapeHtml(pack.name)}</span>
                     <span class="text-[10px] text-slate-400 font-mono">(${pack.fullMotors ? pack.fullMotors.length : pack.baseMotors.length} motor)</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    <button type="button" class="btn-run-saved-pack px-2 py-1 rounded bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] transition-colors" data-pack-id="${pack.id}">
+                    <button type="button" class="btn-run-saved-pack px-2 py-1 rounded bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] transition-colors" data-pack-id="${escapeHtml(pack.id)}">
                         Çalıştır
                     </button>
-                    <button type="button" class="btn-del-saved-pack px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 text-[10px] transition-colors" data-pack-id="${pack.id}" title="Paketi Sil">
+                    <button type="button" class="btn-del-saved-pack px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 text-[10px] transition-colors" data-pack-id="${escapeHtml(pack.id)}" title="Paketi Sil">
                         🗑️
                     </button>
                 </div>
@@ -2896,24 +3006,7 @@ export function initResponsiveWorkstation(): void {
         });
     }
 
-    // 4. Online/Offline Network Status Indicator
-    const badgeOffline = getEl('badge-offline-status');
-    function updateNetworkStatus(): void {
-        if (!badgeOffline || typeof navigator === 'undefined') return;
-        if (navigator.onLine) {
-            badgeOffline.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span class="hidden sm:inline">Çevrimdışı</span> PWA Aktif';
-            badgeOffline.className = 'text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
-        } else {
-            badgeOffline.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Çevrimdışı Mod';
-            badgeOffline.className = 'text-[10px] font-mono bg-amber-950/80 text-amber-300 border border-amber-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
-        }
-    }
-    if (typeof window !== 'undefined') {
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-    }
-
-    // 5. Mobile Bottom Sheet Drawer Interactions
+    // 4. Mobile Bottom Sheet Drawer Interactions
     const btnOpenSheet = getEl('btn-open-soap-sheet');
     const modalSheet = getEl('modal-soap-sheet');
     const sheetContent = getEl('soap-sheet-content');

@@ -1,11 +1,14 @@
 // Fluid Engine: Holliday-Segar, Ateş Düzeltmesi, Sodyum Düzeltme & Elektrolit Rehberi
 
 export interface MaintenanceFluidResult {
-    originalVolume: number;
-    feverExtraVolume: number;
+    originalVolume?: number;
+    feverExtraVolume?: number;
     dailyVolume: number;
     hourlyRate: number;
     fluidTypeRecommendation: string;
+    isNeonate?: boolean;
+    dayTitle?: string;
+    contraindicationNotice?: string;
 }
 
 export function calculateMaintenanceFluid(
@@ -97,8 +100,11 @@ export function calculateSodiumCorrection(
     const deltaNa3Percent = (513 - measuredNa) / (tbw + 1);
     const deltaNa09Percent = (154 - measuredNa) / (tbw + 1);
 
-    // Required 3% NaCl volume in mL to achieve targetNa
-    const required3PercentMl = deltaNa3Percent > 0 ? Math.round((deficit / 513) * 1000) : 0;
+    // Required 3% NaCl volume in mL to achieve targetNa (only when raising Na in hyponatremia)
+    const desiredRise = resolvedTargetNa - measuredNa;
+    const required3PercentMl = (desiredRise > 0 && deltaNa3Percent > 0)
+        ? Math.round((desiredRise / deltaNa3Percent) * 1000)
+        : 0;
     
     return {
         deficit: Math.round(deficit),

@@ -36,8 +36,8 @@ jobs:
 
       - name: Verify Clinical Tests & Types
         run: |
-          npm test
           npm run typecheck
+          npm test
 
       - name: Build Vite Production Assets
         run: npm run build

@@ -2,7 +2,7 @@
 <html lang="tr" class="dark scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Klinik Karar Destek Asistanı</title>
     
     <!-- PWA & Mobile Desteği -->
@@ -1009,6 +1009,10 @@
                         <option value="paracetamol">Parasetamol (Calpol 120/5)</option>
                         <option value="ibuprofen">İbuprofen (Dolven 100/5)</option>
                         <option value="amoklavin_400">Amoksisilin-Klavulanat (400/57)</option>
+                        <option value="cefuroxime_250">Sefuroksim (Zinnat 250/5)</option>
+                        <option value="clarithromycin_125">Klaritromisin (Klacid 125/5)</option>
+                        <option value="cetirizine_5">Setirizin (Zyrtec 5/5)</option>
+                        <option value="laroxyl_25">Hidroksizin (Atarax 10/5)</option>
                     </select>
                     <div id="output-ped-syrup" class="hidden text-[10px] p-2 bg-slate-900/60 border border-slate-700/50 rounded-lg space-y-1 font-mono text-cyan-400 mt-2"></div>
                     
@@ -1288,6 +1292,8 @@
                         <div><label class="text-[10px] text-slate-400 block mb-1">Doz Birimi</label>
                             <select id="select-inf-unit" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-[10px] font-mono">
                                 <option value="mcg_kg_min">mcg/kg/dk</option>
+                                <option value="mcg_min">mcg/dk</option>
+                                <option value="mg_kg_hr">mg/kg/saat</option>
                             </select>
                         </div>
                     </div>
@@ -1440,7 +1446,7 @@
     </div>
 
     <!-- MOBİL SOAP BOTTOM SHEET MODAL -->
-    <div id="modal-soap-sheet" class="fixed inset-0 z-50 hidden transition-opacity duration-300">
+    <div id="modal-soap-sheet" role="dialog" aria-modal="true" aria-labelledby="modal-soap-title" class="fixed inset-0 z-50 hidden transition-opacity duration-300">
         <!-- Backdrop -->
         <div id="soap-sheet-backdrop" class="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity"></div>
         
@@ -1453,11 +1459,11 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-2">
                 <div class="flex items-center gap-2">
                     <span class="text-rose-400 text-base">📋</span>
-                    <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wider">SOAP Hasta Notu (Mobil)</h3>
+                    <h3 id="modal-soap-title" class="text-sm font-bold text-slate-100 uppercase tracking-wider">SOAP Hasta Notu (Mobil)</h3>
                 </div>
                 <div class="flex items-center gap-2">
                     <span id="copy-feedback-modal" class="hidden text-[10px] font-bold text-emerald-400 font-mono">✓ Kopyalandı!</span>
-                    <button type="button" id="btn-close-soap-sheet" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg text-xs leading-none" title="Kapat">✕</button>
+                    <button type="button" id="btn-close-soap-sheet" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg text-xs leading-none" title="Kapat" aria-label="Kapat">✕</button>
                 </div>
             </div>
 

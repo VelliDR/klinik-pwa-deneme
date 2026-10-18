@@ -163,7 +163,8 @@ export function calculateQTc(params: QTcInput = {}): QTcResult {
     const calculatedQTc = (result.qtcBogossian !== null) ? result.qtcBogossian : result.qtcFridericia;
 
     // ── 6. QTc INTERPRETATION ──
-    const isMale = gender === 'male';
+    const isFemale = gender === 'female' || gender === 'F';
+    const isMale = !isFemale;
     const limitNormal = isMale ? 450 : 460;
     const limitBorderline = isMale ? 460 : 470;
     const shortQtLimit = 340;
@@ -189,7 +190,7 @@ export function calculateQTc(params: QTcInput = {}): QTcResult {
     // ── 7. TISDALE RISK SCORE ──
     let tisdale = 0;
     if (age !== null && age >= 68) tisdale += 1;
-    if (gender === 'female') tisdale += 1;
+    if (isFemale) tisdale += 1;
     if (k_level !== null && k_level <= 3.5) tisdale += 2;
     if (calculatedQTc >= 450) tisdale += 2;
     if (is_ami) tisdale += 2;

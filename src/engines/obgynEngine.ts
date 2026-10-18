@@ -16,10 +16,12 @@ export function calculateObstetrics(lmpDateStr: string | null | undefined): Obst
     const edd = new Date(lmpDate.getTime() + 280 * 24 * 60 * 60 * 1000);
     
     const today = new Date();
-    const diffTime = Math.abs(today.getTime() - lmpDate.getTime());
+    const diffTime = today.getTime() - lmpDate.getTime();
+    if (diffTime < 0) return null;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
     
     const weeks = Math.floor(diffDays / 7);
+    if (weeks > 44) return null;
     const days = diffDays % 7;
     
     let trimester = 0;

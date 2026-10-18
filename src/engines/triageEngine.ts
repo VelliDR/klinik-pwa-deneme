@@ -63,9 +63,10 @@ export function calculateNEWS2(
     // Temp
     if (temp != null && !isNaN(temp)) {
         if (temp <= 35.0) addScore(3);
-        else if (temp >= 35.1 && temp <= 36.0) addScore(1);
-        else if (temp >= 38.1 && temp <= 39.0) addScore(1);
-        else if (temp >= 39.1) addScore(2);
+        else if (temp <= 36.0) addScore(1);
+        else if (temp <= 38.0) { /* Normal: 36.1 - 38.0 -> 0 puan */ }
+        else if (temp <= 39.0) addScore(1);
+        else addScore(2);
     }
 
     // AVPU

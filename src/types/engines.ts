@@ -1,155 +1,118 @@
 /**
  * KLİNİK MOTORLARIN HESAPLAMA ÇIKTI TİPLERİ (ENGINE INTERFACES)
+ * Tek doğruluk kaynağı (Single Source of Truth) olarak tüm motor tiplerini birleştirir.
  */
 
 // 1. Kalsiyum
-export interface CorrectedCalciumResult {
-  correctedCalcium: number;
-  rawCalcium: number;
-  albumin: number;
-  interpretation: string;
-}
+export type {
+  CalciumInput,
+  CalciumResult,
+  CalciumResult as CorrectedCalciumResult
+} from '../engines/calciumEngine';
 
 // 2. Endokrin & HOMA-IR
-export interface SteroidEquivalenceItem {
-  name: string;
-  equivalentDoseMg: number;
-  antiInflammatoryPotency: number;
-  mineralocorticoidPotency: number;
-  durationOfAction: string;
-}
-
-export interface HOMAIRResult {
-  homaIR: number;
-  interpretation: string;
-  isInsulinResistant: boolean;
-}
+export type {
+  SteroidDefinition,
+  SteroidConversionItem,
+  SteroidConversionItem as SteroidEquivalenceItem,
+  SteroidConversionResult,
+  HOMAIRInput,
+  HOMAIRResult
+} from '../engines/endocrineEngine';
 
 // 3. İnfüzyon & GIR
-export interface InfusionRateResult {
-  rateMlPerHour: number;
-  mcgPerKgPerMin?: number;
-  mgPerHour?: number;
-  concentrationMgPerMl: number;
-}
-
-export interface GIRResult {
-  gir: number; // mg/kg/dk
-  infusionRateMlPerHour: number;
-  dextrosePercentage: number;
-  weightKg: number;
-  isNormal: boolean;
-  recommendation: string;
-}
+export type {
+  InfusionDoseUnit,
+  InfusionRateInput,
+  InfusionRateResult,
+  GIRInput,
+  GIRResult
+} from '../engines/infusionEngine';
 
 // 4. Sıvı & Elektrolit
-export interface MaintenanceFluidResult {
-  dailyTotalMl: number;
-  hourlyRateMl: number;
-  method: 'holliday-segar' | 'neonatal-tnd';
-  feverIncreaseMl?: number;
-  breakdown?: {
-    first10kg: number;
-    second10kg: number;
-    remainingKg: number;
-  };
-}
-
-export interface SodiumCorrectionResult {
-  infusionType: string;
-  sodiumDeficitMeq: number;
-  totalBodyWaterL: number;
-  rateMlPerHour: number;
-  correctionTimeHours: number;
-  infusateNaMeqPerL: number;
-  deltaNaPerLiter: number;
-  maxDailyRiseMeq: number;
-  warning?: string;
-}
+export type {
+  MaintenanceFluidResult,
+  SodiumCorrectionResult,
+  NeonatalFluidInput,
+  NeonatalFluidResult
+} from '../engines/fluidEngine';
 
 // 5. Cerrahi
-export interface ParklandResult {
-  totalFluid24h: number;
-  first8h: number;
-  next16h: number;
-  rateFirst8h: number;
-  rateNext16h: number;
-  formulaMultiplier: number;
-  status?: string;
-}
-
-export interface AlvaradoResult {
-  score: number;
-  riskGroup: 'Düşük' | 'Orta (Şüpheli)' | 'Yüksek';
-  recommendation: string;
-}
+export type {
+  AlvaradoParams,
+  AlvaradoResult,
+  ParklandResult,
+  RansonParams,
+  RansonResult,
+  SutureGuidance
+} from '../engines/surgeryEngine';
 
 // 6. Triyaj & GCS
-export interface GCSResult {
-  totalScore: number;
-  eyeScore: number;
-  verbalScore: number;
-  motorScore: number;
-  severity: 'Ağır Kafa Travması / Koma' | 'Orta Derece Kafa Travması' | 'Hafif Kafa Travması';
-}
-
-export interface NEWS2Result {
-  score: number;
-  riskGroup: 'Düşük' | 'Orta' | 'Yüksek' | 'Kritik';
-  responseRecommendation: string;
-}
-
-export interface PEWSResult {
-  score: number;
-  riskGroup: 'Normal' | 'Düşük' | 'Orta' | 'Yüksek';
-  recommendation: string;
-}
+export type {
+  NEWS2Result,
+  PEWSResult,
+  GCSResult
+} from '../engines/triageEngine';
 
 // 7. Kadın Doğum (OB/GYN)
-export interface ObstetricsResult {
-  eddDateFormatted: string;
-  gestationalWeeks: number;
-  gestationalDays: number;
-  totalDays: number;
-  trimester: 1 | 2 | 3;
-}
-
-export interface BishopResult {
-  score: number;
-  isFavorable: boolean;
-  interpretation: string;
-}
-
-export interface PreeclampsiaResult {
-  hasPreeclampsia: boolean;
-  isSevere: boolean;
-  criteriaMet: string[];
-  recommendation: string;
-}
+export type {
+  ObstetricsResult,
+  BishopResult,
+  PreeclampsiaResult
+} from '../engines/obgynEngine';
 
 // 8. Kan Gazı
-export interface BloodGasAnalysisResult {
-  primaryDisorder: string;
-  compensationStatus: string;
-  anionGap: number;
-  isHighAnionGap: boolean;
-  deltaRatio?: number;
-  deltaDeltaCategory?: string;
-  winterExpectedPCO2?: { min: number; max: number };
-  clinicalSummary: string;
-}
+export type {
+  BloodGasInput,
+  BloodGasResult,
+  BloodGasResult as BloodGasAnalysisResult
+} from '../engines/bloodGasEngine';
 
 // 9. Kardiyak & EKG
-export interface CardiacQTcResult {
-  qtcBazett: number;
-  qtcFridericia: number;
-  qtcBogossian?: number;
-  isProlonged: boolean;
-  genderSpecificThreshold: number;
-  tisdaleScore?: number;
-  tisdaleRisk?: 'Düşük' | 'Orta' | 'Yüksek';
-  drugWarnings: string[];
-}
+export type {
+  QTcInput,
+  QTcResult,
+  QTcResult as CardiacQTcResult,
+  AxisResult
+} from '../engines/cardiacEngine';
+
+// 9b. Pediatri, Persentil, Demir & Tromboemboli
+export type {
+  PediatricDoseResult,
+  PediatricBPResult,
+  CentorInput,
+  CentorResult
+} from '../engines/pediatricEngine';
+
+export type {
+  PercentilesInput,
+  PercentilesResult,
+  TargetHeightInput,
+  TargetHeightResult,
+  CorrectedAgeInput,
+  CorrectedAgeResult
+} from '../engines/percentileEngine';
+
+export type {
+  PediatricIronInput,
+  IronDosagePlan,
+  PediatricIronResult
+} from '../engines/ironEngine';
+
+export type {
+  WellsDVTParams,
+  WellsDVTResult,
+  WellsPTEParams,
+  WellsPTEResult,
+  PERCParams,
+  PERCResult,
+  CHA2DS2VAScParams,
+  CHA2DS2VAScResult,
+  HASBLEDParams,
+  HASBLEDResult,
+  HEARTParams,
+  HEARTResult
+} from '../engines/thrombosisEngine';
 
 // 10. Nefroloji, Toksikoloji & Solunum
 export interface FENaParams {

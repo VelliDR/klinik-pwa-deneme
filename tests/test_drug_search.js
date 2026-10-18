@@ -1,6 +1,6 @@
 import assert from 'assert';
 import fs from 'fs';
-import { normalizeText, normalizeDrugRecord, setMemoryDrugsCache, searchDrugsInDB, isDrugCatalogReady } from '../src/db/titckIndexedDB.js';
+import { normalizeText, normalizeDrugRecord, setMemoryDrugsCache, searchDrugsInDB, isDrugCatalogReady, getDrugCatalogIndex } from '../src/db/titckIndexedDB.js';
 import { findEquivalents, getDrugBadgesHTML } from '../src/drugEngine.js';
 
 console.log('--- TESTING TİTCK DRUG SEARCH ENGINE & HYBRID CATALOG ---');
@@ -82,13 +82,23 @@ assert.strictEqual(resBarcode[0].barcode, '8699717010109');
 assert.ok(resBarcode[0].brand.includes('PAROL 500 MG'));
 console.log(`✓ Barcode search "8699717010109" passed (matched: ${resBarcode[0].brand})`);
 
-// 4. Equivalents / Muadil Engine Test
+// 4. Equivalents / Muadil Engine Test (O(1) Indexed Lookup)
+const catalogIndex = getDrugCatalogIndex();
+assert.ok(catalogIndex, 'DrugCatalogIndex must be initialized');
+assert.ok(catalogIndex.byBarcode.size > 10000, 'byBarcode index must be populated');
+assert.ok(catalogIndex.byAtc.size > 1000, 'byAtc index must be populated');
+assert.ok(catalogIndex.byGenericExact.size > 1000, 'byGenericExact index must be populated');
+assert.ok(catalogIndex.byWordPrefix.size > 5000, 'byWordPrefix inverted index must be populated');
+console.log(`✓ Inverted Drug Search Index verified (Barcodes: ${catalogIndex.byBarcode.size}, ATCs: ${catalogIndex.byAtc.size}, Generics: ${catalogIndex.byGenericExact.size}, Prefixes: ${catalogIndex.byWordPrefix.size})`);
+
 const sampleParol = resParol.find(d => d.brand.includes('PAROL 500 MG 20 TABLET'));
 assert.ok(sampleParol, 'Sample Parol must exist');
+const eqStart = Date.now();
 const equivalents = await findEquivalents(sampleParol);
+const eqDuration = Date.now() - eqStart;
 assert.ok(equivalents.length > 0, 'Should find equivalents for Parol 500');
 assert.ok(!equivalents.some(e => String(e.id) === String(sampleParol.id)), 'Should not include self');
-console.log(`✓ Equivalents (Muadil) search passed: Found ${equivalents.length} equivalents for "${sampleParol.brand}"`);
+console.log(`✓ Equivalents (Muadil) O(1) indexed search passed: Found ${equivalents.length} equivalents for "${sampleParol.brand}" in ${eqDuration}ms`);
 
 // 5. Badges Test
 const badgesHtml = getDrugBadgesHTML(sampleParol);

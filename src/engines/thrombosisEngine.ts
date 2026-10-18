@@ -105,6 +105,7 @@ export interface WellsPTEResult {
     isValid: boolean;
     score: number;
     isPELikely: boolean;
+    riskCategory: string;
     twoTierRisk: {
         risk: string;
         tier: string;
@@ -164,6 +165,7 @@ export function calculateWellsPTE(params: WellsPTEParams = {}): WellsPTEResult {
         isValid: true,
         score,
         isPELikely,
+        riskCategory: twoTierRisk.risk,
         twoTierRisk,
         threeTierRisk,
         recommendation,

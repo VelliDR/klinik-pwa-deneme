@@ -1,4 +1,4 @@
-import { normalizeText, ensureDrugCatalogReady, type NormalizedDrugRecord } from './db/titckIndexedDB';
+import { normalizeText, ensureDrugCatalogReady, getDrugCatalogIndex, type NormalizedDrugRecord } from './db/titckIndexedDB';
 
 export interface DrugStrengthResult {
   type: 'liquid' | 'solid';
@@ -73,8 +73,9 @@ export function parseDrugStrength(brandName?: string): DrugStrengthResult | null
 export async function findEquivalents(selectedDrug?: DrugInputForEquivalents): Promise<NormalizedDrugRecord[]> {
   if (!selectedDrug) return [];
 
-  const targetAtc = (selectedDrug.atcCode || selectedDrug.atc) ? normalizeText(selectedDrug.atcCode || selectedDrug.atc) : '';
-  const targetGeneric = (selectedDrug.generic) ? normalizeText(selectedDrug.generic) : '';
+  const rawAtc = String(selectedDrug.atcCode || selectedDrug.atc || '').trim().toUpperCase();
+  const targetAtc = (rawAtc && rawAtc !== 'BELİRTİLMEDİ' && rawAtc !== 'BELIRTILMEDI') ? rawAtc : '';
+  const targetGeneric = selectedDrug.generic ? normalizeText(selectedDrug.generic) : '';
   const currentId = String(selectedDrug.id);
 
   // Hem ATC Kodu hem Etken Madde eksikse muadil aranamaz
@@ -86,6 +87,32 @@ export async function findEquivalents(selectedDrug?: DrugInputForEquivalents): P
     const allDrugs = await ensureDrugCatalogReady();
     if (!allDrugs || allDrugs.length === 0) return [];
 
+    const catalogIndex = getDrugCatalogIndex();
+    if (catalogIndex) {
+      const candidateSet = new Set<number>();
+      if (targetAtc) {
+        const atcMatches = catalogIndex.byAtc.get(targetAtc);
+        if (atcMatches) {
+          for (let i = 0; i < atcMatches.length; i++) candidateSet.add(atcMatches[i]);
+        }
+      }
+      if (targetGeneric && targetGeneric !== 'belirtilmedi') {
+        const genMatches = catalogIndex.byGenericExact.get(targetGeneric);
+        if (genMatches) {
+          for (let i = 0; i < genMatches.length; i++) candidateSet.add(genMatches[i]);
+        }
+      }
+
+      const results: NormalizedDrugRecord[] = [];
+      candidateSet.forEach(idx => {
+        const d = allDrugs[idx];
+        if (!d || String(d.id) === currentId) return;
+        if ((d.status && d.status.toLowerCase().includes('pasif')) || (d.sheet && d.sheet.toUpperCase().includes('PASİF'))) return;
+        results.push(d);
+      });
+      return results;
+    }
+
     return allDrugs.filter(d => {
       // 1. Kendisini listeden çıkar
       if (String(d.id) === currentId) return false;
@@ -93,17 +120,17 @@ export async function findEquivalents(selectedDrug?: DrugInputForEquivalents): P
       // 2. Pasif/İptal ürünleri çıkar
       if ((d.status && d.status.toLowerCase().includes('pasif')) || (d.sheet && d.sheet.toUpperCase().includes('PASİF'))) return false;
 
-      const dAtc = (d.atcCode || d.barcode) ? normalizeText(d.atcCode) : '';
-      const dGeneric = d.generic ? normalizeText(d.generic) : '';
+      const dAtc = d.atcCode ? String(d.atcCode).trim().toUpperCase() : '';
+      const dGeneric = d._genericNorm || (d.generic ? normalizeText(d.generic) : '');
 
-      // Kriter A: ATC Kodu birebir eşleşiyorsa
+      // Kriter A: 5. seviye (7 karakterli) tam ATC Kodu birebir eşleşiyorsa
       if (targetAtc && dAtc && targetAtc === dAtc) {
         return true;
       }
 
-      // Kriter B: Etken Madde (Generic) adı eşleşiyorsa
+      // Kriter B: Etken Madde (Generic) adı birebir eşleşiyorsa (kombinasyon ilaçlarla tekli ilaçların karışmasını önler)
       if (targetGeneric && targetGeneric !== 'belirtilmedi' && dGeneric && dGeneric !== 'belirtilmedi') {
-        if (dGeneric === targetGeneric || dGeneric.includes(targetGeneric) || targetGeneric.includes(dGeneric)) {
+        if (dGeneric === targetGeneric) {
           return true;
         }
       }

@@ -29,7 +29,7 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
     let calc_pCO2 = pCO2;
     let calc_HCO3 = HCO3;
 
-    if (sampleType === 'VBG') {
+    if (sampleType === 'VBG' || sampleType === 'venous') {
         calc_pH = pH + 0.035;
         calc_pCO2 = pCO2 - 5.0;
         calc_HCO3 = HCO3; // VBG HCO3 ~ ABG HCO3
@@ -53,6 +53,8 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
         if (calc_HCO3 > 26 && calc_pCO2 >= 35) primaryDisorder = 'Metabolik Alkaloz';
         else if (calc_pCO2 < 35 && calc_HCO3 <= 26) primaryDisorder = 'Respiratuar Alkaloz';
         else primaryDisorder = 'Miks Alkaloz (Metabolik + Respiratuar)';
+    } else if (calc_pCO2 > 45 || calc_pCO2 < 35 || calc_HCO3 < 22 || calc_HCO3 > 26) {
+        primaryDisorder = 'Kompanze veya Miks Asit-Baz Bozukluğu';
     }
 
     let expected_pCO2_min: number | null = null;
@@ -101,6 +103,14 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
         const exp_chronic_HCO3 = 24 - (delta_pCO2 / 10) * 4.5;
         
         compensationText = `Akut Hdf HCO3: ~${exp_acute_HCO3.toFixed(1)} | Kronik Hdf HCO3: ~${exp_chronic_HCO3.toFixed(1)}`;
+    } else if (primaryDisorder === 'Kompanze veya Miks Asit-Baz Bozukluğu') {
+        if (calc_pCO2 > 45 && calc_HCO3 > 26) {
+            compensationText = 'Kompanze Resp. Asidoz / Met. Alkaloz (Miks)';
+        } else if (calc_pCO2 < 35 && calc_HCO3 < 22) {
+            compensationText = 'Kompanze Met. Asidoz / Resp. Alkaloz (Miks)';
+        } else {
+            compensationText = 'Normal pH altında gizli/miks asit-baz bozukluğu';
+        }
     }
 
     let AG: number | null = null;
@@ -120,12 +130,17 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
             hagmaStatus = 'HAGMA (Yüksek Anyon Açıklı Metabolik Asidoz)';
             flags.push('HAGMA');
             
-            deltaRatio = (corrected_AG - 12) / (24 - calc_HCO3);
-            
-            if (deltaRatio < 0.4) hagmaStatus += ' + NAGMA Birlikteliği (Örn: Diyare, RTA)';
-            else if (deltaRatio >= 0.4 && deltaRatio < 0.8) hagmaStatus += ' - Miks HAGMA + NAGMA';
-            else if (deltaRatio >= 0.8 && deltaRatio <= 2.0) hagmaStatus += ' - Saf HAGMA (DKA, Laktik, vb.)';
-            else if (deltaRatio > 2.0) hagmaStatus += ' + Eşlik eden Met. Alkaloz (veya Kronik Resp. Asidoz)';
+            const deltaHCO3 = 24 - calc_HCO3;
+            if (deltaHCO3 <= 0) {
+                deltaRatio = null;
+                hagmaStatus += ' + Eşlik eden Met. Alkaloz (veya Kronik Resp. Asidoz)';
+            } else {
+                deltaRatio = Number(((corrected_AG - 12) / deltaHCO3).toFixed(2));
+                if (deltaRatio < 0.4) hagmaStatus += ' + NAGMA Birlikteliği (Örn: Diyare, RTA)';
+                else if (deltaRatio >= 0.4 && deltaRatio < 0.8) hagmaStatus += ' - Miks HAGMA + NAGMA';
+                else if (deltaRatio >= 0.8 && deltaRatio <= 2.0) hagmaStatus += ' - Saf HAGMA (DKA, Laktik, vb.)';
+                else if (deltaRatio > 2.0) hagmaStatus += ' + Eşlik eden Met. Alkaloz (veya Kronik Resp. Asidoz)';
+            }
         } else {
             hagmaStatus = 'NAGMA (Normal Anyon Açıklı)';
         }

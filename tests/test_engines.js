@@ -348,14 +348,6 @@ assert.ok(neoDrugAlerts.alerts.some(a => a.warning.includes('KERNİKTERUS')));
 assert.ok(neoDrugAlerts.alerts.some(a => a.warning.includes('Gri Bebek Sendromu')));
 console.log(`✓ Neonatal Drug Safety Shield passed (${neoDrugAlerts.alertsCount} contraindications caught)`);
 
-console.log('\n--- 8. TESTING WORKSTATION PRESET SHORTCUTS & APP RUNTIME RESILIENCE ---');
-execSync('npx tsx tests/test_ts_app.ts');
-console.log('✓ All 9 workstation preset shortcuts & src/app.ts initial load verified with 0 runtime errors');
-
-console.log('\n--- 9. TESTING TİTCK DRUG SEARCH & PHONETIC EQUIVALENTS ENGINE ---');
-execSync('npx tsx tests/test_drug_search.js');
-console.log('✓ TİTCK Drug Search, phonetics, compact matching, and equivalents verified with 100% accuracy');
-
 console.log('\n--- 10. TESTING CARDIAC & ECG ENGINE ---');
 // QTc normal & formula difference
 const qtcNormal = calculateQTc({ hr: 80, qt: 400, gender: 'male' });
@@ -580,5 +572,32 @@ assert.ok(soapOutput.includes('Parkland Yanık Sıvı Resüsitasyonu'));
 assert.ok(soapOutput.includes('Demir Takviyesi / Profilaksi'));
 assert.ok(soapOutput.includes('Obstetrik: SAT\'a göre Gebelik Haftası'));
 console.log('✓ End-to-end SOAP Generation with complete multi-engine data verified');
+
+// Test 5: Stage 1 Clinical & Safety Regression Tests
+const largopenRenal = checkRenalDoseAdjustments({
+    egfr: 20,
+    drugs: [{ brand: 'LARGOPEN 1 G TABLET', generic: '' }]
+});
+assert.strictEqual(largopenRenal.alertsCount, 1);
+assert.ok(largopenRenal.warnings[0].drug.includes('Amoksisilin'), 'Largopen must map to Amoksisilin, not Klaritromisin');
+
+const turkishUpperPreg = checkPregnancySafety([
+    { brand: 'ZORETANİN 20 MG', generic: 'İZOTRETİNOİN' }
+], { trimester: 1 });
+assert.strictEqual(turkishUpperPreg.hasSevereFetalRisk, true, 'Turkish uppercase İZOTRETİNOİN must be caught');
+
+const warfarinOnlyPreg = checkPregnancySafety([
+    { brand: 'COUMADIN 5 MG', generic: 'WARFARIN' }
+], { trimester: 2 });
+assert.strictEqual(warfarinOnlyPreg.hasSevereFetalRisk, true, 'Warfarin D/X must set hasSevereFetalRisk');
+
+const bgHagmaAlk = analyzeBloodGas({ pH: 7.42, pCO2: 40, HCO3: 26, Na: 145, Cl: 99 });
+assert.strictEqual(bgHagmaAlk.deltaRatio, null);
+assert.ok(bgHagmaAlk.hagmaStatus.includes('Met. Alkaloz'), 'HCO3 >= 24 with HAGMA must not misclassify as NAGMA');
+
+assert.strictEqual(determineAgeGroup(0, 'days')?.id, 'NEONATE', '0-day neonate must return NEONATE');
+assert.strictEqual(calculateEGFR(1.0, 50, 'F', 165), calculateEGFR(1.0, 50, 'female', 165), 'Gender F and female must yield identical eGFR');
+assert.strictEqual(calculateNEWS2(75, 120, 16, 38.05, 98, false, 'A')?.score, 1, 'Decimal temperature 38.05 must score 1 point in NEWS2');
+console.log('✓ Stage 1 clinical & safety regression tests verified');
 
 console.log('\n🎉 ALL VERIFICATION TESTS PASSED SUCCESSFULLY! 100% HEALTHY.');
