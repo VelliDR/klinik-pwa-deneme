@@ -169,7 +169,7 @@ export function calculateQTc(params: QTcInput = {}): QTcResult {
     const limitBorderline = isMale ? 460 : 470;
     const shortQtLimit = 340;
 
-    if (calculatedQTc < shortQtLimit) {
+    if (calculatedQTc < shortQtLimit && result.qtcFridericia < shortQtLimit) {
         result.colorCode = 'danger';
         result.interpretation = `Kritik / Anormal: Kısa QTc (${calculatedQTc} ms). Ventriküler fibrilasyon ve ani ölüm (SQTS) riski!`;
         result.warnings.push('⚡ QTc < 340 ms: Kısa QT Sendromu (SQTS) klinik şüphesi. Aile öyküsü ve genetik değerlendirme önerilir.');
@@ -200,7 +200,10 @@ export function calculateQTc(params: QTcInput = {}): QTcResult {
     // ── 8. DRUG PROCESSING (QT & QRS PROLONGATION) ──
     let qtProlongingCount = 0;
     const phase3ATCs = ['J01MA', 'J01FA', 'N05A', 'N06AB', 'C01B', 'A04AA', 'J02AC'];
-    const phase0ATCs = ['C01BC', 'C01BA', 'N06AA', 'N03AF', 'N03AX09', 'C07AA05', 'R06AX'];
+    const phase0ATCs = ['C01BC', 'C01BA', 'N06AA', 'N03AF', 'N03AX09', 'C07AA05'];
+    const phase3Keywords = ['siprofloksasin', 'ciprofloxacin', 'levofloksasin', 'levofloxacin', 'moksifloksasin', 'moxifloxacin', 'klaritromisin', 'clarithromycin', 'azitromisin', 'azithromycin', 'haloperidol', 'kvetiapin', 'quetiapine', 'olanzapin', 'risperidon', 'essitalopram', 'escitalopram', 'sitalopram', 'citalopram', 'amiodaron', 'sotalol', 'ondansetron', 'flukonazol', 'fluconazole'];
+    const phase0Keywords = ['propafenon', 'propafenone', 'rytmonorm', 'flekainid', 'flecainide', 'amitriptilin', 'amitriptyline', 'laroxyl', 'klomipramin', 'imipramin', 'karbamazepin', 'carbamazepine', 'tegrerol', 'tegretol', 'lamotrijin', 'lamotrigine', 'lamictal'];
+    const loopDiureticKeywords = ['furosemid', 'furosemide', 'lasix', 'desal', 'torasemid', 'torasemide', 'torem'];
 
     let hasPhase3 = false;
     let hasPhase0 = false;
@@ -208,22 +211,24 @@ export function calculateQTc(params: QTcInput = {}): QTcResult {
     const qrsProlongingDrugs: string[] = [];
     
     drugs.forEach(d => {
-        const atc = d ? (typeof d === 'string' ? d.toUpperCase() : (d.atc || d.atcCode || '').toUpperCase()) : '';
-        if (!atc) return;
+        if (!d) return;
+        const atc = (typeof d === 'string' ? d.toUpperCase() : (d.atc || d.atcCode || '').toUpperCase()).trim();
+        const combinedText = (typeof d === 'string' ? d : `${d.brand || ''} ${d.name || ''} ${d.generic || ''}`).toLowerCase();
         
-        if (atc.startsWith('C03C') && !hasLoopDiuretic) {
+        if ((atc.startsWith('C03C') || loopDiureticKeywords.some(k => combinedText.includes(k))) && !hasLoopDiuretic) {
             tisdale += 1;
             hasLoopDiuretic = true;
         }
 
-        if (phase3ATCs.some(root => atc.startsWith(root))) {
+        if (phase3ATCs.some(root => atc && atc.startsWith(root)) || phase3Keywords.some(k => combinedText.includes(k))) {
             qtProlongingCount += 1;
             hasPhase3 = true;
         }
 
-        if (phase0ATCs.some(root => atc.startsWith(root))) {
+        if (phase0ATCs.some(root => atc && atc.startsWith(root)) || phase0Keywords.some(k => combinedText.includes(k))) {
             hasPhase0 = true;
-            qrsProlongingDrugs.push(d.brand || d.generic || atc);
+            const label = typeof d === 'string' ? d : (d.brand || d.name || d.generic || atc);
+            qrsProlongingDrugs.push(label);
         }
     });
 

@@ -26,20 +26,29 @@ export function setupPWA(): void {
     updateNetworkStatus();
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(registration => {
-            console.log('[PWA] Service Worker aktif ve kapsamda:', registration.scope);
-            registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                if (newWorker) {
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            console.log('[PWA] Yeni sürüm indirildi, bir sonraki ziyarette güncellenecek.');
-                        }
-                    });
+        if (import.meta.env.DEV) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                for (const reg of regs) {
+                    reg.unregister();
+                    console.log('[PWA DEV] Yerel geliştirme ortamında eski Service Worker devreden çıkarıldı:', reg.scope);
                 }
             });
-        }).catch(err => {
-            console.warn('[PWA] Service Worker hazır olma hatası:', err);
-        });
+        } else {
+            navigator.serviceWorker.ready.then(registration => {
+                console.log('[PWA] Service Worker aktif ve kapsamda:', registration.scope);
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('[PWA] Yeni sürüm indirildi, bir sonraki ziyarette güncellenecek.');
+                            }
+                        });
+                    }
+                });
+            }).catch(err => {
+                console.warn('[PWA] Service Worker hazır olma hatası:', err);
+            });
+        }
     }
 }

@@ -60,13 +60,13 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
         }
     };
 
-    if (ageMonths === null || ageMonths < 0) {
+    if (ageMonths === null || isNaN(ageMonths) || ageMonths < 0) {
         result.status = 'INCOMPLETE';
         result.hbEvaluation.text = 'Geçerli bir yaş (ay) girilmelidir.';
         return result;
     }
 
-    if (weightKg === null || weightKg <= 0) {
+    if (weightKg === null || isNaN(weightKg) || weightKg <= 0) {
         result.status = 'INCOMPLETE';
         result.hbEvaluation.text = 'Geçerli bir kilo (kg) girilmelidir.';
         return result;
@@ -77,13 +77,14 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
     let physioMax = 11.0;
     let physioNote = '';
 
-    if (hemoglobin !== null && hemoglobin > 0) {
+    if (hemoglobin !== null && !isNaN(hemoglobin) && hemoglobin > 0) {
         if (ageMonths <= 0.5) {
             // Yenidoğan (0-15 Gün)
             if (hemoglobin < 13.5) {
                 result.hbCategory = 'Patolojik Anemi';
                 result.hbEvaluation = { isAnemic: true, text: `Yenidoğan anemisi (Hb ${hemoglobin} < 13.5 g/dL). Kordon klempleme, kanama veya hemoliz yönünden uzman değerlendirmesi gerekir.`, badgeColor: 'rose' };
             } else {
+                result.hbCategory = 'Normal';
                 result.hbEvaluation = { isAnemic: false, text: `Normal Yenidoğan Hb Düzeyi (${hemoglobin} g/dL, Referans: 13.5 - 20.0).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 0.5 && ageMonths <= 3) {
@@ -113,6 +114,7 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
                     badgeColor: 'amber' 
                 };
             } else {
+                result.hbCategory = 'Normal';
                 result.hbEvaluation = { isAnemic: false, text: `Normal Hb düzeyi (${hemoglobin} g/dL).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 3 && ageMonths <= 60) {
@@ -121,6 +123,7 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
                 result.hbCategory = 'Patolojik Anemi';
                 result.hbEvaluation = { isAnemic: true, text: `Anemi (Hb ${hemoglobin} < 11.0 g/dL). DSÖ / Sağlık Bakanlığı kriterlerine göre Demir Eksikliği Anemisi uyuşmaktadır.`, badgeColor: 'rose' };
             } else {
+                result.hbCategory = 'Normal';
                 result.hbEvaluation = { isAnemic: false, text: `Normal Hb düzeyi (${hemoglobin} g/dL, Cutoff: 11.0).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 60 && ageMonths <= 144) {
@@ -129,6 +132,7 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
                 result.hbCategory = 'Patolojik Anemi';
                 result.hbEvaluation = { isAnemic: true, text: `Anemi (Hb ${hemoglobin} < 11.5 g/dL).`, badgeColor: 'rose' };
             } else {
+                result.hbCategory = 'Normal';
                 result.hbEvaluation = { isAnemic: false, text: `Normal Hb düzeyi (${hemoglobin} g/dL, Cutoff: 11.5).`, badgeColor: 'emerald' };
             }
         } else if (ageMonths > 144) {

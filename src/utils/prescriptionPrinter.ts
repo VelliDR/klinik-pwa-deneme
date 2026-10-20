@@ -375,6 +375,16 @@ export const PRESCRIPTION_PRESETS: PrescriptionPreset[] = [
   }
 ];
 
+export function escapeHtml(str: string | number | null | undefined): string {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /**
  * Resmi Hasta İlaç Kullanım Çizelgesi HTML Üreticisi (A4 Print Ready)
  */
@@ -382,22 +392,27 @@ export function generatePrescriptionHTML(
   patient: PrescriptionPrintPatientInfo,
   schedules: PrintableDrugSchedule[]
 ): string {
-  const today = patient.dateStr || new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const doctor = patient.doctorName || 'Dr. Hekim Kaşe / İmza';
-  const name = patient.patientName || 'Sayın Hasta';
-  const age = patient.age || '--';
-  const weight = patient.weightKg ? `${patient.weightKg} kg` : '--';
-  const gender = patient.gender || '--';
-  const diagnosis = patient.diagnosis || 'Klinik Muayene & Tedavi';
-  const rxNumber = patient.rxNumber || `RX-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
-  const allergy = patient.allergyNotes || 'Bilinen İlaç Alerjisi Yok';
-  const clinic = patient.clinicTitle || 'T.C. SAĞLIK BAKANLIĞI / POLİKLİNİK';
+  const today = escapeHtml(patient.dateStr || new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }));
+  const doctor = escapeHtml(patient.doctorName || 'Dr. Hekim Kaşe / İmza');
+  const name = escapeHtml(patient.patientName || 'Sayın Hasta');
+  const age = escapeHtml(patient.age || '--');
+  const weight = escapeHtml(patient.weightKg ? `${patient.weightKg} kg` : '--');
+  const gender = escapeHtml(patient.gender || '--');
+  const diagnosis = escapeHtml(patient.diagnosis || 'Klinik Muayene & Tedavi');
+  const rxNumber = escapeHtml(patient.rxNumber || `RX-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`);
+  const allergy = escapeHtml(patient.allergyNotes || 'Bilinen İlaç Alerjisi Yok');
+  const clinic = escapeHtml(patient.clinicTitle || 'T.C. SAĞLIK BAKANLIĞI / POLİKLİNİK');
 
   const rowsHtml = schedules.map((item, idx) => {
-    const morningVal = item.morningDose && item.morningDose !== '-' ? item.morningDose : (item.morning ? '1' : '-');
-    const noonVal = item.noonDose && item.noonDose !== '-' ? item.noonDose : (item.noon ? '1' : '-');
-    const eveningVal = item.eveningDose && item.eveningDose !== '-' ? item.eveningDose : (item.evening ? '1' : '-');
-    const nightVal = item.nightDose && item.nightDose !== '-' ? item.nightDose : (item.night ? '1' : '-');
+    const rawMorning = item.morningDose && item.morningDose !== '-' ? item.morningDose : (item.morning ? '1' : '-');
+    const rawNoon = item.noonDose && item.noonDose !== '-' ? item.noonDose : (item.noon ? '1' : '-');
+    const rawEvening = item.eveningDose && item.eveningDose !== '-' ? item.eveningDose : (item.evening ? '1' : '-');
+    const rawNight = item.nightDose && item.nightDose !== '-' ? item.nightDose : (item.night ? '1' : '-');
+
+    const morningVal = escapeHtml(rawMorning);
+    const noonVal = escapeHtml(rawNoon);
+    const eveningVal = escapeHtml(rawEvening);
+    const nightVal = escapeHtml(rawNight);
 
     let mealBadge = '<span class="text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">Farketmez</span>';
     if (item.mealTiming === 'TOK') {
@@ -411,33 +426,33 @@ export function generatePrescriptionHTML(
     return `
       <tr class="border-b border-slate-300 hover:bg-slate-50/50">
         <td class="p-2 text-xs font-semibold text-slate-900 border-r border-slate-200">
-          <div class="font-bold text-slate-900">${idx + 1}. ${item.name}</div>
+          <div class="font-bold text-slate-900">${idx + 1}. ${escapeHtml(item.name)}</div>
           <div class="text-[10px] text-slate-500 font-mono flex items-center gap-1.5">
-            ${item.generic ? `<span>${item.generic}</span>` : ''}
-            ${item.form ? `<span class="bg-slate-200 text-slate-700 px-1 rounded text-[9px]">${item.form}</span>` : ''}
+            ${item.generic ? `<span>${escapeHtml(item.generic)}</span>` : ''}
+            ${item.form ? `<span class="bg-slate-200 text-slate-700 px-1 rounded text-[9px]">${escapeHtml(item.form)}</span>` : ''}
           </div>
         </td>
-        <td class="p-2 text-xs font-mono text-center text-slate-800 border-r border-slate-200 font-semibold">${item.dosage}</td>
-        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${morningVal !== '-' ? 'font-bold text-slate-900 bg-amber-100/60' : 'text-slate-300'}">
+        <td class="p-2 text-xs font-mono text-center text-slate-800 border-r border-slate-200 font-semibold">${escapeHtml(item.dosage)}</td>
+        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${rawMorning !== '-' ? 'font-bold text-slate-900 bg-amber-100/60' : 'text-slate-300'}">
           ${morningVal}
         </td>
-        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${noonVal !== '-' ? 'font-bold text-slate-900 bg-amber-100/60' : 'text-slate-300'}">
+        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${rawNoon !== '-' ? 'font-bold text-slate-900 bg-amber-100/60' : 'text-slate-300'}">
           ${noonVal}
         </td>
-        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${eveningVal !== '-' ? 'font-bold text-slate-900 bg-amber-100/60' : 'text-slate-300'}">
+        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${rawEvening !== '-' ? 'font-bold text-slate-900 bg-amber-100/60' : 'text-slate-300'}">
           ${eveningVal}
         </td>
-        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${nightVal !== '-' ? 'font-bold text-slate-900 bg-indigo-100/60' : 'text-slate-300'}">
+        <td class="p-2 text-xs font-mono text-center border-r border-slate-200 ${rawNight !== '-' ? 'font-bold text-slate-900 bg-indigo-100/60' : 'text-slate-300'}">
           ${nightVal}
         </td>
         <td class="p-2 text-xs text-center border-r border-slate-200">
           ${mealBadge}
         </td>
         <td class="p-2 text-xs font-mono text-center text-slate-700 border-r border-slate-200">
-          ${item.duration || 'Biten Kadar'}
+          ${escapeHtml(item.duration || 'Biten Kadar')}
         </td>
         <td class="p-2 text-[11px] text-slate-800 leading-snug">
-          <div>${item.instructions}</div>
+          <div>${escapeHtml(item.instructions)}</div>
         </td>
       </tr>
     `;

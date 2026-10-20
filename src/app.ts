@@ -24,7 +24,7 @@ import { calculateCorrectedCalcium } from './engines/calciumEngine';
 import { calculateInfusionRate, calculateGIR } from './engines/infusionEngine';
 import { convertSteroids, calculateHOMAIR } from './engines/endocrineEngine';
 import { generateSOAP } from './utils/soapGenerator';
-import { ensureDrugCatalogReady, isDrugCatalogReady, searchDrugsInDB } from './db/titckIndexedDB';
+import { ensureDrugCatalogReady, isDrugCatalogReady, searchDrugsInDB, type DrugSearchMode } from './db/titckIndexedDB';
 import { getDrugBadgesHTML, findEquivalents } from './drugEngine';
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine';
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine';
@@ -145,6 +145,26 @@ export interface PatientAgeResult {
     ageGroupTag: string;
 }
 
+let lastAgeInputSource: 'dob' | 'numeric' = 'numeric';
+if (typeof document !== 'undefined') {
+    document.addEventListener('input', (e: Event) => {
+        const id = (e.target as HTMLElement | null)?.id;
+        if (id === 'input-dob' || id === 'input-birth-time') {
+            lastAgeInputSource = 'dob';
+        } else if (id === 'input-age' || id === 'select-age-unit') {
+            lastAgeInputSource = 'numeric';
+        }
+    }, true);
+    document.addEventListener('change', (e: Event) => {
+        const id = (e.target as HTMLElement | null)?.id;
+        if (id === 'input-dob' || id === 'input-birth-time') {
+            lastAgeInputSource = 'dob';
+        } else if (id === 'input-age' || id === 'select-age-unit') {
+            lastAgeInputSource = 'numeric';
+        }
+    }, true);
+}
+
 export function calculatePatientAge(): PatientAgeResult {
     const dobInput = getEl<HTMLInputElement>('input-dob');
     const timeInput = getEl<HTMLInputElement>('input-birth-time');
@@ -155,7 +175,7 @@ export function calculatePatientAge(): PatientAgeResult {
     const textBreakdown = getEl('text-dob-breakdown');
     const badgeDobTag = getEl('badge-dob-tag');
 
-    const dobVal = dobInput?.value;
+    let dobVal = dobInput?.value;
     const ageVal = parseNum(ageInput?.value);
     const unitVal = ageUnitSelect?.value || 'years';
 
@@ -177,11 +197,19 @@ export function calculatePatientAge(): PatientAgeResult {
     }
 
     // Determine data source priority:
-    // If user is actively typing numeric age, prioritize numeric input
     const isAgeInputActive = typeof document !== 'undefined' && 
         (document.activeElement === ageInput || document.activeElement === ageUnitSelect);
+    const isDobInputActive = typeof document !== 'undefined' && 
+        (document.activeElement === dobInput || document.activeElement === timeInput);
+
+    // If user explicitly cleared the numeric age input while focused on it, clear synced DOB too
+    if (isAgeInputActive && ageInput && ageInput.value.trim() === '' && dobInput) {
+        dobInput.value = '';
+        dobVal = '';
+    }
+
     const hasNumeric = (ageVal !== null && !isNaN(ageVal));
-    const useNumeric = hasNumeric && (isAgeInputActive || !dobVal || unitVal !== 'dob');
+    const useNumeric = hasNumeric && !isDobInputActive && (isAgeInputActive || !dobVal || lastAgeInputSource === 'numeric');
 
     let y: number | null = null;
     let m: number | null = null;
@@ -228,7 +256,7 @@ export function calculatePatientAge(): PatientAgeResult {
         }
 
         // Approximate DOB sync when user types numeric age
-        if (dobInput && typeof document !== 'undefined' && document.activeElement !== dobInput && days !== null) {
+        if (dobInput && typeof document !== 'undefined' && !isDobInputActive && days !== null) {
             const targetDate = new Date();
             targetDate.setDate(targetDate.getDate() - days);
             const yyyy = targetDate.getFullYear();
@@ -243,7 +271,10 @@ export function calculatePatientAge(): PatientAgeResult {
             badgeDobTag.textContent = ageGroupTag;
         }
     } else if (dobVal) {
-        const birthDate = new Date(dobVal);
+        const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dobVal.trim());
+        const birthDate = isoMatch
+            ? new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]))
+            : new Date(dobVal);
         const timeVal = timeInput?.value;
         if (timeVal) {
             const [hh, mm_val] = timeVal.split(':').map(Number);
@@ -789,7 +820,7 @@ export function updateAllTabs(): void {
     const tbsa = getNum('input-parkland-tbsa');
     const pkRes = getEl('output-parkland');
     if (tbsa && appState.biometry.weightKg && pkRes) {
-        const pkVal = calculateParkland(appState.biometry.weightKg, tbsa, appState.biometry.ageYears || undefined);
+        const pkVal = calculateParkland(appState.biometry.weightKg, tbsa, appState.biometry.ageYears ?? undefined);
         appState.surgery.parkland = pkVal;
         if (pkVal) {
             pkRes.classList.remove('hidden');
@@ -991,7 +1022,7 @@ export function updateAllTabs(): void {
 
     if (ionNa !== null && appState.biometry.weightKg && appState.biometry.gender) {
         const isMale = appState.biometry.gender === 'male' || appState.biometry.gender === 'M';
-        const ageYears = appState.biometry.ageYears || 30; // fallback
+        const ageYears = appState.biometry.ageYears ?? 30; // fallback only when null/undefined
         const tbwFraction = isMale ? (ageYears > 65 ? 0.5 : 0.6) : (ageYears > 65 ? 0.45 : 0.5);
         
         const targetNa = ionNa < 135
@@ -1138,6 +1169,9 @@ export function updateAllTabs(): void {
                 }
             } else if (rrBoxesInput.value === '') {
                 rrInput.value = '';
+                if (hrInput && document.activeElement !== hrInput) {
+                    hrInput.value = '';
+                }
             }
         }
         if (document.activeElement === qrsBoxesInput && qrsBoxesInput && qrsInput) {
@@ -1150,16 +1184,27 @@ export function updateAllTabs(): void {
         }
     }
 
+    // If user explicitly cleared HR or RR while focused on it, clear the paired field too
+    if (typeof document !== 'undefined') {
+        if (document.activeElement === hrInput && hrInput && hrInput.value.trim() === '') {
+            if (rrInput) rrInput.value = '';
+            if (rrBoxesInput) rrBoxesInput.value = '';
+        } else if (document.activeElement === rrInput && rrInput && rrInput.value.trim() === '') {
+            if (hrInput) hrInput.value = '';
+            if (rrBoxesInput) rrBoxesInput.value = '';
+        }
+    }
+
     let qt = qtInput ? parseNum(qtInput.value) : null;
     let hrVal = hrInput ? parseNum(hrInput.value) : null;
     let rrVal = rrInput ? parseNum(rrInput.value) : null;
 
     // Sync HR (vital bulgular) and RR (ms) dynamically
     if (typeof document !== 'undefined') {
-        if (hrVal !== null && (rrVal === null || document.activeElement === hrInput) && rrInput) {
+        if (hrVal !== null && hrVal > 0 && (rrVal === null || document.activeElement === hrInput) && rrInput) {
             rrVal = Math.round(60000 / hrVal);
             rrInput.value = String(rrVal);
-        } else if (rrVal !== null && (hrVal === null || document.activeElement === rrInput) && hrInput) {
+        } else if (rrVal !== null && rrVal > 0 && (hrVal === null || document.activeElement === rrInput) && hrInput) {
             hrVal = Math.round(60000 / rrVal);
             hrInput.value = String(hrVal);
         }
@@ -1219,7 +1264,7 @@ export function updateAllTabs(): void {
            qt: qt,
            qrs: qrs || undefined,
            qrsPattern: qrsPattern,
-           age: appState.biometry.ageYears || undefined,
+           age: appState.biometry.ageYears ?? undefined,
            gender: appState.biometry.gender || undefined,
            k_level: getNum('input-serum-k') || undefined,
            is_ami: getChk('chk-tisdale-ami'),
@@ -1702,11 +1747,14 @@ export function updateAllTabs(): void {
         appState.nephroTox.correctedSodium = corrRes;
         let osmRes: any = null;
         if (osmMeas) {
+            const bunForOsm = feureaSBun !== null
+                ? (feureaUnit === 'urea' ? +(feureaSBun / 2.14).toFixed(1) : feureaSBun)
+                : 15;
             osmRes = calculateOsmolalGap({
                 measuredOsmolality: osmMeas,
                 sodium: corrNaMeas,
                 glucoseMgDl: corrGlu,
-                bunMgDl: feureaSBun || 15
+                bunMgDl: bunForOsm
             });
             appState.nephroTox.osmolalGap = osmRes;
         }
@@ -1794,13 +1842,15 @@ export function updateAllTabs(): void {
         if (apapOut) apapOut.classList.add('hidden');
     }
 
-    // D. CURB-65 & CRB-65 (Yaş ve BUN otomatik eşitleme)
+    // D. CURB-65 & CRB-65 (Yaş ve BUN otomatik eşitleme - manuel tıklamayı ezmeden)
     const chkCurb65El = getEl<HTMLInputElement>('chk-curb-65');
-    if (chkCurb65El && appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined) {
+    if (chkCurb65El && appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined &&
+        (typeof document === 'undefined' || document.activeElement !== chkCurb65El)) {
         chkCurb65El.checked = appState.biometry.ageYears >= 65;
     }
     const chkCurbUEl = getEl<HTMLInputElement>('chk-curb-u');
-    if (chkCurbUEl && feureaSBun !== null) {
+    if (chkCurbUEl && feureaSBun !== null &&
+        (typeof document === 'undefined' || document.activeElement !== chkCurbUEl)) {
         chkCurbUEl.checked = (feureaUnit === 'bun' && feureaSBun > 19) || (feureaUnit === 'urea' && feureaSBun > 42);
     }
 
@@ -2032,15 +2082,16 @@ export function updateAllTabs(): void {
                     outRenal.classList.remove('hidden');
                     outRenal.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${renalRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                     outRenal.innerHTML = `
-                        <div class="font-bold text-xs">⚠️ Renal Dozaj Uyarısı (eGFR: ${renalRes.egfr} mL/dk)</div>
-                        ${(renalRes.warnings || []).map((w: any) => `<div class="text-[10px] leading-relaxed">• <strong>${w.drug}</strong>: ${w.message}</div>`).join('')}
+                        <div class="font-bold text-xs">⚠️ Renal Dozaj Uyarısı (eGFR: ${escapeHtml(renalRes.egfr)} mL/dk)</div>
+                        ${(renalRes.warnings || []).map((w: any) => `<div class="text-[10px] leading-relaxed">• <strong>${escapeHtml(w.drug)}</strong>: ${escapeHtml(w.message)}</div>`).join('')}
                     `;
                 }
             } else if (outRenal) {
                 outRenal.classList.add('hidden');
             }
-        } else if (outRenal) {
-            outRenal.classList.add('hidden');
+        } else {
+            appState.safetyPrescription.renalAdjustments = null;
+            if (outRenal) outRenal.classList.add('hidden');
         }
 
         // 6. Gebelik & Fetal Risk
@@ -2052,15 +2103,16 @@ export function updateAllTabs(): void {
                     outPreg.classList.remove('hidden');
                     outPreg.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${pregRes.hasSevereFetalRisk ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                     outPreg.innerHTML = `
-                        <div class="font-bold text-xs">🤰 Gebelik ve Fetotoksisite Uyarısı (${safetyTrim}. Trimester)</div>
-                        ${pregRes.alerts.map((a: any) => `<div class="text-[10px] leading-relaxed">• <strong>${a.drugName} (Kategori ${a.category})</strong>: ${a.warning}</div>`).join('')}
+                        <div class="font-bold text-xs">🤰 Gebelik ve Fetotoksisite Uyarısı (${escapeHtml(safetyTrim)}. Trimester)</div>
+                        ${pregRes.alerts.map((a: any) => `<div class="text-[10px] leading-relaxed">• <strong>${escapeHtml(a.drugName)} (Kategori ${escapeHtml(a.category)})</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
                     `;
                 }
             } else if (outPreg) {
                 outPreg.classList.add('hidden');
             }
-        } else if (outPreg) {
-            outPreg.classList.add('hidden');
+        } else {
+            appState.safetyPrescription.pregnancySafety = null;
+            if (outPreg) outPreg.classList.add('hidden');
         }
 
         // 7. Yenidoğan İlaç Toksisite ve Kontrendikasyon Kalkanı
@@ -2074,7 +2126,7 @@ export function updateAllTabs(): void {
                     outNeoDrug.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${neoDrugRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                     outNeoDrug.innerHTML = `
                         <div class="font-bold text-xs">🍼 Yenidoğan İlaç Güvenlik Kalkanı</div>
-                        ${neoDrugRes.alerts.map((a: any) => `<div class="text-[10px] leading-relaxed">• <strong>${a.drugName}</strong>: ${a.warning}</div>`).join('')}
+                        ${neoDrugRes.alerts.map((a: any) => `<div class="text-[10px] leading-relaxed">• <strong>${escapeHtml(a.drugName)}</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
                     `;
                 }
             } else if (outNeoDrug) {
@@ -2117,9 +2169,13 @@ export function updateAllTabs(): void {
         }
     } else {
         const outNeoDrug = getEl('output-safety-neonatal');
+        appState.safetyPrescription.tripleWhammy = null;
         appState.safetyPrescription.serotoninSyndrome = null;
         appState.safetyPrescription.hyperkalemiaRisk = null;
         appState.safetyPrescription.cypStatinInteraction = null;
+        appState.safetyPrescription.renalAdjustments = null;
+        appState.safetyPrescription.pregnancySafety = null;
+        appState.safetyPrescription.neonatalDrugSafety = null;
         if (outWhammy) outWhammy.classList.add('hidden');
         if (outSerotonin) outSerotonin.classList.add('hidden');
         if (outHyperkalemia) outHyperkalemia.classList.add('hidden');
@@ -2169,11 +2225,58 @@ const clearBtn = getEl('btn-clear-search');
 const drugInput = getEl<HTMLInputElement>('input-drug-search');
 const drugResult = getEl('container-search-results');
 
+let currentDrugSearchMode: DrugSearchMode = 'all';
 let currentDrugSearchSeq = 0;
 let drugSearchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+const modeButtons = document.querySelectorAll<HTMLButtonElement>('.drug-search-mode-btn');
+
+function updateSearchModeUI(newMode: DrugSearchMode): void {
+    currentDrugSearchMode = newMode;
+    modeButtons.forEach(btn => {
+        const mode = btn.dataset.mode as DrugSearchMode;
+        if (mode === currentDrugSearchMode) {
+            btn.className = 'drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-rose-950/90 text-rose-200 border-rose-500 font-semibold shadow-sm text-[11px]';
+        } else {
+            btn.className = 'drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-600 font-normal text-[11px]';
+        }
+    });
+
+    if (drugInput) {
+        if (currentDrugSearchMode === 'brand') {
+            drugInput.placeholder = 'İlaç / Müstahzar ticari adı ile ara (örn. Parol, Augmentin)...';
+        } else if (currentDrugSearchMode === 'generic') {
+            drugInput.placeholder = 'Etken madde / jenerik molekül adı ile ara (örn. Parasetamol, Amoksisilin)...';
+        } else if (currentDrugSearchMode === 'barcode') {
+            drugInput.placeholder = 'Barkod numarası veya ATC kodu ile ara (örn. 8699..., N02BE01)...';
+        } else {
+            drugInput.placeholder = 'İlaç adı, etken madde, barkod, firma...';
+        }
+
+        const q = drugInput.value.trim();
+        if (q.length >= 2) {
+            if (drugSearchDebounceTimer) {
+                clearTimeout(drugSearchDebounceTimer);
+                drugSearchDebounceTimer = null;
+            }
+            void executeDrugSearch(q);
+        }
+    }
+}
+
+modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode as DrugSearchMode;
+        if (mode) {
+            updateSearchModeUI(mode);
+        }
+    });
+});
+
+let executeDrugSearch: (q: string) => Promise<void> = async () => {};
+
 if (drugInput) {
-    const executeDrugSearch = async (q: string) => {
+    executeDrugSearch = async (q: string) => {
         if (!drugResult) return;
         if (q.length < 2) {
             drugResult.innerHTML = '';
@@ -2189,14 +2292,16 @@ if (drugInput) {
         }
 
         try {
-            const res = await searchDrugsInDB(q);
+            const res = await searchDrugsInDB(q, currentDrugSearchMode);
             if (thisSeq !== currentDrugSearchSeq) return;
 
             if (res && res.length > 0) {
                 drugResult.classList.remove('hidden');
                 drugResult.innerHTML = res.map((r: any) => {
-                        const ktUrl = r.kt_pdf_prospektus_url || r.kt || '';
-                        const kubUrl = r.kub_pdf_url || r.kub || '';
+                        const rawKtUrl = r.kt_pdf_prospektus_url || r.kt || '';
+                        const rawKubUrl = r.kub_pdf_url || r.kub || '';
+                        const ktUrl = /^https?:\/\//i.test(rawKtUrl) ? rawKtUrl : '';
+                        const kubUrl = /^https?:\/\//i.test(rawKubUrl) ? rawKubUrl : '';
                         const rxBorder = r.prescriptionType === 'Kırmızı' ? 'border-red-500' :
                                          r.prescriptionType === 'Yeşil' ? 'border-emerald-500' :
                                          (r.prescriptionType === 'Mor' || r.prescriptionType === 'Turuncu') ? 'border-purple-500' :
@@ -2211,6 +2316,14 @@ if (drugInput) {
                         const safeKtUrl = escapeHtml(ktUrl);
                         const safeKubUrl = escapeHtml(kubUrl);
 
+                        const genericHighlightClass = currentDrugSearchMode === 'generic' 
+                            ? 'text-emerald-300 font-bold bg-emerald-950/70 px-1 py-0.5 rounded border border-emerald-700/60'
+                            : 'text-emerald-400 font-semibold';
+
+                        const brandHighlightClass = currentDrugSearchMode === 'brand'
+                            ? 'text-rose-200 underline decoration-rose-500 font-extrabold'
+                            : 'text-rose-300 font-bold';
+
                         return `
                         <div class="mb-2 p-2.5 border-l-2 ${rxBorder} bg-slate-900 rounded-r-lg shadow-sm space-y-1.5 transition-all hover:bg-slate-850">
                             <div class="flex items-start justify-between gap-2">
@@ -2223,12 +2336,12 @@ if (drugInput) {
                                      data-company="${safeCompany}"
                                      data-kt="${safeKtUrl}"
                                      data-kub="${safeKubUrl}">
-                                    <div class="text-rose-300 text-xs sm:text-sm font-bold flex flex-wrap items-center gap-1.5 leading-snug">
+                                    <div class="${brandHighlightClass} text-xs sm:text-sm flex flex-wrap items-center gap-1.5 leading-snug">
                                         <span>${safeBrand}</span>
                                         ${getDrugBadgesHTML(r)}
                                     </div>
                                     <div class="text-[11px] text-slate-300 font-medium mt-0.5">
-                                        <span class="text-emerald-400 font-semibold">${safeGeneric}</span>
+                                        <span class="${genericHighlightClass}">${safeGeneric}</span>
                                         ${r.atcCode ? `<span class="text-slate-500 font-mono text-[10px]"> | ATC: ${safeAtc}</span>` : ''}
                                         ${r.barcode ? `<span class="text-slate-500 font-mono text-[10px]"> | Barkod: ${safeBarcode}</span>` : ''}
                                     </div>
@@ -2238,8 +2351,7 @@ if (drugInput) {
                                     <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-id="${escapeHtml(r.id || '')}" data-atc="${safeAtc}" data-generic="${safeGeneric}" title="Eşdeğer / Muadil İlaçları Bul">Muadil</button>
                                 </div>
                             </div>
-                            ${(ktUrl || kubUrl) ? `
-                            <div class="flex items-center gap-2 pt-1 border-t border-slate-800">
+                            <div class="flex items-center flex-wrap gap-2 pt-1 border-t border-slate-800">
                                 ${ktUrl ? `
                                     <a href="${safeKtUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 hover:border-amber-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" title="Resmi TİTCK Kullanma Talimatı (Prospektüs)">
                                         <span>📄 Prospektüs (KT)</span>
@@ -2250,20 +2362,49 @@ if (drugInput) {
                                         <span>📋 KÜB</span>
                                     </a>
                                 ` : ''}
+                                ${(!ktUrl && !kubUrl) ? `
+                                    <a href="https://www.google.com/search?q=${encodeURIComponent(r.brand + ' prospektüs kub titck pdf')}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 bg-slate-800/90 hover:bg-amber-950/60 text-amber-300 border border-slate-700 hover:border-amber-600/70 px-2 py-0.5 rounded text-[10px] font-medium transition-colors" title="Google / Web üzerinde prospektüs & KÜB PDF ara">
+                                        <span>🔍 Prospektüs Ara</span>
+                                    </a>
+                                    <a href="https://titck.gov.tr/ilac/kub-kt" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 bg-slate-800/90 hover:bg-sky-950/60 text-sky-300 border border-slate-700 hover:border-sky-600/70 px-2 py-0.5 rounded text-[10px] font-medium transition-colors" title="TİTCK Resmi KÜB/KT Portalı">
+                                        <span>🏛️ TİTCK Sorgula</span>
+                                    </a>
+                                ` : ''}
                             </div>
-                            ` : ''}
                         </div>
                         `;
                     }).join('');
             } else {
                 drugResult.classList.remove('hidden');
-                drugResult.innerHTML = '<div class="p-3 text-xs text-gray-500 bg-slate-900 text-center rounded">Eşleşen ilaç bulunamadı</div>';
+                let emptyMsg = 'Eşleşen ilaç bulunamadı';
+                if (currentDrugSearchMode === 'generic') {
+                    emptyMsg = 'Etken madde modunda eşleşme bulunamadı.<br><span class="text-slate-400 text-[11px] block mt-1">Aradığınız bir ticari marka ise (örn. Parol, Augmentin), yukarıdan <strong class="text-rose-300">"İlaç Adı"</strong> veya <strong class="text-rose-300">"Tümü"</strong> sekmesine geçebilirsiniz.</span>';
+                } else if (currentDrugSearchMode === 'brand') {
+                    emptyMsg = 'İlaç adı modunda eşleşme bulunamadı.<br><span class="text-slate-400 text-[11px] block mt-1">Aradığınız bir molekül/etken madde ise (örn. Parasetamol, Amoksisilin), yukarıdan <strong class="text-emerald-300">"Etken Madde"</strong> veya <strong class="text-rose-300">"Tümü"</strong> sekmesine geçebilirsiniz.</span>';
+                } else if (currentDrugSearchMode === 'barcode') {
+                    emptyMsg = 'Barkod veya ATC modunda eşleşme bulunamadı.<br><span class="text-slate-400 text-[11px] block mt-1">Barkod numarasını (13 hane) veya ATC kodunu (örn. N02BE01) kontrol ediniz.</span>';
+                }
+                drugResult.innerHTML = `<div class="p-3 text-xs text-slate-300 bg-slate-900 text-center rounded leading-relaxed border border-slate-800">${emptyMsg}</div>`;
             }
         } catch (err) {
             console.error('Arama hatası:', err);
             drugResult.innerHTML = '<div class="p-3 text-xs text-rose-400 bg-slate-900 text-center rounded">Arama sırasında bir sorun oluştu</div>';
         }
     };
+
+    drugInput.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const q = drugInput.value.trim();
+            if (q.length >= 2) {
+                if (drugSearchDebounceTimer) {
+                    clearTimeout(drugSearchDebounceTimer);
+                    drugSearchDebounceTimer = null;
+                }
+                void executeDrugSearch(q);
+            }
+        }
+    });
 
     drugInput.addEventListener('input', (e: Event) => {
         const target = e.target as HTMLInputElement;
@@ -2324,6 +2465,9 @@ if (drugResult) {
             const generic = btnMuadil.getAttribute('data-generic') || '';
             const eqList = await findEquivalents({ id, atcCode: atc, generic });
             const query = (atc && atc !== 'Belirtilmedi') ? atc : generic;
+            if (currentDrugSearchMode === 'brand') {
+                updateSearchModeUI('all');
+            }
             if (eqList.length > 0 && query) {
                 drugInput.value = query;
                 drugInput.dispatchEvent(new Event('input'));
@@ -2376,7 +2520,10 @@ export function renderSelectedDrugs(): void {
         return;
     }
     
-    container.innerHTML = appState.treatment.selectedDrugs.map((d: any, index: number) => `
+    container.innerHTML = appState.treatment.selectedDrugs.map((d: any, index: number) => {
+        const validKt = d.kt && /^https?:\/\//i.test(d.kt) ? escapeHtml(d.kt) : '';
+        const validKub = d.kub && /^https?:\/\//i.test(d.kub) ? escapeHtml(d.kub) : '';
+        return `
         <div class="flex justify-between items-center bg-slate-900 p-2.5 rounded-lg border border-slate-700/80 mb-1.5">
             <div class="flex flex-col flex-1 pr-2">
                 <div class="flex items-center gap-1.5 flex-wrap">
@@ -2384,16 +2531,22 @@ export function renderSelectedDrugs(): void {
                     ${d.rx && d.rx !== 'Normal' ? `<span class="text-[9px] px-1 py-0.5 rounded ${d.rx === 'Kırmızı' ? 'bg-red-950 text-red-300 border border-red-700' : 'bg-emerald-950 text-emerald-300 border border-emerald-700'} font-semibold">${escapeHtml(d.rx)}</span>` : ''}
                 </div>
                 <span class="text-[10px] text-slate-400 mt-0.5">${escapeHtml(d.generic)}${d.company ? ` • <span class="text-slate-500">${escapeHtml(d.company)}</span>` : ''}</span>
-                ${(d.kt || d.kub) ? `
+                ${(validKt || validKub) ? `
                     <div class="flex gap-2 mt-1">
-                        ${d.kt ? `<a href="${escapeHtml(d.kt)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline">📄 Prospektüs</a>` : ''}
-                        ${d.kub ? `<a href="${escapeHtml(d.kub)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline">📋 KÜB</a>` : ''}
+                        ${validKt ? `<a href="${validKt}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline">📄 Prospektüs</a>` : ''}
+                        ${validKub ? `<a href="${validKub}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline">📋 KÜB</a>` : ''}
                     </div>
-                ` : ''}
+                ` : `
+                    <div class="flex gap-2 mt-1">
+                        <a href="https://www.google.com/search?q=${encodeURIComponent(d.brand + ' prospektüs kub titck pdf')}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-amber-400/80 hover:text-amber-300 hover:underline" title="Google / Web üzerinde prospektüs ara">🔍 Prospektüs Ara</a>
+                        <a href="https://titck.gov.tr/ilac/kub-kt" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-0.5 text-[9px] text-sky-400/80 hover:text-sky-300 hover:underline" title="TİTCK Resmi KÜB/KT Portalı">🏛️ TİTCK</a>
+                    </div>
+                `}
             </div>
             <button class="text-slate-500 hover:text-rose-500 text-xs px-2 py-1 rounded hover:bg-slate-800 transition-colors" onclick="window.removeDrug(${index})" title="İlacı Kaldır">✕</button>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ----------------------------------------------------------------------------
@@ -2794,8 +2947,8 @@ export function initWorkstationPackages(): void {
 
         if (!motors || motors.length === 0) return;
 
-        // Workspace içindeki tüm <details> kartlarını filtrele
-        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details');
+        // Workspace içindeki tüm doğrudan <details> kartlarını filtrele (iç içe alt details öğelerini gizleme)
+        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace > details');
         allCards.forEach(card => {
             if (motors.includes(card.id)) {
                 card.classList.remove('hidden');
@@ -2873,7 +3026,7 @@ export function initWorkstationPackages(): void {
 
     // B. Tüm Motorları Göster & Sıfırla
     function showAllMotors(): void {
-        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details');
+        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace > details');
         allCards.forEach(c => c.classList.remove('hidden'));
 
         currentActivePackId = null;
@@ -3180,7 +3333,7 @@ export function initResponsiveWorkstation(): void {
             pill.classList.add('active', 'bg-rose-600', 'text-white');
 
             const cat = pill.getAttribute('data-cat');
-            const cards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details');
+            const cards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace > details');
             if (cat === 'all') {
                 cards.forEach(c => c.classList.remove('hidden'));
                 const ws = getEl('clinical-workspace');
@@ -3451,12 +3604,22 @@ export function initResponsiveWorkstation(): void {
             </div>
         `).join('');
 
+        const handleSelectQuickMotor = (motorId: string) => {
+            const query = inputQuick ? inputQuick.value.trim() : '';
+            closeQuickModal();
+            jumpToMotor(motorId);
+            if (motorId === 'card-ilac' && query && drugInput) {
+                drugInput.value = query;
+                drugInput.dispatchEvent(new Event('input', { bubbles: true }));
+                void executeDrugSearch(query);
+            }
+        };
+
         listQuick.querySelectorAll('.quick-item').forEach(el => {
             el.addEventListener('click', () => {
                 const motorId = el.getAttribute('data-motor-id');
                 if (motorId) {
-                    closeQuickModal();
-                    jumpToMotor(motorId);
+                    handleSelectQuickMotor(motorId);
                 }
             });
         });
@@ -3513,8 +3676,14 @@ export function initResponsiveWorkstation(): void {
                 e.preventDefault();
                 if (currentQuickResults[activeQuickIndex]) {
                     const motorId = currentQuickResults[activeQuickIndex].id;
+                    const query = inputQuick ? inputQuick.value.trim() : '';
                     closeQuickModal();
                     jumpToMotor(motorId);
+                    if (motorId === 'card-ilac' && query && drugInput) {
+                        drugInput.value = query;
+                        drugInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        void executeDrugSearch(query);
+                    }
                 }
             } else if (e.key === 'Escape') {
                 closeQuickModal();
@@ -3653,19 +3822,19 @@ export function initResponsiveWorkstation(): void {
                     </div>
                     <div class="text-center">
                         <label class="text-[9px] text-amber-300 block mb-0.5">🌅 Sabah</label>
-                        <input type="text" class="rx-input-morning w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.morningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${d.morningDose || (d.morning ? '1' : '-')}" placeholder="-">
+                        <input type="text" class="rx-input-morning w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.morningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.morningDose || (d.morning ? '1' : '-'))}" placeholder="-">
                     </div>
                     <div class="text-center">
                         <label class="text-[9px] text-amber-300 block mb-0.5">☀️ Öğle</label>
-                        <input type="text" class="rx-input-noon w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.noonDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${d.noonDose || (d.noon ? '1' : '-')}" placeholder="-">
+                        <input type="text" class="rx-input-noon w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.noonDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.noonDose || (d.noon ? '1' : '-'))}" placeholder="-">
                     </div>
                     <div class="text-center">
                         <label class="text-[9px] text-amber-300 block mb-0.5">🌆 Akşam</label>
-                        <input type="text" class="rx-input-evening w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.eveningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${d.eveningDose || (d.evening ? '1' : '-')}" placeholder="-">
+                        <input type="text" class="rx-input-evening w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.eveningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.eveningDose || (d.evening ? '1' : '-'))}" placeholder="-">
                     </div>
                     <div class="text-center">
                         <label class="text-[9px] text-indigo-300 block mb-0.5">🌙 Gece</label>
-                        <input type="text" class="rx-input-night w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.nightDose !== '-' ? 'text-indigo-300 font-bold' : 'text-slate-500'}" value="${d.nightDose || (d.night ? '1' : '-')}" placeholder="-">
+                        <input type="text" class="rx-input-night w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.nightDose !== '-' ? 'text-indigo-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.nightDose || (d.night ? '1' : '-'))}" placeholder="-">
                     </div>
                     <div>
                         <label class="text-[9px] text-slate-400 block mb-0.5">Öğün Durumu:</label>
@@ -4028,6 +4197,7 @@ export function initResponsiveWorkstation(): void {
                 badgeAdrTimerStatus.textContent = 'Beklemede';
                 badgeAdrTimerStatus.className = 'text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800';
             }
+            updateLiveSOAP();
         });
     }
 
@@ -4090,6 +4260,7 @@ export function initResponsiveWorkstation(): void {
             }
             if (btnStatusPause) btnStatusPause.classList.add('hidden');
             highlightStatusPhaseCard(1);
+            updateLiveSOAP();
         });
     }
 
@@ -4102,7 +4273,8 @@ export function initResponsiveWorkstation(): void {
             const timerState = getAnaphylaxisTimerState();
             const formatted = formatAnaphylaxisSoapNote(doses, Math.max(1, timerState.dosesGiven));
             if (inputCustomNotes) {
-                inputCustomNotes.value = appendTemplateToText(inputCustomNotes.value, formatted);
+                const current = inputCustomNotes.value.trim();
+                inputCustomNotes.value = current ? `${current}\n\n${formatted}` : formatted;
             }
             updateAllTabs();
             btnAnaphylaxisToSoap.textContent = '✓ SOAP Notuna Eklendi';
@@ -4119,7 +4291,8 @@ export function initResponsiveWorkstation(): void {
             const minutes = Math.floor(timerState.elapsedSeconds / 60);
             const formatted = formatStatusEpilepticusSoapNote(doses, minutes);
             if (inputCustomNotes) {
-                inputCustomNotes.value = appendTemplateToText(inputCustomNotes.value, formatted);
+                const current = inputCustomNotes.value.trim();
+                inputCustomNotes.value = current ? `${current}\n\n${formatted}` : formatted;
             }
             updateAllTabs();
             btnStatusToSoap.textContent = '✓ SOAP Notuna Eklendi';

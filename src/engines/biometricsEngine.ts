@@ -26,17 +26,21 @@ export function determineAgeGroup(ageValue: number | null | undefined, ageUnit: 
     if (ageUnit === 'years') totalMonths = ageValue * 12;
     else if (ageUnit === 'months') totalMonths = ageValue;
     else if (ageUnit === 'weeks') totalMonths = ageValue / 4.345;
-    else if (ageUnit === 'days') totalMonths = ageValue / 30; 
+    else if (ageUnit === 'days') totalMonths = ageValue / 30.4375;
 
-    // 2. Yenidoğan Sınırı (Gün seçildiyse 28 gün kuralı katı işler)
-    if (ageUnit === 'days' && ageValue <= 28) return AGE_GROUPS.NEONATE;
-    if (ageUnit === 'weeks' && ageValue <= 4) return AGE_GROUPS.NEONATE;
-    if (totalMonths <= 1) return AGE_GROUPS.NEONATE;
+    // 2. Yenidoğan Sınırı (0-28 gün / <= 4 hafta / < 1 ay)
+    if (ageUnit === 'days') {
+        if (ageValue <= 28) return AGE_GROUPS.NEONATE;
+    } else if (ageUnit === 'weeks') {
+        if (ageValue <= 4) return AGE_GROUPS.NEONATE;
+    } else if (totalMonths < 1) {
+        return AGE_GROUPS.NEONATE;
+    }
 
     // 3. Diğer Yaş Grupları
     if (totalMonths <= 12) return AGE_GROUPS.INFANT;
-    if (totalMonths <= 36) return AGE_GROUPS.TODDLER;
-    if (totalMonths <= 48) return AGE_GROUPS.PRESCHOOL;
+    if (totalMonths < 36) return AGE_GROUPS.TODDLER;
+    if (totalMonths < 60) return AGE_GROUPS.PRESCHOOL;
     
     const years = Math.floor(totalMonths / 12);
     if (years <= 11) return AGE_GROUPS.CHILD;

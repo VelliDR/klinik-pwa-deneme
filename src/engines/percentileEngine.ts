@@ -11,14 +11,16 @@ export function standardNormalCDF(z: number | null | undefined): number | null {
     const isNegative = z < 0;
     const absZ = Math.abs(z);
     
-    // Abramowitz & Stegun katsayıları
+    // Abramowitz & Stegun Eq. 26.2.19 katsayıları (maksimum mutlak hata < 1.5e-7)
     const d1 = 0.0498673470;
     const d2 = 0.0211410061;
     const d3 = 0.0032776263;
     const d4 = 0.0000380036;
+    const d5 = 0.0000488906;
+    const d6 = 0.0000053830;
 
-    const poly = 1 + d1*absZ + d2*(absZ**2) + d3*(absZ**3) + d4*(absZ**4);
-    const p = 1 - 0.5 * (poly ** -4);
+    const poly = 1 + d1*absZ + d2*(absZ**2) + d3*(absZ**3) + d4*(absZ**4) + d5*(absZ**5) + d6*(absZ**6);
+    const p = 1 - 0.5 * (poly ** -16);
 
     return isNegative ? (1 - p) : p;
 }
@@ -153,6 +155,7 @@ export interface PercentilesInput {
     heightCm?: number | null;
     weightKg?: number | null;
     headCircumferenceCm?: number | null;
+    headCircCm?: number | null;
     isPediatric?: boolean;
 }
 
@@ -179,12 +182,14 @@ export function calculatePercentiles({
     gender,
     heightCm = null,
     weightKg = null,
-    headCircumferenceCm = null
+    headCircumferenceCm = null,
+    headCircCm = null
 }: PercentilesInput): PercentilesResult | null {
     const effectiveMonths = (ageMonths !== undefined && ageMonths !== null) ? ageMonths : totalMonths;
     if (effectiveMonths === null || effectiveMonths === undefined || isNaN(effectiveMonths)) return null;
     const sex: 'male' | 'female' = (gender === 'female' || gender === 'F') ? 'female' : 'male';
     const norms = getGrowthNorms(effectiveMonths, sex);
+    const effectiveHeadCircCm = (headCircumferenceCm !== null && headCircumferenceCm !== undefined) ? headCircumferenceCm : headCircCm;
 
     let heightZ: number | null = null;
     let heightP: number | null = null;
@@ -212,8 +217,8 @@ export function calculatePercentiles({
 
     let headCircZ: number | null = null;
     let headCircP: number | null = null;
-    if (headCircumferenceCm !== null && headCircumferenceCm > 0 && effectiveMonths <= 36) {
-        headCircZ = calculateLMSZScore(headCircumferenceCm, norms.headCirc.l, norms.headCirc.m, norms.headCirc.s);
+    if (effectiveHeadCircCm !== null && effectiveHeadCircCm > 0 && effectiveMonths <= 36) {
+        headCircZ = calculateLMSZScore(effectiveHeadCircCm, norms.headCirc.l, norms.headCirc.m, norms.headCirc.s);
         headCircP = zToPercentile(headCircZ);
     }
 

@@ -15,7 +15,8 @@ export function calculateNEWS2(
     oxygen: boolean | null | undefined, 
     avpu: string | null | undefined
 ): NEWS2Result | null {
-    if (hr == null && sbp == null && rr == null && temp == null) return null;
+    const hasValidNumeric = [hr, sbp, rr, temp, spo2].some(v => v != null && !isNaN(v));
+    if (!hasValidNumeric) return null;
 
     let score = 0;
     let hasRedScore = false;
@@ -27,17 +28,18 @@ export function calculateNEWS2(
     
     // RR
     if (rr != null && !isNaN(rr)) {
-        if (rr <= 8) addScore(3);
-        else if (rr >= 9 && rr <= 11) addScore(1);
-        else if (rr >= 21 && rr <= 24) addScore(2);
-        else if (rr >= 25) addScore(3);
+        if (rr < 9) addScore(3);
+        else if (rr < 12) addScore(1);
+        else if (rr <= 20) { /* Normal: 12-20 -> 0 puan */ }
+        else if (rr < 25) addScore(2);
+        else addScore(3);
     }
 
     // SpO2 (Scale 1 for simplicity)
     if (spo2 != null && !isNaN(spo2)) {
-        if (spo2 <= 91) addScore(3);
-        else if (spo2 >= 92 && spo2 <= 93) addScore(2);
-        else if (spo2 >= 94 && spo2 <= 95) addScore(1);
+        if (spo2 < 92) addScore(3);
+        else if (spo2 < 94) addScore(2);
+        else if (spo2 < 96) addScore(1);
     }
 
     // Oxygen supplemental
@@ -46,18 +48,20 @@ export function calculateNEWS2(
     // SBP
     if (sbp != null && !isNaN(sbp)) {
         if (sbp <= 90) addScore(3);
-        else if (sbp >= 91 && sbp <= 100) addScore(2);
-        else if (sbp >= 101 && sbp <= 110) addScore(1);
-        else if (sbp >= 220) addScore(3);
+        else if (sbp <= 100) addScore(2);
+        else if (sbp <= 110) addScore(1);
+        else if (sbp < 220) { /* Normal: 111-219 -> 0 puan */ }
+        else addScore(3);
     }
 
     // HR
     if (hr != null && !isNaN(hr)) {
         if (hr <= 40) addScore(3);
-        else if (hr >= 41 && hr <= 50) addScore(1);
-        else if (hr >= 91 && hr <= 110) addScore(1);
-        else if (hr >= 111 && hr <= 130) addScore(2);
-        else if (hr >= 131) addScore(3);
+        else if (hr <= 50) addScore(1);
+        else if (hr <= 90) { /* Normal: 51-90 -> 0 puan */ }
+        else if (hr <= 110) addScore(1);
+        else if (hr <= 130) addScore(2);
+        else addScore(3);
     }
 
     // Temp
@@ -70,7 +74,8 @@ export function calculateNEWS2(
     }
 
     // AVPU
-    if (avpu != null && avpu !== 'A') addScore(3);
+    const normAvpu = typeof avpu === 'string' ? avpu.trim().toUpperCase() : '';
+    if (normAvpu !== '' && normAvpu !== 'A') addScore(3);
 
     let risk = '';
     let recommendation = '';
@@ -146,11 +151,15 @@ export function calculateGCS(
 ): GCSResult | null {
     if (eye == null || verbal == null || motor == null || eye === '' || verbal === '' || motor === '') return null;
     
-    const e = typeof eye === 'number' ? eye : parseInt(eye, 10);
-    const v = typeof verbal === 'number' ? verbal : parseInt(verbal, 10);
-    const m = typeof motor === 'number' ? motor : parseInt(motor, 10);
+    const rawE = typeof eye === 'number' ? eye : parseInt(eye, 10);
+    const rawV = typeof verbal === 'number' ? verbal : parseInt(verbal, 10);
+    const rawM = typeof motor === 'number' ? motor : parseInt(motor, 10);
 
-    if (isNaN(e) || isNaN(v) || isNaN(m)) return null;
+    if (isNaN(rawE) || isNaN(rawV) || isNaN(rawM)) return null;
+
+    const e = Math.min(4, Math.max(1, rawE));
+    const v = Math.min(5, Math.max(1, rawV));
+    const m = Math.min(6, Math.max(1, rawM));
 
     const total = e + v + m;
     

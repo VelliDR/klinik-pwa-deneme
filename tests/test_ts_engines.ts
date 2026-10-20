@@ -483,4 +483,148 @@ assert.strictEqual(formatTimeMMSS(125), '02:05');
 assert.strictEqual(formatTimeMMSS(0), '00:00');
 console.log('✓ Emergency Protocols, Live Timers & SOAP Dot Phrases passed (100% parity)');
 
+console.log('--- 9. AUDIT REGRESSION VERIFICATION SUITE (SECTIONS 1–4 FIXES) ---');
+// 9.1 Percentile CDF & headCircCm alias
+const percRegression = calculatePercentiles({
+  ageMonths: 12,
+  gender: 'male',
+  weightKg: 9.6,
+  heightCm: 75.7,
+  headCircCm: 46.6
+});
+assert.ok(percRegression && percRegression.weightPercentile !== null && percRegression.weightPercentile >= 48 && percRegression.weightPercentile <= 52);
+assert.ok(percRegression && percRegression.headCircumferencePercentile !== null && percRegression.headCircumferencePercentile >= 48 && percRegression.headCircumferencePercentile <= 52);
+
+// 9.2 Safety Engine: word-boundary short keyword ('ator' vs 'Nebulizer/Dilator'), fractional eGFR, trimester-1 NSAID, serotonin mutual exclusivity
+const falsePositiveStatin = checkCypStatinInteraction([
+  { brand: 'Ventolin Nebulizer', generic: 'salbutamol' },
+  { brand: 'Klacid 500mg', generic: 'clarithromycin' }
+]);
+assert.strictEqual(falsePositiveStatin.hasInteraction, false);
+
+const lipovasStatin = checkCypStatinInteraction([
+  { brand: 'Lipovas 20mg', generic: 'simvastatin', atcCode: 'C10AA01' },
+  { brand: 'Klacid 500mg', generic: 'clarithromycin' }
+]);
+assert.strictEqual(lipovasStatin.hasInteraction, true);
+
+const renalFractional = checkRenalDoseAdjustments({
+  egfr: 29.6,
+  drugs: [{ brand: 'Glifor 1000mg', generic: 'metformin' }]
+});
+assert.strictEqual(renalFractional.hasContraindication, true);
+
+const pregTrim1Nsaid = checkPregnancySafety(
+  [{ brand: 'Arveles 25mg', generic: 'dexketoprofen' }],
+  { trimester: 1 }
+);
+assert.strictEqual(pregTrim1Nsaid.alertsCount, 0);
+
+const pregAtcFallback = checkPregnancySafety(
+  [{ brand: 'YeniMarka 5mg', generic: 'bilinmeyen', atcCode: 'C09AA05' }],
+  { trimester: 2 }
+);
+assert.strictEqual(pregAtcFallback.alertsCount, 1);
+assert.strictEqual(pregAtcFallback.alerts[0].isHighRisk, true);
+
+const singleTramadolSero = checkSerotoninSyndrome([
+  { brand: 'Contramal 100mg', generic: 'tramadol', atcCode: 'N02AX02' }
+]);
+assert.strictEqual(singleTramadolSero.isHighRisk, false);
+
+// 9.3 Cardiac Engine: R06AX exclusion, keyword fallback, wide QRS short-QT guard
+const qtcR06ax = calculateQTc({
+  hr: 75,
+  qt: 400,
+  qrs: 100,
+  gender: 'male',
+  drugs: [{ brand: 'Aerius 5mg', generic: 'desloratadine', atcCode: 'R06AX27' }]
+});
+assert.strictEqual(qtcR06ax.drugFlags.length, 0);
+
+const qtcKeywordDrug = calculateQTc({
+  hr: 75,
+  qt: 400,
+  gender: 'male',
+  drugs: [{ brand: 'Cordarone 200mg', generic: 'amiodarone' }]
+});
+assert.strictEqual(qtcKeywordDrug.tisdaleScore, 3);
+
+const qtcWideQrsNormal = calculateQTc({
+  hr: 75,
+  qt: 350,
+  qrs: 150,
+  gender: 'male'
+});
+assert.strictEqual(qtcWideQrsNormal.colorCode, 'success');
+
+// 9.4 Pediatric Engine: laroxyl_25 -> Hydroxyzine max 25mg & NaN vaccine guard
+const hydroxyzineDose = calculatePediatricDose(60, 'laroxyl_25');
+assert.ok(hydroxyzineDose);
+assert.ok(hydroxyzineDose.name.includes('Hidroksizin'));
+assert.strictEqual(hydroxyzineDose.targetDoseMg, 25);
+assert.strictEqual(getVaccineSchedule(NaN), null);
+
+// 9.5 Blood Gas Engine: normal HCO3/pCO2 with borderline pH & mixed disorder compensationText
+const bgNormalBorderline = analyzeBloodGas({ pH: 7.36, pCO2: 40, HCO3: 24 });
+assert.strictEqual(bgNormalBorderline.primaryDisorder, 'Normal/Miks');
+
+const bgMixed = analyzeBloodGas({ pH: 7.15, pCO2: 60, HCO3: 16 });
+assert.ok(bgMixed.compensationText && bgMixed.compensationText.length > 0);
+assert.ok(bgMixed.flags && bgMixed.flags.length > 0);
+
+// 9.6 NephroTox Engine: FEUrea isBun=true conversion, OsmolalGap <=0 guard, Rumack-Matthew 100kg cap
+const feureaFromBun = calculateFEUrea({
+  serumBUN: 50,
+  isBun: true,
+  urineUrea: 400,
+  serumCreatinine: 2.0,
+  urineCreatinine: 100
+});
+assert.ok(feureaFromBun);
+assert.strictEqual(feureaFromBun.feUreaPercent, 7.5);
+assert.strictEqual(calculateOsmolalGap({ measuredOsmolality: 0, sodium: 140, glucoseMgDl: 100, bunMgDl: 15 }), null);
+
+const apapHeavy = evaluateRumackMatthew({ hoursPostIngestion: 6, paracetamolLevelMcgMl: 150, weightKg: 130 });
+assert.ok(apapHeavy && apapHeavy.nacProtocol);
+assert.strictEqual(apapHeavy.nacProtocol.phase1.totalMg, 15000); // Capped at 100 kg * 150 mg/kg
+
+// 9.7 Neonatology, Iron, Biometrics, Triage, HEART, Fluid, OB/GYN
+const bPreterm = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 11, gestationalWeeks: 32 });
+assert.ok(bPreterm.riskGroupLabel && bPreterm.riskGroupLabel.includes('<35 Hafta Prematüre'));
+assert.strictEqual(bPreterm.status, 'PHOTOTHERAPY_REQUIRED');
+assert.strictEqual(calculateAPGAR({ heartRate: 2, respiratoryEffort: 2, muscleTone: 1, reflexIrritability: 1, color: 1 }).status, 'NORMAL');
+assert.strictEqual(calculateNeonatalWeightLoss({ birthWeightG: 3.2, currentWeightKg: 3.0, ageDays: 3 }).percentLoss, 6.3);
+assert.strictEqual(calculatePediatricIron({ weightKg: 15, ageMonths: 24, hb: 12.5 }).hbCategory, 'Normal');
+assert.strictEqual(determineAgeGroup(1, 'months').id, 'INFANT');
+assert.strictEqual(determineAgeGroup(40, 'months').id, 'PRESCHOOL');
+assert.strictEqual(calculateNEWS2(NaN, NaN, NaN, NaN, NaN, false, ''), null);
+assert.strictEqual(calculateGCS(10, -2, 99).total, 11); // Clamped to 4 + 1 + 6 = 11
+assert.strictEqual(calculateHEART({ age: 2 }).score, 2);
+const neoDay4 = calculateNeonatalFluid({ weightKg: 3, ageDays: 3 });
+const neoDay5 = calculateNeonatalFluid({ weightKg: 3, ageDays: 4 });
+assert.ok(neoDay4 && neoDay4.soluteAdvice.includes('%5-7.5 Dekstroz'));
+assert.ok(neoDay5 && neoDay5.soluteAdvice.includes('%5 Dekstroz'));
+assert.ok(calculateStatusEpilepticusDoses(20, false).phase3EstablishedStatus.phenytoin.rateWarning.includes('1–3 mg/kg/dk'));
+assert.ok(calculateObstetrics('2026-01-01'));
+
+// 9.8 QuickSwitcher, Prescription XSS Escaping & Drug Strength Parser
+assert.ok(QUICK_SWITCHER_ITEMS.some(i => i.id === 'card-nefro'));
+assert.ok(QUICK_SWITCHER_ITEMS.some(i => i.id === 'card-antibiyotik'));
+const xssHtml = generatePrescriptionHTML(
+  { patientName: '<script>alert(1)</script>', age: '30', weightKg: 70, dateStr: '01.01.2026' },
+  [buildDefaultDrugSchedule({ brand: '<img src=x onerror=alert(1)>', generic: 'test' })]
+);
+assert.ok(!xssHtml.includes('<script>alert(1)</script>'));
+assert.ok(xssHtml.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+
+const strUnitLiquid = parseDrugStrength('PAROL 10 MG/ML İNFÜZYON');
+assert.ok(strUnitLiquid && strUnitLiquid.type === 'liquid' && strUnitLiquid.mgPerMl === 10);
+const strComboLiquid = parseDrugStrength('AUGMENTIN BID 400/57 MG/5 ML SÜSPANSİYON');
+assert.ok(strComboLiquid && strComboLiquid.type === 'liquid' && strComboLiquid.mgPerMl === 80);
+const strComboSolid = parseDrugStrength('CO-DIOVAN 160/12.5 MG FİLM TABLET');
+assert.ok(strComboSolid && strComboSolid.type === 'solid' && strComboSolid.totalMg === 160);
+console.log('✓ Section 9 Audit Regression Verification Suite passed (100% healthy)');
+
 console.log('\n🎉 ALL 18 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+

@@ -89,7 +89,7 @@ export interface DrugCatalogIndex {
 }
 
 const DB_NAME = 'KlinikAsistanDB';
-const DB_VERSION = 20; // Incremented for indexed normalized fields
+const DB_VERSION = 22; // Invalidate any older partial or unnormalized stores
 const STORE_NAME = 'drugs';
 
 let cachedDb: IDBDatabase | null = null;
@@ -197,19 +197,9 @@ export function initDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
-      if (db.objectStoreNames.contains(STORE_NAME)) {
-        db.deleteObjectStore(STORE_NAME);
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
       }
-      const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-
-      store.createIndex('brand', 'brand', { unique: false });
-      store.createIndex('generic', 'generic', { unique: false });
-      store.createIndex('barcode', 'barcode', { unique: false });
-      store.createIndex('atcCode', 'atcCode', { unique: false });
-      store.createIndex('company', 'company', { unique: false });
-      store.createIndex('_brandNorm', '_brandNorm', { unique: false });
-      store.createIndex('_genericNorm', '_genericNorm', { unique: false });
-      store.createIndex('_atcNorm', '_atcNorm', { unique: false });
     };
 
     request.onsuccess = () => {
@@ -348,7 +338,9 @@ export function setMemoryDrugsCache(list: unknown[]): void {
   if (!Array.isArray(list) || list.length === 0) return;
   memoryDrugsCache = list.map((item, idx) => {
     const raw = item as RawDrugRecord;
-    if (raw && raw._searchable) return raw as unknown as NormalizedDrugRecord;
+    if (raw && raw._searchable && raw._brandNorm && raw._brandCompact && raw._genericNorm) {
+      return raw as unknown as NormalizedDrugRecord;
+    }
     return normalizeDrugRecord(raw, idx);
   }).filter(Boolean) as NormalizedDrugRecord[];
   memoryDrugIndex = buildDrugSearchIndex(memoryDrugsCache);
@@ -366,7 +358,7 @@ export async function ensureDrugCatalogReady(): Promise<NormalizedDrugRecord[]> 
   }
 
   catalogLoadingPromise = (async () => {
-    // 1. Önce IndexedDB'de mevcut kayıtları hızlıca kontrol et
+    // 1. Önce IndexedDB'de mevcut kayıtları hızlıca kontrol et (Tam katalog >= 17000 kayıt olmalıdır)
     try {
       const db = await initDB();
       const list = await new Promise<NormalizedDrugRecord[]>((resolve) => {
@@ -377,10 +369,12 @@ export async function ensureDrugCatalogReady(): Promise<NormalizedDrugRecord[]> 
         req.onerror = () => resolve([]);
       });
 
-      if (list && list.length > 1000) {
+      if (list && list.length >= 17000) {
         setMemoryDrugsCache(list);
         console.log(`[TİTCK PWA] İlaç kataloğu IndexedDB üzerinden belleğe alındı ve indekslendi (${memoryDrugsCache?.length} kayıt).`);
         return memoryDrugsCache || [];
+      } else if (list && list.length > 0) {
+        console.warn(`[TİTCK PWA] IndexedDB'de eksik/kısmi katalog tespit edildi (${list.length} kayıt). Tam JSON kaynağından yenileniyor...`);
       }
     } catch (e) {
       console.warn('[TİTCK PWA] IndexedDB okuma uyarısı, JSON indirmesi deneniyor:', e);
@@ -389,13 +383,25 @@ export async function ensureDrugCatalogReady(): Promise<NormalizedDrugRecord[]> 
     // 2. IndexedDB boşsa veya erişilemiyorsa medicines.json dosyasını yükle
     try {
       let res: Response | null = null;
-      try {
-        res = await fetch('./data/medicines.json');
-      } catch (err) {
-        console.warn('[TİTCK PWA] medicines.json fetch uyarısı, alternatif deneniyor...');
-      }
-      if (!res || !res.ok) {
-        res = await fetch('./data/titck_skrs_prospektuslu.json');
+      const candidatePaths = [
+        './data/medicines.json',
+        '/data/medicines.json',
+        'data/medicines.json',
+        './data/titck_skrs_prospektuslu.json',
+        '/data/titck_skrs_prospektuslu.json',
+        'data/titck_skrs_prospektuslu.json'
+      ];
+
+      for (const path of candidatePaths) {
+        try {
+          const attempt = await fetch(path);
+          if (attempt && attempt.ok) {
+            res = attempt;
+            break;
+          }
+        } catch {
+          // sonraki dosya yolunu dene
+        }
       }
 
       if (res && res.ok) {
@@ -462,7 +468,9 @@ export async function seedDrugDatabase(
         const store = tx.objectStore(STORE_NAME);
 
         chunk.forEach((item, index) => {
-          const normalized = item._searchable ? (item as unknown as NormalizedDrugRecord) : normalizeDrugRecord(item, processed + index);
+          const normCandidate = item as unknown as NormalizedDrugRecord;
+          const isFullyNormalized = Boolean(item._searchable && normCandidate._brandNorm && normCandidate._genericNorm);
+          const normalized = isFullyNormalized ? normCandidate : normalizeDrugRecord(item, processed + index);
           if (normalized) {
             store.put(normalized);
           }
@@ -487,6 +495,8 @@ export async function seedDrugDatabase(
   }
 }
 
+export type DrugSearchMode = 'all' | 'brand' | 'generic' | 'barcode';
+
 /**
  * Tekil İlaç Puanlama Yardımcıları
  */
@@ -495,8 +505,64 @@ function scoreDrugCandidate(
   trimmedQuery: string,
   queryNorm: string,
   queryCompact: string,
-  queryTokens: string[]
+  queryTokens: string[],
+  mode: DrugSearchMode = 'all'
 ): number {
+  if (mode === 'barcode') {
+    const isExactBarcode = drug.barcode && drug.barcode === trimmedQuery;
+    const isPartialBarcode = drug.barcode && drug.barcode.includes(trimmedQuery);
+    const isAtcMatch = drug.atcCode && drug.atcCode.toLowerCase().includes(queryNorm);
+    if (!isExactBarcode && !isPartialBarcode && !isAtcMatch) return -1;
+    if (isExactBarcode) return 3000;
+    if (isPartialBarcode) return 2000;
+    return 1000;
+  }
+
+  if (mode === 'brand') {
+    const isStandardMatch = queryTokens.every(token => drug._brandNorm.includes(token));
+    const isCompactMatch = queryCompact.length >= 3 && Boolean(drug._brandCompact && drug._brandCompact.includes(queryCompact));
+    if (!isStandardMatch && !isCompactMatch) return -1;
+
+    let score = 0;
+    if (drug._brandNorm === queryNorm || drug._brandCompact === queryCompact) {
+      score += 2000;
+    } else if (drug._brandNorm.startsWith(queryNorm) || (drug._brandCompact && drug._brandCompact.startsWith(queryCompact))) {
+      score += 1200;
+    } else if (drug._brandNorm.includes(queryNorm) || (drug._brandCompact && drug._brandCompact.includes(queryCompact))) {
+      score += 800;
+    } else {
+      score += 400;
+    }
+
+    if (drug.status === 'Aktif' || (drug.sheet && !drug.sheet.toUpperCase().includes('PASİF'))) {
+      score += 50;
+    }
+    return score;
+  }
+
+  if (mode === 'generic') {
+    const isStandardMatch = queryTokens.every(token => drug._genericNorm.includes(token));
+    const isCompactMatch = queryCompact.length >= 3 && Boolean(drug._genericCompact && drug._genericCompact.includes(queryCompact));
+    if (!isStandardMatch && !isCompactMatch) return -1;
+
+    let score = 0;
+    if (drug._genericNorm === queryNorm || drug._genericCompact === queryCompact) {
+      score += 2000;
+    } else if (drug._genericNorm.startsWith(queryNorm) || (drug._genericCompact && drug._genericCompact.startsWith(queryCompact))) {
+      score += 1200;
+    } else if (drug._genericNorm.includes(queryNorm) || (drug._genericCompact && drug._genericCompact.includes(queryCompact))) {
+      score += 800;
+    } else {
+      score += 400;
+    }
+
+    if (drug.status === 'Aktif' || (drug.sheet && !drug.sheet.toUpperCase().includes('PASİF'))) {
+      score += 50;
+    }
+    return score;
+  }
+
+  // mode === 'all'
   if (drug.barcode && (drug.barcode === trimmedQuery || drug.barcode.includes(trimmedQuery))) {
     return 3000;
   }
@@ -541,8 +607,9 @@ function scoreDrugCandidate(
 /**
  * Gelişmiş İndeksli Tıbbi İlaç Arama Motoru
  * Ters Önek İndeksi (Inverted Prefix Index) + O(1) Barkod + LRU Sorgu Önbelleği
+ * mode: 'all' | 'brand' | 'generic' | 'barcode'
  */
-export async function searchDrugsInDB(query: string): Promise<NormalizedDrugRecord[]> {
+export async function searchDrugsInDB(query: string, mode: DrugSearchMode = 'all'): Promise<NormalizedDrugRecord[]> {
   if (!query || query.trim().length < 2) return [];
 
   if (!isDrugCatalogReady()) {
@@ -555,19 +622,22 @@ export async function searchDrugsInDB(query: string): Promise<NormalizedDrugReco
   }
 
   const trimmedQuery = query.trim();
+  const cacheKey = `${mode}:${trimmedQuery}`;
 
   // 0. LRU Sorgu Önbelleği Kontrolü
-  const cachedResult = memoryDrugIndex.queryCache.get(trimmedQuery);
+  const cachedResult = memoryDrugIndex.queryCache.get(cacheKey);
   if (cachedResult) {
     return cachedResult;
   }
 
-  // 1. O(1) Tam Barkod Eşleşmesi
-  const exactBarcodeIndices = memoryDrugIndex.byBarcode.get(trimmedQuery);
-  if (exactBarcodeIndices && exactBarcodeIndices.length > 0) {
-    const exactDrugs = exactBarcodeIndices.map(idx => memoryDrugsCache![idx]);
-    memoryDrugIndex.queryCache.set(trimmedQuery, exactDrugs);
-    return exactDrugs;
+  // 1. O(1) Tam Barkod Eşleşmesi (all veya barcode modunda)
+  if (mode === 'all' || mode === 'barcode') {
+    const exactBarcodeIndices = memoryDrugIndex.byBarcode.get(trimmedQuery);
+    if (exactBarcodeIndices && exactBarcodeIndices.length > 0) {
+      const exactDrugs = exactBarcodeIndices.map(idx => memoryDrugsCache![idx]);
+      memoryDrugIndex.queryCache.set(cacheKey, exactDrugs);
+      return exactDrugs;
+    }
   }
 
   const queryNorm = normalizeText(trimmedQuery);
@@ -580,24 +650,25 @@ export async function searchDrugsInDB(query: string): Promise<NormalizedDrugReco
   // 2. Ters Önek İndeksi (Inverted Prefix Index) ile Aday Kümesi Daraltma
   let candidateIndices: number[] | null = null;
   const tokenPostingLists: number[][] = [];
-  let allTokensIndexable = true;
+  let indexLookupFailed = false;
 
   for (let i = 0; i < queryTokens.length; i++) {
     const token = queryTokens[i];
     if (token.length < 2) {
-      allTokensIndexable = false;
-      break;
+      // 1 karakterli tokenları (örn. "a ferin", "b 12") indeks kesişiminde atla; puanlama aşamasında tam kontrol edilir
+      continue;
     }
     const prefixKey = token.slice(0, Math.min(token.length, 6));
     const list = memoryDrugIndex.byWordPrefix.get(prefixKey);
     if (!list) {
+      indexLookupFailed = true;
       tokenPostingLists.length = 0;
       break;
     }
     tokenPostingLists.push(list);
   }
 
-  if (allTokensIndexable && tokenPostingLists.length > 0) {
+  if (!indexLookupFailed && tokenPostingLists.length > 0) {
     // En küçük aday listesinden başlayarak kesişim al
     tokenPostingLists.sort((a, b) => a.length - b.length);
     let intersected = tokenPostingLists[0];
@@ -629,7 +700,7 @@ export async function searchDrugsInDB(query: string): Promise<NormalizedDrugReco
   if (candidateIndices && candidateIndices.length > 0) {
     for (let i = 0; i < candidateIndices.length; i++) {
       const drug = memoryDrugsCache[candidateIndices[i]];
-      const score = scoreDrugCandidate(drug, trimmedQuery, queryNorm, queryCompact, queryTokens);
+      const score = scoreDrugCandidate(drug, trimmedQuery, queryNorm, queryCompact, queryTokens, mode);
       if (score >= 0) {
         scoredResults.push({ drug, score });
       }
@@ -640,7 +711,7 @@ export async function searchDrugsInDB(query: string): Promise<NormalizedDrugReco
   if (scoredResults.length === 0) {
     for (let i = 0; i < memoryDrugsCache.length; i++) {
       const drug = memoryDrugsCache[i];
-      const score = scoreDrugCandidate(drug, trimmedQuery, queryNorm, queryCompact, queryTokens);
+      const score = scoreDrugCandidate(drug, trimmedQuery, queryNorm, queryCompact, queryTokens, mode);
       if (score >= 0) {
         scoredResults.push({ drug, score });
       }
@@ -658,13 +729,16 @@ export async function searchDrugsInDB(query: string): Promise<NormalizedDrugReco
   const finalResults = scoredResults.slice(0, 40).map(item => item.drug);
 
   // LRU önbellek boyutu kontrolü (maksimum 150 sorgu)
-  if (memoryDrugIndex.queryCache.size >= 150) {
-    const oldestKey = memoryDrugIndex.queryCache.keys().next().value;
-    if (oldestKey !== undefined) {
-      memoryDrugIndex.queryCache.delete(oldestKey);
+  // Sadece sonuç bulunduğunda önbelleğe al (boş aramalar önbelleğe kilitlenmesin)
+  if (finalResults.length > 0) {
+    if (memoryDrugIndex.queryCache.size >= 150) {
+      const oldestKey = memoryDrugIndex.queryCache.keys().next().value;
+      if (oldestKey !== undefined) {
+        memoryDrugIndex.queryCache.delete(oldestKey);
+      }
     }
+    memoryDrugIndex.queryCache.set(cacheKey, finalResults);
   }
-  memoryDrugIndex.queryCache.set(trimmedQuery, finalResults);
 
   return finalResults;
 }

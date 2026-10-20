@@ -464,6 +464,8 @@ export function calculateHEART(params: HEARTParams = {}): HEARTResult {
     let ageScore = 0;
     if (params.agePoints !== undefined) {
         ageScore = Math.max(0, Math.min(2, params.agePoints));
+    } else if (params.age !== undefined && age >= 0 && age <= 2) {
+        ageScore = Math.round(age);
     } else {
         if (age >= 65) ageScore = 2;
         else if (age >= 45) ageScore = 1;

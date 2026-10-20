@@ -62,7 +62,7 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
     keywords: ['wells', 'dvt', 'pte', 'pe', 'emboli', 'pulmoner emboli', 'perc', 'cha2ds2', 'hasbled', 'heart', 'gogus agrisi', 'af', 'inme']
   },
   {
-    id: 'card-nefrotox',
+    id: 'card-nefro',
     name: 'Nefroloji, Toksikoloji & Solunum',
     shortName: 'Nefro & Toksikoloji',
     category: 'lab',
@@ -135,12 +135,12 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
   },
   {
     id: 'card-demir',
-    name: 'Ganzoni Demir Açığı Hesabı',
-    shortName: 'Demir Açığı (Ganzoni)',
-    category: 'dahiliye',
+    name: 'Pediatrik Demir Eksikliği & Profilaksi',
+    shortName: 'Demir Tedavisi (TDB)',
+    category: 'pediatri',
     icon: '🩸',
-    desc: 'Toplam elemental demir açığı ve parenteral demir (Ferinject/Venofer) ampul hesabı',
-    keywords: ['demir', 'ganzoni', 'anemi', 'ferinject', 'venofer', 'ferritin', 'hemoglobin']
+    desc: 'TDB 2024 pediatrik demir profilaksisi, anemi eşikleri ve elemental demir damla/şurup dozu',
+    keywords: ['demir', 'anemi', 'profilaksi', 'ferrum', 'maltofer', 'sidefer', 'ferritin', 'hemoglobin', 'damla']
   },
   {
     id: 'card-pediatri-surup',
@@ -161,7 +161,7 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
     keywords: ['asi', 'asi takvimi', 'hepatit', 'kpa', 'kizamik', 'bcg', 'dabtt', 'saglik bakanligi']
   },
   {
-    id: 'card-faranjit',
+    id: 'card-antibiyotik',
     name: 'Centor / McIsaac Akılcı Antibiyotik',
     shortName: 'Centor Faranjit',
     category: 'pediatri',
@@ -194,7 +194,7 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
     category: 'ilac',
     icon: '🛡️',
     desc: '18.200+ TİTCK ilacı, O(1) arama, muadil bulucu, Triple Whammy, Serotonin, Hiperkalemi ve CYP3A4 kalkanı',
-    keywords: ['recete', 'ilac', 'titck', 'muadil', 'etkilesim', 'triple whammy', 'serotonin', 'hiperkalemi', 'statin', 'cyp3a4', 'gebelik', 'yenidogan ilac', 'prospektus']
+    keywords: ['recete', 'ilac', 'titck', 'muadil', 'etkilesim', 'triple whammy', 'serotonin', 'hiperkalemi', 'statin', 'cyp3a4', 'gebelik', 'yenidogan ilac', 'prospektus', 'kub', 'kt', 'parol', 'parasetamol', 'aspirin', 'augmentin', 'arveles', 'apap', 'analjezik', 'antibiyotik']
   },
   {
     id: 'card-soap',
@@ -239,8 +239,15 @@ export function searchQuickSwitcher(query: string): QuickSwitcherItem[] {
   });
 }
 
+const MOTOR_DOM_ID_ALIASES: Record<string, string> = {
+  'card-nefrotox': 'card-nefro',
+  'card-faranjit': 'card-antibiyotik',
+  'card-asi': 'card-pediatri-surup'
+};
+
 export function jumpToMotor(motorId: string): boolean {
-  const card = document.getElementById(motorId);
+  const resolvedId = MOTOR_DOM_ID_ALIASES[motorId] || motorId;
+  const card = document.getElementById(resolvedId) || document.getElementById(motorId);
   if (!card) return false;
 
   // 1. Kart gizli ise (kategori filtresi nedeniyle), 'Tümü' filtresini tetikle

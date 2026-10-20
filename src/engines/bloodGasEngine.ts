@@ -46,12 +46,18 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
     }
 
     if (isAcidemia) {
-        if (calc_HCO3 < 22 && calc_pCO2 <= 45) primaryDisorder = 'Metabolik Asidoz';
-        else if (calc_pCO2 > 45 && calc_HCO3 >= 22) primaryDisorder = 'Respiratuar Asidoz';
+        if (calc_HCO3 < 22 && calc_pCO2 > 45) primaryDisorder = 'Miks Asidoz (Metabolik + Respiratuar)';
+        else if (calc_HCO3 < 22) primaryDisorder = 'Metabolik Asidoz';
+        else if (calc_pCO2 > 45) primaryDisorder = 'Respiratuar Asidoz';
+        else if (calc_HCO3 < 24 && calc_pCO2 <= 40) primaryDisorder = 'Metabolik Asidoz';
+        else if (calc_pCO2 > 40 && calc_HCO3 >= 24) primaryDisorder = 'Respiratuar Asidoz';
         else primaryDisorder = 'Miks Asidoz (Metabolik + Respiratuar)';
     } else if (isAlkalemia) {
-        if (calc_HCO3 > 26 && calc_pCO2 >= 35) primaryDisorder = 'Metabolik Alkaloz';
-        else if (calc_pCO2 < 35 && calc_HCO3 <= 26) primaryDisorder = 'Respiratuar Alkaloz';
+        if (calc_HCO3 > 26 && calc_pCO2 < 35) primaryDisorder = 'Miks Alkaloz (Metabolik + Respiratuar)';
+        else if (calc_HCO3 > 26) primaryDisorder = 'Metabolik Alkaloz';
+        else if (calc_pCO2 < 35) primaryDisorder = 'Respiratuar Alkaloz';
+        else if (calc_HCO3 > 24 && calc_pCO2 >= 40) primaryDisorder = 'Metabolik Alkaloz';
+        else if (calc_pCO2 < 40 && calc_HCO3 <= 24) primaryDisorder = 'Respiratuar Alkaloz';
         else primaryDisorder = 'Miks Alkaloz (Metabolik + Respiratuar)';
     } else if (calc_pCO2 > 45 || calc_pCO2 < 35 || calc_HCO3 < 22 || calc_HCO3 > 26) {
         primaryDisorder = 'Kompanze veya Miks Asit-Baz Bozukluğu';
@@ -77,6 +83,9 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
         } else {
             compensationText = 'Uygun Kompanzasyon (Saf Metabolik Asidoz)';
         }
+    } else if (primaryDisorder === 'Miks Asidoz (Metabolik + Respiratuar)') {
+        compensationText = 'Kompanzasyon yetersiz: Metabolik ve Respiratuar Asidoz birlikteliği';
+        flags.push('RESP_ACIDOSIS');
     } else if (primaryDisorder === 'Metabolik Alkaloz') {
         const expected = (0.7 * calc_HCO3) + 20;
         expected_pCO2_min = expected - 5;
@@ -91,6 +100,9 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
         } else {
             compensationText = 'Uygun Kompanzasyon (Saf Metabolik Alkaloz)';
         }
+    } else if (primaryDisorder === 'Miks Alkaloz (Metabolik + Respiratuar)') {
+        compensationText = 'Kompanzasyon yetersiz: Metabolik ve Respiratuar Alkaloz birlikteliği';
+        flags.push('RESP_ALKALOSIS');
     } else if (primaryDisorder === 'Respiratuar Asidoz') {
         const delta_pCO2 = calc_pCO2 - 40;
         const exp_acute_HCO3 = 24 + (delta_pCO2 / 10) * 1;
@@ -118,11 +130,11 @@ export function analyzeBloodGas({ pH, pCO2, HCO3, Na, Cl, Albumin, sampleType }:
     let deltaRatio: number | null = null;
     let hagmaStatus = '';
 
-    if (Na !== undefined && Na !== null && Cl !== undefined && Cl !== null && calc_HCO3 !== undefined && calc_HCO3 !== null) {
+    if (Na !== undefined && Na !== null && !isNaN(Na) && Na > 0 && Cl !== undefined && Cl !== null && !isNaN(Cl) && Cl > 0 && calc_HCO3 !== undefined && calc_HCO3 !== null) {
         AG = Na - (Cl + calc_HCO3);
         corrected_AG = AG;
         
-        if (Albumin !== undefined && Albumin !== null && Albumin > 0) {
+        if (Albumin !== undefined && Albumin !== null && !isNaN(Albumin) && Albumin > 0) {
             corrected_AG = AG + 2.5 * (4.0 - Albumin);
         }
 

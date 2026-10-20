@@ -168,12 +168,19 @@ html.light-theme button.bg-slate-800:hover {
  * @MEDIA PRINT HASTA REÇETE VE DOZAJ ÇİZELGESİ YAZDIRMA STANDARDI
  * ============================================================================ */
 @media print {
-    /* Yazdırma sırasında sayfa dışındaki tüm UI elemanlarını gizle */
+    /* Yazdırma sırasında sayfa dışındaki tüm UI elemanlarını ve modalları gizle */
     header,
     nav,
     footer,
+    aside,
+    main,
+    #clinical-workspace,
+    #inspector-panel,
     #drawer-clinical-alerts-inspector,
     #modal-quick-switcher,
+    #modal-prescription-print,
+    #modal-emergency-protocols,
+    #mobile-floating-bar,
     #container-preset-pills,
     #patient-context-banner,
     #category-pills,

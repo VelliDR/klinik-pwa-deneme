@@ -42,19 +42,51 @@ export interface DrugForBadges {
 export function parseDrugStrength(brandName?: string): DrugStrengthResult | null {
   if (!brandName) return null;
 
-  const liquidMatch = brandName.match(/(\d+(?:[.,]\d+)?)\s*mg\s*\/\s*(\d+(?:[.,]\d+)?)\s*ml/i);
+  // 1. Kombinasyon Sıvı Formlar (Örn: "400/57 MG/5 ML" veya "200/28 MG/ML") - Birincil etken madde baz alınır
+  const comboLiquidMatch = brandName.match(/(\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)\s*mg\s*\/\s*(\d+(?:[.,]\d+)?)?\s*ml/i);
+  if (comboLiquidMatch) {
+    const primaryMg = parseFloat(comboLiquidMatch[1].replace(',', '.'));
+    const secondaryMg = parseFloat(comboLiquidMatch[2].replace(',', '.'));
+    const ml = comboLiquidMatch[3] ? parseFloat(comboLiquidMatch[3].replace(',', '.')) : 1;
+    if (ml > 0) {
+      const concentration = primaryMg / ml;
+      return {
+        type: 'liquid',
+        mgPerMl: concentration,
+        label: `${primaryMg}/${secondaryMg} mg / ${ml} ml (${concentration.toFixed(1)} mg/ml)`
+      };
+    }
+  }
+
+  // 2. Standart Sıvı Formlar (Örn: "120 MG/5 ML" veya "10 MG/ML")
+  const liquidMatch = brandName.match(/(\d+(?:[.,]\d+)?)\s*mg\s*\/\s*(\d+(?:[.,]\d+)?)?\s*ml/i);
   if (liquidMatch) {
     const mg = parseFloat(liquidMatch[1].replace(',', '.'));
-    const ml = parseFloat(liquidMatch[2].replace(',', '.'));
-    const concentration = mg / ml;
+    const ml = liquidMatch[2] ? parseFloat(liquidMatch[2].replace(',', '.')) : 1;
+    if (ml > 0) {
+      const concentration = mg / ml;
+      return {
+        type: 'liquid',
+        mgPerMl: concentration,
+        label: `${mg} mg / ${ml} ml (${concentration.toFixed(1)} mg/ml)`
+      };
+    }
+  }
+
+  // 3. Kombinasyon Katı Formlar (Örn: "400/57 MG", "160/12.5 MG")
+  const comboSolidMatch = brandName.match(/(\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)\s*mg\b/i);
+  if (comboSolidMatch) {
+    const primaryMg = parseFloat(comboSolidMatch[1].replace(',', '.'));
+    const secondaryMg = parseFloat(comboSolidMatch[2].replace(',', '.'));
     return {
-      type: 'liquid',
-      mgPerMl: concentration,
-      label: `${mg} mg / ${ml} ml (${concentration.toFixed(1)} mg/ml)`
+      type: 'solid',
+      totalMg: primaryMg,
+      label: `${primaryMg}/${secondaryMg} mg / birim`
     };
   }
 
-  const solidMatch = brandName.match(/(\d+(?:[.,]\d+)?)\s*mg/i);
+  // 4. Standart Katı Formlar (Örn: "500 MG")
+  const solidMatch = brandName.match(/(\d+(?:[.,]\d+)?)\s*mg\b/i);
   if (solidMatch) {
     const mg = parseFloat(solidMatch[1].replace(',', '.'));
     return {
@@ -185,11 +217,11 @@ export function getDrugBadgesHTML(drug: DrugForBadges): string {
     badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]">🍼 Yenidoğan</span>');
   }
 
-  // Prospektüs / KÜB Belge Rozeti
+  // Prospektüs / KÜB Belge Rozeti (Doğrudan TİTCK PDF'i olanlar)
   const hasKt = Boolean(drug.kt_pdf_prospektus_url || drug.kt);
   const hasKub = Boolean(drug.kub_pdf_url || drug.kub);
   if (hasKt || hasKub) {
-    badges.push('<span class="bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium">📑 Prospektüs/KÜB</span>');
+    badges.push('<span class="bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Resmi TİTCK PDF Belgesi Doğrudan Mevcut">📑 Resmi PDF (KÜB/KT)</span>');
   }
 
   return badges.join(' ');

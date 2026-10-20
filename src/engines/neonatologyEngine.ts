@@ -150,8 +150,12 @@ export function calculateBhutaniJaundice(params: BhutaniParams = {}): BhutaniRes
   // Risk grubunu belirleme
   let riskCategory = 'low';
   let riskGroupLabel = 'Düşük Risk (≥38 Hafta ve Sağlıklı)';
+  const isEarlyPreterm = gestationalWeeks < 35;
 
-  if (gestationalWeeks < 38 && hasRiskFactors) {
+  if (isEarlyPreterm) {
+    riskCategory = 'high';
+    riskGroupLabel = `Yüksek Risk (<35 Hafta Prematüre: ${gestationalWeeks} hf - TND/NICE Preterm Eğrisi Gerekir)`;
+  } else if (gestationalWeeks < 38 && hasRiskFactors) {
     riskCategory = 'high';
     riskGroupLabel = 'Yüksek Risk (35-37+6 Hafta + Nörotoksisite Risk Faktörleri)';
   } else if (gestationalWeeks < 38 || hasRiskFactors) {
@@ -159,7 +163,13 @@ export function calculateBhutaniJaundice(params: BhutaniParams = {}): BhutaniRes
     riskGroupLabel = 'Orta Risk (≥38 Hafta + Risk Faktörü VEYA 35-37+6 Hafta Sağlıklı)';
   }
 
-  const { phototherapy: ptThreshold, exchange: exThreshold } = interpolateThresholds(riskCategory, ageHours);
+  let { phototherapy: ptThreshold, exchange: exThreshold } = interpolateThresholds(riskCategory, ageHours);
+  if (isEarlyPreterm) {
+    // TND/NICE <35 hafta prematürelerde yaklaşık fototerapi eşiği (GW * 0.5 - 8 veya ~5-10 mg/dL bandı)
+    const pretermFactor = Math.max(0.5, (gestationalWeeks - 25) / 10);
+    ptThreshold = Number((ptThreshold * pretermFactor).toFixed(1));
+    exThreshold = Number((exThreshold * pretermFactor).toFixed(1));
+  }
 
   const diffPt = totalBilirubin - ptThreshold;
 
@@ -167,6 +177,10 @@ export function calculateBhutaniJaundice(params: BhutaniParams = {}): BhutaniRes
   let alertClass = 'success';
   let interpretation = '';
   const recommendations: string[] = [];
+
+  if (isEarlyPreterm) {
+    recommendations.push('⚠️ DİKKAT: Standart Bhutani nomogramı ≥35 hafta bebekler içindir. <35 hafta prematürelerde TND/NICE gestasyon haftası ve doğum ağırlığına özgü preterm sarılık çizelgeleri esas alınmalıdır.');
+  }
 
   if (totalBilirubin >= exThreshold) {
     status = 'EXCHANGE_TRANSFUSION_REQUIRED';
@@ -242,7 +256,7 @@ export function calculateAPGAR(params: APGARParams = {}): APGARResult {
   let interpretation = '';
   const recommendations: string[] = [];
 
-  if (score >= 8) {
+  if (score >= 7) {
     status = 'NORMAL';
     alertClass = 'success';
     interpretation = `Normal APGAR Skoru (${score}/10) - Yenidoğanın ekstrauterin yaşama uyumu iyi.`;
@@ -457,7 +471,7 @@ export function calculateCDSDehydration(params: CDSDehydrationParams = {}): CDSD
  * 5. Yenidoğan Fizyolojik Tartı Kaybı & Dehidratasyon İzlemi (%7 - %10 Kuralı)
  */
 export function calculateNeonatalWeightLoss(params: NeonatalWeightLossParams): NeonatalWeightLossResult {
-  const birthWeightG = Number(params?.birthWeightG);
+  let birthWeightG = Number(params?.birthWeightG);
   let currentWeightG = Number(params?.currentWeightKg);
   const ageDays = params?.ageDays !== null && params?.ageDays !== undefined ? Number(params.ageDays) : null;
 
@@ -468,7 +482,10 @@ export function calculateNeonatalWeightLoss(params: NeonatalWeightLossParams): N
     };
   }
 
-  // Eğer mevcut ağırlık kg cinsinden girildiyse (örn: 3.1) grama çevir
+  // Eğer doğum veya mevcut ağırlık kg cinsinden girildiyse (örn: 3.1) grama çevir
+  if (birthWeightG < 20) {
+    birthWeightG = Math.round(birthWeightG * 1000);
+  }
   if (currentWeightG < 20) {
     currentWeightG = Math.round(currentWeightG * 1000);
   }

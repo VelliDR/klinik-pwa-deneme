@@ -47,7 +47,14 @@ const statusTimer: StatusTimerState = {
 
 function getWeightAndIsAdult(): { weightKg: number; isAdult: boolean } {
   const weight = appState.biometry.weightKg || 70;
-  const isAdult = !appState.biometry.isNeonate && (appState.biometry.ageYears === null || appState.biometry.ageYears >= 18);
+  const hasExplicitAge = appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined;
+  const hasPediatricMonthsOrDays = (appState.biometry.ageMonths !== null && appState.biometry.ageMonths < 216) ||
+    (appState.biometry.ageDays !== null && appState.biometry.ageDays < 6570);
+  const isAdult = !appState.biometry.isNeonate && !hasPediatricMonthsOrDays && (
+    hasExplicitAge
+      ? (appState.biometry.ageYears as number) >= 18
+      : weight >= 40
+  );
   return { weightKg: weight, isAdult };
 }
 
@@ -107,8 +114,15 @@ export function resetAnaphylaxisTimer(): void {
     anaphylaxisTimer.timerInterval = null;
   }
   anaphylaxisTimer.remainingSeconds = 300;
+  anaphylaxisTimer.dosesGiven = 0;
   anaphylaxisTimer.isRunning = false;
   anaphylaxisTimer.isExpired = false;
+  if (appState.emergency) {
+    appState.emergency.anaphylaxis = null;
+    if (!appState.emergency.statusEpilepticus) {
+      appState.emergency.active = false;
+    }
+  }
 }
 
 export function getAnaphylaxisTimerState(): Readonly<AnaphylaxisTimerState> {
@@ -167,6 +181,12 @@ export function pauseStatusStopwatch(): void {
 export function resetStatusStopwatch(): void {
   pauseStatusStopwatch();
   statusTimer.elapsedSeconds = 0;
+  if (appState.emergency) {
+    appState.emergency.statusEpilepticus = null;
+    if (!appState.emergency.anaphylaxis) {
+      appState.emergency.active = false;
+    }
+  }
 }
 
 export function getStatusTimerState(): Readonly<StatusTimerState> {

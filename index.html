@@ -1400,13 +1400,29 @@
                 </div>
             </details>
 
-            <details id="card-ilac" data-category="ilac" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
+            <details id="card-ilac" data-category="ilac" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
                     <span>İlaç, TİTCK & Prospektüs</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1 relative">
-                    <div class="relative flex items-center pt-2">
+                    <!-- İlaç Arama Kriteri Seçici (Mod Tabları) -->
+                    <div class="flex items-center gap-1.5 pt-2 text-[11px] font-medium" id="drug-search-mode-selector">
+                        <button type="button" data-mode="all" class="drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-rose-950/90 text-rose-200 border-rose-500 font-semibold shadow-sm text-[11px]" title="İlaç adı, etken madde ve barkod üzerinde akıllı arama">
+                            ✨ Tümü
+                        </button>
+                        <button type="button" data-mode="brand" class="drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-600 font-normal text-[11px]" title="Sadece İlaç / Müstahzar Ticari Adı (Örn: Parol, Augmentin, Arveles)">
+                            💊 İlaç Adı
+                        </button>
+                        <button type="button" data-mode="generic" class="drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-600 font-normal text-[11px]" title="Sadece Etken Madde / Jenerik Molekül Adı (Örn: Parasetamol, Amoksisilin)">
+                            🔬 Etken Madde
+                        </button>
+                        <button type="button" data-mode="barcode" class="drug-search-mode-btn py-1 px-2 rounded-md border text-center transition-all bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-600 font-normal text-[11px]" title="Barkod Numarası veya ATC Kodu (Örn: 8699..., N02BE01)">
+                            🏷️ Barkod/ATC
+                        </button>
+                    </div>
+
+                    <div class="relative flex items-center">
                         <input 
                             type="text" 
                             id="input-drug-search" 

@@ -45,8 +45,8 @@ export function calculateMaintenanceFluid(
 
     const hourlyRate = dailyVolume / 24;
 
-    // Standard Fluid Type Recommendation
-    let fluidTypeRecommendation = '%0.45 NaCl + %5 Dekstroz + 20 mEq/L KCl (Pediatrik Standart İdame Sıvısı)';
+    // Standard Fluid Type Recommendation (AAP 2018 Clinical Practice Guideline: Isotonic fluids recommended to prevent hospital-acquired hyponatremia)
+    let fluidTypeRecommendation = '%0.9 NaCl + %5 Dekstroz + 20 mEq/L KCl (AAP Güncel Önerisi: İzotonik İdame; Klasik: %0.45 NaCl + %5 Dekstroz)';
     if (weightKg >= 50) {
         fluidTypeRecommendation = '%0.9 NaCl veya İzoleks / Dengeli Kristaloid (Erişkin Standart İdame Sıvısı)';
     }
@@ -175,17 +175,17 @@ export function calculateNeonatalFluid({
         dayTitle = '4. Yaşam Günü';
         minRate = isPreterm ? 110 : 100;
         maxRate = isPreterm ? 125 : 120;
-        soluteAdvice = 'Dengeli idame solüsyonu (%5-10 Dekstroz + Na 2-3 mEq/kg + K 1-2 mEq/kg).';
+        soluteAdvice = 'Dengeli idame solüsyonu (%5-7.5 Dekstroz + Na 2-3 mEq/kg + K 1-2 mEq/kg).';
     } else if (day === 4) {
         dayTitle = '5. Yaşam Günü';
         minRate = isPreterm ? 130 : 120;
         maxRate = isPreterm ? 145 : 140;
-        soluteAdvice = 'Dengeli idame solüsyonu. GIR ve kan şekeri izlenmelidir.';
+        soluteAdvice = 'Dengeli idame solüsyonu (%5 Dekstroz bazlı). GIR ve kan şekeri izlenmelidir.';
     } else {
         dayTitle = `${day + 1}. Yaşam Günü (Kararlı İdame)`;
         minRate = isPreterm ? 150 : 140;
         maxRate = isPreterm ? 170 : 160;
-        soluteAdvice = 'Tam idame sıvısı (140-160 mL/kg/gün) + Na/K elektrolit desteği.';
+        soluteAdvice = 'Tam idame sıvısı (140-160 mL/kg/gün, %5 Dekstroz bazlı) + Na/K elektrolit desteği.';
     }
 
     if (isPhototherapy) {
@@ -198,7 +198,9 @@ export function calculateNeonatalFluid({
     const totalDailyMl = Math.round(weightKg * avgRate);
     const hourlyRateMl = +(totalDailyMl / 24).toFixed(1);
 
-    const girMgKgMin = +((hourlyRateMl * 100) / (weightKg * 60)).toFixed(1);
+    // Day 1-3 uses %10 Dextrose (100 mg/mL); Day 4+ transitions to %7.5 (Day 4) or %5 Dextrose (50 mg/mL) to avoid hyperglycemia at higher fluid rates
+    const dextroseMgPerMl = day <= 2 ? 100 : (day === 3 ? 75 : 50);
+    const girMgKgMin = +((hourlyRateMl * dextroseMgPerMl) / (weightKg * 60)).toFixed(1);
 
     return {
         isNeonate: true,

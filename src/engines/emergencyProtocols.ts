@@ -234,7 +234,9 @@ export function calculateStatusEpilepticusDoses(weightKg: number, isAdult: boole
       },
       phenytoin: {
         doseMg: phenytoinDose,
-        rateWarning: 'Hız ≤ 50 mg/dk (Kardiyak monitörizasyon ve EKG takibi şarttır; hipotansiyon/asistoli riski)',
+        rateWarning: isAdult
+          ? 'Hız ≤ 50 mg/dk (Kardiyak monitörizasyon ve EKG takibi şarttır; hipotansiyon/asistoli riski)'
+          : `Hız: 1–3 mg/kg/dk (maks ${Math.min(Math.round(safeWeight * 3), 50)} mg/dk; üst sınır 50 mg/dk) — Kardiyak monitörizasyon ve EKG takibi şarttır`,
         instruction: `Fenitoin (Epanutin): ${phenytoinDose} mg IV (YALNIZCA %0.9 SF içinde sulandırılır; dekstrozda çöker!).`
       },
       valproate: {

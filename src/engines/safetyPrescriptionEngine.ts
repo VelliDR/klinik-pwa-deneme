@@ -38,7 +38,7 @@ import type {
 export const RENAL_DRUG_DATABASE: RenalDrugEntry[] = [
   {
     generic: 'metformin',
-    aliases: ['glukofen', 'diaformin', 'matofin', 'glifor'],
+    aliases: ['glukofen', 'glucophage', 'diaformin', 'matofin', 'glifor'],
     atcPrefix: 'A10BA02',
     name: 'Metformin',
     rules: [
@@ -168,7 +168,7 @@ export const RENAL_DRUG_DATABASE: RenalDrugEntry[] = [
   },
   {
     generic: 'amoxicillin',
-    aliases: ['amoksisilin', 'largopen', 'alfoxil', 'amoklavin', 'augmentin', 'klavunat', 'bioment'],
+    aliases: ['amoksisilin', 'largopen', 'alfoxil', 'amoklavin', 'augmentin', 'klavunat', 'bioment', 'klamoks', 'croxilex', 'amoksilav', 'aktil'],
     atcPrefix: 'J01CA04',
     name: 'Amoksisilin (Amoxicillin)',
     rules: [
@@ -219,49 +219,61 @@ const PREGNANCY_RISK_DATABASE = [
   {
     category: 'X',
     name: 'İzotretinoin (Roaccutane / Zoretanin)',
+    atcPrefixes: ['D10BA01'],
     keywords: ['isotretinoin', 'izotretinoin', 'roaccutane', 'zoretanin', 'aknetrent'],
     warning: 'KESİN KONTRENDİKE (Kategori X). Majör kraniofasiyal, kardiyovasküler ve timik malformasyon riski çok yüksektir. Gebelikten en az 1 ay önce kesilmelidir.'
   },
   {
     category: 'X',
     name: 'Metotreksat (Methotrexate)',
+    atcPrefixes: ['L01BA01', 'L04AX03'],
     keywords: ['methotrexate', 'metotreksat', 'emthexate', 'trexan'],
     warning: 'KESİN KONTRENDİKE (Kategori X). Güçlü teratojen ve abortifasyan. Kraniyofasiyal defektler ve fetal ölüm riski.'
   },
   {
     category: 'X',
     name: 'Statinler (Atorvastatin, Rosuvastatin)',
-    keywords: ['atorvastatin', 'rosuvastatin', 'simvastatin', 'lipitor', 'crestor', 'tarden', 'kolestor'],
+    atcPrefixes: ['C10AA'],
+    keywords: ['atorvastatin', 'rosuvastatin', 'simvastatin', 'lovastatin', 'pitavastatin', 'pravastatin', 'fluvastatin', 'lipitor', 'crestor', 'tarden', 'kolestor', 'zocor', 'lipovas'],
     warning: 'KONTRENDİKE. Kolesterol sentezi fetal organogenez için elzemdir. Gebelikte ve emzirme döneminde kullanılmamalıdır.'
   },
   {
     category: 'D/X',
     name: 'Varfarin (Warfarin / Coumadin)',
+    atcPrefixes: ['B01AA03'],
     keywords: ['warfarin', 'varfarin', 'coumadin'],
     warning: 'KONTRENDİKE (Fetal Varfarin Sendromu, kondrodisplazi punktata, MSS anomalileri). Gebelikte DMAH (Enoksaparin) tercih edilmelidir.'
   },
   {
     category: 'D',
     name: 'ACE İnhibitörleri ve ARB\'ler (Ramipril, Losartan vb.)',
-    keywords: ['ramipril', 'enalapril', 'lisinopril', 'losartan', 'valsartan', 'candesartan', 'delix', 'atacand', 'co-diovan'],
+    atcPrefixes: ['C09A', 'C09B', 'C09C', 'C09D'],
+    keywords: [
+      'ramipril', 'enalapril', 'lisinopril', 'perindopril', 'captopril', 'kaptopril', 'kapril', 'fosinopril', 'zofenopril',
+      'losartan', 'valsartan', 'candesartan', 'kandesartan', 'telmisartan', 'irbesartan', 'olmesartan',
+      'delix', 'vasoxen', 'atacand', 'co-diovan', 'coversyl', 'micardis', 'karvea', 'karvezid', 'enap', 'renitec'
+    ],
     warning: '2. VE 3. TRİMESTERDE KONTRENDİKE. Fetal renal disgenezis, oligohidramniyoz, pulmoner hipoplazi ve neonatal anüri riski.'
   },
   {
     category: 'D',
     name: 'Valproik Asit (Depakin)',
+    atcPrefixes: ['N03AG01'],
     keywords: ['valproate', 'valproik', 'depakin', 'convulex'],
     warning: 'YÜKSEK TERATOJENİTE RİSKİ. Nöral tüp defektleri (spina bifida) ve bilişsel gerilik riski. Mümkünse alternatif antiepileptik seçilmelidir.'
   },
   {
     category: 'D',
     name: 'NSAİİ\'ler (3. Trimesterde İbuprofen, Diklofenak vb.)',
+    atcPrefixes: ['M01A'],
     keywords: ['ibuprofen', 'ibufen', 'naproxen', 'naproksen', 'diclofenac', 'diklofenak', 'dexketoprofen', 'deksketoprofen', 'ketoprofen', 'etodolac', 'etodolak', 'meloxicam', 'meloksikam', 'flurbiprofen', 'celecoxib', 'selekoksib', 'indomethacin', 'indometazin', 'arveles', 'apranax', 'voltaren', 'dolorex', 'majezik'],
     warning: '3. TRİMESTERDE KONTRENDİKE (≥28. Hafta). Fetal duktus arteriozusun erken kapanması, pulmoner hipertansiyon ve oligohidramniyoz riski.'
   },
   {
     category: 'D',
     name: 'Tetrasiklinler / Doksisiklin',
-    keywords: ['doxycycline', 'doksisiklin', 'monodox', 'tetradox'],
+    atcPrefixes: ['J01AA'],
+    keywords: ['doxycycline', 'doksisiklin', 'monodox', 'tetradox', 'tetracycline', 'tetrasiklin'],
     warning: '2. VE 3. TRİMESTERDE ÖNERİLMEZ. Fetal dişlerde kalıcı sarı-kahverengi renk değişimi ve kemik büyüme geriliği.'
   }
 ];
@@ -286,6 +298,21 @@ function normalizeStr(str: unknown): string {
 }
 
 /**
+ * Kısa anahtar kelimelerde (<=4 karakter, örn. 'ator', 'enap') kelime içi yanlış pozitifleri
+ * ("inhalator" -> "ator") önleyen güvenli eşleştirici
+ */
+function matchesNormalizedKeyword(normText: string, rawKeyword: string): boolean {
+  const normK = normalizeStr(rawKeyword);
+  if (!normK || !normText) return false;
+  if (normK.length <= 4) {
+    const escaped = normK.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`);
+    return regex.test(normText);
+  }
+  return normText.includes(normK);
+}
+
+/**
  * 1. eGFR Bazlı Renal Doz ve Kontrendikasyon Analiz Motoru
  */
 export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): RenalDoseCheckResult {
@@ -303,16 +330,19 @@ export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): Re
 
   for (const drugInput of drugs) {
     let drugName = '';
+    let searchCombined = '';
     let atc = '';
 
     if (typeof drugInput === 'string') {
       drugName = drugInput;
+      searchCombined = drugInput;
     } else if (drugInput && typeof drugInput === 'object') {
       drugName = (drugInput.name || drugInput.brandName || drugInput.brand || drugInput.generic || '') as string;
+      searchCombined = `${drugInput.brand || ''} ${drugInput.brandName || ''} ${drugInput.name || ''} ${drugInput.generic || ''}`.trim();
       atc = (drugInput.atcCode || drugInput.atc || '') as string;
     }
 
-    const normName = normalizeStr(drugName);
+    const normName = normalizeStr(searchCombined);
     const normAtc = normalizeStr(atc);
 
     // Veritabanında eşleşen ilacı bul
@@ -320,16 +350,19 @@ export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): Re
       if (entry.atcPrefix && normAtc.startsWith(normalizeStr(entry.atcPrefix))) {
         return true;
       }
-      if (normName.includes(normalizeStr(entry.generic))) {
+      if (entry.generic === 'amoxicillin' && normAtc.startsWith('j01cr02')) {
         return true;
       }
-      return entry.aliases.some(alias => normName.includes(normalizeStr(alias)));
+      if (matchesNormalizedKeyword(normName, entry.generic)) {
+        return true;
+      }
+      return entry.aliases.some(alias => matchesNormalizedKeyword(normName, alias));
     });
 
     if (matchedEntry) {
-      // Kural kontrolü (en katı kuraldan başla)
+      // Kural kontrolü (en katı kuraldan başla; ondalıklı eGFR değerlerinde 29.5 gibi boşlukları önlemek için Math.floor kullan)
       const sortedRules = [...matchedEntry.rules].sort((a, b) => a.maxEgfr - b.maxEgfr);
-      const triggeredRule = sortedRules.find(r => egfr <= r.maxEgfr);
+      const triggeredRule = sortedRules.find(r => Math.floor(egfr) <= r.maxEgfr);
 
       if (triggeredRule) {
         warnings.push({
@@ -381,32 +414,35 @@ export function detectTripleWhammy(drugs: DrugInputItem[] = []): TripleWhammyRes
   };
 
   for (const drugInput of drugs) {
-    let name = '';
+    let displayName = '';
+    let searchCombined = '';
     let atc = '';
     if (typeof drugInput === 'string') {
-      name = drugInput;
+      displayName = drugInput;
+      searchCombined = drugInput;
     } else if (drugInput && typeof drugInput === 'object') {
-      name = (drugInput.name || drugInput.brandName || drugInput.brand || drugInput.generic || '') as string;
+      displayName = (drugInput.name || drugInput.brandName || drugInput.brand || drugInput.generic || '') as string;
+      searchCombined = `${drugInput.brand || ''} ${drugInput.brandName || ''} ${drugInput.name || ''} ${drugInput.generic || ''}`.trim();
       atc = (drugInput.atcCode || drugInput.atc || '') as string;
     }
 
-    const normName = normalizeStr(name);
+    const normName = normalizeStr(searchCombined);
     const normAtc = normalizeStr(atc);
 
     // RAS Blocker Check
     const isRas = TRIPLE_WHAMMY_CLASSES.rasBlockers.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-                  TRIPLE_WHAMMY_CLASSES.rasBlockers.keywords.some(k => normName.includes(normalizeStr(k)));
-    if (isRas) detected.rasBlocker.push(name || 'ACEi/ARB');
+                  TRIPLE_WHAMMY_CLASSES.rasBlockers.keywords.some(k => matchesNormalizedKeyword(normName, k));
+    if (isRas) detected.rasBlocker.push(displayName || 'ACEi/ARB');
 
     // Diuretic Check
     const isDiuretic = TRIPLE_WHAMMY_CLASSES.diuretics.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-                       TRIPLE_WHAMMY_CLASSES.diuretics.keywords.some(k => normName.includes(normalizeStr(k)));
-    if (isDiuretic) detected.diuretic.push(name || 'Diüretik');
+                       TRIPLE_WHAMMY_CLASSES.diuretics.keywords.some(k => matchesNormalizedKeyword(normName, k));
+    if (isDiuretic) detected.diuretic.push(displayName || 'Diüretik');
 
     // NSAID Check
     const isNsaid = TRIPLE_WHAMMY_CLASSES.nsaids.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-                    TRIPLE_WHAMMY_CLASSES.nsaids.keywords.some(k => normName.includes(normalizeStr(k)));
-    if (isNsaid) detected.nsaid.push(name || 'NSAİİ');
+                    TRIPLE_WHAMMY_CLASSES.nsaids.keywords.some(k => matchesNormalizedKeyword(normName, k));
+    if (isNsaid) detected.nsaid.push(displayName || 'NSAİİ');
   }
 
   const hasRas = detected.rasBlocker.length > 0;
@@ -491,34 +527,33 @@ export function checkPregnancySafety(
 
   for (const drugInput of drugs) {
     let name = '';
+    let atc = '';
     if (typeof drugInput === 'string') {
       name = drugInput;
     } else if (drugInput && typeof drugInput === 'object') {
       name = `${drugInput.brand || ''} ${drugInput.brandName || ''} ${drugInput.name || ''} ${drugInput.generic || ''}`.trim();
+      atc = (drugInput.atcCode || drugInput.atc || '') as string;
     }
 
     const normName = normalizeStr(name);
+    const normAtc = normalizeStr(atc);
 
     for (const entry of PREGNANCY_RISK_DATABASE) {
-      const isMatched = entry.keywords.some(k => normName.includes(normalizeStr(k)));
-      if (isMatched) {
-        // Trimester spesifik kontroller
-        let isRelevant = true;
+      const isAtcMatched = entry.atcPrefixes?.some(p => normAtc.startsWith(normalizeStr(p))) ?? false;
+      const isKeywordMatched = entry.keywords.some(k => matchesNormalizedKeyword(normName, k));
+      if (isAtcMatched || isKeywordMatched) {
+        // Trimester spesifik kontroller (NSAİİ 1-2. trimesterde Kategori C / düşük risk, 3. trimesterde Kategori D / kontrendike)
         if (entry.name.includes('3. Trimesterde') && trimester < 3) {
-          isRelevant = false;
+          continue;
         }
 
         const isCatX = entry.category.includes('X');
-        const warningText = (!isRelevant && entry.name.includes('3. Trimesterde'))
-          ? `1. ve 2. Trimesterde yalnızca zorunluysa en düşük etkin dozda kullanılmalıdır. ${entry.warning}`
-          : entry.warning;
-
         alerts.push({
           drugName: entry.name,
           userDrug: name,
           category: entry.category,
-          warning: warningText,
-          isHighRisk: isCatX || (entry.category.includes('D') && isRelevant)
+          warning: entry.warning,
+          isHighRisk: isCatX || entry.category.includes('D')
         });
       }
     }
@@ -668,7 +703,7 @@ export const SEROTONERGIC_DRUG_DATABASE = {
   },
   ssriSnriTca: {
     label: 'SSRI / SNRI / TCA Antidepresan',
-    atcPrefixes: ['N06AB', 'N06AX', 'N06AA'],
+    atcPrefixes: ['N06AB', 'N06AA', 'N06AX16', 'N06AX17', 'N06AX21', 'N06AX23'],
     keywords: [
       'fluoksetin', 'fluoxetine', 'prozac', 'deprex', 'zedprex', 'fulsac',
       'sertralin', 'sertraline', 'lustral', 'selectra', 'serdep', 'misol',
@@ -689,7 +724,7 @@ export const SEROTONERGIC_DRUG_DATABASE = {
   },
   opioids: {
     label: 'Serotonerjik Opioid / Analjezik',
-    atcPrefixes: ['N02AX02', 'N02AB03'],
+    atcPrefixes: ['N02AX02', 'N02AB03', 'N02AX06', 'N02AB02'],
     keywords: [
       'tramadol', 'contramal', 'ultracet', 'tramadolor',
       'tapentadol', 'palexia',
@@ -712,7 +747,7 @@ export const SEROTONERGIC_DRUG_DATABASE = {
   },
   others: {
     label: 'Diğer Serotonerjik Ajanlar',
-    atcPrefixes: ['N06AX16', 'N06AX05', 'N06AX11'],
+    atcPrefixes: ['N06AX05', 'N06AX11', 'N06AX26', 'N05AN01', 'R05DA09'],
     keywords: [
       'dekstrometorfan', 'dextromethorphan', 'benical', 'tylol hot', 'vicks', 'actifed', 'rhinathiol',
       'vortioksetin', 'vortioxetine', 'brintellix',
@@ -769,39 +804,35 @@ export function checkSerotoninSyndrome(drugs: DrugInputItem[] = []): SerotoninSy
     // 1. MAOI
     if (
       SEROTONERGIC_DRUG_DATABASE.maoi.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      SEROTONERGIC_DRUG_DATABASE.maoi.keywords.some(k => normName.includes(normalizeStr(k)))
+      SEROTONERGIC_DRUG_DATABASE.maoi.keywords.some(k => matchesNormalizedKeyword(normName, k))
     ) {
       detected.maoi.push(name || 'MAOI / Linezolid');
     }
-
     // 2. SSRI / SNRI / TCA
-    if (
+    else if (
       SEROTONERGIC_DRUG_DATABASE.ssriSnriTca.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      SEROTONERGIC_DRUG_DATABASE.ssriSnriTca.keywords.some(k => normName.includes(normalizeStr(k)))
+      SEROTONERGIC_DRUG_DATABASE.ssriSnriTca.keywords.some(k => matchesNormalizedKeyword(normName, k))
     ) {
       detected.ssriSnriTca.push(name || 'Antidepresan');
     }
-
     // 3. Opioidler
-    if (
+    else if (
       SEROTONERGIC_DRUG_DATABASE.opioids.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      SEROTONERGIC_DRUG_DATABASE.opioids.keywords.some(k => normName.includes(normalizeStr(k)))
+      SEROTONERGIC_DRUG_DATABASE.opioids.keywords.some(k => matchesNormalizedKeyword(normName, k))
     ) {
       detected.opioids.push(name || 'Serotonerjik Opioid');
     }
-
     // 4. Triptanlar
-    if (
+    else if (
       SEROTONERGIC_DRUG_DATABASE.triptans.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      SEROTONERGIC_DRUG_DATABASE.triptans.keywords.some(k => normName.includes(normalizeStr(k)))
+      SEROTONERGIC_DRUG_DATABASE.triptans.keywords.some(k => matchesNormalizedKeyword(normName, k))
     ) {
       detected.triptans.push(name || 'Triptan');
     }
-
     // 5. Diğerleri
-    if (
+    else if (
       SEROTONERGIC_DRUG_DATABASE.others.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      SEROTONERGIC_DRUG_DATABASE.others.keywords.some(k => normName.includes(normalizeStr(k)))
+      SEROTONERGIC_DRUG_DATABASE.others.keywords.some(k => matchesNormalizedKeyword(normName, k))
     ) {
       detected.others.push(name || 'Serotonerjik Ajan');
     }
@@ -1253,12 +1284,13 @@ export const CYP3A4_STATIN_DATABASE = {
   cyp3a4Statins: {
     label: 'CYP3A4 Bağımlı Statin (Yüksek Rabdomiyoliz Riski)',
     atcPrefixes: ['C10AA01', 'C10AA02', 'C10AA05'],
+    highRiskAtcPrefixes: ['C10AA01', 'C10AA02'],
     keywords: [
       'simvastatin', 'zocor', 'lipovas', 'simva',
       'atorvastatin', 'lipitor', 'tarden', 'kolestor', 'ator', 'atordep', 'ateroz', 'saphire',
       'lovastatin'
     ],
-    highRiskKeywords: ['simvastatin', 'zocor', 'lovastatin']
+    highRiskKeywords: ['simvastatin', 'zocor', 'lipovas', 'simva', 'lovastatin']
   },
   strongInhibitors: {
     label: 'Güçlü CYP3A4 İnhibitörü',
@@ -1330,18 +1362,20 @@ export function checkCypStatinInteraction(drugs: DrugInputItem[] = []): CypStati
     // CYP3A4 Statin Check
     const isCypStatin =
       CYP3A4_STATIN_DATABASE.cyp3a4Statins.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      CYP3A4_STATIN_DATABASE.cyp3a4Statins.keywords.some(k => normName.includes(normalizeStr(k)));
+      CYP3A4_STATIN_DATABASE.cyp3a4Statins.keywords.some(k => matchesNormalizedKeyword(normName, k));
 
     if (isCypStatin) {
       detected.cyp3a4Statins.push(name || 'Statin');
-      const isHighRisk = CYP3A4_STATIN_DATABASE.cyp3a4Statins.highRiskKeywords.some(k => normName.includes(normalizeStr(k)));
+      const isHighRisk =
+        CYP3A4_STATIN_DATABASE.cyp3a4Statins.highRiskAtcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+        CYP3A4_STATIN_DATABASE.cyp3a4Statins.highRiskKeywords.some(k => matchesNormalizedKeyword(normName, k));
       if (isHighRisk) detected.highRiskStatins.push(name || 'Simvastatin');
     }
 
     // Strong Inhibitor Check
     const isStrong =
       CYP3A4_STATIN_DATABASE.strongInhibitors.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      CYP3A4_STATIN_DATABASE.strongInhibitors.keywords.some(k => normName.includes(normalizeStr(k)));
+      CYP3A4_STATIN_DATABASE.strongInhibitors.keywords.some(k => matchesNormalizedKeyword(normName, k));
 
     if (isStrong) {
       detected.strongInhibitors.push(name || 'Güçlü CYP3A4 İnhibitörü');
@@ -1350,7 +1384,7 @@ export function checkCypStatinInteraction(drugs: DrugInputItem[] = []): CypStati
     // Moderate Inhibitor Check
     const isModerate =
       CYP3A4_STATIN_DATABASE.moderateInhibitors.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
-      CYP3A4_STATIN_DATABASE.moderateInhibitors.keywords.some(k => normName.includes(normalizeStr(k)));
+      CYP3A4_STATIN_DATABASE.moderateInhibitors.keywords.some(k => matchesNormalizedKeyword(normName, k));
 
     if (isModerate) {
       detected.moderateInhibitors.push(name || 'Orta CYP3A4 İnhibitörü');

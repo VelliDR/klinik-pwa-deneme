@@ -98,8 +98,8 @@ export function calculateFENa(params: FENaParams = {}): FENaResult | null {
 export function calculateFEUrea(params: FEUreaParams = {}): FEUreaResult | null {
   const urineUrea = Number(params.urineUrea);
   const rawSerum = Number(params.serumUrea ?? params.serumBUN);
-  const isBunHarmonized = Boolean(params.isBun && params.serumUrea === undefined);
-  // If user explicitly flags input as BUN (and not direct urea), convert BUN to Urea (mg/dL) = BUN * 2.14
+  const isBunHarmonized = Boolean(params.isBun);
+  // If user explicitly flags input as BUN, convert BUN to Urea (mg/dL) = BUN * 2.14
   const serumUrea = isBunHarmonized ? rawSerum * 2.14 : rawSerum;
 
   const urineCr = Number(params.urineCr ?? params.urineCreatinine);
@@ -250,10 +250,12 @@ export function calculateOsmolalGap(params: OsmolalGapParams = {}): OsmolalGapRe
   const measuredOsm = Number(params.measuredOsm ?? params.measuredOsmolality);
   const serumNa = Number(params.serumNa ?? params.sodium);
   const glucoseMgDl = Number(params.glucoseMgDl ?? params.glucose);
-  const bunMgDl = Number(params.bunMgDl ?? params.bun ?? 15);
-  const ethanolMgDl = Number(params.ethanolMgDl ?? params.ethanol ?? 0);
+  const rawBun = Number(params.bunMgDl ?? params.bun ?? 15);
+  const bunMgDl = isNaN(rawBun) || rawBun <= 0 ? 15 : rawBun;
+  const rawEthanol = Number(params.ethanolMgDl ?? params.ethanol ?? 0);
+  const ethanolMgDl = isNaN(rawEthanol) || rawEthanol < 0 ? 0 : rawEthanol;
 
-  if (isNaN(measuredOsm) || isNaN(serumNa) || isNaN(glucoseMgDl) || measuredOsm <= 0 || serumNa <= 0) {
+  if (isNaN(measuredOsm) || isNaN(serumNa) || isNaN(glucoseMgDl) || measuredOsm <= 0 || serumNa <= 0 || glucoseMgDl <= 0) {
     return null;
   }
 
@@ -306,10 +308,11 @@ export function calculateOsmolalGap(params: OsmolalGapParams = {}): OsmolalGapRe
 export function evaluateRumackMatthew(params: RumackMatthewParams = {}): RumackMatthewResult | null {
   const serumParacetamolMcgMl = Number(params.serumParacetamolMcgMl ?? params.paracetamolLevelMcgMl);
   const hoursPostIngestion = Number(params.hoursPostIngestion ?? params.hours);
-  const weightKg = Number(params.weightKg || 70);
+  const rawWeightKg = Number(params.weightKg || 70);
+  const weightKg = isNaN(rawWeightKg) || rawWeightKg <= 0 ? 70 : rawWeightKg;
   const isHighRisk = Boolean(params.isHighRisk); // Chronic alcoholism, malnutrition, CYP2E1 inducers
 
-  if (isNaN(serumParacetamolMcgMl) || isNaN(hoursPostIngestion)) {
+  if (isNaN(serumParacetamolMcgMl) || isNaN(hoursPostIngestion) || serumParacetamolMcgMl < 0 || hoursPostIngestion < 0) {
     return null;
   }
 
@@ -352,9 +355,12 @@ export function evaluateRumackMatthew(params: RumackMatthewParams = {}): RumackM
   let nacProtocol = null;
   let alertClass = 'text-emerald-400';
 
-  const p1Mg = Math.round(weightKg * 150);
-  const p2Mg = Math.round(weightKg * 50);
-  const p3Mg = Math.round(weightKg * 100);
+  // FDA Prescott IV NAC protokolünde doz hesabı maksimum 100 kg üzerinden yapılır (Maks: 15.000 mg / 5.000 mg / 10.000 mg)
+  const effectiveIvWeightKg = Math.min(weightKg, 100);
+  const effectiveOralWeightKg = Math.min(weightKg, 110);
+  const p1Mg = Math.round(effectiveIvWeightKg * 150);
+  const p2Mg = Math.round(effectiveIvWeightKg * 50);
+  const p3Mg = Math.round(effectiveIvWeightKg * 100);
 
   // Pediatric fluid safety check (<40 kg requires weight-adjusted D5W to prevent hyponatremia/fluid overload)
   const isPediatricWeight = weightKg < 40;
@@ -370,11 +376,11 @@ export function evaluateRumackMatthew(params: RumackMatthewParams = {}): RumackM
       phase1: { doseMgKg: 150, totalMg: p1Mg, fluidD5W: p1Fluid },
       phase2: { doseMgKg: 50, totalMg: p2Mg, fluidD5W: p2Fluid },
       phase3: { doseMgKg: 100, totalMg: p3Mg, fluidD5W: p3Fluid },
-      loadingDose: `Yükleme (1. Faz): ${p1Mg} mg (150 mg/kg) ${p1Fluid}`,
-      secondDose: `2. Faz: ${p2Mg} mg (50 mg/kg) ${p2Fluid}`,
-      thirdDose: `3. Faz: ${p3Mg} mg (100 mg/kg) ${p3Fluid}`,
+      loadingDose: `Yükleme (1. Faz): ${p1Mg} mg (150 mg/kg, maks 15g) ${p1Fluid}`,
+      secondDose: `2. Faz: ${p2Mg} mg (50 mg/kg, maks 5g) ${p2Fluid}`,
+      thirdDose: `3. Faz: ${p3Mg} mg (100 mg/kg, maks 10g) ${p3Fluid}`,
       totalDuration: 'Toplam 21 saatlik standart 3 fazlı IV infüzyon protokolü.',
-      oralAlternative: `Oral NAC Alternatifi: 140 mg/kg (${Math.round(weightKg * 140)} mg) oral yükleme, ardından 4 saatte bir 70 mg/kg (${Math.round(weightKg * 70)} mg) x 17 doz (Toplam 72 saat).`
+      oralAlternative: `Oral NAC Alternatifi: 140 mg/kg (${Math.round(effectiveOralWeightKg * 140)} mg) oral yükleme, ardından 4 saatte bir 70 mg/kg (${Math.round(effectiveOralWeightKg * 70)} mg) x 17 doz (Toplam 72 saat).`
     };
   } else {
     interpretation = `🟢 Toksisite Çizgisinin Altında (${serumParacetamolMcgMl} mcg/mL < ${thresholdVal} mcg/mL eşiği): Hepatotoksisite olasılığı düşüktür. Semptom ve karaciğer enzimleri takibi yeterlidir.`;

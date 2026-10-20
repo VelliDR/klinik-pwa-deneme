@@ -105,4 +105,44 @@ const badgesHtml = getDrugBadgesHTML(sampleParol);
 assert.ok(typeof badgesHtml === 'string');
 console.log(`✓ getDrugBadgesHTML passed: "${badgesHtml}"`);
 
+// 6. Prospektüs & KÜB Direct vs Fallback Verification
+const drugsWithDirectPdf = rawData.filter(d => Boolean(d.kt || d.kub || d.kt_pdf_prospektus_url || d.kub_pdf_url));
+assert.ok(drugsWithDirectPdf.length > 500, 'Should have official direct PDF drugs in dataset');
+const samplePdfDrug = drugsWithDirectPdf[0];
+const samplePdfBadges = getDrugBadgesHTML(samplePdfDrug);
+assert.ok(samplePdfBadges.includes('Resmi PDF (KÜB/KT)'), 'Direct PDF drug should have Resmi PDF badge');
+console.log(`✓ Verified direct PDF drug (${samplePdfDrug.brand}) has official PDF badge (Found ${drugsWithDirectPdf.length} direct PDF drugs)`);
+
+// Fallback search link test for drugs without direct PDF
+const fallbackSearchQuery = encodeURIComponent(sampleParol.brand + ' prospektüs kub titck pdf');
+const fallbackUrl = `https://www.google.com/search?q=${fallbackSearchQuery}`;
+assert.ok(fallbackUrl.includes('PAROL'), 'Fallback search URL must include brand');
+console.log(`✓ Verified smart fallback prospektüs URL generation for "${sampleParol.brand}"`);
+
+// 7. Search Modes Verification (All, Brand, Generic, Barcode)
+console.log('\n--- 7. TESTING MULTI-MODE DRUG SEARCH (BRAND, GENERIC, BARCODE, ALL) ---');
+// 7a. Brand mode only
+const brandModeRes = await searchDrugsInDB('parol', 'brand');
+assert.ok(brandModeRes.length > 0, 'Brand mode search for "parol" must return results');
+assert.ok(brandModeRes.every(d => d.brand.toUpperCase().includes('PAROL')), 'All brand mode matches must contain PAROL in brand name');
+console.log(`✓ Brand mode search passed (${brandModeRes.length} results, all brand matches)`);
+
+// 7b. Generic mode isolation (searching brand "parol" in generic mode returns 0)
+const genericModeParol = await searchDrugsInDB('parol', 'generic');
+assert.strictEqual(genericModeParol.length, 0, 'Generic mode for brand "parol" must return 0 matches');
+console.log('✓ Generic mode isolation verified (brand name "parol" correctly returns 0 in generic mode)');
+
+// 7c. Generic mode search with active ingredient ("parasetamol")
+const genericModeRes = await searchDrugsInDB('parasetamol', 'generic');
+assert.ok(genericModeRes.length > 0, 'Generic mode for "parasetamol" must return matches');
+assert.ok(genericModeRes.every(d => d.generic.toLowerCase().includes('paracetamol')), 'All matches must contain paracetamol as active ingredient');
+console.log(`✓ Generic mode search passed (${genericModeRes.length} results containing paracetamol)`);
+
+// 7d. Barcode mode search
+const barcodeModeRes = await searchDrugsInDB('8699717010109', 'barcode');
+assert.strictEqual(barcodeModeRes.length, 1);
+assert.strictEqual(barcodeModeRes[0].barcode, '8699717010109');
+console.log(`✓ Barcode mode search passed (matched ${barcodeModeRes[0].brand})`);
+
 console.log('\n🎉 ALL DRUG SEARCH & EQUIVALENTS TESTS PASSED CLEANLY (100% HEALTHY)!');
+

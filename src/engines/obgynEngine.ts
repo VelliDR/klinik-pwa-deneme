@@ -9,16 +9,23 @@ export interface ObstetricsResult {
 
 export function calculateObstetrics(lmpDateStr: string | null | undefined): ObstetricsResult | null {
     if (!lmpDateStr) return null;
-    const lmpDate = new Date(lmpDateStr);
+    const trimmed = lmpDateStr.trim();
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+    const lmpDate = isoMatch
+        ? new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]))
+        : new Date(trimmed);
     if (isNaN(lmpDate.getTime())) return null;
+    lmpDate.setHours(0, 0, 0, 0);
     
-    // EDD (Naegele's rule): LMP + 7 days - 3 months + 1 year => essentially LMP + 280 days
-    const edd = new Date(lmpDate.getTime() + 280 * 24 * 60 * 60 * 1000);
+    // EDD (Naegele's rule): LMP + 280 days
+    const edd = new Date(lmpDate.getTime());
+    edd.setDate(edd.getDate() + 280);
     
-    const today = new Date();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const diffTime = today.getTime() - lmpDate.getTime();
     if (diffTime < 0) return null;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
     
     const weeks = Math.floor(diffDays / 7);
     if (weeks > 44) return null;

@@ -58,11 +58,18 @@ export function calculatePediatricDose(
             freq: '12 saatte bir'
         },
         'laroxyl_25': {
-            name: 'Laroxyl / Amitriptilin (25mg)',
+            name: 'Hidroksizin (Atarax 10mg/5ml)',
             doseMgPerKg: 0.5,
-            maxDose: 50,
-            concentration: 25 / 1,
-            freq: 'Gece yatarken'
+            maxDose: 25,
+            concentration: 10 / 5, // 10mg / 5ml = 2 mg/ml
+            freq: 'Gece yatarken (veya 6-8 saatte bir)'
+        },
+        'hydroxyzine_10': {
+            name: 'Hidroksizin (Atarax 10mg/5ml)',
+            doseMgPerKg: 0.5,
+            maxDose: 25,
+            concentration: 10 / 5,
+            freq: 'Gece yatarken (veya 6-8 saatte bir)'
         },
         'cetirizine_5': {
             name: 'Setirizin (5mg/5ml - Zyrtec/Allerset)',
@@ -103,7 +110,7 @@ export function calculatePediatricDose(
 
     return {
         name: drug.name,
-        targetDoseMg: Math.round(targetDoseMg),
+        targetDoseMg: Math.round(targetDoseMg * 10) / 10,
         volumeMl: parseFloat(volumeMl.toFixed(1)),
         olcekText,
         freq: drug.freq
@@ -111,7 +118,7 @@ export function calculatePediatricDose(
 }
 
 export function getVaccineSchedule(ageInMonths: number | null | undefined): string[] | null {
-    if (ageInMonths === null || ageInMonths === undefined) return null;
+    if (ageInMonths === null || ageInMonths === undefined || isNaN(ageInMonths) || ageInMonths < 0) return null;
     
     let vaccines: string[] = [];
     if (ageInMonths < 1 && ageInMonths >= 0) vaccines = ["Hepatit B (1. Doz) - Doğumda"];
