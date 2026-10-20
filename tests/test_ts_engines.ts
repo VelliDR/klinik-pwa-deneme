@@ -36,6 +36,10 @@ import {
   calculateSodiumCorrection,
   calculateQTc,
   calculateAxis,
+  convertEcgBoxesToMs,
+  convertMsToEcgBoxes,
+  calculateHrFromBoxes,
+  calculateAverageInterval,
   analyzeBloodGas,
   calculateCorrectedCalcium,
   convertSteroids,
@@ -298,6 +302,24 @@ assert.strictEqual(qtcNorm.qtcBazett, 462);
 
 const axis = calculateAxis(10, 10);
 assert.strictEqual(axis.degrees, 45);
+
+// ECG Box (Küçük Kare) ve Kağıt Hızı Dönüşüm Testleri
+assert.strictEqual(convertEcgBoxesToMs(10, 25), 400); // 10 kare * 40 ms = 400 ms
+assert.strictEqual(convertEcgBoxesToMs(9.5, 25), 380); // 9.5 kare * 40 ms = 380 ms
+assert.strictEqual(convertEcgBoxesToMs(10, 50), 200); // 10 kare * 20 ms = 200 ms (50 mm/sn)
+assert.strictEqual(convertMsToEcgBoxes(400, 25), 10);
+assert.strictEqual(convertMsToEcgBoxes(380, 25), 9.5);
+assert.strictEqual(convertMsToEcgBoxes(400, 50), 20);
+
+// RR & Kalp Hızı Hesaplama Testleri
+assert.strictEqual(calculateHrFromBoxes(20, false, 25), 75); // 20 küçük kare = 800 ms = 75 bpm
+assert.strictEqual(calculateHrFromBoxes(4, true, 25), 75); // 4 büyük kare = 75 bpm
+assert.strictEqual(calculateHrFromBoxes(3, true, 25), 100); // 3 büyük kare = 100 bpm
+assert.strictEqual(calculateHrFromBoxes(5, true, 25), 60); // 5 büyük kare = 60 bpm
+
+// Çoklu Vuru Ortalaması Testleri (Aritmi / AFib)
+assert.strictEqual(calculateAverageInterval([10, 10.5, 9.5]), 10.0);
+assert.strictEqual(calculateAverageInterval([380, 400, 420]), 400.0);
 
 const gcs = calculateGCS(4, 5, 6);
 assert.strictEqual(gcs.total, 15);

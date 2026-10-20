@@ -584,12 +584,149 @@
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <span class="text-[10px] font-bold text-sky-400 block pt-2">EKG QTc & Aks & Tisdale</span>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><label class="text-[10px] text-slate-400 block mb-1">QT (ms)</label><input type="number" id="input-ecg-qt" placeholder="Örn: 380" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">RR (ms)</label><input type="number" id="input-ecg-rr" placeholder="Nabızdan otm." class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
-                        <div><label class="text-[10px] text-slate-400 block mb-1">QRS (ms)</label><input type="number" id="input-ecg-qrs" placeholder="Örn: 90" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                    <div class="flex items-center justify-between pt-2">
+                        <span class="text-[10px] font-bold text-sky-400">EKG QTc & Aks & Tisdale</span>
+                        <button type="button" id="btn-toggle-ecg-guide" class="text-[10px] text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition-colors">
+                            <span>📖 Doğru QT Okuma & Tanjant Kılavuzu</span>
+                        </button>
                     </div>
+
+                    <!-- Giriş Modu ve Kağıt Hızı Kontrol Çubuğu -->
+                    <div class="flex items-center justify-between bg-slate-900/80 p-1.5 rounded-lg border border-slate-700/60 text-xs gap-2">
+                        <div class="flex items-center gap-1">
+                            <span class="text-[9px] text-slate-400 font-semibold uppercase">Giriş:</span>
+                            <div class="inline-flex rounded-md p-0.5 bg-slate-950 border border-slate-800 text-[10px]">
+                                <button type="button" id="btn-ecg-mode-ms" class="px-2 py-0.5 rounded font-semibold transition-all bg-sky-600 text-white">Milisaniye (ms)</button>
+                                <button type="button" id="btn-ecg-mode-boxes" class="px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-white">Küçük Kare (mm)</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[9px] text-slate-400 font-semibold uppercase">Hız:</span>
+                            <select id="select-ecg-paper-speed" class="bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] text-slate-300 focus:outline-none focus:border-sky-500">
+                                <option value="25" selected>25 mm/sn (1k=40ms)</option>
+                                <option value="50">50 mm/sn (1k=20ms)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 1. Milisaniye Giriş Paneli (panel-ecg-ms) -->
+                    <div id="panel-ecg-ms" class="space-y-1">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">QT (ms)</label>
+                                <input type="number" id="input-ecg-qt" placeholder="Örn: 380" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
+                                <span id="hint-ecg-qt-boxes" class="text-[9px] text-slate-500 font-mono mt-0.5 block truncate">-- kare</span>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">RR (ms)</label>
+                                <input type="number" id="input-ecg-rr" placeholder="Nabızdan otm." class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
+                                <span id="hint-ecg-rr-boxes" class="text-[9px] text-slate-500 font-mono mt-0.5 block truncate">-- kare</span>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">QRS (ms)</label>
+                                <input type="number" id="input-ecg-qrs" placeholder="Örn: 90" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
+                                <span id="hint-ecg-qrs-boxes" class="text-[9px] text-slate-500 font-mono mt-0.5 block truncate">-- kare</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Küçük Kare / mm Giriş Paneli (panel-ecg-boxes) -->
+                    <div id="panel-ecg-boxes" class="hidden space-y-2">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-[10px] text-amber-300 font-medium block mb-1">QT (Küçük Kare)</label>
+                                <input type="number" step="0.5" id="input-ecg-qt-boxes" placeholder="Örn: 9.5 veya 10" class="w-full bg-slate-900 border border-amber-600/60 rounded p-1.5 text-xs font-mono text-amber-200" inputmode="decimal">
+                                <span id="calc-ecg-qt-ms" class="text-[9px] text-amber-400 font-mono mt-0.5 block font-semibold">= -- ms</span>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-amber-300 font-medium block mb-1">RR (Küçük Kare)</label>
+                                <input type="number" step="0.5" id="input-ecg-rr-boxes" placeholder="Örn: 20" class="w-full bg-slate-900 border border-amber-600/60 rounded p-1.5 text-xs font-mono text-amber-200" inputmode="decimal">
+                                <span id="calc-ecg-rr-ms" class="text-[9px] text-amber-400 font-mono mt-0.5 block font-semibold">= -- ms (-- bpm)</span>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-amber-300 font-medium block mb-1">QRS (Küçük Kare)</label>
+                                <input type="number" step="0.5" id="input-ecg-qrs-boxes" placeholder="Örn: 2.2" class="w-full bg-slate-900 border border-amber-600/60 rounded p-1.5 text-xs font-mono text-amber-200" inputmode="decimal">
+                                <span id="calc-ecg-qrs-ms" class="text-[9px] text-amber-400 font-mono mt-0.5 block font-semibold">= -- ms</span>
+                            </div>
+                        </div>
+
+                        <!-- Hızlı R-R Büyük Kare Kısayolları -->
+                        <div class="flex items-center gap-1.5 pt-1 text-[10px] text-slate-400 flex-wrap">
+                            <span class="text-[9px]">Hızlı RR (Büyük Kare):</span>
+                            <button type="button" id="btn-ecg-rr-preset-3" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[9px]">3 Büyük (100 bpm)</button>
+                            <button type="button" id="btn-ecg-rr-preset-4" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[9px]">4 Büyük (75 bpm)</button>
+                            <button type="button" id="btn-ecg-rr-preset-5" class="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 text-[9px]">5 Büyük (60 bpm)</button>
+                        </div>
+                    </div>
+
+                    <!-- EKG'den Doğru Okuma & Tanjant Kılavuzu -->
+                    <div id="details-ecg-guide" class="hidden bg-slate-900/95 border border-amber-500/40 rounded-xl p-3 text-xs space-y-2.5 shadow-lg">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                            <div class="font-bold text-amber-400 flex items-center gap-1.5 text-xs">
+                                <span>📐</span> <span>EKG Kağıdından Doğru QT Okuma Kılavuzu</span>
+                            </div>
+                            <span class="text-[9px] bg-amber-950 text-amber-300 border border-amber-800 px-1.5 py-0.5 rounded font-mono">AHA/ACC/HRS</span>
+                        </div>
+
+                        <!-- 1. Tanjant Yöntemi -->
+                        <div class="space-y-1 bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                            <div class="font-semibold text-sky-300 text-[11px] flex items-center gap-1">
+                                <span>1.</span> <span>Tanjant (Teğet) Yöntemi ile T Dalgası Bitişi</span>
+                            </div>
+                            <p class="text-[10px] text-slate-300 leading-relaxed">
+                                T dalgasının bittiği nokta göz kararı seçildiğinde T-U füzyonu veya yavaş eğim nedeniyle QT aşırı uzun ölçülebilir.
+                                <strong>Doğru yöntem:</strong> T dalgasının en dik inen eğimine (descending limb) bir teğet cetvel çizgisi çekilir. Bu doğrunun <strong>T-P izoelektrik bazal çizgisini</strong> kestiği nokta gerçek <strong>QT sonu</strong> kabul edilir.
+                            </p>
+                        </div>
+
+                        <!-- 2. Derivasyon & 3. U Dalgası -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                            <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800 space-y-0.5">
+                                <div class="font-semibold text-emerald-300">2. En İyi Derivasyonlar</div>
+                                <div class="text-slate-300">Genellikle <strong>Derivasyon II</strong> veya <strong>V5</strong> seçilmelidir. Q ve T dalgaları en net bu derivasyonlarda seçilir.</div>
+                                <div class="text-rose-400 font-semibold pt-1">⚠️ V2 ve V3'ten KAÇININIZ! Fizyolojik U dalgaları en çok burada belirgindir ve yalancı QT uzamasına yol açar.</div>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800 space-y-0.5">
+                                <div class="font-semibold text-emerald-300">3. U Dalgasını Ayırma</div>
+                                <div class="text-slate-300">Normal fizyolojik U dalgası QT ölçümüne <strong>DAHİL EDİLMEZ</strong>.</div>
+                                <div class="text-amber-300 pt-1">Yalnızca şiddetli hipokalemide T-U dalgaları dev bir kompleks olarak birleşmişse veya ikinci tepe tabana inmiyorsa dahil edilir.</div>
+                            </div>
+                        </div>
+
+                        <!-- 4. Yarı RR Kuralı & 5. Kağıt Hızı -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                            <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800 space-y-0.5">
+                                <div class="font-semibold text-purple-300">4. Pratik "Yarı RR" Kuralı (Eyeball)</div>
+                                <div class="text-slate-300">
+                                    Normal sinüs hızında (60–100/dk): T dalgası iki R dalgasının tam ortasını (R-R aralığının <strong>%50'sini</strong>) aşıyorsa QT büyük ihtimalle uzamıştır!
+                                </div>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800 space-y-0.5">
+                                <div class="font-semibold text-purple-300">5. Kağıt Hızı & Aritmi / AFib</div>
+                                <div class="text-slate-300">
+                                    • Standart hız: <strong>25 mm/sn</strong> (1 küçük kare = 40 ms; 1 büyük = 200 ms).<br>
+                                    • Ritim düzensizliğinde veya AFib'de en az <strong>3-5 ardışık vurunun ortalaması</strong> alınmalıdır.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Çoklu Vuru Ortalaması Aracı -->
+                        <div class="bg-slate-950/80 p-2 rounded-lg border border-indigo-900/40 text-[10px] space-y-1.5">
+                            <div class="font-semibold text-indigo-300 flex items-center justify-between">
+                                <span>⚡ Aritmi / AFib için 3-Vuru Hızlı Ortalama Alıcı:</span>
+                                <span class="text-[9px] text-slate-400">Ardışık 3 vuru süresi veya kare giriniz</span>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1.5 items-center">
+                                <div><input type="number" step="0.5" id="input-ecg-avg-v1" placeholder="1. Vuru" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono text-center"></div>
+                                <div><input type="number" step="0.5" id="input-ecg-avg-v2" placeholder="2. Vuru" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono text-center"></div>
+                                <div><input type="number" step="0.5" id="input-ecg-avg-v3" placeholder="3. Vuru" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-[10px] font-mono text-center"></div>
+                                <div>
+                                    <button type="button" id="btn-apply-ecg-avg-qt" class="w-full px-1 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[9px] font-bold">QT'ye Aktar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="text-[10px] text-slate-400 block mb-1">QRS Morfolojisi / İleti Tipi</label>
                         <select id="select-ecg-qrs-pattern" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200 font-sans focus:outline-none focus:border-rose-500">

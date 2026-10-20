@@ -339,7 +339,13 @@ const expectedIds = [
     'card-status-phase-1', 'card-status-phase-2', 'card-status-phase-3', 'card-status-phase-4',
     'text-status-glucose-dose', 'text-status-midazolam-dose', 'text-status-diazepam-dose',
     'text-status-keppra-dose', 'text-status-phenytoin-dose', 'text-status-valproate-dose',
-    'btn-status-to-soap', 'container-dot-phrase-pills', 'select-soap-template', 'btn-insert-soap-template'
+    'btn-status-to-soap', 'container-dot-phrase-pills', 'select-soap-template', 'btn-insert-soap-template',
+    'btn-toggle-ecg-guide', 'btn-ecg-mode-ms', 'btn-ecg-mode-boxes', 'select-ecg-paper-speed',
+    'panel-ecg-ms', 'panel-ecg-boxes', 'input-ecg-qt-boxes', 'input-ecg-rr-boxes', 'input-ecg-qrs-boxes',
+    'details-ecg-guide', 'btn-ecg-rr-preset-3', 'btn-ecg-rr-preset-4', 'btn-ecg-rr-preset-5',
+    'input-ecg-avg-v1', 'input-ecg-avg-v2', 'input-ecg-avg-v3', 'btn-apply-ecg-avg-qt',
+    'hint-ecg-qt-boxes', 'hint-ecg-rr-boxes', 'hint-ecg-qrs-boxes',
+    'calc-ecg-qt-ms', 'calc-ecg-rr-ms', 'calc-ecg-qrs-ms'
 ];
 
 let missing = 0;

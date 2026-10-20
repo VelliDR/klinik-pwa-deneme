@@ -12,7 +12,14 @@ import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from './e
 import { analyzeBloodGas } from './engines/bloodGasEngine';
 import { calculateMaintenanceFluid, calculateSodiumCorrection, calculateNeonatalFluid } from './engines/fluidEngine';
 import { calculateNEWS2, calculatePEWS, calculateGCS } from './engines/triageEngine';
-import { calculateQTc, calculateAxis } from './engines/cardiacEngine';
+import {
+    calculateQTc,
+    calculateAxis,
+    convertEcgBoxesToMs,
+    convertMsToEcgBoxes,
+    calculateHrFromBoxes,
+    calculateAverageInterval
+} from './engines/cardiacEngine';
 import { calculateCorrectedCalcium } from './engines/calciumEngine';
 import { calculateInfusionRate, calculateGIR } from './engines/infusionEngine';
 import { convertSteroids, calculateHOMAIR } from './engines/endocrineEngine';
@@ -1098,10 +1105,52 @@ export function updateAllTabs(): void {
         if (girContainer) girContainer.classList.add('hidden');
     }
 
-    // CARDIAC
-    const qt = getNum('input-ecg-qt');
-    const hrInput = getEl<HTMLInputElement>('input-hr');
+    // CARDIAC (EKG QTc & KUTUCUK DÖNÜŞÜMÜ)
+    const speedSelect = getEl<HTMLSelectElement>('select-ecg-paper-speed');
+    const paperSpeed: 25 | 50 = speedSelect && speedSelect.value === '50' ? 50 : 25;
+    const msPerBox = paperSpeed === 50 ? 20 : 40;
+
+    const qtBoxesInput = getEl<HTMLInputElement>('input-ecg-qt-boxes');
+    const rrBoxesInput = getEl<HTMLInputElement>('input-ecg-rr-boxes');
+    const qrsBoxesInput = getEl<HTMLInputElement>('input-ecg-qrs-boxes');
+    const qtInput = getEl<HTMLInputElement>('input-ecg-qt');
     const rrInput = getEl<HTMLInputElement>('input-ecg-rr');
+    const qrsInput = getEl<HTMLInputElement>('input-ecg-qrs');
+    const hrInput = getEl<HTMLInputElement>('input-hr');
+
+    // 1. Kutucuk girişinden ms alanına senkronizasyon (Eğer kullanıcı kutucuk alanına yazıyorsa)
+    if (typeof document !== 'undefined') {
+        if (document.activeElement === qtBoxesInput && qtBoxesInput && qtInput) {
+            const bVal = parseNum(qtBoxesInput.value);
+            if (bVal !== null && bVal > 0) {
+                qtInput.value = String(Math.round(bVal * msPerBox));
+            } else if (qtBoxesInput.value === '') {
+                qtInput.value = '';
+            }
+        }
+        if (document.activeElement === rrBoxesInput && rrBoxesInput && rrInput) {
+            const bVal = parseNum(rrBoxesInput.value);
+            if (bVal !== null && bVal > 0) {
+                const calculatedRr = Math.round(bVal * msPerBox);
+                rrInput.value = String(calculatedRr);
+                if (hrInput && document.activeElement !== hrInput) {
+                    hrInput.value = String(Math.round(60000 / calculatedRr));
+                }
+            } else if (rrBoxesInput.value === '') {
+                rrInput.value = '';
+            }
+        }
+        if (document.activeElement === qrsBoxesInput && qrsBoxesInput && qrsInput) {
+            const bVal = parseNum(qrsBoxesInput.value);
+            if (bVal !== null && bVal > 0) {
+                qrsInput.value = String(Math.round(bVal * msPerBox));
+            } else if (qrsBoxesInput.value === '') {
+                qrsInput.value = '';
+            }
+        }
+    }
+
+    let qt = qtInput ? parseNum(qtInput.value) : null;
     let hrVal = hrInput ? parseNum(hrInput.value) : null;
     let rrVal = rrInput ? parseNum(rrInput.value) : null;
 
@@ -1118,7 +1167,6 @@ export function updateAllTabs(): void {
 
     const qrsPatternSelect = getEl<HTMLSelectElement>('select-ecg-qrs-pattern');
     const qrsPattern = (qrsPatternSelect ? qrsPatternSelect.value : 'custom') as 'custom' | 'normal' | 'lbbb' | 'rbbb' | 'paced';
-    const qrsInput = getEl<HTMLInputElement>('input-ecg-qrs');
     let qrs = qrsInput ? parseNum(qrsInput.value) : null;
 
     // Handle QRS Pattern presets
@@ -1129,6 +1177,38 @@ export function updateAllTabs(): void {
         else if (qrsPattern === 'paced') qrs = 160;
         qrsInput.value = String(qrs);
     }
+
+    // 2. ms alanından kutucuk alanına ve ipuçlarına senkronizasyon (Eğer kullanıcı ms alanında yazıyorsa)
+    if (typeof document !== 'undefined') {
+        if (document.activeElement !== qtBoxesInput && qtBoxesInput) {
+            qtBoxesInput.value = qt !== null && qt > 0 ? String(Number((qt / msPerBox).toFixed(1))) : '';
+        }
+        if (document.activeElement !== rrBoxesInput && rrBoxesInput) {
+            rrBoxesInput.value = rrVal !== null && rrVal > 0 ? String(Number((rrVal / msPerBox).toFixed(1))) : '';
+        }
+        if (document.activeElement !== qrsBoxesInput && qrsBoxesInput) {
+            qrsBoxesInput.value = qrs !== null && qrs > 0 ? String(Number((qrs / msPerBox).toFixed(1))) : '';
+        }
+    }
+
+    // İpucu ve hesaplama etiketlerini güncelle
+    const hintQtBoxes = getEl('hint-ecg-qt-boxes');
+    const hintRrBoxes = getEl('hint-ecg-rr-boxes');
+    const hintQrsBoxes = getEl('hint-ecg-qrs-boxes');
+    const calcQtMs = getEl('calc-ecg-qt-ms');
+    const calcRrMs = getEl('calc-ecg-rr-ms');
+    const calcQrsMs = getEl('calc-ecg-qrs-ms');
+
+    if (hintQtBoxes) hintQtBoxes.textContent = qt !== null ? `≈ ${(qt / msPerBox).toFixed(1)} kare` : '-- kare';
+    if (hintRrBoxes) hintRrBoxes.textContent = rrVal !== null ? `≈ ${(rrVal / msPerBox).toFixed(1)} kare` : '-- kare';
+    if (hintQrsBoxes) hintQrsBoxes.textContent = qrs !== null ? `≈ ${(qrs / msPerBox).toFixed(1)} kare` : '-- kare';
+
+    if (calcQtMs) calcQtMs.textContent = qt !== null ? `= ${qt} ms` : '= -- ms';
+    if (calcRrMs) {
+        const derivedBpm = hrVal ?? (rrVal ? Math.round(60000 / rrVal) : '--');
+        calcRrMs.textContent = rrVal !== null ? `= ${rrVal} ms (${derivedBpm} bpm)` : '= -- ms (-- bpm)';
+    }
+    if (calcQrsMs) calcQrsMs.textContent = qrs !== null ? `= ${qrs} ms` : '= -- ms';
 
     const qtRes = getEl('output-ecg-qtc');
     
@@ -4090,6 +4170,101 @@ export function initResponsiveWorkstation(): void {
                 }
             });
         }
+    }
+
+    // ========================================================================
+    // 10. EKG KÜÇÜK KUTUCUK (MM) GİRİŞİ, HIZ AYARI VE TANJANT REHBERİ
+    // ========================================================================
+    const btnModeMs = getEl('btn-ecg-mode-ms');
+    const btnModeBoxes = getEl('btn-ecg-mode-boxes');
+    const panelMs = getEl('panel-ecg-ms');
+    const panelBoxes = getEl('panel-ecg-boxes');
+    const btnToggleGuide = getEl('btn-toggle-ecg-guide');
+    const detailsGuide = getEl('details-ecg-guide');
+    const selectSpeed = getEl<HTMLSelectElement>('select-ecg-paper-speed');
+
+    if (selectSpeed) {
+        selectSpeed.addEventListener('change', () => {
+            updateAllTabs();
+        });
+    }
+
+    if (btnModeMs && btnModeBoxes && panelMs && panelBoxes) {
+        btnModeMs.addEventListener('click', () => {
+            btnModeMs.className = 'px-2 py-0.5 rounded font-semibold transition-all bg-sky-600 text-white';
+            btnModeBoxes.className = 'px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-white';
+            panelMs.classList.remove('hidden');
+            panelBoxes.classList.add('hidden');
+        });
+        btnModeBoxes.addEventListener('click', () => {
+            btnModeBoxes.className = 'px-2 py-0.5 rounded font-semibold transition-all bg-amber-600 text-white';
+            btnModeMs.className = 'px-2 py-0.5 rounded font-semibold transition-all text-slate-400 hover:text-white';
+            panelBoxes.classList.remove('hidden');
+            panelMs.classList.add('hidden');
+            updateAllTabs();
+        });
+    }
+
+    if (btnToggleGuide && detailsGuide) {
+        btnToggleGuide.addEventListener('click', () => {
+            detailsGuide.classList.toggle('hidden');
+        });
+    }
+
+    // Hızlı RR Büyük Kare Butonları (3, 4, 5 Büyük Kare)
+    const preset3 = getEl('btn-ecg-rr-preset-3');
+    const preset4 = getEl('btn-ecg-rr-preset-4');
+    const preset5 = getEl('btn-ecg-rr-preset-5');
+    const ecgRrBoxesInput = getEl<HTMLInputElement>('input-ecg-rr-boxes');
+    const ecgRrInput = getEl<HTMLInputElement>('input-ecg-rr');
+    const ecgHrInput = getEl<HTMLInputElement>('input-hr');
+
+    const applyRrPreset = (largeBoxes: number) => {
+        const speed = selectSpeed && selectSpeed.value === '50' ? 50 : 25;
+        const msBox = speed === 50 ? 20 : 40;
+        const smallBoxes = largeBoxes * 5;
+        const rrMs = smallBoxes * msBox;
+        if (ecgRrBoxesInput) ecgRrBoxesInput.value = String(smallBoxes);
+        if (ecgRrInput) ecgRrInput.value = String(rrMs);
+        if (ecgHrInput) ecgHrInput.value = String(Math.round(60000 / rrMs));
+        updateAllTabs();
+    };
+
+    if (preset3) preset3.addEventListener('click', () => applyRrPreset(3));
+    if (preset4) preset4.addEventListener('click', () => applyRrPreset(4));
+    if (preset5) preset5.addEventListener('click', () => applyRrPreset(5));
+
+    // Aritmi / AFib 3-Vuru Hızlı Ortalama Alıcı
+    const avgV1 = getEl<HTMLInputElement>('input-ecg-avg-v1');
+    const avgV2 = getEl<HTMLInputElement>('input-ecg-avg-v2');
+    const avgV3 = getEl<HTMLInputElement>('input-ecg-avg-v3');
+    const btnApplyAvg = getEl('btn-apply-ecg-avg-qt');
+    const ecgQtInput = getEl<HTMLInputElement>('input-ecg-qt');
+    const ecgQtBoxesInput = getEl<HTMLInputElement>('input-ecg-qt-boxes');
+
+    if (btnApplyAvg && avgV1 && avgV2 && avgV3) {
+        btnApplyAvg.addEventListener('click', () => {
+            const v1 = parseNum(avgV1.value);
+            const v2 = parseNum(avgV2.value);
+            const v3 = parseNum(avgV3.value);
+            const avg = calculateAverageInterval([v1, v2, v3]);
+            if (avg === null) return;
+
+            const isBoxesMode = panelBoxes && !panelBoxes.classList.contains('hidden');
+            const speed = selectSpeed && selectSpeed.value === '50' ? 50 : 25;
+            const msBox = speed === 50 ? 20 : 40;
+
+            if (isBoxesMode || avg < 30) {
+                // Kutu sayısı olarak kabul et
+                if (ecgQtBoxesInput) ecgQtBoxesInput.value = String(avg);
+                if (ecgQtInput) ecgQtInput.value = String(Math.round(avg * msBox));
+            } else {
+                // Milisaniye olarak kabul et
+                if (ecgQtInput) ecgQtInput.value = String(Math.round(avg));
+                if (ecgQtBoxesInput) ecgQtBoxesInput.value = String(Number((avg / msBox).toFixed(1)));
+            }
+            updateAllTabs();
+        });
     }
 }
 

@@ -284,3 +284,58 @@ export function calculateAxis(d1: number | null | undefined, avf: number | null 
 
     return { degrees, axisCategory };
 }
+
+// ============================================================================
+// EKG KAĞIDI KUTUCUK (KARE / MM) VE ÇOKLU VURU DÖNÜŞÜM MOTORU
+// ============================================================================
+
+/**
+ * EKG kağıdındaki küçük kutucuk (kare / mm) sayısını milisaniyeye (ms) dönüştürür.
+ * @param boxes Küçük kutucuk (kare) sayısı (örn. 10 kare)
+ * @param paperSpeedMmSec Kağıt hızı (mm/sn) - Standart 25 mm/sn veya 50 mm/sn
+ */
+export function convertEcgBoxesToMs(boxes: number | null | undefined, paperSpeedMmSec: 25 | 50 = 25): number | null {
+    if (boxes === null || boxes === undefined || isNaN(boxes) || boxes <= 0) return null;
+    const msPerBox = paperSpeedMmSec === 50 ? 20 : 40;
+    return Math.round(boxes * msPerBox);
+}
+
+/**
+ * Milisaniyeyi (ms) EKG kağıdındaki küçük kutucuk (kare / mm) sayısına dönüştürür.
+ * @param ms Milisaniye cinsinden süre
+ * @param paperSpeedMmSec Kağıt hızı (mm/sn) - Standart 25 mm/sn veya 50 mm/sn
+ */
+export function convertMsToEcgBoxes(ms: number | null | undefined, paperSpeedMmSec: 25 | 50 = 25): number | null {
+    if (ms === null || ms === undefined || isNaN(ms) || ms <= 0) return null;
+    const msPerBox = paperSpeedMmSec === 50 ? 20 : 40;
+    return Number((ms / msPerBox).toFixed(1));
+}
+
+/**
+ * R-R aralığındaki kutucuk sayısından Kalp Atım Hızını (KAH - bpm) hesaplar.
+ * @param boxes Kutucuk sayısı
+ * @param isLargeBoxes Büyük kare mi (1 büyük kare = 5 küçük kare = 200 ms) yoksa küçük kare mi
+ * @param paperSpeedMmSec Kağıt hızı (mm/sn)
+ */
+export function calculateHrFromBoxes(
+    boxes: number | null | undefined,
+    isLargeBoxes: boolean = false,
+    paperSpeedMmSec: 25 | 50 = 25
+): number | null {
+    if (boxes === null || boxes === undefined || isNaN(boxes) || boxes <= 0) return null;
+    const smallBoxes = isLargeBoxes ? boxes * 5 : boxes;
+    const msPerBox = paperSpeedMmSec === 50 ? 20 : 40;
+    const rrMs = smallBoxes * msPerBox;
+    if (rrMs <= 0) return null;
+    return Math.round(60000 / rrMs);
+}
+
+/**
+ * Çoklu vuru ölçümlerinde (aritmi, AFib) ortalama süre veya kutucuk hesabı
+ */
+export function calculateAverageInterval(values: (number | null | undefined)[]): number | null {
+    const valid = values.filter((v): v is number => v !== null && v !== undefined && !isNaN(v) && v > 0);
+    if (valid.length === 0) return null;
+    const sum = valid.reduce((acc, curr) => acc + curr, 0);
+    return Math.round((sum / valid.length) * 10) / 10;
+}
