@@ -107,6 +107,9 @@ export const appState: AppState = {
         tripleWhammy: null,
         pregnancySafety: null,
         neonatalDrugSafety: null,
+        serotoninSyndrome: null,
+        hyperkalemiaRisk: null,
+        cypStatinInteraction: null,
         selectedSafetyDrugs: []
     },
 

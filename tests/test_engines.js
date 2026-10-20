@@ -11,7 +11,7 @@ console.log('✓ TypeScript project typecheck validated cleanly with zero errors
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from '../src/engines/thrombosisEngine.js';
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../src/engines/nephroToxEngine.js';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from '../src/engines/neonatologyEngine.js';
-import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from '../src/engines/safetyPrescriptionEngine.js';
+import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety, checkSerotoninSyndrome, checkHyperkalemiaRisk, checkCypStatinInteraction } from '../src/engines/safetyPrescriptionEngine.js';
 import { determineAgeGroup, calculateEGFR, calculateBSA } from '../src/engines/biometricsEngine.js';
 import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from '../src/engines/percentileEngine.js';
 import { calculateNeonatalFluid, calculateMaintenanceFluid, calculateSodiumCorrection } from '../src/engines/fluidEngine.js';
@@ -232,6 +232,54 @@ assert.strictEqual(pregCheck.hasSevereFetalRisk, true);
 assert.strictEqual(pregCheck.alertsCount, 3);
 console.log('✓ Pregnancy Safety passed');
 
+// Serotonin Syndrome Shield
+const seroMaoi = checkSerotoninSyndrome([
+    { brand: 'Zyvoxid 600mg', generic: 'linezolid' },
+    { brand: 'Cipralex 10mg', generic: 'escitalopram' }
+]);
+assert.strictEqual(seroMaoi.isHighRisk, true);
+assert.strictEqual(seroMaoi.severity, 'CRITICAL');
+assert.strictEqual(seroMaoi.hasMaoiCombination, true);
+
+const seroTramadol = checkSerotoninSyndrome([
+    { brand: 'Contramal 100mg', generic: 'tramadol' },
+    { brand: 'Lustral 50mg', generic: 'sertraline' }
+]);
+assert.strictEqual(seroTramadol.isHighRisk, true);
+assert.strictEqual(seroTramadol.severity, 'CRITICAL');
+console.log('✓ Serotonin Syndrome Shield passed');
+
+// Fatal Hyperkalemia Shield
+const hkFatal = checkHyperkalemiaRisk([
+    { brand: 'Delix 5mg', generic: 'ramipril' },
+    { brand: 'Aldactone 25mg', generic: 'spironolactone' }
+]);
+assert.strictEqual(hkFatal.isAtRisk, true);
+assert.strictEqual(hkFatal.severity, 'CRITICAL');
+
+const hkBactrim = checkHyperkalemiaRisk([
+    { brand: 'Co-Diovan 160/12.5', generic: 'valsartan' },
+    { brand: 'Bactrim Forte', generic: 'trimethoprim' }
+]);
+assert.strictEqual(hkBactrim.isAtRisk, true);
+assert.strictEqual(hkBactrim.severity, 'CRITICAL');
+console.log('✓ Fatal Hyperkalemia Shield passed');
+
+// CYP3A4 Statin Shield
+const cypSimva = checkCypStatinInteraction([
+    { brand: 'Zocor 20mg', generic: 'simvastatin' },
+    { brand: 'Klacid 500mg', generic: 'clarithromycin' }
+]);
+assert.strictEqual(cypSimva.hasInteraction, true);
+assert.strictEqual(cypSimva.severity, 'CRITICAL');
+
+const cypSafe = checkCypStatinInteraction([
+    { brand: 'Crestor 10mg', generic: 'rosuvastatin' },
+    { brand: 'Klacid 500mg', generic: 'clarithromycin' }
+]);
+assert.strictEqual(cypSafe.hasInteraction, false);
+assert.strictEqual(cypSafe.severity, 'SAFE');
+console.log('✓ CYP3A4 Statin Shield passed');
 
 console.log('\n--- 5. CHECKING INDEX.HTML DOM IDS REFERENCED IN APP.JS ---');
 const htmlPath = fs.existsSync('./index.html') ? './index.html' : '../index.html';
@@ -257,11 +305,15 @@ const expectedIds = [
     'select-croup-stridor', 'select-croup-retractions', 'select-croup-air', 'select-croup-cyanosis', 'select-croup-consciousness', 'output-croup-result',
     'select-cds-appearance', 'select-cds-eyes', 'select-cds-mucosa', 'select-cds-tears', 'output-cds-result',
     'input-safety-egfr', 'select-safety-trimester', 'badge-safety-status',
-    'output-safety-triple-whammy', 'output-safety-renal', 'output-safety-pregnancy', 'output-safety-neonatal',
+    'output-safety-triple-whammy', 'output-safety-serotonin', 'output-safety-hyperkalemia', 'output-safety-cyp-statin',
+    'output-safety-renal', 'output-safety-pregnancy', 'output-safety-neonatal',
     'input-dob', 'input-birth-time', 'input-birth-weight', 'output-dob-breakdown',
     'output-neonatal-weight-loss', 'container-neonatal-fluid-banner',
     'text-neonatal-fluid-day', 'text-neonatal-fluid-target', 'text-neonatal-fluid-desc',
     'alert-item-neonatal-drug', 'alert-text-neonatal-drug',
+    'alert-item-serotonin', 'alert-text-serotonin',
+    'alert-item-hyperkalemia', 'alert-text-hyperkalemia',
+    'alert-item-cyp-statin', 'alert-text-cyp-statin',
     'alert-item-neonatal-weight', 'alert-text-neonatal-weight',
     'alert-item-nephrotox', 'alert-text-nephrotox',
     'header-patient-info', 'header-patient-age', 'header-patient-gender',

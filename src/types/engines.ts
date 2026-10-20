@@ -525,3 +525,59 @@ export interface NeonatalDrugSafetyResult {
   alertClass: string;
   alerts: NeonatalDrugAlert[];
 }
+
+export interface SerotoninSyndromeResult {
+  isHighRisk: boolean;
+  severity: 'CRITICAL' | 'WARNING' | 'SAFE';
+  title: string;
+  mechanism?: string;
+  hunterCriteriaInfo?: string;
+  detectedDrugs: {
+    maoi: string[];
+    ssriSnriTca: string[];
+    opioids: string[];
+    triptans: string[];
+    others: string[];
+  };
+  totalSerotonergicCount: number;
+  hasMaoiCombination: boolean;
+  recommendations: string[];
+  alertClass: 'danger' | 'warning' | 'success';
+}
+
+export interface HyperkalemiaRiskResult {
+  isAtRisk: boolean;
+  severity: 'CRITICAL' | 'WARNING' | 'SAFE';
+  title: string;
+  mechanism?: string;
+  riskFactorsIdentified: string[];
+  detectedDrugs: {
+    raasBlockers: string[];
+    kSparingDiuretics: string[];
+    trimethoprim: string[];
+    nsaids: string[];
+    kSupplements: string[];
+    other: string[];
+  };
+  totalHyperkalemicCount: number;
+  hasRenalOrAgeCompounding: boolean;
+  recommendations: string[];
+  alertClass: 'danger' | 'warning' | 'success';
+}
+
+export interface CypStatinInteractionResult {
+  hasInteraction: boolean;
+  severity: 'CRITICAL' | 'WARNING' | 'SAFE';
+  title: string;
+  mechanism?: string;
+  detectedDrugs: {
+    statins: string[];
+    inhibitors: string[];
+  };
+  safeAlternatives: {
+    antibiotics: string[];
+    statins: string[];
+  };
+  recommendations: string[];
+  alertClass: 'danger' | 'warning' | 'success';
+}

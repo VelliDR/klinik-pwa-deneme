@@ -251,6 +251,15 @@ export function generateSOAP(): string {
     if (sp.neonatalDrugSafety && sp.neonatalDrugSafety.alertsCount > 0) {
       o.push(`- 🚨 Yenidoğan İlaç Güvenliği: ${sp.neonatalDrugSafety.alertsCount} ilaçta kontrendikasyon/toksisite uyarısı mevcut (${sp.neonatalDrugSafety.alerts.map((a) => a.drugName).join(', ')}).`);
     }
+    if (sp.serotoninSyndrome && sp.serotoninSyndrome.isHighRisk) {
+      o.push(`- 🚨 İlaç Güvenliği (Serotonin Toksisitesi): ${sp.serotoninSyndrome.title}. Tespit edilen: ${Object.values(sp.serotoninSyndrome.detectedDrugs).flat().join(', ')}.`);
+    }
+    if (sp.hyperkalemiaRisk && sp.hyperkalemiaRisk.isAtRisk) {
+      o.push(`- 🚨 İlaç Güvenliği (Hiperkalemi Kalkanı): ${sp.hyperkalemiaRisk.title}. Risk faktörleri: ${sp.hyperkalemiaRisk.riskFactorsIdentified.join(', ')}.`);
+    }
+    if (sp.cypStatinInteraction && sp.cypStatinInteraction.hasInteraction) {
+      o.push(`- 🚨 İlaç Güvenliği (CYP3A4 / Statin): ${sp.cypStatinInteraction.title}.`);
+    }
   }
 
   // --- DEĞERLENDİRME ---
@@ -345,6 +354,18 @@ export function generateSOAP(): string {
   if (appState.safetyPrescription && appState.safetyPrescription.neonatalDrugSafety && appState.safetyPrescription.neonatalDrugSafety.hasContraindication) {
     a.push(`- YENİDOĞAN İLAÇ KONTRENDİKASYONU: Reçetelenen ilaçlarda fatal toksisite riski (Kernikterus/Gri Bebek Sendromu vb.) tespit edildi.`);
   }
+  if (appState.safetyPrescription?.serotoninSyndrome?.isHighRisk) {
+    const ss = appState.safetyPrescription.serotoninSyndrome;
+    a.push(`- SEROTONİN SENDROMU TEHLİKESİ: ${ss.title} Hunter Kriterleri ile hasta (klonus, hiperrefleksi, terleme) acilen değerlendirilmelidir.`);
+  }
+  if (appState.safetyPrescription?.hyperkalemiaRisk?.isAtRisk) {
+    const hk = appState.safetyPrescription.hyperkalemiaRisk;
+    a.push(`- ÖLÜMCÜL HİPERKALEMİ RİSKİ: ${hk.title} Serum K+ düzeyi ve EKG acilen kontrol edilmelidir.`);
+  }
+  if (appState.safetyPrescription?.cypStatinInteraction?.hasInteraction) {
+    const cs = appState.safetyPrescription.cypStatinInteraction;
+    a.push(`- STATİN RABDOMİYOLİZ UYARISI: ${cs.title} Statin plazma konsantrasyonu toksik seviyelere çıkabilir.`);
+  }
 
   // --- PLAN & TEDAVİ ---
   let pCount = 1;
@@ -422,6 +443,19 @@ export function generateSOAP(): string {
   }
   if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
     p.push(`${pCount}. İlaç Güvenliği Eylemi: NSAİİ kesilmeli, analjezi için Parasetamol tercih edilmeli ve böbrek fonksiyonları (kreatinin, K+) kontrol edilmelidir.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.serotoninSyndrome?.isHighRisk) {
+    p.push(`${pCount}. Serotonin Sendromu Güvenlik Eylemi: MAOI/Linezolid veya serotonerjik opioid kombinasyonları derhal sonlandırılmalı; hastaya klonus, tremor ve hipertermi semptomları anlatılmalıdır.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.hyperkalemiaRisk?.isAtRisk) {
+    p.push(`${pCount}. Hiperkalemi Güvenlik Eylemi: Serum potasyum ve böbrek fonksiyonları (kreatinin, eGFR) acil tetkik edilmeli; potasyum tutucu diüretik / Bactrim / NSAİİ kombinasyonu revize edilmelidir.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.cypStatinInteraction?.hasInteraction) {
+    const cs = appState.safetyPrescription.cypStatinInteraction;
+    p.push(`${pCount}. CYP3A4 / Statin Eylemi: ${cs.safeAlternatives.antibiotics[0]} veya ${cs.safeAlternatives.statins[0]} tercih edilmeli; tedavi boyunca statine geçici ara verilmelidir.`);
     pCount++;
   }
   if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {

@@ -26,7 +26,10 @@ import type {
   PregnancySafetyResult,
   NeonatalContraindicatedDrug,
   NeonatalDrugAlert,
-  NeonatalDrugSafetyResult
+  NeonatalDrugSafetyResult,
+  SerotoninSyndromeResult,
+  HyperkalemiaRiskResult,
+  CypStatinInteractionResult
 } from '../types/engines';
 
 /**
@@ -631,5 +634,821 @@ export function checkNeonatalDrugSafety(
     hasContraindication,
     alertClass: hasContraindication ? 'danger' : (alerts.length > 0 ? 'warning' : 'success'),
     alerts
+  };
+}
+
+/**
+ * 5. SEROTONİN SENDROMU KALKANI (Hunter Kriterleri Uyumlu)
+ * 
+ * Mekanizma:
+ * MAO inhibitörleri, SSRI, SNRI, TCA, serotonerjik opioidler (Tramadol, Fentanil),
+ * dekstrometorfan ve triptanların aşırı birikimi ve kombine kullanımı ölümcül
+ * serotonin toksisitesine yol açar.
+ * 
+ * Hunter Toksisite Kriterleri:
+ * Serotonerjik ajan zemininde:
+ * - Spontan klonus VEYA
+ * - İndüklenebilir klonus + ajitasyon veya diyaforez VEYA
+ * - Oküler klonus + ajitasyon veya diyaforez VEYA
+ * - Titreme (tremor) + hiperrefleksi VEYA
+ * - Hipertermi (>38°C) + hipertonisite + oküler veya indüklenebilir klonus.
+ */
+export const SEROTONERGIC_DRUG_DATABASE = {
+  maoi: {
+    label: 'MAO İnhibitörü (MAOI / Antibiyotik Linezolid)',
+    atcPrefixes: ['N06AG', 'N04BD', 'J01XX08'],
+    keywords: [
+      'moklobemid', 'moclobemide', 'aurorix',
+      'selegilin', 'selegiline', 'movergan',
+      'rasajilin', 'rasagiline', 'azilect',
+      'linezolid', 'zyvoxid', 'linerez', 'linezid',
+      'metilen mavisi', 'methylene blue',
+      'fenelzin', 'phenelzine', 'tranilsipromin', 'tranylcypromine'
+    ]
+  },
+  ssriSnriTca: {
+    label: 'SSRI / SNRI / TCA Antidepresan',
+    atcPrefixes: ['N06AB', 'N06AX', 'N06AA'],
+    keywords: [
+      'fluoksetin', 'fluoxetine', 'prozac', 'deprex', 'zedprex', 'fulsac',
+      'sertralin', 'sertraline', 'lustral', 'selectra', 'serdep', 'misol',
+      'essitalopram', 'escitalopram', 'cipralex', 'citoles', 'eslorex', 'secita', 'esmax',
+      'sitalopram', 'citalopram', 'cipram', 'citol', 'vodalex',
+      'paroksetin', 'paroxetine', 'paxil', 'seroxat', 'paxera',
+      'fluvoksamin', 'fluvoxamine', 'faverin',
+      'venlafaksin', 'venlafaxine', 'efexor', 'venegis', 'dorex',
+      'duloksetin', 'duloxetine', 'cymbalta', 'duxet', 'dulsevia', 'nexetin',
+      'milnasipran', 'ixel',
+      'desvenlafaksin', 'desvenlafaxine', 'pristiq',
+      'amitriptilin', 'amitriptyline', 'laroxyl',
+      'klomipramin', 'clomipramine', 'anafranil',
+      'imipramin', 'imipramine', 'tofranil',
+      'opipramol', 'insidon', 'insomin',
+      'nortriptilin', 'nortriptyline'
+    ]
+  },
+  opioids: {
+    label: 'Serotonerjik Opioid / Analjezik',
+    atcPrefixes: ['N02AX02', 'N02AB03'],
+    keywords: [
+      'tramadol', 'contramal', 'ultracet', 'tramadolor',
+      'tapentadol', 'palexia',
+      'fentanil', 'fentanyl', 'durogesic',
+      'petidin', 'pethidine', 'meperidin', 'meperidine', 'aldolan',
+      'metadon', 'methadone'
+    ]
+  },
+  triptans: {
+    label: 'Triptan (5-HT1B/1D Agonisti - Migren)',
+    atcPrefixes: ['N02CC'],
+    keywords: [
+      'sumatriptan', 'imigran',
+      'zolmitriptan', 'zomig',
+      'eletriptan', 'relpax',
+      'rizatriptan', 'maxalt',
+      'frovatriptan', 'migreva',
+      'naratriptan'
+    ]
+  },
+  others: {
+    label: 'Diğer Serotonerjik Ajanlar',
+    atcPrefixes: ['N06AX16', 'N06AX05', 'N06AX11'],
+    keywords: [
+      'dekstrometorfan', 'dextromethorphan', 'benical', 'tylol hot', 'vicks', 'actifed', 'rhinathiol',
+      'vortioksetin', 'vortioxetine', 'brintellix',
+      'trazodon', 'trazodone', 'desyrel',
+      'mirtazapin', 'mirtazapine', 'remeron', 'remeril', 'redepra',
+      'lityum', 'lithium', 'lituril',
+      'sari kantaron', 'st john', 'hypericum',
+      '5-htp', 'triptofan', 'tryptophan'
+    ]
+  }
+};
+
+export function checkSerotoninSyndrome(drugs: DrugInputItem[] = []): SerotoninSyndromeResult {
+  if (!Array.isArray(drugs) || drugs.length === 0) {
+    return {
+      isHighRisk: false,
+      severity: 'SAFE',
+      alertClass: 'success',
+      title: 'Serotonin Sendromu Riski Tespit Edilmedi',
+      detectedDrugs: { maoi: [], ssriSnriTca: [], opioids: [], triptans: [], others: [] },
+      totalSerotonergicCount: 0,
+      hasMaoiCombination: false,
+      recommendations: []
+    };
+  }
+
+  const detected: {
+    maoi: string[];
+    ssriSnriTca: string[];
+    opioids: string[];
+    triptans: string[];
+    others: string[];
+  } = {
+    maoi: [],
+    ssriSnriTca: [],
+    opioids: [],
+    triptans: [],
+    others: []
+  };
+
+  for (const drugInput of drugs) {
+    let name = '';
+    let atc = '';
+    if (typeof drugInput === 'string') {
+      name = drugInput;
+    } else if (drugInput && typeof drugInput === 'object') {
+      name = `${drugInput.brand || ''} ${drugInput.brandName || ''} ${drugInput.name || ''} ${drugInput.generic || ''}`.trim();
+      atc = (drugInput.atcCode || drugInput.atc || '') as string;
+    }
+
+    const normName = normalizeStr(name);
+    const normAtc = normalizeStr(atc);
+
+    // 1. MAOI
+    if (
+      SEROTONERGIC_DRUG_DATABASE.maoi.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      SEROTONERGIC_DRUG_DATABASE.maoi.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.maoi.push(name || 'MAOI / Linezolid');
+    }
+
+    // 2. SSRI / SNRI / TCA
+    if (
+      SEROTONERGIC_DRUG_DATABASE.ssriSnriTca.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      SEROTONERGIC_DRUG_DATABASE.ssriSnriTca.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.ssriSnriTca.push(name || 'Antidepresan');
+    }
+
+    // 3. Opioidler
+    if (
+      SEROTONERGIC_DRUG_DATABASE.opioids.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      SEROTONERGIC_DRUG_DATABASE.opioids.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.opioids.push(name || 'Serotonerjik Opioid');
+    }
+
+    // 4. Triptanlar
+    if (
+      SEROTONERGIC_DRUG_DATABASE.triptans.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      SEROTONERGIC_DRUG_DATABASE.triptans.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.triptans.push(name || 'Triptan');
+    }
+
+    // 5. Diğerleri
+    if (
+      SEROTONERGIC_DRUG_DATABASE.others.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      SEROTONERGIC_DRUG_DATABASE.others.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.others.push(name || 'Serotonerjik Ajan');
+    }
+  }
+
+  const activeCategoriesCount =
+    (detected.maoi.length > 0 ? 1 : 0) +
+    (detected.ssriSnriTca.length > 0 ? 1 : 0) +
+    (detected.opioids.length > 0 ? 1 : 0) +
+    (detected.triptans.length > 0 ? 1 : 0) +
+    (detected.others.length > 0 ? 1 : 0);
+
+  const totalSerotonergicCount =
+    detected.maoi.length +
+    detected.ssriSnriTca.length +
+    detected.opioids.length +
+    detected.triptans.length +
+    detected.others.length;
+
+  const hasMaoi = detected.maoi.length > 0;
+  const hasOtherSerotonergic = (detected.ssriSnriTca.length + detected.opioids.length + detected.triptans.length + detected.others.length) > 0;
+  const hasMaoiCombination = hasMaoi && hasOtherSerotonergic;
+  const hasOpioidAntidepressant = detected.opioids.length > 0 && (detected.ssriSnriTca.length > 0 || detected.triptans.length > 0);
+
+  const hunterInfo = 'Hunter Toksisite Kriterleri: Serotonerjik ajan zemininde (1) Spontan klonus VEYA (2) İndüklenebilir klonus + ajitasyon/terleme VEYA (3) Oküler klonus + ajitasyon/terleme VEYA (4) Tremor + hiperrefleksi VEYA (5) Hipertermi (>38°C) + hipertonisite + klonus.';
+
+  // 1. ÖLÜMCÜL KOMBİNASYON: MAOI + Serotonerjik Ajan
+  if (hasMaoiCombination) {
+    return {
+      isHighRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 ÖLÜMCÜL SEROTONİN SENDROMU KONTRENDİKASYONU (MAOI / Linezolid + Serotonerjik Ajan)!',
+      mechanism: 'MAO enzim inhibisyonu (Moklobemid, Selegilin veya antibiyotik Linezolid) serotonin yıkımını tamamen bloke ederken eşzamanlı serotonerjik ajan sinaptik serotonin birikimini fatal hipertermi, klonus, rabdomiyoliz ve otonomik kollaps düzeyine çıkarır.',
+      hunterCriteriaInfo: hunterInfo,
+      detectedDrugs: detected,
+      totalSerotonergicCount,
+      hasMaoiCombination: true,
+      recommendations: [
+        'Kombinasyon KESİNLİKLE KONTRENDİKEDİR! Eşzamanlı reçete edilmemelidir.',
+        'Linezolid tedavisi gerekiyorsa serotonerjik antidepresanlar acilen kesilmeli veya alternatif antibiyotik (örn. Vankomisin, Daptomisin) seçilmelidir.',
+        'MAOI kesildikten sonra serotonerjik ajan başlanması için en az 14 gün (Fluoksetin sonrası MAOI için en az 5 hafta) arınma (wash-out) periyodu beklenmelidir.',
+        'Hunter Kriterleri ile acil değerlendirme: Klonus, hiperrefleksi, taşikardi, terleme ve rijidite varlığında acil servise yönlendirilmeli; Siproheptadin (antiserotonerjik) hazır bulundurulmalıdır.'
+      ]
+    };
+  }
+
+  // 2. YÜKSEK RİSK: Opioid (Tramadol / Fentanil) + Antidepresan / Triptan
+  if (hasOpioidAntidepressant) {
+    return {
+      isHighRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 YÜKSEK SEROTONİN SENDROMU RİSKİ (Tramadol/Fentanil + Antidepresan/Triptan)!',
+      mechanism: 'Tramadol ve Fentanil güçlü serotonin geri alım inhibisyonu yapar. SSRI/SNRI/TCA veya triptanlarla eşzamanlı kullanım klinik serotonin sendromunun en sık hastane yatışı nedenidir.',
+      hunterCriteriaInfo: hunterInfo,
+      detectedDrugs: detected,
+      totalSerotonergicCount,
+      hasMaoiCombination: false,
+      recommendations: [
+        'Ağrı tedavisinde serotonin geri alımını bloke etmeyen alternatif analjezikler tercih edilmelidir (örn. Parasetamol, düşük riskli zayıf opioidler).',
+        'Birlikte kullanım kaçınılmazsa hasta miyoklonus, tremor, hiperrefleksi, terleme ve konfüzyon semptomları yönünden bilgilendirilmelidir.',
+        'En küçük etkin dozlar seçilmeli ve tedavi süresi mümkün olan en kısa tutulmalıdır.'
+      ]
+    };
+  }
+
+  // 3. ÇOKLU SEROTONERJİK POLİFARMASİ (3 veya daha fazla ajan VEYA 2+ farklı aktif sınıf)
+  if (totalSerotonergicCount >= 3) {
+    return {
+      isHighRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 AŞIRI SEROTONERJİK POLİFARMASİ RİSKİ (3+ Serotonerjik Ajan)!',
+      mechanism: 'Reçetedeki 3 veya daha fazla serotonerjik ajanın kümülatif etkisi santral ve periferik serotonin reseptör aşırı uyarımına yol açar.',
+      hunterCriteriaInfo: hunterInfo,
+      detectedDrugs: detected,
+      totalSerotonergicCount,
+      hasMaoiCombination: false,
+      recommendations: [
+        'Reçete edilen rejimdeki serotonerjik ajan sayısı acilen rasyonalize edilmeli, mükerrer veya gereksiz ajanlar elenmelidir.',
+        'Hastanın vital bulguları (ateş, tansiyon dalgalanmaları, taşikardi) ve nörolojik bulguları (klonus, rijidite) izlenmelidir.'
+      ]
+    };
+  }
+
+  // 4. İKİLİ KOMBİNASYON (Örn. SSRI + Triptan, SSRI + SNRI, SSRI + Dekstrometorfan)
+  if (activeCategoriesCount >= 2 || totalSerotonergicCount >= 2) {
+    return {
+      isHighRisk: true,
+      severity: 'WARNING',
+      alertClass: 'warning',
+      title: '⚠️ Serotonerjik İlaç Kombinasyonu (Serotonin Toksisitesi Riski)',
+      mechanism: 'İki serotonerjik ajanın eşzamanlı kullanımı sinaptik serotonin düzeyini artırarak hafif/orta derecede serotonin toksisitesi veya sendromu tetikleyebilir.',
+      hunterCriteriaInfo: hunterInfo,
+      detectedDrugs: detected,
+      totalSerotonergicCount,
+      hasMaoiCombination: false,
+      recommendations: [
+        'Özellikle tedaviye yeni başlanırken veya doz artırıldığında hasta ajitasyon, terleme, diyare ve tremor açısından uyarılmalıdır.',
+        'Öksürük şuruplarındaki dekstrometorfana veya migren tedavisindeki triptanlara dikkat edilmelidir.'
+      ]
+    };
+  }
+
+  return {
+    isHighRisk: false,
+    severity: 'SAFE',
+    alertClass: 'success',
+    title: 'Serotonin Sendromu Riski Tespit Edilmedi',
+    detectedDrugs: detected,
+    totalSerotonergicCount,
+    hasMaoiCombination: false,
+    recommendations: []
+  };
+}
+
+/**
+ * 6. ÖLÜMCÜL HİPERKALEMİ KALKANI
+ * 
+ * Mekanizma:
+ * RAAS blokörleri (ACEi/ARB/ARNI) aldosteron sentezini azaltır.
+ * Potasyum tutucu diüretikler (Spironolakton/Eplerenon) aldosteron reseptörlerini bloke eder.
+ * Trimetoprim (Bactrim), distal nefrondaki ENaC (epitelyal sodyum) kanallarını amilorid gibi
+ * doğrudan bloke ederek potasyum atılımını durdurur.
+ * NSAİİ'ler renal prostaglandin inhibisyonu ile hiporeninemik hipoaldosteronizm yapar.
+ * Bu kombinasyonlar eGFR < 60 mL/dk veya yaş ≥ 65 olan hastalarda kardiyak arrest
+ * ve öldürücü ventriküler disritmiler ile sonuçlanır!
+ */
+export const HYPERKALEMIA_DRUG_DATABASE = {
+  raasBlockers: {
+    label: 'RAAS Blokörü (ACEi / ARB / ARNI)',
+    atcPrefixes: ['C09A', 'C09B', 'C09C', 'C09D', 'C09DX'],
+    keywords: [
+      'ramipril', 'enalapril', 'lisinopril', 'perindopril', 'captopril', 'kaptopril', 'fosinopril', 'zofenopril',
+      'losartan', 'valsartan', 'candesartan', 'kandesartan', 'telmisartan', 'irbesartan', 'olmesartan',
+      'sakubitril', 'sacubitril', 'entresto',
+      'aliskiren', 'rasilez',
+      'delix', 'co-diovan', 'karvezid', 'micardis', 'atacand', 'coversyl', 'enap', 'renitec'
+    ]
+  },
+  kSparingDiuretics: {
+    label: 'Potasyum Tutucu Diüretik / MRA',
+    atcPrefixes: ['C03D', 'C03E', 'C03DA'],
+    keywords: [
+      'spironolakton', 'spironolactone', 'aldactone',
+      'eplerenon', 'eplerenone', 'inspra',
+      'amilorid', 'amiloride', 'triamteren', 'triamterene',
+      'triamteril', 'finerenon', 'finerenone', 'kerendia'
+    ]
+  },
+  trimethoprim: {
+    label: 'Trimetoprim (ENaC Kanal Blokörü)',
+    atcPrefixes: ['J01EE01', 'J01EA01'],
+    keywords: [
+      'trimetoprim', 'trimethoprim', 'bactrim', 'cotrimoxazole', 'ko-trimoksazol',
+      'kemoprim', 'trifen', 'metoprim'
+    ]
+  },
+  nsaids: {
+    label: 'NSAİİ (Renal PG & Renin İnhibisyonu)',
+    atcPrefixes: ['M01A'],
+    keywords: [
+      'ibuprofen', 'ibufen', 'naproxen', 'naproksen', 'diclofenac', 'diklofenak', 'meloxicam', 'meloksikam',
+      'etodolac', 'etodolak', 'ketoprofen', 'dexketoprofen', 'deksketoprofen', 'flurbiprofen', 'celecoxib',
+      'selekoksib', 'indomethacin', 'indometazin', 'arveles', 'apranax', 'voltaren', 'dolorex', 'majezik'
+    ]
+  },
+  kSupplements: {
+    label: 'Potasyum Preparatı',
+    atcPrefixes: ['A12BA'],
+    keywords: [
+      'potasyum klorur', 'potassium chloride', 'k-contin', 'kardiyolit', 'potasium', 'potasyum sitrat'
+    ]
+  },
+  other: {
+    label: 'Diğer Potasyum Artırıcı Ajanlar',
+    atcPrefixes: ['L04AD'],
+    keywords: [
+      'siklosporin', 'cyclosporine', 'sandimmun',
+      'takrolimus', 'tacrolimus', 'prograf', 'advagraf',
+      'heparin', 'dmah'
+    ]
+  }
+};
+
+export function checkHyperkalemiaRisk(
+  drugs: DrugInputItem[] = [],
+  patientContext?: { egfr?: number | null; ageYears?: number | null; baselineK?: number | null }
+): HyperkalemiaRiskResult {
+  if (!Array.isArray(drugs) || drugs.length === 0) {
+    return {
+      isAtRisk: false,
+      severity: 'SAFE',
+      alertClass: 'success',
+      title: 'Hiperkalemi Riski Tespit Edilmedi',
+      riskFactorsIdentified: [],
+      detectedDrugs: { raasBlockers: [], kSparingDiuretics: [], trimethoprim: [], nsaids: [], kSupplements: [], other: [] },
+      totalHyperkalemicCount: 0,
+      hasRenalOrAgeCompounding: false,
+      recommendations: []
+    };
+  }
+
+  const detected: {
+    raasBlockers: string[];
+    kSparingDiuretics: string[];
+    trimethoprim: string[];
+    nsaids: string[];
+    kSupplements: string[];
+    other: string[];
+  } = {
+    raasBlockers: [],
+    kSparingDiuretics: [],
+    trimethoprim: [],
+    nsaids: [],
+    kSupplements: [],
+    other: []
+  };
+
+  for (const drugInput of drugs) {
+    let name = '';
+    let atc = '';
+    if (typeof drugInput === 'string') {
+      name = drugInput;
+    } else if (drugInput && typeof drugInput === 'object') {
+      name = `${drugInput.brand || ''} ${drugInput.brandName || ''} ${drugInput.name || ''} ${drugInput.generic || ''}`.trim();
+      atc = (drugInput.atcCode || drugInput.atc || '') as string;
+    }
+
+    const normName = normalizeStr(name);
+    const normAtc = normalizeStr(atc);
+
+    // 1. RAAS Blokörü
+    if (
+      HYPERKALEMIA_DRUG_DATABASE.raasBlockers.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      HYPERKALEMIA_DRUG_DATABASE.raasBlockers.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.raasBlockers.push(name || 'RAAS Blokörü');
+    }
+
+    // 2. K-Tutucu Diüretik
+    if (
+      HYPERKALEMIA_DRUG_DATABASE.kSparingDiuretics.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      HYPERKALEMIA_DRUG_DATABASE.kSparingDiuretics.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.kSparingDiuretics.push(name || 'Potasyum Tutucu Diüretik');
+    }
+
+    // 3. Trimetoprim (Bactrim)
+    if (
+      HYPERKALEMIA_DRUG_DATABASE.trimethoprim.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      HYPERKALEMIA_DRUG_DATABASE.trimethoprim.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.trimethoprim.push(name || 'Trimetoprim (Bactrim)');
+    }
+
+    // 4. NSAİİ
+    if (
+      HYPERKALEMIA_DRUG_DATABASE.nsaids.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      HYPERKALEMIA_DRUG_DATABASE.nsaids.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.nsaids.push(name || 'NSAİİ');
+    }
+
+    // 5. Potasyum Preparatları
+    if (
+      HYPERKALEMIA_DRUG_DATABASE.kSupplements.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      HYPERKALEMIA_DRUG_DATABASE.kSupplements.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.kSupplements.push(name || 'Potasyum Preparatı');
+    }
+
+    // 6. Diğerleri
+    if (
+      HYPERKALEMIA_DRUG_DATABASE.other.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      HYPERKALEMIA_DRUG_DATABASE.other.keywords.some(k => normName.includes(normalizeStr(k)))
+    ) {
+      detected.other.push(name || 'Potasyum Artırıcı Ajan');
+    }
+  }
+
+  const activeClassesCount =
+    (detected.raasBlockers.length > 0 ? 1 : 0) +
+    (detected.kSparingDiuretics.length > 0 ? 1 : 0) +
+    (detected.trimethoprim.length > 0 ? 1 : 0) +
+    (detected.nsaids.length > 0 ? 1 : 0) +
+    (detected.kSupplements.length > 0 ? 1 : 0) +
+    (detected.other.length > 0 ? 1 : 0);
+
+  const totalHyperkalemicCount =
+    detected.raasBlockers.length +
+    detected.kSparingDiuretics.length +
+    detected.trimethoprim.length +
+    detected.nsaids.length +
+    detected.kSupplements.length +
+    detected.other.length;
+
+  const egfr = patientContext?.egfr !== undefined && patientContext?.egfr !== null ? Number(patientContext.egfr) : null;
+  const age = patientContext?.ageYears !== undefined && patientContext?.ageYears !== null ? Number(patientContext.ageYears) : null;
+  const baseK = patientContext?.baselineK !== undefined && patientContext?.baselineK !== null ? Number(patientContext.baselineK) : null;
+
+  const riskFactors: string[] = [];
+  const hasEgfrRisk = egfr !== null && !isNaN(egfr) && egfr < 60;
+  const hasAgeRisk = age !== null && !isNaN(age) && age >= 65;
+  const hasKRisk = baseK !== null && !isNaN(baseK) && baseK >= 5.0;
+
+  if (hasEgfrRisk) riskFactors.push(`Böbrek Yetmezliği / Azalmış eGFR (${egfr} mL/dk < 60)`);
+  if (hasAgeRisk) riskFactors.push(`İleri Yaş (≥65 Yaş: ${age})`);
+  if (hasKRisk) riskFactors.push(`Sınırda/Yüksek Serum Potasyumu (${baseK} mEq/L ≥ 5.0)`);
+
+  const hasRaas = detected.raasBlockers.length > 0;
+  const hasKSparing = detected.kSparingDiuretics.length > 0;
+  const hasTrimethoprim = detected.trimethoprim.length > 0;
+  const hasNsaid = detected.nsaids.length > 0;
+
+  const hasRenalOrAgeCompounding = hasEgfrRisk || hasAgeRisk || hasKRisk;
+
+  // 1. ÖLÜMCÜL KOMBİNASYON 1: RAAS Blokörü + Potasyum Tutucu Diüretik (MRA)
+  if (hasRaas && hasKSparing) {
+    riskFactors.unshift('RAAS Blokörü + Potasyum Tutucu Diüretik (Çift Renin-Aldosteron Blokajı)');
+    return {
+      isAtRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 ÖLÜMCÜL HİPERKALEMİ RİSKİ (RAAS Blokörü + Spironolakton/Eplerenon)!',
+      mechanism: 'ACEi/ARB aldosteron üretimini azaltırken, spironolakton/eplerenon toplayıcı kanallarda aldosteron reseptörlerini tam bloke eder. Serum potasyumu hızla ölümcül düzeylere (>6.5 mEq/L) tırmanabilir.',
+      riskFactorsIdentified: riskFactors,
+      detectedDrugs: detected,
+      totalHyperkalemicCount,
+      hasRenalOrAgeCompounding,
+      recommendations: [
+        'Serum potasyumu ve böbrek fonksiyonları (kreatinin, eGFR) kombinasyona başlandıktan sonra 1. ve 4. haftalarda mutlaka ölçülmelidir.',
+        'Spironolakton dozu günlük maksimum 25 mg ile sınırlandırılmalı, eGFR < 30 mL/dk veya K > 5.0 mEq/L ise KESİNLİKLE KULLANILMAMALIDIR.',
+        'Hastaya potasyumdan zengin diyet ve tuz ikamelerinden (potasyumlu diyet tuzları) kaçınması tembihlenmelidir.',
+        'EKG kontrolü yapılmalı (sivri T dalgaları, PR uzaması, QRS genişlemesi ani kardiyak arrest öncüsüdür).'
+      ]
+    };
+  }
+
+  // 2. ÖLÜMCÜL KOMBİNASYON 2: RAAS Blokörü + Trimetoprim (Bactrim)
+  if (hasRaas && hasTrimethoprim) {
+    riskFactors.unshift('RAAS Blokörü + Trimetoprim (Sinsi ENaC Kanal Blokajı)');
+    return {
+      isAtRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 SİNSİ ÖLÜMCÜL HİPERKALEMİ RİSKİ (ACEi/ARB + Trimetoprim / Bactrim)!',
+      mechanism: 'Trimetoprim, distal nefrondaki epitelyal sodyum kanallarını (ENaC) tıpkı amilorid gibi doğrudan bloke ederek potasyum atılımını keser. ACEi/ARB zemininde birkaç günlük Bactrim kullanımı ani kardiyak arrest ve açıklanamayan ani ölümlerle ilişkilidir!',
+      riskFactorsIdentified: riskFactors,
+      detectedDrugs: detected,
+      totalHyperkalemicCount,
+      hasRenalOrAgeCompounding,
+      recommendations: [
+        'Özellikle ileri yaşta (≥65) veya böbrek fonksiyonu azalmış (eGFR < 60) hastalarda Bactrim yerine alternatif antibiyotikler (örn. Fosfomisin, Nitrofurantoin, Siprofloksasin veya Beta-laktamlar) öncelikle değerlendirilmelidir.',
+        'Bactrim kullanımı zorunluysa, tedavi başlangıcından itibaren 3-5 gün içinde acil serum potasyum kontrolü yapılmalıdır.',
+        'Eşzamanlı NSAİİ veya potasyum takviyeleri derhal kesilmelidir.'
+      ]
+    };
+  }
+
+  // 3. ÇOKLU KOMBİNASYON: 3 veya daha fazla hiperkalemik sınıf
+  if (activeClassesCount >= 3) {
+    return {
+      isAtRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 ÇOKLU POLİFARMASİ HİPERKALEMİ ALARMI (3+ Potasyum Artırıcı İlaç Grubu)!',
+      mechanism: 'Reçetedeki 3 farklı potasyum tutucu mekanizmanın sinerjisi renal atılım rezervini aşarak ani hiperkalemik kardiyak arreste zemin hazırlar.',
+      riskFactorsIdentified: riskFactors,
+      detectedDrugs: detected,
+      totalHyperkalemicCount,
+      hasRenalOrAgeCompounding,
+      recommendations: [
+        'Kombinasyon acilen sadeleştirilmeli, özellikle gereksiz NSAİİ veya potasyum takviyeleri derhal stoplanmalıdır.',
+        'Acil bazal potasyum ve kreatinin kontrolü yapılmalıdır.'
+      ]
+    };
+  }
+
+  // 4. İKİLİ KOMBİNASYON + RENAL VEYA YAŞ RİSKİ
+  if (activeClassesCount >= 2 && hasRenalOrAgeCompounding) {
+    return {
+      isAtRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 YÜKSEK HİPERKALEMİ RİSKİ (İkili İlaç Etkileşimi + Azalmış Renal Rezerv / İleri Yaş)!',
+      mechanism: `İkili potasyum tutucu ilaç kombinasyonu (${Object.keys(detected).filter(k => (detected as any)[k].length > 0).join(', ')}) hastadaki zemin risk faktörleriyle birleştiğinde (${riskFactors.join(', ')}) hiperkalemi kompansasyonunu imkansız kılar.`,
+      riskFactorsIdentified: riskFactors,
+      detectedDrugs: detected,
+      totalHyperkalemicCount,
+      hasRenalOrAgeCompounding: true,
+      recommendations: [
+        'NSAİİ veya ek nefrotoksik ajanlar tedaviden çıkarılmalıdır.',
+        'Serum potasyumu ve eGFR yakından takip edilmelidir.',
+        'Potasyum > 5.5 mEq/L durumunda RAAS blokörü dozu azaltılmalı veya geçici olarak askıya alınmalıdır.'
+      ]
+    };
+  }
+
+  // 5. İKİLİ KOMBİNASYON (Normal eGFR ve genç hasta)
+  if (activeClassesCount >= 2) {
+    return {
+      isAtRisk: true,
+      severity: 'WARNING',
+      alertClass: 'warning',
+      title: '⚠️ Potasyum Artırıcı İlaç Kombinasyonu (Hiperkalemi İzlemi Gerekir)',
+      mechanism: 'İki potasyum tutucu ajanın birlikte kullanımı serum potasyum seviyesinde artışa neden olabilir.',
+      riskFactorsIdentified: riskFactors,
+      detectedDrugs: detected,
+      totalHyperkalemicCount,
+      hasRenalOrAgeCompounding: false,
+      recommendations: [
+        'Rutin potasyum ve böbrek fonksiyon testleri planlanmalıdır.',
+        'Hastanın ek OTC NSAİİ veya potasyum tuzu kullanmaması konusunda uyarılması gerekir.'
+      ]
+    };
+  }
+
+  return {
+    isAtRisk: false,
+    severity: 'SAFE',
+    alertClass: 'success',
+    title: 'Hiperkalemi Riski Tespit Edilmedi',
+    riskFactorsIdentified: riskFactors,
+    detectedDrugs: detected,
+    totalHyperkalemicCount,
+    hasRenalOrAgeCompounding,
+    recommendations: []
+  };
+}
+
+/**
+ * 7. CYP3A4 GÜÇLÜ İNHİBİSYONU & STATİN RABDOMİYOLİZ KALKANI
+ * 
+ * Mekanizma:
+ * Simvastatin ve Atorvastatin hepatik Sitokrom P450 3A4 (CYP3A4) izoenzimi tarafından
+ * metabolize edilir. Güçlü CYP3A4 inhibitörleri (Klaritromisin, Eritromisin, İtrakonazol,
+ * Ketokonazol, Vorikonazol, Posakonazol, Ritonavir) enzimi bloke ederek statin plazma
+ * konsantrasyonunu (AUC) 5-20 kat artırır!
+ * Sonuç: Masif miyoglobinüri, rabdomiyoliz, akut tübüler nekroz ve ölümcül böbrek yetmezliği.
+ * 
+ * Güvenli Statin Alternatifleri:
+ * Rosuvastatin (CYP2C9 ile minimal metabolizma) ve Pravastatin (CYP enzimlerinden bağımsız).
+ * Güvenli Antibiyotik Alternatifi:
+ * Azitromisin (CYP3A4'ü inhibe etmez!).
+ */
+export const CYP3A4_STATIN_DATABASE = {
+  cyp3a4Statins: {
+    label: 'CYP3A4 Bağımlı Statin (Yüksek Rabdomiyoliz Riski)',
+    atcPrefixes: ['C10AA01', 'C10AA02', 'C10AA05'],
+    keywords: [
+      'simvastatin', 'zocor', 'lipovas', 'simva',
+      'atorvastatin', 'lipitor', 'tarden', 'kolestor', 'ator', 'atordep', 'ateroz', 'saphire',
+      'lovastatin'
+    ],
+    highRiskKeywords: ['simvastatin', 'zocor', 'lovastatin']
+  },
+  strongInhibitors: {
+    label: 'Güçlü CYP3A4 İnhibitörü',
+    atcPrefixes: ['J01FA09', 'J01FA01', 'J02AB02', 'J02AC02', 'J02AC03', 'J05AE'],
+    keywords: [
+      'klaritromisin', 'clarithromycin', 'klacid', 'macrol', 'claricide', 'uniclar', 'laricid',
+      'eritromisin', 'erythromycin', 'erythrocin',
+      'itrakonazol', 'itraconazole', 'sporanox', 'funxit', 'itraspor',
+      'ketokonazol', 'ketoconazole', 'fungoral', 'nizoral',
+      'vorikonazol', 'voriconazole', 'vfend',
+      'posakonazol', 'posaconazole', 'noxafil',
+      'ritonavir', 'norvir', 'kaletra', 'paxlovid',
+      'kobicistat', 'cobicistat'
+    ]
+  },
+  moderateInhibitors: {
+    label: 'Orta Düzey CYP3A4 İnhibitörü (Doz Kısıtlaması Gerekir)',
+    atcPrefixes: ['C08DB01', 'C08DA01', 'C01BD01'],
+    keywords: [
+      'diltiazem', 'diltizem', 'altizem',
+      'verapamil', 'isoptin',
+      'amiodaron', 'amiodarone', 'cordarone',
+      'flukonazol', 'fluconazole', 'diflucan', 'flucan', 'triflucan'
+    ]
+  }
+};
+
+export function checkCypStatinInteraction(drugs: DrugInputItem[] = []): CypStatinInteractionResult {
+  if (!Array.isArray(drugs) || drugs.length === 0) {
+    return {
+      hasInteraction: false,
+      severity: 'SAFE',
+      alertClass: 'success',
+      title: 'CYP3A4 / Statin Etkileşimi Tespit Edilmedi',
+      detectedDrugs: { statins: [], inhibitors: [] },
+      safeAlternatives: {
+        antibiotics: ['Azitromisin (Azitro / Zitromax) - CYP3A4 inhibisyonu yapmaz'],
+        statins: ['Rosuvastatin (Crestor) veya Pravastatin - CYP3A4 metabolizmasından bağımsızdır']
+      },
+      recommendations: []
+    };
+  }
+
+  const detected: {
+    cyp3a4Statins: string[];
+    highRiskStatins: string[];
+    strongInhibitors: string[];
+    moderateInhibitors: string[];
+  } = {
+    cyp3a4Statins: [],
+    highRiskStatins: [],
+    strongInhibitors: [],
+    moderateInhibitors: []
+  };
+
+  for (const drugInput of drugs) {
+    let name = '';
+    let atc = '';
+    if (typeof drugInput === 'string') {
+      name = drugInput;
+    } else if (drugInput && typeof drugInput === 'object') {
+      name = `${drugInput.brand || ''} ${drugInput.brandName || ''} ${drugInput.name || ''} ${drugInput.generic || ''}`.trim();
+      atc = (drugInput.atcCode || drugInput.atc || '') as string;
+    }
+
+    const normName = normalizeStr(name);
+    const normAtc = normalizeStr(atc);
+
+    // CYP3A4 Statin Check
+    const isCypStatin =
+      CYP3A4_STATIN_DATABASE.cyp3a4Statins.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      CYP3A4_STATIN_DATABASE.cyp3a4Statins.keywords.some(k => normName.includes(normalizeStr(k)));
+
+    if (isCypStatin) {
+      detected.cyp3a4Statins.push(name || 'Statin');
+      const isHighRisk = CYP3A4_STATIN_DATABASE.cyp3a4Statins.highRiskKeywords.some(k => normName.includes(normalizeStr(k)));
+      if (isHighRisk) detected.highRiskStatins.push(name || 'Simvastatin');
+    }
+
+    // Strong Inhibitor Check
+    const isStrong =
+      CYP3A4_STATIN_DATABASE.strongInhibitors.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      CYP3A4_STATIN_DATABASE.strongInhibitors.keywords.some(k => normName.includes(normalizeStr(k)));
+
+    if (isStrong) {
+      detected.strongInhibitors.push(name || 'Güçlü CYP3A4 İnhibitörü');
+    }
+
+    // Moderate Inhibitor Check
+    const isModerate =
+      CYP3A4_STATIN_DATABASE.moderateInhibitors.atcPrefixes.some(p => normAtc.startsWith(normalizeStr(p))) ||
+      CYP3A4_STATIN_DATABASE.moderateInhibitors.keywords.some(k => normName.includes(normalizeStr(k)));
+
+    if (isModerate) {
+      detected.moderateInhibitors.push(name || 'Orta CYP3A4 İnhibitörü');
+    }
+  }
+
+  const hasCypStatin = detected.cyp3a4Statins.length > 0;
+  const hasHighRiskStatin = detected.highRiskStatins.length > 0;
+  const hasStrong = detected.strongInhibitors.length > 0;
+  const hasModerate = detected.moderateInhibitors.length > 0;
+
+  const safeAlternatives = {
+    antibiotics: [
+      'Azitromisin (Azitro, Zitromax): Makrolid endikasyonunda CYP3A4 inhibisyonu yapmayan birinci basamak güvenli seçenektir.',
+      'Amoksisilin / Klavulanat veya Seftriakson: Bakteriyel endikasyona göre CYP etkileşimsiz alternatifler.'
+    ],
+    statins: [
+      'Rosuvastatin (Crestor): CYP2C9 ile minimal metabolize olur; hidrofiliktir, güçlü CYP3A4 inhibitörleri ile klinik rabdomiyoliz riski oluşturmaz.',
+      'Pravastatin: Hepatik CYP sisteminden tamamen bağımsız olarak sülfasyonla temizlenir.',
+      'Geçici Tedavi Molası: Klaritromisin/Azol antifungal tedavi süresince (7-14 gün) statin tedavisinin geçici olarak durdurulması en pratik ve güvenli yaklaşımdır.'
+    ]
+  };
+
+  // 1. ÖLÜMCÜL / KONTRENDİKE: Güçlü CYP3A4 İnhibitörü + Simvastatin / Lovastatin
+  if (hasHighRiskStatin && hasStrong) {
+    return {
+      hasInteraction: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 KESİN KONTRENDİKE! ŞİDDETLİ RABDOMİYOLİZ RİSKİ (Simvastatin + Güçlü CYP3A4 İnhibitörü)!',
+      mechanism: `Klaritromisin, İtrakonazol veya Ketokonazol gibi güçlü inhibitörler Simvastatin plazma eğri altı alanını (AUC) 10-20 kat artırarak toksik plazma düzeylerine fırlatır. Akut rabdomiyoliz, miyoglobinürik böbrek yetmezliği ve ölüm vakaları bildirilmiştir (FDA & TİTCK Kara Kutu Uyarısı).`,
+      detectedDrugs: {
+        statins: detected.highRiskStatins,
+        inhibitors: detected.strongInhibitors
+      },
+      safeAlternatives,
+      recommendations: [
+        'KOMBİNASYON KESİNLİKLE YASAKTIR! Birlikte reçete edilmemelidir.',
+        'Makrolid gerekiyorsa derhal AZİTROMİSİN tercih edilmelidir.',
+        'Antifungal veya Klaritromisin kullanımı zorunluysa, antibiyotik/antifungal kürü bitene kadar Simvastatin DERHAL KESİLMELİDİR.',
+        'Hasta kas ağrısı, aşırı halsizlik ve çay rengi/koyu idrar (miyoglobinüri) yönünden uyarılmalı; bu belirtilerde acil CPK ve kreatinin bakılmalıdır.'
+      ]
+    };
+  }
+
+  // 2. YÜKSEK RİSK: Güçlü CYP3A4 İnhibitörü + Atorvastatin
+  if (hasCypStatin && hasStrong) {
+    return {
+      hasInteraction: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 YÜKSEK RABDOMİYOLİZ & MİYOPATİ RİSKİ (Atorvastatin + Güçlü CYP3A4 İnhibitörü)!',
+      mechanism: 'Güçlü CYP3A4 inhibisyonu Atorvastatin maruziyetini 3 ila 4 kat artırır. Miyopati ve rabdomiyoliz riskini dramatik şekilde katlar.',
+      detectedDrugs: {
+        statins: detected.cyp3a4Statins,
+        inhibitors: detected.strongInhibitors
+      },
+      safeAlternatives,
+      recommendations: [
+        'Enfeksiyon tedavisi süresince (7-14 gün) Atorvastatin tedavisine ara verilmesi (statin hold) kuvvetle önerilir.',
+        'Antibiyotik olarak CYP3A4 etkileşimsiz AZİTROMİSİN tercih edilmelidir.',
+        'Statin kesilemiyorsa Rosuvastatin (düşük doz) veya Pravastatine geçilmelidir.',
+        'Kas ağrısı, hassasiyet veya koyu idrar durumunda acil başvuru önerilmelidir.'
+      ]
+    };
+  }
+
+  // 3. ORTA DÜZEY RİSK: Orta İnhibitör (Diltiazem, Verapamil, Amiodaron) + Simvastatin
+  if (hasHighRiskStatin && hasModerate) {
+    return {
+      hasInteraction: true,
+      severity: 'WARNING',
+      alertClass: 'warning',
+      title: '⚠️ Statin Doz Sınırı Uyarısı (Simvastatin + Diltiazem/Verapamil/Amiodaron)',
+      mechanism: 'Diltiazem, Verapamil ve Amiodaron CYP3A4 aracılı Simvastatin klirensini yavaşlatarak serum düzeyini 2-3 kat artırır.',
+      detectedDrugs: {
+        statins: detected.highRiskStatins,
+        inhibitors: detected.moderateInhibitors
+      },
+      safeAlternatives,
+      recommendations: [
+        'Diltiazem veya Verapamil ile eşzamanlı kullanımda Simvastatin dozu maksimum 10 mg/gün ile sınırlandırılmalıdır.',
+        'Amiodaron ile eşzamanlı kullanımda Simvastatin dozu maksimum 20 mg/gün ile sınırlandırılmalıdır.',
+        'Alternatif olarak Rosuvastatin tercih edilebilir.'
+      ]
+    };
+  }
+
+  return {
+    hasInteraction: false,
+    severity: 'SAFE',
+    alertClass: 'success',
+    title: 'CYP3A4 / Statin Etkileşimi Tespit Edilmedi',
+    detectedDrugs: {
+      statins: detected.cyp3a4Statins,
+      inhibitors: [...detected.strongInhibitors, ...detected.moderateInhibitors]
+    },
+    safeAlternatives,
+    recommendations: []
   };
 }

@@ -90,7 +90,10 @@ import type {
   RenalDoseCheckResult,
   TripleWhammyResult,
   PregnancySafetyResult,
-  NeonatalDrugSafetyResult
+  NeonatalDrugSafetyResult,
+  SerotoninSyndromeResult,
+  HyperkalemiaRiskResult,
+  CypStatinInteractionResult
 } from './engines';
 
 export interface SelectedDrugItem {
@@ -188,6 +191,9 @@ export interface AppState {
     tripleWhammy: TripleWhammyResult | null;
     pregnancySafety: PregnancySafetyResult | null;
     neonatalDrugSafety: NeonatalDrugSafetyResult | null;
+    serotoninSyndrome: SerotoninSyndromeResult | null;
+    hyperkalemiaRisk: HyperkalemiaRiskResult | null;
+    cypStatinInteraction: CypStatinInteractionResult | null;
     selectedSafetyDrugs: SelectedDrugItem[];
   };
   treatment?: {

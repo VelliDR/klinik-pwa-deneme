@@ -23,6 +23,9 @@ import {
   detectTripleWhammy,
   checkPregnancySafety,
   checkNeonatalDrugSafety,
+  checkSerotoninSyndrome,
+  checkHyperkalemiaRisk,
+  checkCypStatinInteraction,
   determineAgeGroup,
   calculateEGFR,
   calculateBSA,
@@ -191,6 +194,83 @@ const neoDrugAlerts = checkNeonatalDrugSafety([
 ]);
 assert.strictEqual(neoDrugAlerts.hasContraindication, true);
 assert.strictEqual(neoDrugAlerts.alertsCount, 3);
+
+// 5. Serotonin Sendromu Kalkanı Testleri
+const seroMaoi = checkSerotoninSyndrome([
+  { brand: 'Zyvoxid 600mg', generic: 'linezolid' },
+  { brand: 'Cipralex 10mg', generic: 'escitalopram' }
+]);
+assert.strictEqual(seroMaoi.isHighRisk, true);
+assert.strictEqual(seroMaoi.severity, 'CRITICAL');
+assert.strictEqual(seroMaoi.hasMaoiCombination, true);
+
+const seroTramadol = checkSerotoninSyndrome([
+  { brand: 'Contramal 100mg', generic: 'tramadol' },
+  { brand: 'Lustral 50mg', generic: 'sertraline' }
+]);
+assert.strictEqual(seroTramadol.isHighRisk, true);
+assert.strictEqual(seroTramadol.severity, 'CRITICAL');
+
+const seroSafe = checkSerotoninSyndrome([
+  { brand: 'Parol 500mg', generic: 'paracetamol' },
+  { brand: 'Augmentin 1g', generic: 'amoxicillin' }
+]);
+assert.strictEqual(seroSafe.isHighRisk, false);
+assert.strictEqual(seroSafe.severity, 'SAFE');
+
+// 6. Hiperkalemi Kalkanı Testleri
+const hkRaasDiuretic = checkHyperkalemiaRisk([
+  { brand: 'Delix 5mg', generic: 'ramipril' },
+  { brand: 'Aldactone 25mg', generic: 'spironolactone' }
+]);
+assert.strictEqual(hkRaasDiuretic.isAtRisk, true);
+assert.strictEqual(hkRaasDiuretic.severity, 'CRITICAL');
+
+const hkBactrim = checkHyperkalemiaRisk([
+  { brand: 'Co-Diovan 160/12.5', generic: 'valsartan' },
+  { brand: 'Bactrim Forte', generic: 'trimethoprim' }
+]);
+assert.strictEqual(hkBactrim.isAtRisk, true);
+assert.strictEqual(hkBactrim.severity, 'CRITICAL');
+
+const hkCompounded = checkHyperkalemiaRisk([
+  { brand: 'Ramipril 5mg', generic: 'ramipril' },
+  { brand: 'Apranax 550mg', generic: 'naproxen' }
+], { egfr: 45, ageYears: 70 });
+assert.strictEqual(hkCompounded.isAtRisk, true);
+assert.strictEqual(hkCompounded.severity, 'CRITICAL');
+assert.strictEqual(hkCompounded.hasRenalOrAgeCompounding, true);
+
+const hkMild = checkHyperkalemiaRisk([
+  { brand: 'Ramipril 5mg', generic: 'ramipril' },
+  { brand: 'Apranax 550mg', generic: 'naproxen' }
+], { egfr: 90, ageYears: 40 });
+assert.strictEqual(hkMild.isAtRisk, true);
+assert.strictEqual(hkMild.severity, 'WARNING');
+
+// 7. CYP3A4 Statin Rabdomiyoliz Kalkanı Testleri
+const cypSimva = checkCypStatinInteraction([
+  { brand: 'Zocor 20mg', generic: 'simvastatin' },
+  { brand: 'Klacid 500mg', generic: 'clarithromycin' }
+]);
+assert.strictEqual(cypSimva.hasInteraction, true);
+assert.strictEqual(cypSimva.severity, 'CRITICAL');
+assert.ok(cypSimva.safeAlternatives.antibiotics.length > 0);
+
+const cypAtorva = checkCypStatinInteraction([
+  { brand: 'Lipitor 20mg', generic: 'atorvastatin' },
+  { brand: 'Sporanox 100mg', generic: 'itraconazole' }
+]);
+assert.strictEqual(cypAtorva.hasInteraction, true);
+assert.strictEqual(cypAtorva.severity, 'CRITICAL');
+
+const cypSafeRosuva = checkCypStatinInteraction([
+  { brand: 'Crestor 10mg', generic: 'rosuvastatin' },
+  { brand: 'Klacid 500mg', generic: 'clarithromycin' }
+]);
+assert.strictEqual(cypSafeRosuva.hasInteraction, false);
+assert.strictEqual(cypSafeRosuva.severity, 'SAFE');
+
 console.log('✓ TypeScript Safety & Prescription Engine passed (100% parity)');
 
 console.log('--- 5. VERIFYING TYPESCRIPT BIOMETRICS, FLUID, CARDIAC & TRIAGE ---');

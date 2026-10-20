@@ -22,7 +22,15 @@ import { getDrugBadgesHTML, findEquivalents } from './drugEngine';
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine';
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from './engines/neonatologyEngine';
-import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety } from './engines/safetyPrescriptionEngine';
+import { 
+    checkRenalDoseAdjustments, 
+    detectTripleWhammy, 
+    checkPregnancySafety, 
+    checkNeonatalDrugSafety,
+    checkSerotoninSyndrome,
+    checkHyperkalemiaRisk,
+    checkCypStatinInteraction
+} from './engines/safetyPrescriptionEngine';
 import { 
     CLINICAL_MOTORS, 
     PRESET_PACKAGES, 
@@ -1826,6 +1834,9 @@ export function updateAllTabs(): void {
     const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.eddData?.trimester || 0);
 
     const outWhammy = getEl('output-safety-triple-whammy');
+    const outSerotonin = getEl('output-safety-serotonin');
+    const outHyperkalemia = getEl('output-safety-hyperkalemia');
+    const outCypStatin = getEl('output-safety-cyp-statin');
     const outRenal = getEl('output-safety-renal');
     const outPreg = getEl('output-safety-pregnancy');
     const badgeSafety = getEl('badge-safety-status');
@@ -1848,7 +1859,66 @@ export function updateAllTabs(): void {
             outWhammy.classList.add('hidden');
         }
 
-        // 2. Renal Doz Kesintileri (eGFR)
+        // 2. Serotonin Sendromu Kalkanı (Hunter Kriterleri Uyumlu)
+        const seroRes = checkSerotoninSyndrome(selectedDrugs);
+        appState.safetyPrescription.serotoninSyndrome = seroRes;
+        if (seroRes.isHighRisk) {
+            if (outSerotonin) {
+                outSerotonin.classList.remove('hidden');
+                outSerotonin.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${seroRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outSerotonin.innerHTML = `
+                    <div class="font-bold text-xs">${seroRes.title}</div>
+                    <div class="text-[10px] leading-relaxed">${seroRes.mechanism || ''}</div>
+                    <div class="text-[9px] text-slate-300 italic">${seroRes.hunterCriteriaInfo || ''}</div>
+                    <div class="text-[10px]">• <strong>Öneriler:</strong> ${(seroRes.recommendations || []).join(' ')}</div>
+                `;
+            }
+        } else if (outSerotonin) {
+            outSerotonin.classList.add('hidden');
+        }
+
+        // 3. Ölümcül Hiperkalemi Kalkanı (RAAS + K-Tutucu + Trimetoprim/Bactrim + NSAİİ)
+        const patientAgeYears = ageData.y !== undefined && ageData.y !== null ? ageData.y : (appState.biometry.ageYears ?? null);
+        const hyperKRes = checkHyperkalemiaRisk(selectedDrugs, {
+            egfr: safetyEgfr,
+            ageYears: patientAgeYears,
+            baselineK: null
+        });
+        appState.safetyPrescription.hyperkalemiaRisk = hyperKRes;
+        if (hyperKRes.isAtRisk) {
+            if (outHyperkalemia) {
+                outHyperkalemia.classList.remove('hidden');
+                outHyperkalemia.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${hyperKRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outHyperkalemia.innerHTML = `
+                    <div class="font-bold text-xs">${hyperKRes.title}</div>
+                    <div class="text-[10px] leading-relaxed">${hyperKRes.mechanism || ''}</div>
+                    ${hyperKRes.riskFactorsIdentified.length > 0 ? `<div class="text-[9px] text-amber-300 font-semibold">• Tespit Edilen Riskler: ${hyperKRes.riskFactorsIdentified.join(' | ')}</div>` : ''}
+                    <div class="text-[10px]">• <strong>Klinik Eylem:</strong> ${(hyperKRes.recommendations || []).join(' ')}</div>
+                `;
+            }
+        } else if (outHyperkalemia) {
+            outHyperkalemia.classList.add('hidden');
+        }
+
+        // 4. CYP3A4 Güçlü İnhibisyonu & Statin Rabdomiyoliz Kalkanı
+        const cypStatinRes = checkCypStatinInteraction(selectedDrugs);
+        appState.safetyPrescription.cypStatinInteraction = cypStatinRes;
+        if (cypStatinRes.hasInteraction) {
+            if (outCypStatin) {
+                outCypStatin.classList.remove('hidden');
+                outCypStatin.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${cypStatinRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outCypStatin.innerHTML = `
+                    <div class="font-bold text-xs">${cypStatinRes.title}</div>
+                    <div class="text-[10px] leading-relaxed">${cypStatinRes.mechanism || ''}</div>
+                    <div class="text-[10px] text-emerald-300">• <strong>Güvenli Alternatif:</strong> ${[...cypStatinRes.safeAlternatives.antibiotics, ...cypStatinRes.safeAlternatives.statins].join(' | ')}</div>
+                    <div class="text-[10px]">• <strong>Öneriler:</strong> ${(cypStatinRes.recommendations || []).join(' ')}</div>
+                `;
+            }
+        } else if (outCypStatin) {
+            outCypStatin.classList.add('hidden');
+        }
+
+        // 5. Renal Doz Kesintileri (eGFR)
         if (safetyEgfr) {
             const renalRes = checkRenalDoseAdjustments({ egfr: safetyEgfr, drugs: selectedDrugs });
             appState.safetyPrescription.renalAdjustments = renalRes;
@@ -1868,7 +1938,7 @@ export function updateAllTabs(): void {
             outRenal.classList.add('hidden');
         }
 
-        // 3. Gebelik & Fetal Risk
+        // 6. Gebelik & Fetal Risk
         if (safetyTrim > 0) {
             const pregRes = checkPregnancySafety(selectedDrugs, { trimester: safetyTrim });
             appState.safetyPrescription.pregnancySafety = pregRes;
@@ -1888,7 +1958,7 @@ export function updateAllTabs(): void {
             outPreg.classList.add('hidden');
         }
 
-        // 4. Yenidoğan İlaç Toksisite ve Kontrendikasyon Kalkanı
+        // 7. Yenidoğan İlaç Toksisite ve Kontrendikasyon Kalkanı
         const outNeoDrug = getEl('output-safety-neonatal');
         if (isNeonate && ageData.days !== null) {
             const neoDrugRes = checkNeonatalDrugSafety(selectedDrugs, { ageDays: ageData.days });
@@ -1912,14 +1982,23 @@ export function updateAllTabs(): void {
 
         // Status Badge Update
         if (badgeSafety) {
-            const hasDanger = Boolean((appState.safetyPrescription.tripleWhammy?.isTripleWhammy) ||
-                              (appState.safetyPrescription.renalAdjustments?.hasContraindication) ||
-                              (appState.safetyPrescription.pregnancySafety?.hasSevereFetalRisk) ||
-                              (appState.safetyPrescription.neonatalDrugSafety?.hasContraindication));
-            const totalWarns = (appState.safetyPrescription.renalAdjustments?.alertsCount || 0) +
-                               (appState.safetyPrescription.pregnancySafety?.alertsCount || 0) +
-                               (appState.safetyPrescription.neonatalDrugSafety?.alertsCount || 0) +
-                               (appState.safetyPrescription.tripleWhammy?.isTripleWhammy ? 1 : (appState.safetyPrescription.tripleWhammy?.isDoubleRisk ? 1 : 0));
+            const hasDanger = Boolean(
+                (appState.safetyPrescription.tripleWhammy?.isTripleWhammy) ||
+                (appState.safetyPrescription.serotoninSyndrome?.severity === 'CRITICAL') ||
+                (appState.safetyPrescription.hyperkalemiaRisk?.severity === 'CRITICAL') ||
+                (appState.safetyPrescription.cypStatinInteraction?.severity === 'CRITICAL') ||
+                (appState.safetyPrescription.renalAdjustments?.hasContraindication) ||
+                (appState.safetyPrescription.pregnancySafety?.hasSevereFetalRisk) ||
+                (appState.safetyPrescription.neonatalDrugSafety?.hasContraindication)
+            );
+            const totalWarns = 
+                (appState.safetyPrescription.renalAdjustments?.alertsCount || 0) +
+                (appState.safetyPrescription.pregnancySafety?.alertsCount || 0) +
+                (appState.safetyPrescription.neonatalDrugSafety?.alertsCount || 0) +
+                (appState.safetyPrescription.tripleWhammy?.isTripleWhammy ? 1 : (appState.safetyPrescription.tripleWhammy?.isDoubleRisk ? 1 : 0)) +
+                (appState.safetyPrescription.serotoninSyndrome?.isHighRisk ? 1 : 0) +
+                (appState.safetyPrescription.hyperkalemiaRisk?.isAtRisk ? 1 : 0) +
+                (appState.safetyPrescription.cypStatinInteraction?.hasInteraction ? 1 : 0);
             if (hasDanger) {
                 badgeSafety.textContent = '🚨 Kritik Uyarı';
                 badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700 font-bold';
@@ -1933,7 +2012,13 @@ export function updateAllTabs(): void {
         }
     } else {
         const outNeoDrug = getEl('output-safety-neonatal');
+        appState.safetyPrescription.serotoninSyndrome = null;
+        appState.safetyPrescription.hyperkalemiaRisk = null;
+        appState.safetyPrescription.cypStatinInteraction = null;
         if (outWhammy) outWhammy.classList.add('hidden');
+        if (outSerotonin) outSerotonin.classList.add('hidden');
+        if (outHyperkalemia) outHyperkalemia.classList.add('hidden');
+        if (outCypStatin) outCypStatin.classList.add('hidden');
         if (outRenal) outRenal.classList.add('hidden');
         if (outPreg) outPreg.classList.add('hidden');
         if (outNeoDrug) outNeoDrug.classList.add('hidden');
@@ -2359,6 +2444,48 @@ export function updateClinicalAlertsInspector(): void {
             alertCount++;
         } else {
             alertTw.classList.add('hidden');
+        }
+    }
+
+    // 2b. Serotonin Sendromu Alert
+    const alertSero = getEl('alert-item-serotonin');
+    const textSero = getEl('alert-text-serotonin');
+    const sero = appState.safetyPrescription?.serotoninSyndrome;
+    if (alertSero && textSero) {
+        if (sero && sero.isHighRisk) {
+            alertSero.classList.remove('hidden');
+            textSero.textContent = `${sero.title} - ${sero.mechanism || 'Serotonin toksisitesi riski'}`;
+            alertCount++;
+        } else {
+            alertSero.classList.add('hidden');
+        }
+    }
+
+    // 2c. Ölümcül Hiperkalemi Alert
+    const alertHyperK = getEl('alert-item-hyperkalemia');
+    const textHyperK = getEl('alert-text-hyperkalemia');
+    const hyperK = appState.safetyPrescription?.hyperkalemiaRisk;
+    if (alertHyperK && textHyperK) {
+        if (hyperK && hyperK.isAtRisk) {
+            alertHyperK.classList.remove('hidden');
+            textHyperK.textContent = `${hyperK.title} - ${hyperK.mechanism || 'Renal K+ atılımı bozulabilir'}`;
+            alertCount++;
+        } else {
+            alertHyperK.classList.add('hidden');
+        }
+    }
+
+    // 2d. CYP3A4 Güçlü İnhibisyonu & Statin Rabdomiyoliz Alert
+    const alertCypStatin = getEl('alert-item-cyp-statin');
+    const textCypStatin = getEl('alert-text-cyp-statin');
+    const cypStatin = appState.safetyPrescription?.cypStatinInteraction;
+    if (alertCypStatin && textCypStatin) {
+        if (cypStatin && cypStatin.hasInteraction) {
+            alertCypStatin.classList.remove('hidden');
+            textCypStatin.textContent = `${cypStatin.title} - ${cypStatin.mechanism || 'Rabdomiyoliz riski'}`;
+            alertCount++;
+        } else {
+            alertCypStatin.classList.add('hidden');
         }
     }
 
