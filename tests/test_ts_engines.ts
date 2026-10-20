@@ -62,6 +62,8 @@ import {
 import { parseDrugStrength } from '../src/drugEngine';
 import { generateSOAP } from '../src/utils/soapGenerator';
 import { resolveMotorDependencies, CLINICAL_MOTORS, PRESET_PACKAGES } from '../src/workstationPackages';
+import { searchQuickSwitcher, QUICK_SWITCHER_ITEMS } from '../src/utils/quickSwitcher';
+import { buildDefaultDrugSchedule, generatePrescriptionHTML } from '../src/utils/prescriptionPrinter';
 
 console.log('--- 1. VERIFYING TYPESCRIPT THROMBOSIS ENGINE ---');
 const dvtLow = calculateWellsDVT({});
@@ -310,5 +312,44 @@ assert.ok(soap.includes('[O] OBJEKTİF:'));
 assert.ok(soap.includes('[A] DEĞERLENDİRME:'));
 assert.ok(soap.includes('[P] PLAN & TEDAVİ:'));
 console.log('✓ TypeScript Workstation Packages, Drug Engine & SOAP Generator passed');
+
+console.log('--- 7. VERIFYING ERGONOMICS, QUICK SWITCHER & PRESCRIPTION PRINTER (AŞAMA 2) ---');
+// 1. Quick Switcher Arama Testleri
+assert.strictEqual(QUICK_SWITCHER_ITEMS.length, 21);
+const searchBloodGas = searchQuickSwitcher('kan gazı');
+assert.ok(searchBloodGas.some(m => m.id === 'card-kangazi'));
+
+const searchApgar = searchQuickSwitcher('apgar');
+assert.ok(searchApgar.some(m => m.id === 'card-neonatoloji'));
+
+const searchRx = searchQuickSwitcher('titck');
+assert.ok(searchRx.some(m => m.id === 'card-ilac'));
+
+const searchEmpty = searchQuickSwitcher('');
+assert.strictEqual(searchEmpty.length, 21);
+
+const searchNotFound = searchQuickSwitcher('bilinmeyen_arama_anahtari_xyz');
+assert.strictEqual(searchNotFound.length, 0);
+
+// 2. Prescription Printer Şablon & HTML Testleri
+const schedAmox = buildDefaultDrugSchedule({ brand: 'Amoklavin BID 1000 mg', generic: 'amoxicillin' });
+assert.strictEqual(schedAmox.morning, true);
+assert.strictEqual(schedAmox.evening, true);
+assert.ok(schedAmox.instructions.includes('antibiyotik') || schedAmox.instructions.includes('Antibiyotik'));
+
+const schedStatin = buildDefaultDrugSchedule({ brand: 'Lipitor 20 mg', generic: 'atorvastatin' });
+assert.strictEqual(schedStatin.night, true);
+assert.ok(schedStatin.instructions.includes('kas ağrısı'));
+
+const prnHt = generatePrescriptionHTML(
+  { patientName: 'Ahmet Yılmaz', age: '45 Yaş', weightKg: 75, dateStr: '20.10.2026', doctorName: 'Uzm. Dr. Test Hekim' },
+  [schedAmox, schedStatin]
+);
+assert.ok(prnHt.includes('HASTA İLAÇ KULLANIM ÇİZELGESİ'));
+assert.ok(prnHt.includes('Ahmet Yılmaz'));
+assert.ok(prnHt.includes('Amoklavin BID 1000 mg'));
+assert.ok(prnHt.includes('Lipitor 20 mg'));
+assert.ok(prnHt.includes('Uzm. Dr. Test Hekim'));
+console.log('✓ Ergonomics, Quick Switcher & Prescription Printer passed (100% parity)');
 
 console.log('\n🎉 ALL 17 TYPESCRIPT CLINICAL ENGINES & PACKAGES FULLY VERIFIED (100% PARITY)! 🎉\n');

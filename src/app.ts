@@ -31,6 +31,9 @@ import {
     checkHyperkalemiaRisk,
     checkCypStatinInteraction
 } from './engines/safetyPrescriptionEngine';
+import { initTheme, toggleTheme } from './utils/themeManager';
+import { searchQuickSwitcher, jumpToMotor, QUICK_SWITCHER_ITEMS, type QuickSwitcherItem } from './utils/quickSwitcher';
+import { buildDefaultDrugSchedule, generatePrescriptionHTML, PrintableDrugSchedule } from './utils/prescriptionPrinter';
 import { 
     CLINICAL_MOTORS, 
     PRESET_PACKAGES, 
@@ -3305,6 +3308,200 @@ export function initResponsiveWorkstation(): void {
                 b.classList.remove('bg-rose-900/60', 'text-rose-200', 'border-rose-700', 'font-bold');
                 b.classList.add('bg-slate-900', 'text-slate-300', 'border-slate-750');
             });
+        });
+    }
+
+    // 7. AYDINLIK / KARANLIK TEMA YÖNETİCİSİ (LIGHT / DARK TOGGLE)
+    initTheme();
+    const btnTheme = getEl('btn-theme-toggle');
+    if (btnTheme) {
+        btnTheme.addEventListener('click', () => {
+            toggleTheme();
+        });
+    }
+
+    // 8. QUICK SWITCHER (CTRL+K) HIZLI MOTOR ATLAMA KOMUT PALETİ
+    const modalQuick = getEl('modal-quick-switcher');
+    const inputQuick = getEl<HTMLInputElement>('input-quick-switcher');
+    const listQuick = getEl('list-quick-switcher');
+    const btnQuick = getEl('btn-quick-switch');
+    let activeQuickIndex = 0;
+    let currentQuickResults: QuickSwitcherItem[] = [];
+
+    function renderQuickList(items: QuickSwitcherItem[]): void {
+        if (!listQuick) return;
+        currentQuickResults = items;
+        activeQuickIndex = 0;
+        if (items.length === 0) {
+            listQuick.innerHTML = '<div class="p-4 text-center text-slate-500 italic">Eşleşen klinik motor bulunamadı.</div>';
+            return;
+        }
+        listQuick.innerHTML = items.map((item, idx) => `
+            <div class="quick-item flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all ${idx === 0 ? 'bg-rose-950/60 border border-rose-800 text-rose-200 font-semibold' : 'hover:bg-slate-800/80 text-slate-300'}" data-index="${idx}" data-motor-id="${item.id}">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-base">${item.icon}</span>
+                    <div>
+                        <div class="font-bold text-xs ${idx === 0 ? 'text-rose-200' : 'text-slate-100'}">${item.name}</div>
+                        <div class="text-[10px] text-slate-400 line-clamp-1">${item.desc}</div>
+                    </div>
+                </div>
+                <span class="text-[9px] font-mono px-2 py-0.5 rounded uppercase bg-slate-950/50 text-slate-400 border border-slate-800">${item.category}</span>
+            </div>
+        `).join('');
+
+        listQuick.querySelectorAll('.quick-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const motorId = el.getAttribute('data-motor-id');
+                if (motorId) {
+                    closeQuickModal();
+                    jumpToMotor(motorId);
+                }
+            });
+        });
+    }
+
+    function updateQuickActiveHighlight(): void {
+        if (!listQuick) return;
+        const items = listQuick.querySelectorAll('.quick-item');
+        items.forEach((el, idx) => {
+            if (idx === activeQuickIndex) {
+                el.className = 'quick-item flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all bg-rose-950/60 border border-rose-800 text-rose-200 font-semibold';
+                (el as HTMLElement).scrollIntoView({ block: 'nearest' });
+            } else {
+                el.className = 'quick-item flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all hover:bg-slate-800/80 text-slate-300';
+            }
+        });
+    }
+
+    function openQuickModal(): void {
+        if (!modalQuick || !inputQuick) return;
+        modalQuick.classList.remove('hidden');
+        inputQuick.value = '';
+        renderQuickList(QUICK_SWITCHER_ITEMS);
+        setTimeout(() => inputQuick.focus(), 60);
+    }
+
+    function closeQuickModal(): void {
+        if (!modalQuick) return;
+        modalQuick.classList.add('hidden');
+    }
+
+    if (btnQuick) btnQuick.addEventListener('click', openQuickModal);
+    if (inputQuick) {
+        inputQuick.addEventListener('input', () => {
+            const val = inputQuick.value;
+            const res = searchQuickSwitcher(val);
+            renderQuickList(res);
+        });
+
+        inputQuick.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (currentQuickResults.length > 0) {
+                    activeQuickIndex = (activeQuickIndex + 1) % currentQuickResults.length;
+                    updateQuickActiveHighlight();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (currentQuickResults.length > 0) {
+                    activeQuickIndex = (activeQuickIndex - 1 + currentQuickResults.length) % currentQuickResults.length;
+                    updateQuickActiveHighlight();
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (currentQuickResults[activeQuickIndex]) {
+                    const motorId = currentQuickResults[activeQuickIndex].id;
+                    closeQuickModal();
+                    jumpToMotor(motorId);
+                }
+            } else if (e.key === 'Escape') {
+                closeQuickModal();
+            }
+        });
+    }
+
+    if (modalQuick) {
+        modalQuick.addEventListener('click', (e) => {
+            if (e.target === modalQuick) closeQuickModal();
+        });
+    }
+
+    if (typeof window !== 'undefined') {
+        window.addEventListener('keydown', (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                if (modalQuick && !modalQuick.classList.contains('hidden')) {
+                    closeQuickModal();
+                } else {
+                    openQuickModal();
+                }
+            }
+        });
+    }
+
+    // 9. HASTA DOZAJ ÇİZELGESİ YAZDIRMA & ÖNİZLEME (A4 PRINT / PDF)
+    const btnPrintRx = getEl('btn-print-rx');
+    const modalPrint = getEl('modal-prescription-print');
+    const btnClosePrint = getEl('btn-close-print-modal');
+    const btnTriggerPrint = getEl('btn-trigger-print');
+    const containerPreview = getEl('container-prescription-preview');
+    const printableArea = getEl('printable-prescription-container');
+    const inputPatientName = getEl<HTMLInputElement>('input-print-patient-name');
+    const inputDoctorName = getEl<HTMLInputElement>('input-print-doctor-name');
+    const inputPrintDate = getEl<HTMLInputElement>('input-print-date');
+
+    function refreshPrescriptionPreview(): void {
+        if (!containerPreview) return;
+        const selectedDrugs = (appState.treatment && appState.treatment.selectedDrugs) ? appState.treatment.selectedDrugs : [];
+        const schedules = selectedDrugs.map(d => buildDefaultDrugSchedule(d));
+        const patientInfo = {
+            patientName: inputPatientName?.value || 'Sayın Hasta',
+            age: appState.biometry.ageFormatted || getEl('banner-age')?.textContent || '--',
+            gender: appState.biometry.gender === 'male' ? 'Erkek' : (appState.biometry.gender === 'female' ? 'Kadın' : '--'),
+            weightKg: appState.biometry.weightKg || undefined,
+            dateStr: inputPrintDate?.value || new Date().toLocaleDateString('tr-TR'),
+            doctorName: inputDoctorName?.value || 'Dr. Hekim Kaşe & İmza'
+        };
+
+        const html = generatePrescriptionHTML(patientInfo, schedules);
+        containerPreview.innerHTML = html;
+        if (printableArea) {
+            printableArea.innerHTML = html;
+        }
+    }
+
+    function openPrescriptionModal(): void {
+        if (!modalPrint) return;
+        modalPrint.classList.remove('hidden');
+        if (inputPrintDate && !inputPrintDate.value) {
+            inputPrintDate.value = new Date().toLocaleDateString('tr-TR');
+        }
+        refreshPrescriptionPreview();
+    }
+
+    function closePrescriptionModal(): void {
+        if (!modalPrint) return;
+        modalPrint.classList.add('hidden');
+    }
+
+    if (btnPrintRx) btnPrintRx.addEventListener('click', openPrescriptionModal);
+    if (btnClosePrint) btnClosePrint.addEventListener('click', closePrescriptionModal);
+    if (modalPrint) {
+        modalPrint.addEventListener('click', (e) => {
+            if (e.target === modalPrint) closePrescriptionModal();
+        });
+    }
+
+    if (inputPatientName) inputPatientName.addEventListener('input', refreshPrescriptionPreview);
+    if (inputDoctorName) inputDoctorName.addEventListener('input', refreshPrescriptionPreview);
+    if (inputPrintDate) inputPrintDate.addEventListener('input', refreshPrescriptionPreview);
+
+    if (btnTriggerPrint) {
+        btnTriggerPrint.addEventListener('click', () => {
+            refreshPrescriptionPreview();
+            if (typeof window !== 'undefined' && typeof window.print === 'function') {
+                window.print();
+            }
         });
     }
 }

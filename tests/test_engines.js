@@ -317,7 +317,12 @@ const expectedIds = [
     'alert-item-neonatal-weight', 'alert-text-neonatal-weight',
     'alert-item-nephrotox', 'alert-text-nephrotox',
     'header-patient-info', 'header-patient-age', 'header-patient-gender',
-    'input-age', 'select-age-unit', 'label-age-numeric'
+    'input-age', 'select-age-unit', 'label-age-numeric',
+    'btn-quick-switch', 'modal-quick-switcher', 'input-quick-switcher', 'list-quick-switcher',
+    'btn-theme-toggle', 'theme-toggle-icon', 'theme-toggle-text',
+    'btn-print-rx', 'modal-prescription-print', 'btn-trigger-print', 'btn-close-print-modal',
+    'input-print-patient-name', 'input-print-doctor-name', 'input-print-date',
+    'container-prescription-preview', 'printable-prescription-container'
 ];
 
 let missing = 0;
