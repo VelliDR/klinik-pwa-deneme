@@ -116,6 +116,12 @@ export const appState: AppState = {
     treatment: {
         active: false,
         selectedDrugs: []
+    },
+
+    emergency: {
+        active: false,
+        anaphylaxis: null,
+        statusEpilepticus: null
     }
 };
 

@@ -1,4 +1,5 @@
 import { appState } from '../state';
+import { expandDotPhrases } from './soapTemplates';
 
 export function generateSOAP(): string {
   const s: string[] = []; // Subjektif
@@ -34,7 +35,8 @@ export function generateSOAP(): string {
 
   const anamnez = (typeof document !== 'undefined') ? (document.getElementById('input-custom-notes') as HTMLInputElement | HTMLTextAreaElement | null)?.value : null;
   if (anamnez && anamnez.trim()) {
-    s.push(`Ana Şikayet / Öykü: ${anamnez.trim()}`);
+    const { expandedText } = expandDotPhrases(anamnez.trim());
+    s.push(`Ana Şikayet / Öykü: ${expandedText}`);
   }
 
   // --- OBJEKTİF ---
@@ -366,6 +368,14 @@ export function generateSOAP(): string {
     const cs = appState.safetyPrescription.cypStatinInteraction;
     a.push(`- STATİN RABDOMİYOLİZ UYARISI: ${cs.title} Statin plazma konsantrasyonu toksik seviyelere çıkabilir.`);
   }
+  if (appState.emergency?.anaphylaxis) {
+    const an = appState.emergency.anaphylaxis;
+    a.push(`- ACİL MÜDAHALE (ANAFİLAKSİ): Akut anafilaksi tablosu; ${an.administeredDoses}. doz Adrenalin İM ve acil resüsitasyon uygulandı.`);
+  }
+  if (appState.emergency?.statusEpilepticus) {
+    const se = appState.emergency.statusEpilepticus;
+    a.push(`- ACİL MÜDAHALE (STATUS EPİLEPTİCUS): ${se.elapsedMinutes} dakikadır süren epileptik nöbet; AES protokolü kademeleri uygulandı.`);
+  }
 
   // --- PLAN & TEDAVİ ---
   let pCount = 1;
@@ -461,6 +471,16 @@ export function generateSOAP(): string {
   if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {
     const drugsStr = appState.treatment.selectedDrugs.map((d) => d.brand || d.generic).join(', ');
     p.push(`${pCount}. Reçete / Tedavi Protokolü: ${drugsStr}.`);
+    pCount++;
+  }
+  if (appState.emergency?.anaphylaxis?.doses) {
+    const ad = appState.emergency.anaphylaxis.doses;
+    p.push(`${pCount}. Anafilaksi Acil Planı: ${ad.adrenaline.instruction} | Sıvı Bolusu: ${ad.fluidBolus.volumeMl} mL ${ad.fluidBolus.fluidType} (${ad.fluidBolus.rate}) | Adjuvan: ${ad.antihistaminic.drug} (${ad.antihistaminic.doseMg} mg) + ${ad.corticosteroid.drug} (${ad.corticosteroid.doseMg} mg). En az 6-8 saat gözlem.`);
+    pCount++;
+  }
+  if (appState.emergency?.statusEpilepticus?.doses) {
+    const sd = appState.emergency.statusEpilepticus.doses;
+    p.push(`${pCount}. Status Epilepticus Planı: 1. Basamak: ${sd.phase2EarlyStatus.midazolam.instruction} | 2. Basamak: ${sd.phase3EstablishedStatus.levetiracetam.instruction}`);
     pCount++;
   }
 

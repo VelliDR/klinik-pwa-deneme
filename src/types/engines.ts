@@ -581,3 +581,9 @@ export interface CypStatinInteractionResult {
   recommendations: string[];
   alertClass: 'danger' | 'warning' | 'success';
 }
+
+// 18. Acil Durum Protokolleri
+export type {
+  AnaphylaxisDoses,
+  StatusEpilepticusDoses
+} from '../engines/emergencyProtocols';

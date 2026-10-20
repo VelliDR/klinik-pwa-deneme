@@ -322,7 +322,21 @@ const expectedIds = [
     'btn-theme-toggle', 'theme-toggle-icon', 'theme-toggle-text',
     'btn-print-rx', 'modal-prescription-print', 'btn-trigger-print', 'btn-close-print-modal',
     'input-print-patient-name', 'input-print-doctor-name', 'input-print-date',
-    'container-prescription-preview', 'printable-prescription-container'
+    'container-prescription-preview', 'printable-prescription-container',
+    'btn-emergency-protocols', 'modal-emergency-protocols', 'btn-close-emergency-modal',
+    'emergency-weight-badge', 'tab-btn-anaphylaxis', 'tab-btn-status',
+    'panel-emergency-anaphylaxis', 'panel-emergency-status',
+    'text-emergency-adr-dose', 'timer-anaphylaxis-display', 'timer-anaphylaxis-bar',
+    'badge-anaphylaxis-timer-status', 'btn-anaphylaxis-start-timer', 'btn-anaphylaxis-repeat-dose',
+    'btn-anaphylaxis-reset-timer', 'alert-anaphylaxis-timer-expired',
+    'text-emergency-fluid-dose', 'text-emergency-salbutamol-dose', 'text-emergency-pheniramine-dose',
+    'text-emergency-prednol-dose', 'btn-anaphylaxis-to-soap',
+    'timer-status-display', 'badge-status-active-phase', 'btn-status-start-timer',
+    'btn-status-pause-timer', 'btn-status-reset-timer',
+    'card-status-phase-1', 'card-status-phase-2', 'card-status-phase-3', 'card-status-phase-4',
+    'text-status-glucose-dose', 'text-status-midazolam-dose', 'text-status-diazepam-dose',
+    'text-status-keppra-dose', 'text-status-phenytoin-dose', 'text-status-valproate-dose',
+    'btn-status-to-soap', 'container-dot-phrase-pills', 'select-soap-template', 'btn-insert-soap-template'
 ];
 
 let missing = 0;

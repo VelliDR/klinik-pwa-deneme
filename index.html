@@ -57,6 +57,11 @@
                     <span>🖨️</span> <span class="hidden md:inline">Hasta Çıktısı</span>
                 </button>
 
+                <!-- Acil Durum Protokolleri (Anafilaksi & Status) -->
+                <button type="button" id="btn-emergency-protocols" class="text-[11px] text-white bg-rose-700 hover:bg-rose-600 border border-rose-500/80 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm shadow-rose-950/60 font-medium" title="Acil Durum Protokolleri: Anafilaksi (Canlı Sayaç) & Status Epilepticus (AES)">
+                    <span>🚨</span> <span class="hidden sm:inline">Acil Protokoller</span>
+                </button>
+
                 <button type="button" id="btn-reset-patient" class="text-[11px] text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm" title="Tüm form verilerini sıfırla">
                     <span>🔄</span> <span class="hidden sm:inline">Yeni Hasta</span>
                 </button>
@@ -869,7 +874,25 @@
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <textarea id="input-custom-notes" rows="3" placeholder="Muayene bulguları..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 resize-none focus:outline-none focus:border-rose-500 mt-2"></textarea>
+                    <div class="pt-2">
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
+                            <span class="font-semibold uppercase tracking-wider">Hızlı Şablonlar (Dot Phrases):</span>
+                            <span class="text-[9px] text-rose-400 font-mono">Otomatik genişletme (.şablon)</span>
+                        </div>
+                        <div id="container-dot-phrase-pills" class="flex flex-wrap gap-1 text-[10px]">
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".apandisit">.apandisit</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".tonsillit">.tonsillit</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".dvt_dislama">.dvt_dislama</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".gastroenterit">.gastroenterit</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".astim_atak">.astim_atak</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".gogus_agrisi">.gogus_agrisi</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".anafilaksi">.anafilaksi</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".status_epilepticus">.status</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".krup">.krup</button>
+                            <button type="button" class="btn-dot-phrase px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-all font-mono" data-key=".uriner_enfeksiyon">.uriner</button>
+                        </div>
+                    </div>
+                    <textarea id="input-custom-notes" rows="3" placeholder="Muayene bulguları... (Örn: .apandisit veya .tonsillit yazıp boşluğa basınız)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs font-mono text-slate-200 resize-none focus:outline-none focus:border-rose-500 mt-1"></textarea>
                 </div>
             </details>
                 </div>
@@ -1449,7 +1472,25 @@
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <textarea id="text-soap-output" readonly rows="9" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-[11px] font-mono text-slate-300 leading-relaxed resize-none mt-2"></textarea>
+                    <div class="flex items-center gap-1.5 pt-2">
+                        <select id="select-soap-template" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 focus:outline-none focus:border-rose-500">
+                            <option value="">⚡ Hızlı Şablon Seç (Dot Phrase)...</option>
+                            <option value=".apandisit">.apandisit - Akut Apandisit</option>
+                            <option value=".tonsillit">.tonsillit - Akut Tonsillit & Centor</option>
+                            <option value=".dvt_dislama">.dvt_dislama - DVT Dışlama (Wells)</option>
+                            <option value=".gastroenterit">.gastroenterit - Akut Gastroenterit</option>
+                            <option value=".astim_atak">.astim_atak - Astım / Bronkospazm</option>
+                            <option value=".gogus_agrisi">.gogus_agrisi - Göğüs Ağrısı (AKS Dışlama)</option>
+                            <option value=".anafilaksi">.anafilaksi - Akut Anafilaksi</option>
+                            <option value=".status_epilepticus">.status - Status Epilepticus</option>
+                            <option value=".krup">.krup - Krup (Westley)</option>
+                            <option value=".uriner_enfeksiyon">.uriner - Üriner Enfeksiyon</option>
+                        </select>
+                        <button type="button" id="btn-insert-soap-template" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-[11px] font-semibold whitespace-nowrap transition-colors">
+                            + Ekle
+                        </button>
+                    </div>
+                    <textarea id="text-soap-output" readonly rows="9" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-[11px] font-mono text-slate-300 leading-relaxed resize-none mt-1"></textarea>
                     <button id="btn-copy-soap" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-3 rounded-xl transition-colors">
                         📋 Notu Panoya Kopyala
                     </button>
@@ -1580,6 +1621,235 @@
     <!-- SADECE @media print Sırasında Görünen A4 Yazdırma Alanı -->
     <div id="printable-prescription-container" class="hidden"></div>
 
+    <!-- ACİL DURUM AKIŞ PROTOKOLLERİ MODALİ (ANAFİLAKSİ & STATUS EPİLEPTİCUS) -->
+    <div id="modal-emergency-protocols" role="dialog" aria-modal="true" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-slate-900 border border-rose-600/70 rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Modal Başlığı -->
+            <div class="p-3 sm:p-4 bg-slate-950 border-b border-rose-900/50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🚨</span>
+                    <div>
+                        <div class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                            <span>Acil Durum Akış Protokolleri</span>
+                            <span id="emergency-weight-badge" class="text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded-full font-mono font-normal">Kilo: -- kg</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">Canlı sayaçlı EAACI Anafilaksi & AES Kademeli Status Epilepticus Algoritmaları</div>
+                    </div>
+                </div>
+                <button type="button" id="btn-close-emergency-modal" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg text-xs leading-none" title="Kapat">✕</button>
+            </div>
+
+            <!-- Protokol Sekmeleri -->
+            <div class="bg-slate-950/60 border-b border-slate-800 px-3 pt-2 flex gap-2">
+                <button type="button" id="tab-btn-anaphylaxis" class="px-4 py-2 text-xs font-bold rounded-t-lg transition-colors border-b-2 border-rose-500 text-rose-400 bg-slate-900">
+                    ⚡ Anafilaksi Yönetimi & 5 dk Adrenalin Sayacı
+                </button>
+                <button type="button" id="tab-btn-status" class="px-4 py-2 text-xs font-bold rounded-t-lg transition-colors border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+                    🧠 Status Epilepticus (AES Kılavuzu & Kronometre)
+                </button>
+            </div>
+
+            <!-- Modal İçerik Gövdesi -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- PANEL 1: ANAFİLAKSİ -->
+                <div id="panel-emergency-anaphylaxis" class="space-y-4">
+                    <!-- Canlı 5 Dakika Sayacı & Büyük Doz Kutusu -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <!-- Büyük Adrenalin Dozu Kutusu -->
+                        <div class="md:col-span-7 bg-rose-950/40 border-2 border-rose-500/80 rounded-xl p-3.5 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-rose-400 uppercase tracking-wide flex items-center gap-1.5">
+                                    <span>💉</span> 1. BASAMAK: İM ADRENALİN (1:1000)
+                                </span>
+                                <span class="text-[10px] font-mono bg-rose-900/60 text-rose-200 px-2 py-0.5 rounded border border-rose-700">0.01 mg/kg</span>
+                            </div>
+                            <div class="flex items-baseline gap-2">
+                                <div id="text-emergency-adr-dose" class="text-2xl sm:text-3xl font-extrabold text-white font-mono tracking-tight">-- mL (-- mg)</div>
+                                <span class="text-xs text-rose-300 font-semibold">1:1000 İM</span>
+                            </div>
+                            <div class="text-[11px] text-slate-200 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-rose-900/40">
+                                <div><strong class="text-rose-300">Uygulama Yeri:</strong> Uyluk anterolateral orta 1/3 (Vastus lateralis) kas içine İM.</div>
+                                <div class="text-amber-300 text-[10px]">⚠️ <strong>UYARI:</strong> 1:1000 formunu ASLA direkt IV yapmayınız! Sulandırmadan direkt İM uygulayınız.</div>
+                            </div>
+                        </div>
+
+                        <!-- Canlı 5 Dakikalık Geri Sayım Aracı -->
+                        <div class="md:col-span-5 bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                                    <span>⏱️</span> Adrenalin Tekrar Sayacı
+                                </span>
+                                <span id="badge-anaphylaxis-timer-status" class="text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Beklemede</span>
+                            </div>
+                            <div class="text-center py-1">
+                                <div id="timer-anaphylaxis-display" class="text-3xl sm:text-4xl font-extrabold font-mono text-rose-400">05:00</div>
+                                <div class="w-full bg-slate-900 rounded-full h-1.5 mt-2 overflow-hidden">
+                                    <div id="timer-anaphylaxis-bar" class="bg-rose-500 h-full w-full transition-all duration-1000"></div>
+                                </div>
+                            </div>
+                            <div class="flex gap-1.5">
+                                <button type="button" id="btn-anaphylaxis-start-timer" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-2 px-2 rounded-lg transition-colors shadow">
+                                    ⏱️ 1. Doz Yapıldı (Başlat)
+                                </button>
+                                <button type="button" id="btn-anaphylaxis-repeat-dose" class="hidden flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 px-2 rounded-lg transition-colors shadow">
+                                    🔄 2. Doz Yapıldı
+                                </button>
+                                <button type="button" id="btn-anaphylaxis-reset-timer" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-2.5 py-2 rounded-lg transition-colors">
+                                    Sıfırla
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5 Dakika Doldu Uyarısı -->
+                    <div id="alert-anaphylaxis-timer-expired" class="hidden p-3 bg-red-950 border-2 border-red-500 rounded-xl text-red-200 text-xs animate-bounce font-semibold flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">⚠️</span>
+                            <span><strong>5 DAKİKA DOLDU:</strong> Klinik yanıtsızlık veya refrakter semptomlar varsa <strong>2. DOZ ADRENALİN İM</strong> uygulayınız!</span>
+                        </div>
+                    </div>
+
+                    <!-- Kademeli Diğer Tedaviler Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-sky-400 flex items-center gap-1"><span>💧</span> 2. Basamak: Sıvı Bolusu</div>
+                            <div class="text-[11px] text-slate-300">20 mL/kg SF (Hızlı puşe / infüzyon)</div>
+                            <div id="text-emergency-fluid-dose" class="font-mono font-bold text-white text-sm">-- mL SF</div>
+                            <div class="text-[10px] text-slate-400">Hipotansiyon veya taşikardi durumunda</div>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-emerald-400 flex items-center gap-1"><span>🫁</span> 3. Basamak: Bronkospazm</div>
+                            <div class="text-[11px] text-slate-300">İnhale Salbutamol Nebül</div>
+                            <div id="text-emergency-salbutamol-dose" class="font-mono font-bold text-white text-sm">-- mg</div>
+                            <div class="text-[10px] text-slate-400">Bronkospazm/hırıltı varsa %100 O2 ile</div>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                            <div class="font-bold text-indigo-400 flex items-center gap-1"><span>🛡️</span> 4. Basamak: Adjuvanlar</div>
+                            <div class="text-[11px] text-slate-300">Feniramin + Metilprednizolon</div>
+                            <div class="font-mono font-bold text-white text-xs">
+                                <span id="text-emergency-pheniramine-dose">-- mg</span> Avil + <span id="text-emergency-prednol-dose">-- mg</span> Prednol
+                            </div>
+                            <div class="text-[10px] text-slate-400">İkincil / bifazik reaksiyonu önlemek için</div>
+                        </div>
+                    </div>
+
+                    <!-- SOAP Aktarımı -->
+                    <div class="pt-2 flex justify-end">
+                        <button type="button" id="btn-anaphylaxis-to-soap" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                            <span>📋</span> Anafilaksi Protokolünü SOAP'a Ekle
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANEL 2: STATUS EPİLEPTİCUS -->
+                <div id="panel-emergency-status" class="hidden space-y-4">
+                    <!-- Canlı Nöbet Kronometresi Şeridi -->
+                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg bg-indigo-950/60 border border-indigo-800 text-xl">🧠</div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-200">Nöbet Süre Takibi (AES Kılavuzu)</div>
+                                <div class="text-[10px] text-slate-400">Geçen dakikaya göre ilgili tedavi basamağı otomatik vurgulanır</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <div id="timer-status-display" class="text-2xl sm:text-3xl font-extrabold font-mono text-cyan-400">00:00</div>
+                                <div id="badge-status-active-phase" class="text-[10px] font-mono text-cyan-300">Faz 1: 0–5 dk (Stabilizasyon)</div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button type="button" id="btn-status-start-timer" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs py-2 px-3 rounded-lg transition-colors">
+                                    ▶️ Başlat
+                                </button>
+                                <button type="button" id="btn-status-pause-timer" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 px-2.5 rounded-lg transition-colors">
+                                    ⏸️
+                                </button>
+                                <button type="button" id="btn-status-reset-timer" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 px-2.5 rounded-lg transition-colors">
+                                    🔄
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AES 4 Basamak Listesi -->
+                    <div class="space-y-2.5 text-xs">
+                        <!-- Faz 1 -->
+                        <div id="card-status-phase-1" class="p-3 rounded-xl border border-slate-800 bg-slate-950/60 space-y-1.5 transition-all">
+                            <div class="flex items-center justify-between font-bold text-slate-300">
+                                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> 0–5. Dakika: Stabilizasyon & Tanı (ABC)</span>
+                                <span class="text-[10px] font-mono text-slate-400">Faz 1</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400">Havayolunu koruyunuz, %100 O2 başlayınız. Kapiller kan şekerini acilen kontrol ediniz.</p>
+                            <div id="text-status-glucose-dose" class="text-[11px] font-mono text-amber-300 bg-slate-900/80 p-2 rounded border border-slate-800">
+                                Kan Şekeri &lt; 60 mg/dL ise: %10 Dekstroz 2-5 mL/kg IV puşe
+                            </div>
+                        </div>
+
+                        <!-- Faz 2 -->
+                        <div id="card-status-phase-2" class="p-3 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2 transition-all">
+                            <div class="flex items-center justify-between font-bold text-slate-300">
+                                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> 5–20. Dakika: 1. Basamak Benzodiazepin</span>
+                                <span class="text-[10px] font-mono text-slate-400">Faz 2</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                                <div class="bg-slate-900/80 p-2.5 rounded border border-slate-800 space-y-1">
+                                    <div class="font-bold text-rose-300">Midazolam (Damaryolu Yoksa 1. Tercih)</div>
+                                    <div id="text-status-midazolam-dose" class="font-mono text-white font-bold">-- mg İM</div>
+                                    <div class="text-[10px] text-slate-400">0.2 mg/kg İM (Maks tek doz 10 mg)</div>
+                                </div>
+                                <div class="bg-slate-900/80 p-2.5 rounded border border-slate-800 space-y-1">
+                                    <div class="font-bold text-sky-300">Diazepam (Damaryolu Varsa)</div>
+                                    <div id="text-status-diazepam-dose" class="font-mono text-white font-bold">-- mg IV</div>
+                                    <div class="text-[10px] text-slate-400">0.2–0.3 mg/kg IV yavaşça (Maks 10 mg)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Faz 3 -->
+                        <div id="card-status-phase-3" class="p-3 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2 transition-all">
+                            <div class="flex items-center justify-between font-bold text-slate-300">
+                                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> 20–40. Dakika: 2. Basamak İkinci Sıra Antiepileptik</span>
+                                <span class="text-[10px] font-mono text-slate-400">Faz 3</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                                <div class="bg-slate-900/80 p-2.5 rounded border border-slate-800 space-y-1">
+                                    <div class="font-bold text-emerald-300">Levetirasetam (Keppra)</div>
+                                    <div id="text-status-keppra-dose" class="font-mono text-white font-bold">-- mg IV</div>
+                                    <div class="text-[10px] text-slate-400">60 mg/kg (Maks 4500 mg) 10-15 dk</div>
+                                </div>
+                                <div class="bg-slate-900/80 p-2.5 rounded border border-slate-800 space-y-1">
+                                    <div class="font-bold text-amber-300">Fenitoin (Epanutin)</div>
+                                    <div id="text-status-phenytoin-dose" class="font-mono text-white font-bold">-- mg IV</div>
+                                    <div class="text-[10px] text-slate-400">20 mg/kg SF içinde (Hız ≤50 mg/dk)</div>
+                                </div>
+                                <div class="bg-slate-900/80 p-2.5 rounded border border-slate-800 space-y-1">
+                                    <div class="font-bold text-purple-300">Sodyum Valproat</div>
+                                    <div id="text-status-valproate-dose" class="font-mono text-white font-bold">-- mg IV</div>
+                                    <div class="text-[10px] text-slate-400">40 mg/kg (Maks 3000 mg) 10 dk</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Faz 4 -->
+                        <div id="card-status-phase-4" class="p-3 rounded-xl border border-slate-800 bg-slate-950/60 space-y-1 transition-all">
+                            <div class="flex items-center justify-between font-bold text-slate-300">
+                                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> 40+ Dakika: Refrakter Status (Yoğun Bakım)</span>
+                                <span class="text-[10px] font-mono text-slate-400">Faz 4</span>
+                            </div>
+                            <p class="text-[11px] text-slate-300">Acil entübasyon, YBÜ devri ve sürekli Midazolam veya Propofol infüzyonu başlatılmalıdır.</p>
+                        </div>
+                    </div>
+
+                    <!-- SOAP Aktarımı -->
+                    <div class="pt-2 flex justify-end">
+                        <button type="button" id="btn-status-to-soap" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                            <span>📋</span> Status Protokolünü SOAP'a Ekle
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="max-w-[1700px] mx-auto mt-6 px-3 sm:px-6">

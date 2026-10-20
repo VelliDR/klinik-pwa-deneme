@@ -93,7 +93,9 @@ import type {
   NeonatalDrugSafetyResult,
   SerotoninSyndromeResult,
   HyperkalemiaRiskResult,
-  CypStatinInteractionResult
+  CypStatinInteractionResult,
+  AnaphylaxisDoses,
+  StatusEpilepticusDoses
 } from './engines';
 
 export interface SelectedDrugItem {
@@ -199,5 +201,20 @@ export interface AppState {
   treatment?: {
     active?: boolean;
     selectedDrugs?: SelectedDrugItem[];
+  };
+  emergency?: {
+    active: boolean;
+    anaphylaxis: {
+      administeredDoses: number;
+      lastDoseTimestamp?: number;
+      doses?: AnaphylaxisDoses;
+      notes?: string;
+    } | null;
+    statusEpilepticus: {
+      elapsedMinutes: number;
+      isRunning: boolean;
+      doses?: StatusEpilepticusDoses;
+      notes?: string;
+    } | null;
   };
 }

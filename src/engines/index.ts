@@ -20,3 +20,4 @@ export * from './safetyPrescriptionEngine';
 export * from './surgeryEngine';
 export * from './thrombosisEngine';
 export * from './triageEngine';
+export * from './emergencyProtocols';

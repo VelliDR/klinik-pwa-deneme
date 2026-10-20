@@ -64,6 +64,14 @@ import { generateSOAP } from '../src/utils/soapGenerator';
 import { resolveMotorDependencies, CLINICAL_MOTORS, PRESET_PACKAGES } from '../src/workstationPackages';
 import { searchQuickSwitcher, QUICK_SWITCHER_ITEMS } from '../src/utils/quickSwitcher';
 import { buildDefaultDrugSchedule, generatePrescriptionHTML } from '../src/utils/prescriptionPrinter';
+import {
+  calculateAnaphylaxisDoses,
+  calculateStatusEpilepticusDoses,
+  formatAnaphylaxisSoapNote,
+  formatStatusEpilepticusSoapNote
+} from '../src/engines/emergencyProtocols';
+import { expandDotPhrases, appendTemplateToText, SOAP_TEMPLATES } from '../src/utils/soapTemplates';
+import { formatTimeMMSS } from '../src/utils/emergencyManager';
 
 console.log('--- 1. VERIFYING TYPESCRIPT THROMBOSIS ENGINE ---');
 const dvtLow = calculateWellsDVT({});
@@ -352,4 +360,72 @@ assert.ok(prnHt.includes('Lipitor 20 mg'));
 assert.ok(prnHt.includes('Uzm. Dr. Test Hekim'));
 console.log('✓ Ergonomics, Quick Switcher & Prescription Printer passed (100% parity)');
 
-console.log('\n🎉 ALL 17 TYPESCRIPT CLINICAL ENGINES & PACKAGES FULLY VERIFIED (100% PARITY)! 🎉\n');
+console.log('--- 8. VERIFYING EMERGENCY PROTOCOLS & SOAP DOT PHRASES (AŞAMA 3) ---');
+// 1. Anaphylaxis Engine Tests
+const pediaAnaph = calculateAnaphylaxisDoses(15, false);
+assert.strictEqual(pediaAnaph.weightKg, 15);
+assert.strictEqual(pediaAnaph.isAdult, false);
+assert.strictEqual(pediaAnaph.adrenaline.doseMg, 0.15);
+assert.strictEqual(pediaAnaph.adrenaline.volumeMl, 0.15);
+assert.strictEqual(pediaAnaph.fluidBolus.volumeMl, 300);
+assert.strictEqual(pediaAnaph.antihistaminic.doseMg, 15);
+
+const adultAnaph = calculateAnaphylaxisDoses(85, true);
+assert.strictEqual(adultAnaph.weightKg, 85);
+assert.strictEqual(adultAnaph.isAdult, true);
+assert.strictEqual(adultAnaph.adrenaline.doseMg, 0.50); // Capped at adult max 0.50
+assert.strictEqual(adultAnaph.adrenaline.volumeMl, 0.50);
+assert.strictEqual(adultAnaph.fluidBolus.volumeMl, 1000);
+assert.strictEqual(adultAnaph.antihistaminic.doseMg, 50); // Capped at max 50
+assert.strictEqual(adultAnaph.corticosteroid.doseMg, 80); // Capped at max 80
+
+const anaphSoap = formatAnaphylaxisSoapNote(adultAnaph, 1);
+assert.ok(anaphSoap.includes('ACİL ANAFİLAKSİ PROTOKOLÜ'));
+assert.ok(anaphSoap.includes('0.5 mg (0.5 mL) 1:1000 İM'));
+
+// 2. Status Epilepticus Engine Tests
+const pediaStatus = calculateStatusEpilepticusDoses(20, false);
+assert.strictEqual(pediaStatus.weightKg, 20);
+assert.strictEqual(pediaStatus.phase2EarlyStatus.midazolam.doseMg, 4.0);
+assert.strictEqual(pediaStatus.phase2EarlyStatus.diazepam.doseMg, 5.0);
+assert.strictEqual(pediaStatus.phase3EstablishedStatus.levetiracetam.doseMg, 1200);
+assert.strictEqual(pediaStatus.phase3EstablishedStatus.phenytoin.doseMg, 400);
+assert.strictEqual(pediaStatus.phase3EstablishedStatus.valproate.doseMg, 800);
+
+const adultStatus = calculateStatusEpilepticusDoses(90, true);
+assert.strictEqual(adultStatus.phase2EarlyStatus.midazolam.doseMg, 10); // Max 10 mg
+assert.strictEqual(adultStatus.phase3EstablishedStatus.levetiracetam.doseMg, 4500); // Max 4500 mg
+assert.strictEqual(adultStatus.phase3EstablishedStatus.phenytoin.doseMg, 1500); // Max 1500 mg
+assert.strictEqual(adultStatus.phase3EstablishedStatus.valproate.doseMg, 3000); // Max 3000 mg
+
+const statusSoap = formatStatusEpilepticusSoapNote(adultStatus, 12);
+assert.ok(statusSoap.includes('STATUS EPİLEPTİCUS ACİL PROTOKOLÜ'));
+assert.ok(statusSoap.includes('12 dk'));
+
+// 3. Dot Phrases Expansion Tests
+assert.strictEqual(SOAP_TEMPLATES.length, 10);
+const exp1 = expandDotPhrases('Hasta sağ alt karın ağrısı ile başvurdu. .apandisit ');
+assert.ok(exp1.expandedText.includes('McBurney hassasiyeti'));
+assert.strictEqual(exp1.expandedKeys.length, 1);
+assert.strictEqual(exp1.expandedKeys[0], '.apandisit');
+
+const exp2 = expandDotPhrases('Boğaz ağrısı: .tonsillit ');
+assert.ok(exp2.expandedText.includes('Centor/McIsaac'));
+
+const expNone = expandDotPhrases('Normal muayene bulguları.');
+assert.strictEqual(expNone.expandedText, 'Normal muayene bulguları.');
+assert.strictEqual(expNone.expandedKeys.length, 0);
+
+// 4. Template Append Tests
+const appended = appendTemplateToText('Önceki şikayet.', '.dvt_dislama');
+assert.ok(appended.includes('Önceki şikayet.'));
+assert.ok(appended.includes('Wells DVT skoru değerlendirildi'));
+
+// 5. Timer formatting
+assert.strictEqual(formatTimeMMSS(300), '05:00');
+assert.strictEqual(formatTimeMMSS(45), '00:45');
+assert.strictEqual(formatTimeMMSS(125), '02:05');
+assert.strictEqual(formatTimeMMSS(0), '00:00');
+console.log('✓ Emergency Protocols, Live Timers & SOAP Dot Phrases passed (100% parity)');
+
+console.log('\n🎉 ALL 18 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
