@@ -63,7 +63,7 @@ import { parseDrugStrength } from '../src/drugEngine';
 import { generateSOAP } from '../src/utils/soapGenerator';
 import { resolveMotorDependencies, CLINICAL_MOTORS, PRESET_PACKAGES } from '../src/workstationPackages';
 import { searchQuickSwitcher, QUICK_SWITCHER_ITEMS } from '../src/utils/quickSwitcher';
-import { buildDefaultDrugSchedule, generatePrescriptionHTML } from '../src/utils/prescriptionPrinter';
+import { buildDefaultDrugSchedule, generatePrescriptionHTML, PRESCRIPTION_PRESETS } from '../src/utils/prescriptionPrinter';
 import {
   calculateAnaphylaxisDoses,
   calculateStatusEpilepticusDoses,
@@ -343,22 +343,55 @@ assert.strictEqual(searchNotFound.length, 0);
 const schedAmox = buildDefaultDrugSchedule({ brand: 'Amoklavin BID 1000 mg', generic: 'amoxicillin' });
 assert.strictEqual(schedAmox.morning, true);
 assert.strictEqual(schedAmox.evening, true);
+assert.strictEqual(schedAmox.noon, false);
+assert.strictEqual(schedAmox.mealTiming, 'TOK');
 assert.ok(schedAmox.instructions.includes('antibiyotik') || schedAmox.instructions.includes('Antibiyotik'));
 
 const schedStatin = buildDefaultDrugSchedule({ brand: 'Lipitor 20 mg', generic: 'atorvastatin' });
 assert.strictEqual(schedStatin.night, true);
+assert.strictEqual(schedStatin.morning, false);
+assert.strictEqual(schedStatin.mealTiming, 'GECE');
 assert.ok(schedStatin.instructions.includes('kas ağrısı'));
 
+const schedPPI = buildDefaultDrugSchedule({ brand: 'Nexium 40 mg', generic: 'esomeprazole' });
+assert.strictEqual(schedPPI.morning, true);
+assert.strictEqual(schedPPI.mealTiming, 'AC');
+assert.ok(schedPPI.instructions.toLowerCase().includes('aç'));
+
+const schedSpray = buildDefaultDrugSchedule({ brand: 'Otrivine %0.1 Burun Spreyi', generic: 'xylometazoline' });
+assert.strictEqual(schedSpray.form, 'Sprey/İnhaler');
+assert.ok(schedSpray.instructions.includes('5 gün'));
+
+const schedSyrup = buildDefaultDrugSchedule({ brand: 'Calpol 120 mg/5 ml Şurup', generic: 'parasetamol' });
+assert.strictEqual(schedSyrup.form, 'Şurup');
+
+// Presets validation
+assert.ok(PRESCRIPTION_PRESETS.length >= 4);
+assert.ok(PRESCRIPTION_PRESETS.every(p => p.drugs.length > 0 && p.title.length > 0));
+
 const prnHt = generatePrescriptionHTML(
-  { patientName: 'Ahmet Yılmaz', age: '45 Yaş', weightKg: 75, dateStr: '20.10.2026', doctorName: 'Uzm. Dr. Test Hekim' },
-  [schedAmox, schedStatin]
+  {
+    patientName: 'Ahmet Yılmaz',
+    age: '45 Yaş',
+    weightKg: 75,
+    dateStr: '20.10.2026',
+    doctorName: 'Uzm. Dr. Test Hekim',
+    diagnosis: 'J02.9 Akut Tonsillit',
+    rxNumber: 'RX-2026-987654',
+    allergyNotes: 'Penisilin Alerjisi Mevcut'
+  },
+  [schedAmox, schedStatin, schedPPI]
 );
 assert.ok(prnHt.includes('HASTA İLAÇ KULLANIM ÇİZELGESİ'));
 assert.ok(prnHt.includes('Ahmet Yılmaz'));
 assert.ok(prnHt.includes('Amoklavin BID 1000 mg'));
 assert.ok(prnHt.includes('Lipitor 20 mg'));
+assert.ok(prnHt.includes('Nexium 40 mg'));
 assert.ok(prnHt.includes('Uzm. Dr. Test Hekim'));
-console.log('✓ Ergonomics, Quick Switcher & Prescription Printer passed (100% parity)');
+assert.ok(prnHt.includes('J02.9 Akut Tonsillit'));
+assert.ok(prnHt.includes('RX-2026-987654'));
+assert.ok(prnHt.includes('İLAÇ ALERJİSİ: Penisilin Alerjisi Mevcut'));
+console.log('✓ Ergonomics, Quick Switcher & Smart Prescription Printer passed (100% parity)');
 
 console.log('--- 8. VERIFYING EMERGENCY PROTOCOLS & SOAP DOT PHRASES (AŞAMA 3) ---');
 // 1. Anaphylaxis Engine Tests

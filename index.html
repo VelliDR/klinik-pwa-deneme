@@ -1573,15 +1573,18 @@
     </div>
 
     <!-- 5. HASTA DOZAJ ÇİZELGESİ YAZDIRMA & ÖNİZLEME MODALI -->
-    <div id="modal-prescription-print" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div class="bg-slate-900 border border-slate-700 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div id="modal-prescription-print" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
             <!-- Modal Başlık & Eylemler -->
-            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/60">
+            <div class="p-3 sm:p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
                 <div class="flex items-center gap-2">
-                    <span class="text-base">🖨️</span>
+                    <span class="text-xl">🖨️</span>
                     <div>
-                        <div class="text-xs font-bold text-slate-100">Hasta İlaç Kullanım & Dozaj Çizelgesi</div>
-                        <div class="text-[10px] text-slate-400">Yazıcı çıktısı veya PDF olarak hastaya verilebilir A4 format</div>
+                        <div class="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-2">
+                            <span>Hasta İlaç Kullanım & Dozaj Çizelgesi</span>
+                            <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full font-mono">A4 / PDF Hazır</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">Sabah, öğle, akşam, gece doz dağılımları ve kişiye özel kullanım talimatları</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -1593,10 +1596,34 @@
                 </div>
             </div>
 
-            <!-- Ayarlanabilir Hasta & Hekim Bilgileri Şeridi -->
-            <div class="p-3 bg-slate-950/30 border-b border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <!-- Sekmeler & Hızlı Paket Şeridi -->
+            <div class="p-2 sm:px-4 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-1.5">
+                    <button type="button" id="btn-tab-rx-editor" class="px-3 py-1.5 rounded-lg bg-slate-800 text-rose-300 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition-all">
+                        <span>✏️</span> İlaçları Düzenle & Ekle
+                    </button>
+                    <button type="button" id="btn-tab-rx-preview" class="px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white text-xs font-semibold flex items-center gap-1 transition-all">
+                        <span>👁️</span> A4 Yazıcı Önizlemesi
+                    </button>
+                </div>
+                <div class="flex items-center gap-2 ml-auto">
+                    <select id="select-rx-preset" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-rose-500">
+                        <option value="">⚡ Hazır Reçete Paketi Yükle...</option>
+                        <option value="rx-tonsillit">Akut Tonsillit & Faranjit (Amoklavin + Parol + Gargara)</option>
+                        <option value="rx-gastrit">Akut Gastrit & Dispepsi (Pantoprazol + Antiasit)</option>
+                        <option value="rx-kas-iskelet">Kas-İskelet Ağrısı (Arveles + Muscoril + Mide Koruyucu)</option>
+                        <option value="rx-pediatrik-ates">Pediatrik Ateş & Ağrı (Calpol + Dolven Şurup)</option>
+                    </select>
+                    <button type="button" id="btn-add-rx-drug" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center gap-1 shadow-sm">
+                        <span>+</span> İlaç Ekle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ayarlanabilir Hasta, Hekim, Tanı ve Alerji Bilgileri Şeridi -->
+            <div class="p-3 bg-slate-950/40 border-b border-slate-800 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
                 <div>
-                    <label class="text-[10px] text-slate-400 block mb-0.5">Hasta Adı (İsteğe bağlı):</label>
+                    <label class="text-[10px] text-slate-400 block mb-0.5">Hasta Adı:</label>
                     <input type="text" id="input-print-patient-name" placeholder="Hasta Adı Soyadı" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
                 </div>
                 <div>
@@ -1607,10 +1634,33 @@
                     <label class="text-[10px] text-slate-400 block mb-0.5">Reçete Tarihi:</label>
                     <input type="text" id="input-print-date" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200 font-mono">
                 </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 block mb-0.5">Ön Tanı / Teşhis:</label>
+                    <input type="text" id="input-print-diagnosis" placeholder="Örn: J03.9 Akut Tonsillit" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 block mb-0.5">E-Reçete / Takip No:</label>
+                    <input type="text" id="input-print-rx-number" placeholder="Örn: RX-2026-94812" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200 font-mono">
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 block mb-0.5">Alerji Bilgisi:</label>
+                    <input type="text" id="input-print-allergy" value="Bilinen İlaç Alerjisi Yok" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                </div>
             </div>
 
-            <!-- Canlı A4 Belge Önizleme Alanı -->
-            <div class="flex-1 overflow-y-auto p-4 bg-slate-950/90">
+            <!-- GÖVDE: 1. İlaç Düzenleyici Paneli (Panel A) -->
+            <div id="panel-rx-editor" class="flex-1 overflow-y-auto p-3 sm:p-4 bg-slate-900 space-y-3">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span class="font-semibold uppercase text-[10px] tracking-wider">Reçetedeki İlaçlar ve Kullanım Şeması:</span>
+                    <span id="rx-drugs-count-badge" class="font-mono text-[10px] text-rose-400 bg-rose-950/60 border border-rose-800/60 px-2 py-0.5 rounded">0 İlaç</span>
+                </div>
+                <div id="container-rx-editor-list" class="space-y-3">
+                    <!-- Dinamik JavaScript ile doldurulur -->
+                </div>
+            </div>
+
+            <!-- GÖVDE: 2. A4 Önizleme Paneli (Panel B) -->
+            <div id="panel-rx-preview" class="hidden flex-1 overflow-y-auto p-4 bg-slate-950/90">
                 <div id="container-prescription-preview" class="transition-all">
                     <!-- JavaScript ile dinamik render edilecek -->
                 </div>
