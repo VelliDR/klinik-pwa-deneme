@@ -28,6 +28,7 @@ import {
   checkCypStatinInteraction,
   determineAgeGroup,
   calculateEGFR,
+  calculateDetailedEGFR,
   calculateBSA,
   calculatePercentiles,
   calculateTargetHeight,
@@ -75,7 +76,13 @@ import {
   formatStatusEpilepticusSoapNote
 } from '../src/engines/emergencyProtocols';
 import { expandDotPhrases, appendTemplateToText, SOAP_TEMPLATES } from '../src/utils/soapTemplates';
-import { formatTimeMMSS } from '../src/utils/emergencyManager';
+import {
+  formatTimeMMSS,
+  startAnaphylaxisCountdown,
+  getAnaphylaxisTimerState,
+  resetAnaphylaxisTimer,
+  computeStatusPhase
+} from '../src/utils/emergencyManager';
 
 console.log('--- 1. VERIFYING TYPESCRIPT THROMBOSIS ENGINE ---');
 const dvtLow = calculateWellsDVT({});
@@ -149,11 +156,23 @@ assert.strictEqual(curbTest.score, 3);
 assert.strictEqual(curbTest.crbScore, 2);
 console.log('✓ TypeScript NephroTox Engine passed (100% parity)');
 
-console.log('--- 3. VERIFYING TYPESCRIPT NEONATOLOGY ENGINE ---');
-const bPhoto = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 16, gestationalWeeks: 39 });
+console.log('--- 3. VERIFYING TYPESCRIPT NEONATOLOGY ENGINE (DUAL AAP 2022 & TND 2014) ---');
+const bAapClose = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 16, gestationalWeeks: 39 });
+assert.strictEqual(bAapClose.status, 'CLOSE_MONITORING');
+
+const bTndPhoto = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 16, gestationalWeeks: 39, guideline: 'TND_2014' });
+assert.strictEqual(bTndPhoto.status, 'PHOTOTHERAPY_REQUIRED');
+
+const bPhoto = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 17.0, gestationalWeeks: 39 });
 assert.strictEqual(bPhoto.status, 'PHOTOTHERAPY_REQUIRED');
 
-const bExchange = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 23, gestationalWeeks: 39 });
+const bEscalation = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 22.5, gestationalWeeks: 39 });
+assert.strictEqual(bEscalation.status, 'ESCALATION_OF_CARE');
+
+const bTndExchange = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 23, gestationalWeeks: 39, guideline: 'TND_2014' });
+assert.strictEqual(bTndExchange.status, 'EXCHANGE_TRANSFUSION_REQUIRED');
+
+const bExchange = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 24.5, gestationalWeeks: 39 });
 assert.strictEqual(bExchange.status, 'EXCHANGE_TRANSFUSION_REQUIRED');
 
 const apgarDep = calculateAPGAR({ heartRate: 1, respiratoryEffort: 1, muscleTone: 1, reflexIrritability: 1, color: 1 });
@@ -626,5 +645,104 @@ const strComboSolid = parseDrugStrength('CO-DIOVAN 160/12.5 MG FİLM TABLET');
 assert.ok(strComboSolid && strComboSolid.type === 'solid' && strComboSolid.totalMg === 160);
 console.log('✓ Section 9 Audit Regression Verification Suite passed (100% healthy)');
 
-console.log('\n🎉 ALL 18 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+console.log('--- 10. CLINICAL AUDIT v2.0 UPGRADES (KDIGO 2024, AAP 2022, TPHD MENTZER, ATLS-10, TIMERS) ---');
+// 10.1 KDIGO 2024 Combined Creatinine + Cystatin C & BSA De-indexing
+const egfrCombined = calculateDetailedEGFR(1.2, 60, 'male', 180, { cystatinC: 1.1, bsa: 2.20 });
+assert.ok(egfrCombined);
+assert.strictEqual(egfrCombined.shortBadge, 'CKD-EPI Cr+Cys');
+assert.ok(egfrCombined.egfrAbsolute !== null && egfrCombined.egfrAbsolute > egfrCombined.egfrIndexed);
+assert.ok(egfrCombined.dosingNote && egfrCombined.dosingNote.includes('KDIGO 2024'));
+
+const egfrCysOnly = calculateDetailedEGFR(null, 65, 'female', 162, { cystatinC: 1.0 });
+assert.ok(egfrCysOnly && egfrCysOnly.shortBadge === 'CKD-EPI CysC');
+
+const egfrJaffeAdolMale = calculateDetailedEGFR(0.8, 15, 'male', 170, { assay: 'jaffe' });
+assert.ok(egfrJaffeAdolMale && egfrJaffeAdolMale.kConstantUsed === 0.70);
+
+// 10.2 AAP 2022 TcB Confirmation Rule & 336h (14-Day) Support
+const bTcbConfirm = calculateBhutaniJaundice({
+  ageHours: 60,
+  totalBilirubin: 15.8,
+  gestationalWeeks: 38,
+  measurementType: 'TcB'
+});
+assert.strictEqual(bTcbConfirm.requiresTsbConfirmation, true);
+assert.ok(bTcbConfirm.followUpRecommendation && bTcbConfirm.followUpRecommendation.length > 0);
+
+const bDay10 = calculateBhutaniJaundice({ ageHours: 240, totalBilirubin: 18.0, gestationalWeeks: 39 });
+assert.strictEqual(bDay10.isValid, true);
+assert.strictEqual(bDay10.guidelineUsed, 'AAP_2022');
+
+// 10.3 TPHD Pediatric Iron & Mentzer Beta-Thalassemia Trait Shield
+const ironEarlyInfant = calculatePediatricIron({ ageMonths: 4.5, weightKg: 6.8, hb: 9.8 });
+assert.ok(ironEarlyInfant.guidelineSource.includes('TPHD'));
+assert.ok(!ironEarlyInfant.guidelineSource.includes('TDB'));
+assert.strictEqual(ironEarlyInfant.hbCategory, 'Normal'); // 3-6m term cutoff is 9.5 g/dL
+
+const ironThalassemiaShield = calculatePediatricIron({
+  ageMonths: 36,
+  weightKg: 14,
+  hb: 10.2,
+  mcv: 60,
+  rbc: 5.5,
+  rdw: 13.2,
+  ferritin: 35
+});
+assert.ok(ironThalassemiaShield.differential);
+assert.strictEqual(ironThalassemiaShield.differential.mentzerIndex, 10.9);
+assert.strictEqual(ironThalassemiaShield.differential.thalassemiaRisk, 'HIGH');
+assert.strictEqual(ironThalassemiaShield.treatment.eligible, false, 'Normal ferritin + Mentzer < 13 must block empirical iron overload');
+
+const ironCombinedIdaThal = calculatePediatricIron({
+  ageMonths: 36,
+  weightKg: 14,
+  hb: 9.6,
+  mcv: 58,
+  rbc: 5.2,
+  rdw: 17.5,
+  ferritin: 6
+});
+assert.ok(ironCombinedIdaThal.differential);
+assert.strictEqual(ironCombinedIdaThal.differential.thalassemiaRisk, 'POSSIBLE');
+assert.strictEqual(ironCombinedIdaThal.treatment.eligible, true);
+
+// 10.4 ATLS-10 Electrical Burn, Infant <30kg Dextrose Maintenance & Ranson Score
+const elecBurn = calculateParkland(80, 15, 35, { burnType: 'electrical' });
+assert.ok(elecBurn);
+assert.strictEqual(elecBurn.multiplierUsed, 4);
+assert.strictEqual(elecBurn.totalVolume, 4800);
+
+const infantBurn = calculateParkland(8.5, 15, null, { ageMonths: 8 });
+assert.ok(infantBurn);
+assert.strictEqual(infantBurn.isPediatric, true);
+assert.strictEqual(infantBurn.multiplierUsed, 3);
+assert.strictEqual(infantBurn.requiresDextroseMaintenance, true);
+assert.strictEqual(infantBurn.maintenanceHourlyMl, 34); // 8.5 kg * 4 mL/kg/hr
+
+const ransonSevere = calculateRanson({ ageO55: true, wbcO16: true, gluO200: true, caU8: true, pO2U60: true });
+assert.ok(ransonSevere);
+assert.strictEqual(ransonSevere.admissionScore, 3);
+assert.strictEqual(ransonSevere.hour48Score, 2);
+assert.strictEqual(ransonSevere.score, 5);
+assert.strictEqual(ransonSevere.severity, 'Ağır');
+assert.strictEqual(ransonSevere.mortalityPercent, 40);
+
+// 10.5 Zero-Drift Wall-Clock Emergency Timers & AES Phases
+startAnaphylaxisCountdown();
+const anaphRunning = getAnaphylaxisTimerState();
+assert.strictEqual(anaphRunning.isRunning, true);
+assert.strictEqual(anaphRunning.dosesGiven, 1);
+assert.ok(anaphRunning.targetEndTimestampMs !== null && anaphRunning.targetEndTimestampMs > Date.now() - 1000);
+resetAnaphylaxisTimer();
+assert.strictEqual(getAnaphylaxisTimerState().isRunning, false);
+assert.strictEqual(getAnaphylaxisTimerState().dosesGiven, 0);
+
+assert.strictEqual(computeStatusPhase(0), 1);
+assert.strictEqual(computeStatusPhase(300), 2);
+assert.strictEqual(computeStatusPhase(1200), 3);
+assert.strictEqual(computeStatusPhase(2400), 4);
+console.log('✓ Section 10 Clinical Audit v2.0 Upgrades passed (100% healthy)');
+
+console.log('\n🎉 ALL 21 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+
 

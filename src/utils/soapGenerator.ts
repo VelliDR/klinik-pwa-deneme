@@ -42,7 +42,11 @@ export function generateSOAP(): string {
   // --- OBJEKTİF ---
   const bioParts: string[] = [];
   if (appState.biometry.bsa) bioParts.push(`BSA: ${appState.biometry.bsa} m²`);
-  if (appState.biometry.egfr) bioParts.push(`eGFR: ${appState.biometry.egfr} mL/dk`);
+  if (appState.biometry.egfr !== null && appState.biometry.egfr !== undefined) {
+    const formulaTag = appState.biometry.egfrFormula ? ` [${appState.biometry.egfrFormula}]` : '';
+    const absTag = appState.biometry.egfrAbsolute ? `, Mutlak GFR: ${appState.biometry.egfrAbsolute} mL/dk` : '';
+    bioParts.push(`eGFR: ${appState.biometry.egfr} mL/dk/1.73m²${formulaTag}${absTag}`);
+  }
   
   if (appState.pediatrics && appState.pediatrics.percentiles) {
     const perc = appState.pediatrics.percentiles;
@@ -67,13 +71,16 @@ export function generateSOAP(): string {
     o.push(`- Büyüme & Biyometri: ${bioParts.join(', ')}.`);
   }
 
-  // Pediatrik Demir / Anemi
+  // Pediatrik Demir / Anemi (TPHD & T.C. Sağlık Bakanlığı + Mentzer Kalkanı)
   if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.status === 'SUCCESS') {
     const ir = appState.pediatrics.iron;
     const anemiaDesc = ir.hbEvaluation?.text || ir.hbCategory || 'Normal';
+    const mentzerDesc = ir.differential?.mentzerIndex !== null && ir.differential?.mentzerIndex !== undefined
+      ? ` | Mentzer İndeksi: ${ir.differential.mentzerIndex}`
+      : '';
     const treatDesc = ir.treatment?.text ? ` | Tedavi: ${ir.treatment.text}` : '';
     const prophDesc = ir.prophylaxis?.text ? ` | Profilaksi: ${ir.prophylaxis.text}` : '';
-    o.push(`- Demir & Anemi Durumu: ${anemiaDesc}${treatDesc}${prophDesc}.`);
+    o.push(`- Demir & Anemi Durumu: ${anemiaDesc}${mentzerDesc}${treatDesc}${prophDesc}.`);
   }
 
   // Triage / Vitals / Tansiyon
@@ -165,6 +172,10 @@ export function generateSOAP(): string {
     const alv = appState.surgery.alvarado;
     o.push(`- Cerrahi (Alvarado Apendisit Skoru): ${alv.score}/10 (${alv.risk || ''}).`);
   }
+  if (appState.surgery && appState.surgery.ranson && appState.surgery.ranson.score > 0) {
+    const rn = appState.surgery.ranson;
+    o.push(`- Cerrahi (Ranson Akut Pankreatit Skoru): ${rn.score}/11 (0.s: ${rn.admissionScore}, 48.s: ${rn.hour48Score}) -> ${rn.severity} (~%${rn.mortalityPercent} Mortalite).`);
+  }
 
   // Obstetrik
   if (appState.obgyn && appState.obgyn.eddData && appState.obgyn.eddData.edd) {
@@ -222,7 +233,10 @@ export function generateSOAP(): string {
   if (appState.neonatology) {
     const neo = appState.neonatology;
     if (neo.bhutani && neo.bhutani.isValid) {
-      o.push(`- Bhutani Sarılık: Yaş: ${neo.bhutani.ageHours}s, TSB: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`);
+      const gTag = neo.bhutani.guidelineUsed === 'TND_2014' ? 'TND 2014' : 'AAP 2022';
+      const mTag = neo.bhutani.measurementType || 'TSB';
+      const escPart = neo.bhutani.escalationThreshold ? `, Bakım Eskalasyonu: ${neo.bhutani.escalationThreshold}` : '';
+      o.push(`- Hiperbilirubinemi (${gTag}): Yaş: ${neo.bhutani.ageHours}s, ${mTag}: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}${escPart}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`);
     }
     if (neo.apgar) {
       o.push(`- APGAR Skoru (${neo.apgar.minute}. dk): ${neo.apgar.score}/10 (${neo.apgar.status}).`);
@@ -268,6 +282,10 @@ export function generateSOAP(): string {
   if (appState.pediatrics && appState.pediatrics.targetHeight && appState.pediatrics.targetHeight.deviationAlert) {
     a.push(`- ${appState.pediatrics.targetHeight.deviationAlert}`);
   }
+  if (appState.pediatrics?.iron?.differential?.warningTitle) {
+    const diff = appState.pediatrics.iron.differential;
+    a.push(`- ${diff.warningTitle}: ${diff.warningText || ''}`);
+  }
   if (appState.pediatrics && appState.pediatrics.bp && appState.pediatrics.bp.stage.includes('Hipertansiyon')) {
     a.push(`- Pediatrik Kan Basıncı Uyarısı: ${appState.pediatrics.bp.stage}. Doğrulayıcı ölçümler ve etiyolojik tarama önerilir.`);
   }
@@ -282,6 +300,10 @@ export function generateSOAP(): string {
   }
   if (appState.surgery && appState.surgery.alvarado && appState.surgery.alvarado.score >= 7) {
     a.push(`- Yüksek Apendisit Olasılığı (Alvarado Skoru: ${appState.surgery.alvarado.score}/10). Cerrahi konsültasyonu önerilir.`);
+  }
+  if (appState.surgery && appState.surgery.ranson && appState.surgery.ranson.score >= 3) {
+    const rn = appState.surgery.ranson;
+    a.push(`- Akut Pankreatit Ciddiyet Uyarısı (Ranson Skoru: ${rn.score}/11 - ${rn.severity}, ~%${rn.mortalityPercent} Mortalite): ${rn.interpretation}`);
   }
   if (appState.other && appState.other.cardiac && appState.other.cardiac.colorCode === 'danger') {
     a.push(`- Kardiyak Uyarı: ${appState.other.cardiac.interpretation}`);
@@ -340,8 +362,11 @@ export function generateSOAP(): string {
     const neo = appState.neonatology;
     if (neo.bhutani && neo.bhutani.status === 'EXCHANGE_TRANSFUSION_REQUIRED') {
       a.push(`- KRİTİK HİPERBİLİRUBİNEMİ: Acil Kan Değişimi (Exchange Transfusion) ve yoğun fototerapi endikasyonu!`);
+    } else if (neo.bhutani && neo.bhutani.status === 'ESCALATION_OF_CARE') {
+      a.push(`- 🚨 BAKIM ESKALASYONU (AAP 2022): Kan değişimi eşiğine ≤2.0 mg/dL! Acil yoğun fototerapi, IV hidrasyon, IVIG değerlendirmesi ve YDYBÜ nakil hazırlığı gereklidir.`);
     } else if (neo.bhutani && neo.bhutani.status === 'PHOTOTHERAPY_REQUIRED') {
-      a.push(`- Yenidoğan Patolojik Sarılığı: TND fototerapi eşiği aşıldı, fototerapi başlanması gereklidir.`);
+      const gTag = neo.bhutani.guidelineUsed === 'TND_2014' ? 'TND 2014' : 'AAP 2022';
+      a.push(`- Yenidoğan Patolojik Sarılığı: ${gTag} fototerapi eşiği aşıldı, fototerapi başlanması gereklidir.`);
     }
     if (neo.westleyCroup && neo.westleyCroup.score >= 6) {
       a.push(`- Ciddi Krup / Yaklaşan Solunum Yetmezliği: Westley Skoru ${neo.westleyCroup.score} (Nebülize Epinefrin ve YBÜ gözlemi).`);
@@ -385,7 +410,13 @@ export function generateSOAP(): string {
   }
   if (appState.surgery && appState.surgery.parkland && appState.surgery.parkland.totalVolume) {
     const pk = appState.surgery.parkland;
-    p.push(`${pCount}. Parkland Yanık Sıvı Resüsitasyonu: Toplam 24s Sıvı: ${pk.totalVolume} mL (İlk 8s: ${pk.first8HrsRate} mL/s, Sonraki 16s: ${pk.next16HrsRate} mL/s).`);
+    const label = pk.formulaLabel || 'ATLS-10 / Parkland Yanık Sıvı Resüsitasyonu';
+    const mult = pk.multiplierUsed ?? 2;
+    const uo = pk.urineOutputTarget || '0.5 mL/kg/saat';
+    const maintStr = pk.requiresDextroseMaintenance && pk.maintenanceHourlyMl
+      ? ` + <30 kg Pediatrik Ek %5 Dekstrozlu İdame: ${pk.maintenanceDailyMl} mL/gün (${pk.maintenanceHourlyMl} mL/s)`
+      : '';
+    p.push(`${pCount}. ${label} (${mult} mL/kg/%TBSA RL): Toplam 24s RL: ${pk.totalVolume} mL (İlk 8s: ${pk.first8HrsRate} mL/s, Sonraki 16s: ${pk.next16HrsRate} mL/s; Hedef İdrar: ${uo})${maintStr}.`);
     pCount++;
   }
   if (appState.medicine && appState.medicine.fluid && appState.medicine.fluid.dailyVolume) {

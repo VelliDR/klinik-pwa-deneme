@@ -12,7 +12,7 @@ import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VAS
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from '../src/engines/nephroToxEngine.js';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from '../src/engines/neonatologyEngine.js';
 import { checkRenalDoseAdjustments, detectTripleWhammy, checkPregnancySafety, checkNeonatalDrugSafety, checkSerotoninSyndrome, checkHyperkalemiaRisk, checkCypStatinInteraction } from '../src/engines/safetyPrescriptionEngine.js';
-import { determineAgeGroup, calculateEGFR, calculateBSA } from '../src/engines/biometricsEngine.js';
+import { determineAgeGroup, calculateEGFR, calculateDetailedEGFR, calculateBSA } from '../src/engines/biometricsEngine.js';
 import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from '../src/engines/percentileEngine.js';
 import { calculateNeonatalFluid, calculateMaintenanceFluid, calculateSodiumCorrection } from '../src/engines/fluidEngine.js';
 import { calculateQTc, calculateAxis } from '../src/engines/cardiacEngine.js';
@@ -160,20 +160,34 @@ assert.strictEqual(curbTest.mortalityGroup, 'Şiddetli Pnömoni (Yüksek Risk)')
 assert.ok(curbTest.empiricAntibiotic.includes('Seftriakson'));
 console.log(`✓ CURB-65 (${curbTest.score}/5) & CRB-65 (${curbTest.crbScore}/4) with Empiric Antibiotic passed`);
 
-console.log('\n--- 3. TESTING NEONATOLOGY ENGINE ---');
-// Bhutani
+console.log('\n--- 3. TESTING NEONATOLOGY ENGINE (DUAL AAP 2022 & TND 2014) ---');
+// Bhutani Dual Guideline (Default: AAP 2022 + Classic: TND 2014)
 const bEarly = calculateBhutaniJaundice({ ageHours: 12, totalBilirubin: 8 });
 assert.strictEqual(bEarly.status, 'FIRST_24_HOURS_CRITICAL');
 
 const bNormal = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 8, gestationalWeeks: 39 });
 assert.strictEqual(bNormal.status, 'LOW_RISK');
 
-const bPhoto = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 16, gestationalWeeks: 39 });
-assert.strictEqual(bPhoto.status, 'PHOTOTHERAPY_REQUIRED');
+// At 48h, 39w no risk: AAP 2022 phototherapy threshold is 16.6 mg/dL, TND 2014 is 15.0 mg/dL
+const bAapClose = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 16, gestationalWeeks: 39 });
+assert.strictEqual(bAapClose.status, 'CLOSE_MONITORING');
 
-const bExchange = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 23, gestationalWeeks: 39 });
-assert.strictEqual(bExchange.status, 'EXCHANGE_TRANSFUSION_REQUIRED');
-console.log('✓ Bhutani Hyperbilirubinemia passed');
+const bTndPhoto = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 16, gestationalWeeks: 39, guideline: 'TND_2014' });
+assert.strictEqual(bTndPhoto.status, 'PHOTOTHERAPY_REQUIRED');
+
+const bAapPhoto = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 17.0, gestationalWeeks: 39 });
+assert.strictEqual(bAapPhoto.status, 'PHOTOTHERAPY_REQUIRED');
+
+// Escalation of Care (Exchange - 2.0 mg/dL in AAP 2022: 24.0 - 2.0 = 22.0)
+const bAapEscalation = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 22.5, gestationalWeeks: 39 });
+assert.strictEqual(bAapEscalation.status, 'ESCALATION_OF_CARE');
+
+const bTndExchange = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 23, gestationalWeeks: 39, guideline: 'TND_2014' });
+assert.strictEqual(bTndExchange.status, 'EXCHANGE_TRANSFUSION_REQUIRED');
+
+const bAapExchange = calculateBhutaniJaundice({ ageHours: 48, totalBilirubin: 24.5, gestationalWeeks: 39 });
+assert.strictEqual(bAapExchange.status, 'EXCHANGE_TRANSFUSION_REQUIRED');
+console.log('✓ Dual AAP 2022 & TND 2014 Hyperbilirubinemia passed');
 
 // APGAR
 const apgarDep = calculateAPGAR({ heartRate: 1, respiratoryEffort: 1, muscleTone: 1, reflexIrritability: 1, color: 1 });
@@ -345,7 +359,15 @@ const expectedIds = [
     'details-ecg-guide', 'btn-ecg-rr-preset-3', 'btn-ecg-rr-preset-4', 'btn-ecg-rr-preset-5',
     'input-ecg-avg-v1', 'input-ecg-avg-v2', 'input-ecg-avg-v3', 'btn-apply-ecg-avg-qt',
     'hint-ecg-qt-boxes', 'hint-ecg-rr-boxes', 'hint-ecg-qrs-boxes',
-    'calc-ecg-qt-ms', 'calc-ecg-rr-ms', 'calc-ecg-qrs-ms'
+    'calc-ecg-qt-ms', 'calc-ecg-rr-ms', 'calc-ecg-qrs-ms',
+    'input-cystatin-c', 'select-creatinine-assay', 'output-egfr-meta',
+    'select-burn-type', 'chk-ranson-age55', 'chk-ranson-wbc16', 'chk-ranson-glu200',
+    'chk-ranson-ldh350', 'chk-ranson-ast250', 'chk-ranson-hct10', 'chk-ranson-bun5',
+    'chk-ranson-ca8', 'chk-ranson-po260', 'chk-ranson-bd4', 'chk-ranson-fluid6', 'output-ranson',
+    'input-iron-mcv', 'input-iron-rbc', 'input-iron-rdw', 'input-iron-ferritin',
+    'select-bhutani-guideline', 'select-bhutani-method',
+    'modal-drug-monograph', 'title-monograph-modal', 'btn-close-monograph-modal',
+    'banner-monograph-offline-notice', 'container-monograph-body', 'container-monograph-external-links'
 ];
 
 let missing = 0;
@@ -384,10 +406,12 @@ assert.ok(neonatePerc.weightPercentile > 0 && neonatePerc.weightPercentile < 100
 assert.ok(neonatePerc.heightPercentile > 0 && neonatePerc.heightPercentile < 100);
 console.log(`✓ Neonate Percentile passed (Weight %${neonatePerc.weightPercentile}, Height %${neonatePerc.heightPercentile})`);
 
-// 3. Neonate eGFR with Schwartz
-const neonateEgfr = calculateEGFR(0.4, 14 / 365.25, 'F', 51);
-assert.strictEqual(neonateEgfr, 53); // (0.413 * 51) / 0.4 = 52.65 => 53
-console.log('✓ Neonate eGFR passed (53 mL/dk)');
+// 3. Neonate eGFR with Term (k=0.45) & Preterm (k=0.33) Schwartz
+const neonateEgfrTerm = calculateEGFR(0.4, 14 / 365.25, 'F', 51);
+assert.strictEqual(neonateEgfrTerm, 57); // (0.45 * 51) / 0.4 = 57.375 => 57
+const neonateEgfrPreterm = calculateEGFR(0.4, 14 / 365.25, 'F', 51, { isPreterm: true });
+assert.strictEqual(neonateEgfrPreterm, 42); // (0.33 * 51) / 0.4 = 42.075 => 42
+console.log('✓ Neonate Schwartz eGFR passed (Term k=0.45 -> 57 mL/dk, Preterm k=0.33 -> 42 mL/dk)');
 
 console.log('\n--- 7. TESTING NEONATAL AUTOMATED ENGINES (TND FLUID, WEIGHT LOSS & DRUG SHIELD) ---');
 // 1. Neonatal Fluid Step-up

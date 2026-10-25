@@ -81,11 +81,11 @@ export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
   },
   'card-cerrahi': {
     id: 'card-cerrahi',
-    name: 'Cerrahi, Yanık & Sütür',
+    name: 'Cerrahi, ATLS-10 Yanık & Sütür',
     icon: '🔪',
-    shortName: 'Cerrahi & Parkland',
+    shortName: 'Cerrahi & Yanık',
     category: 'cerrahi',
-    desc: 'ATLS 10 Parkland yanık resüsitasyonu, Alvarado apendisit ve sütür rehberi'
+    desc: 'ATLS-10 Modifiye Brooke yanık sıvısı, Alvarado apendisit, Ranson pankreatit ve sütür rehberi'
   },
   'card-obgyn': {
     id: 'card-obgyn',
@@ -153,11 +153,11 @@ export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
   },
   'card-demir': {
     id: 'card-demir',
-    name: 'Pediatrik Demir & Anemi Kartı',
+    name: 'Pediatrik Demir & Anemi Kartı (TPHD)',
     icon: '🩸',
     shortName: 'Demir & Anemi',
     category: 'pediatri',
-    desc: 'DSÖ anemi eşikleri, fizyolojik anemi nadiri, profilaksi ve aktif tedavi'
+    desc: 'TPHD & DSÖ anemi eşikleri, Mentzer talasemi kalkanı, profilaksi ve aktif tedavi'
   },
   'card-neonatoloji': {
     id: 'card-neonatoloji',
@@ -165,7 +165,7 @@ export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
     icon: '🍼',
     shortName: 'Neonatoloji',
     category: 'pediatri',
-    desc: 'Bhutani sarılık fototerapi/kan değişimi, APGAR, Westley krup ve CDS dehidratasyon'
+    desc: 'AAP 2022 & TND sarılık fototerapi/kan değişimi, APGAR, Westley krup ve CDS dehidratasyon'
   },
   'card-ilac': {
     id: 'card-ilac',
@@ -173,7 +173,7 @@ export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
     icon: '💊',
     shortName: 'TİTCK & İlaç Güvenliği',
     category: 'ilac',
-    desc: 'TİTCK ilaç arama, muadil bulucu, Triple Whammy, renal doz ve gebelik kalkanı'
+    desc: 'TİTCK ilaç arama, 125 çevrimdışı monograf, muadil bulucu, Triple Whammy ve renal kalkan'
   },
   'card-infuzyon': {
     id: 'card-infuzyon',

@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifestFilename: 'manifest.json',
-      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'data/medicines.json'],
+      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'data/medicines.json', 'data/clinical_monographs.json'],
       manifest: {
         name: 'Klinik Karar Destek Asistanı',
         short_name: 'KlinikPWA',
@@ -48,7 +48,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
-        globIgnores: ['**/titck_skrs_prospektuslu.json'],
         maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
         runtimeCaching: [
           {

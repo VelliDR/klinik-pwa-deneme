@@ -39,6 +39,9 @@ export interface PatientBiometry {
   heightCm: number | null;
   bsa: number | null;
   egfr: number | null;
+  egfrAbsolute?: number | null;
+  egfrFormula?: string | null;
+  cystatinC?: number | null;
 }
 
 import type {

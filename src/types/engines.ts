@@ -37,10 +37,19 @@ export type {
   NeonatalFluidResult
 } from '../engines/fluidEngine';
 
+// 4b. Biyometri & Böbrek Fonksiyonu (KDIGO 2024 / Schwartz)
+export type {
+  PediatricCreatinineAssay,
+  EgfrOptions,
+  DetailedEgfrResult
+} from '../engines/biometricsEngine';
+
 // 5. Cerrahi
 export type {
   AlvaradoParams,
   AlvaradoResult,
+  BurnProtocolType,
+  BurnResuscitationOptions,
   ParklandResult,
   RansonParams,
   RansonResult,
@@ -297,6 +306,9 @@ export interface CURB65Result {
 }
 
 // 11. Neonatoloji & Pediatrik Acil
+export type BhutaniGuideline = 'AAP_2022' | 'TND_2014';
+export type BilirubinMeasurementType = 'TSB' | 'TcB';
+
 export interface BhutaniThresholdItem {
   phototherapy: number;
   exchange: number;
@@ -307,6 +319,8 @@ export interface BhutaniParams {
   totalBilirubin?: number;
   gestationalWeeks?: number;
   hasRiskFactors?: boolean;
+  guideline?: BhutaniGuideline;
+  measurementType?: BilirubinMeasurementType;
 }
 
 export interface BhutaniResult {
@@ -316,10 +330,17 @@ export interface BhutaniResult {
   totalBilirubin?: number;
   gestationalWeeks?: number;
   hasRiskFactors?: boolean;
+  guidelineUsed?: BhutaniGuideline;
+  guidelineLabel?: string;
+  measurementType?: BilirubinMeasurementType;
   riskCategory?: string;
   riskGroupLabel?: string;
   phototherapyThreshold?: number;
+  escalationThreshold?: number;
   exchangeThreshold?: number;
+  deltaFromPhototherapy?: number;
+  requiresTsbConfirmation?: boolean;
+  followUpRecommendation?: string;
   status?: string;
   alertClass?: string;
   interpretation?: string;

@@ -17,6 +17,8 @@
  */
 
 import type {
+  BhutaniGuideline,
+  BilirubinMeasurementType,
   BhutaniThresholdItem,
   BhutaniParams,
   BhutaniResult,
@@ -31,16 +33,54 @@ import type {
 } from '../types/engines';
 
 /**
- * Türk Neonatoloji Derneği (TND) / AAP Yenidoğan Sarılığı Fototerapi ve Kan Değişimi Eşik Değerleri
+ * AAP 2022 Yenidoğan Hiperbilirubinemisi Klinik Uygulama Kılavuzu Eşik Tabloları (1 – 336 Saat / 14 Gün)
+ * Referans: Kemper AR et al., Pediatrics 2022;150(3):e2022058859 (Suppl. Tables 1–4 & Figures 2–7).
+ *
+ * Önemli Kural (AAP 2022):
+ * - Gestasyon haftası zaten ayrı eğriyle modellendiği için "<38 hafta" tek başına ek nörotoksisite risk faktörü sayılmaz!
+ * - Nörotoksisite risk faktörleri: Albümin <3.0 g/dL, izoimmün hemolitik hastalık (DAT+), G6PD eksikliği veya diğer hemolitik durumlar,
+ *   sepsis veya son 24 saatte belirgin klinik instabilite.
+ * - Risk faktörü VAR fototerapi eğrilerinde ve TÜM kan değişimi eğrilerinde 38, 39 ve ≥40 hafta aynı (≥38 hf) eğriyi paylaşır.
+ */
+export const AAP2022_KNOT_HOURS = [
+  1, 6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72, 78, 84, 90, 96, 120, 144, 168, 216, 264, 336
+] as const;
+
+export const AAP2022_PT_NO_RISK: Record<35 | 36 | 37 | 38 | 39 | 40, readonly number[]> = {
+  35: [6.4, 7.4, 8.5, 9.6, 10.6, 11.6, 12.5, 13.4, 14.2, 14.9, 15.6, 16.2, 16.8, 17.4, 17.8, 18.3, 18.6, 18.7, 18.8, 18.9, 19.1, 19.3, 19.6],
+  36: [6.9, 7.9, 9.0, 10.1, 11.2, 12.1, 13.1, 13.9, 14.8, 15.5, 16.2, 16.9, 17.5, 18.0, 18.5, 19.0, 19.3, 19.4, 19.5, 19.6, 19.8, 20.1, 20.4],
+  37: [7.4, 8.4, 9.6, 10.7, 11.7, 12.7, 13.6, 14.5, 15.4, 16.1, 16.9, 17.5, 18.1, 18.7, 19.2, 19.7, 20.0, 20.2, 20.3, 20.4, 20.6, 20.8, 21.1],
+  38: [7.9, 8.9, 10.1, 11.2, 12.3, 13.3, 14.2, 15.1, 16.0, 16.8, 17.5, 18.2, 18.8, 19.4, 19.9, 20.3, 20.7, 20.9, 21.0, 21.1, 21.3, 21.5, 21.8],
+  39: [8.4, 9.5, 10.6, 11.8, 12.8, 13.8, 14.8, 15.7, 16.6, 17.4, 18.1, 18.8, 19.5, 20.0, 20.6, 21.0, 21.5, 21.6, 21.7, 21.8, 21.8, 21.8, 21.8],
+  40: [8.9, 10.0, 11.1, 12.2, 13.3, 14.3, 15.3, 16.2, 17.0, 17.8, 18.5, 19.2, 19.8, 20.4, 20.9, 21.4, 21.8, 21.8, 21.8, 21.8, 21.8, 21.8, 21.8]
+};
+
+export const AAP2022_PT_WITH_RISK: Record<35 | 36 | 37 | 38, readonly number[]> = {
+  35: [4.9, 5.8, 6.9, 7.9, 8.9, 9.8, 10.6, 11.4, 12.2, 12.8, 13.5, 14.1, 14.6, 15.1, 15.5, 15.8, 16.1, 16.3, 16.4, 16.5, 16.8, 17.0, 17.4],
+  36: [5.4, 6.3, 7.4, 8.5, 9.4, 10.4, 11.2, 12.1, 12.8, 13.5, 14.2, 14.8, 15.4, 15.8, 16.3, 16.7, 17.0, 17.1, 17.3, 17.4, 17.6, 17.9, 18.2],
+  37: [5.9, 6.9, 8.0, 9.0, 10.0, 11.0, 11.9, 12.7, 13.5, 14.2, 14.9, 15.5, 16.1, 16.6, 17.1, 17.5, 17.9, 18.0, 18.1, 18.2, 18.2, 18.2, 18.2],
+  38: [6.4, 7.3, 8.5, 9.5, 10.5, 11.5, 12.4, 13.2, 14.0, 14.7, 15.4, 16.0, 16.6, 17.1, 17.5, 17.9, 18.2, 18.2, 18.2, 18.2, 18.2, 18.2, 18.2]
+};
+
+export const AAP2022_EX_NO_RISK: Record<35 | 36 | 37 | 38, readonly number[]> = {
+  35: [14.9, 15.6, 16.4, 17.2, 17.9, 18.7, 19.4, 20.0, 20.7, 21.3, 21.8, 22.4, 22.9, 23.4, 23.8, 24.2, 24.5, 24.7, 24.9, 25.1, 25.5, 25.9, 26.3],
+  36: [15.9, 16.7, 17.5, 18.3, 19.1, 19.9, 20.6, 21.3, 21.9, 22.5, 23.1, 23.6, 24.1, 24.5, 24.9, 25.3, 25.5, 25.7, 25.9, 26.1, 26.4, 26.7, 27.0],
+  37: [17.0, 17.8, 18.7, 19.5, 20.3, 21.1, 21.8, 22.5, 23.1, 23.7, 24.3, 24.8, 25.2, 25.7, 26.0, 26.3, 26.6, 26.7, 26.9, 27.0, 27.0, 27.0, 27.0],
+  38: [18.0, 18.8, 19.7, 20.6, 21.4, 22.1, 22.8, 23.4, 24.0, 24.6, 25.1, 25.5, 25.9, 26.3, 26.6, 26.8, 27.0, 27.0, 27.0, 27.0, 27.0, 27.0, 27.0]
+};
+
+export const AAP2022_EX_WITH_RISK: Record<35 | 36 | 37 | 38, readonly number[]> = {
+  35: [13.1, 13.8, 14.6, 15.4, 16.1, 16.8, 17.4, 17.9, 18.5, 18.9, 19.4, 19.8, 20.1, 20.4, 20.7, 20.9, 21.1, 21.3, 21.5, 21.7, 22.1, 22.5, 22.9],
+  36: [13.7, 14.4, 15.2, 15.9, 16.6, 17.3, 17.9, 18.5, 19.1, 19.6, 20.1, 20.5, 20.9, 21.2, 21.6, 21.9, 22.1, 22.3, 22.5, 22.6, 22.9, 23.2, 23.5],
+  37: [14.3, 15.0, 15.7, 16.5, 17.2, 17.9, 18.5, 19.1, 19.7, 20.2, 20.7, 21.2, 21.7, 22.1, 22.5, 22.8, 23.1, 23.2, 23.4, 23.5, 23.5, 23.5, 23.5],
+  38: [14.8, 15.5, 16.3, 17.0, 17.7, 18.3, 19.0, 19.6, 20.1, 20.7, 21.2, 21.7, 22.1, 22.5, 22.9, 23.3, 23.5, 23.5, 23.5, 23.5, 23.5, 23.5, 23.5]
+};
+
+/**
+ * Türk Neonatoloji Derneği (TND 2014) / Klasik AAP 2004 Yenidoğan Sarılığı Eşik Değerleri
  * Gestasyon haftası ve risk faktörlerine göre saat bazlı fototerapi/kan değişimi eşikleri (mg/dL)
- * 
- * Risk Grupları:
- * - low: >= 38 hafta ve sağlıklı
- * - medium: >= 38 hafta + risk faktörleri VEYA 35-37+6 hafta ve sağlıklı
- * - high: 35-37+6 hafta + risk faktörleri (İzoimmün hemolitik hastalık, G6PD eksikliği, asfiksi, letarji, vücut ısısı instabilitesi, sepsis, asidoz veya albümin < 3.0 g/dL)
  */
 export const BHUTANI_THRESHOLDS: Record<string, Record<number, BhutaniThresholdItem>> = {
-  // Yaş dilimleri (saat): [Fototerapi Eşiği, Kan Değişimi Eşiği]
   low: {
     24: { phototherapy: 12.0, exchange: 19.0 },
     36: { phototherapy: 13.5, exchange: 21.0 },
@@ -79,21 +119,55 @@ export const BHUTANI_THRESHOLDS: Record<string, Record<number, BhutaniThresholdI
   }
 };
 
+function interpolateCurveArray(curve: readonly number[], ageHours: number): number {
+  const hours = AAP2022_KNOT_HOURS;
+  const clamped = Math.max(hours[0], Math.min(hours[hours.length - 1], ageHours));
+
+  for (let i = 0; i < hours.length; i++) {
+    if (clamped === hours[i]) {
+      return curve[i];
+    }
+    if (i < hours.length - 1 && clamped > hours[i] && clamped < hours[i + 1]) {
+      const factor = (clamped - hours[i]) / (hours[i + 1] - hours[i]);
+      const val = curve[i] + factor * (curve[i + 1] - curve[i]);
+      return Math.round(val * 10) / 10;
+    }
+  }
+  return curve[curve.length - 1];
+}
+
+function interpolateAap2022Thresholds(
+  gestationalWeeks: number,
+  hasRiskFactors: boolean,
+  ageHours: number
+): BhutaniThresholdItem {
+  const gaFloor = Math.floor(gestationalWeeks);
+  const ptCurve = hasRiskFactors
+    ? AAP2022_PT_WITH_RISK[(Math.min(38, Math.max(35, gaFloor)) as 35 | 36 | 37 | 38)]
+    : AAP2022_PT_NO_RISK[(Math.min(40, Math.max(35, gaFloor)) as 35 | 36 | 37 | 38 | 39 | 40)];
+
+  const exKey = Math.min(38, Math.max(35, gaFloor)) as 35 | 36 | 37 | 38;
+  const exCurve = hasRiskFactors ? AAP2022_EX_WITH_RISK[exKey] : AAP2022_EX_NO_RISK[exKey];
+
+  return {
+    phototherapy: interpolateCurveArray(ptCurve, ageHours),
+    exchange: interpolateCurveArray(exCurve, ageHours)
+  };
+}
+
 /**
- * Lineer enterpolasyon ile saatlik eşik değerini hesaplar
+ * Klasik TND 2014 / AAP 2004 lineer enterpolasyonu
  */
-function interpolateThresholds(riskCategory: string, ageHours: number): BhutaniThresholdItem {
+function interpolateClassicThresholds(riskCategory: string, ageHours: number): BhutaniThresholdItem {
   const table = BHUTANI_THRESHOLDS[riskCategory] || BHUTANI_THRESHOLDS.low;
   const hours = Object.keys(table).map(Number).sort((a, b) => a - b);
-  
+
   const clampedAge = Math.max(hours[0], Math.min(hours[hours.length - 1], ageHours));
-  
-  // Tam eşleşme
+
   if (table[clampedAge]) {
     return table[clampedAge];
   }
-  
-  // Aralık bulma
+
   let lowerHour = hours[0];
   let upperHour = hours[hours.length - 1];
   for (let i = 0; i < hours.length - 1; i++) {
@@ -103,122 +177,223 @@ function interpolateThresholds(riskCategory: string, ageHours: number): BhutaniT
       break;
     }
   }
-  
+
   const factor = (clampedAge - lowerHour) / (upperHour - lowerHour);
   const pThreshold = table[lowerHour].phototherapy + factor * (table[upperHour].phototherapy - table[lowerHour].phototherapy);
   const eThreshold = table[lowerHour].exchange + factor * (table[upperHour].exchange - table[lowerHour].exchange);
-  
+
   return {
     phototherapy: Math.round(pThreshold * 10) / 10,
     exchange: Math.round(eThreshold * 10) / 10
   };
 }
 
+function getAap2022PostDischargeFollowUp(deltaPtMinusTsb: number, ageHours: number): string {
+  if (deltaPtMinusTsb <= 0) {
+    return 'Taburcu etmeyiniz; fototerapi başlatınız ve 4–12 saat içinde TSB kontrolü yapınız.';
+  }
+  if (deltaPtMinusTsb < 2.0) {
+    return ageHours < 24
+      ? 'Taburculuğu erteleyiniz; 4–8 saat içinde TSB kontrolü yapınız.'
+      : '4–24 saat içinde TSB kontrolü yapınız (taburculuğu ertelemeyi veya evde fototerapiyi değerlendiriniz).';
+  }
+  if (deltaPtMinusTsb < 3.5) {
+    return '4–24 saat içinde TSB veya TcB kontrolü planlayınız.';
+  }
+  if (deltaPtMinusTsb < 5.5) {
+    return '1–2 gün (24–48 saat) içinde TSB veya TcB kontrolü planlayınız.';
+  }
+  if (deltaPtMinusTsb < 7.0) {
+    return ageHours < 72
+      ? '2 gün içinde klinik sarılık ve beslenme izlemi (klinik şüphede TSB/TcB).'
+      : 'Klinik yargıya göre sarılık ve emzirme izlemi.';
+  }
+  return ageHours < 72
+    ? '3 gün içinde rutin yenidoğan poliklinik izlemi.'
+    : 'Rutin yenidoğan izlemi.';
+}
+
 /**
- * 1. Bhutani Neonatal Hyperbilirubinemia Evaluation
+ * 1. Neonatal Hyperbilirubinemia Evaluation (Dual Guideline: AAP 2022 Default + TND 2014 / AAP 2004 Classic)
  */
 export function calculateBhutaniJaundice(params: BhutaniParams = {}): BhutaniResult {
   const ageHours = Number(params.ageHours);
   const totalBilirubin = Number(params.totalBilirubin);
   const gestationalWeeks = Number(params.gestationalWeeks || 39);
   const hasRiskFactors = Boolean(params.hasRiskFactors);
+  const guidelineUsed: BhutaniGuideline = params.guideline === 'TND_2014' ? 'TND_2014' : 'AAP_2022';
+  const measurementType: BilirubinMeasurementType = params.measurementType === 'TcB' ? 'TcB' : 'TSB';
+  const guidelineLabel =
+    guidelineUsed === 'AAP_2022'
+      ? 'AAP 2022 (Güncel Hiperbilirubinemi Kılavuzu)'
+      : 'TND 2014 / AAP 2004 (Klasik Bhutani Nomogramı)';
 
   if (isNaN(ageHours) || isNaN(totalBilirubin) || ageHours <= 0 || totalBilirubin <= 0) {
     return {
       isValid: false,
-      message: 'Lütfen bebeğin saat cinsinden yaşını (≥24 saat) ve Total Bilirubin değerini giriniz.'
+      message: 'Lütfen bebeğin saat cinsinden postnatal yaşını ve Bilirubin değerini giriniz.'
     };
   }
 
-  if (ageHours < 24) {
-    return {
-      isValid: true,
-      ageHours,
-      totalBilirubin,
-      status: 'FIRST_24_HOURS_CRITICAL',
-      alertClass: 'danger',
-      riskCategory: 'Yüksek Risk (İlk 24 Saat Sarılığı)',
-      interpretation: 'İlk 24 saat içinde ortaya çıkan sarılık PATOLOJİKTİR.',
-      recommendations: [
-        'İlk 24 saatte gelişen sarılık acil ileri araştırma gerektirir (Kan uyuşmazlığı, Rh/ABO, Direkt Coombs, Tam Kan, Retikülosit).',
-        'Fototerapiye derhal başlanmalı ve TSB artış hızı (>0.5 mg/dL/saat veya >5 mg/dL/gün) yakından izlenmelidir.',
-        'Kan değişimi hazırlığı için kan bankası ile irtibata geçilmelidir.'
-      ]
-    };
-  }
-
-  // Risk grubunu belirleme
-  let riskCategory = 'low';
-  let riskGroupLabel = 'Düşük Risk (≥38 Hafta ve Sağlıklı)';
   const isEarlyPreterm = gestationalWeeks < 35;
+  let riskCategory = 'low';
+  let riskGroupLabel = '';
+  let ptThreshold = 0;
+  let exThreshold = 0;
 
-  if (isEarlyPreterm) {
-    riskCategory = 'high';
-    riskGroupLabel = `Yüksek Risk (<35 Hafta Prematüre: ${gestationalWeeks} hf - TND/NICE Preterm Eğrisi Gerekir)`;
-  } else if (gestationalWeeks < 38 && hasRiskFactors) {
-    riskCategory = 'high';
-    riskGroupLabel = 'Yüksek Risk (35-37+6 Hafta + Nörotoksisite Risk Faktörleri)';
-  } else if (gestationalWeeks < 38 || hasRiskFactors) {
-    riskCategory = 'medium';
-    riskGroupLabel = 'Orta Risk (≥38 Hafta + Risk Faktörü VEYA 35-37+6 Hafta Sağlıklı)';
+  if (guidelineUsed === 'AAP_2022') {
+    const gaDisplay = isEarlyPreterm
+      ? `${gestationalWeeks} hf (<35 Hafta Prematüre)`
+      : hasRiskFactors
+        ? (gestationalWeeks >= 38 ? '≥38' : `${Math.floor(gestationalWeeks)}`) + ' Hafta'
+        : (gestationalWeeks >= 40 ? '≥40' : `${Math.floor(gestationalWeeks)}`) + ' Hafta';
+
+    riskCategory = hasRiskFactors || isEarlyPreterm ? 'with_neurotoxicity_risk' : 'no_neurotoxicity_risk';
+    riskGroupLabel = isEarlyPreterm
+      ? `AAP 2022 Uyarlaması — ${gaDisplay} (TND/NICE Preterm Çizelgesi Esas Alınmalıdır)`
+      : `AAP 2022 — ${gaDisplay} (${hasRiskFactors ? 'Nörotoksisite Risk Faktörü VAR' : 'Nörotoksisite Risk Faktörü YOK'})`;
+
+    const aap = interpolateAap2022Thresholds(gestationalWeeks, hasRiskFactors, ageHours);
+    ptThreshold = aap.phototherapy;
+    exThreshold = aap.exchange;
+  } else {
+    if (isEarlyPreterm) {
+      riskCategory = 'high';
+      riskGroupLabel = `TND 2014 — Yüksek Risk (<35 Hafta Prematüre: ${gestationalWeeks} hf)`;
+    } else if (gestationalWeeks < 38 && hasRiskFactors) {
+      riskCategory = 'high';
+      riskGroupLabel = 'TND 2014 — Yüksek Risk (35–37+6 Hafta + Risk Faktörleri)';
+    } else if (gestationalWeeks < 38 || hasRiskFactors) {
+      riskCategory = 'medium';
+      riskGroupLabel = 'TND 2014 — Orta Risk (≥38 Hafta + Risk VEYA 35–37+6 Hafta Sağlıklı)';
+    } else {
+      riskCategory = 'low';
+      riskGroupLabel = 'TND 2014 — Düşük Risk (≥38 Hafta ve Sağlıklı)';
+    }
+    const classic = interpolateClassicThresholds(riskCategory, ageHours);
+    ptThreshold = classic.phototherapy;
+    exThreshold = classic.exchange;
   }
 
-  let { phototherapy: ptThreshold, exchange: exThreshold } = interpolateThresholds(riskCategory, ageHours);
   if (isEarlyPreterm) {
-    // TND/NICE <35 hafta prematürelerde yaklaşık fototerapi eşiği (GW * 0.5 - 8 veya ~5-10 mg/dL bandı)
     const pretermFactor = Math.max(0.5, (gestationalWeeks - 25) / 10);
     ptThreshold = Number((ptThreshold * pretermFactor).toFixed(1));
     exThreshold = Number((exThreshold * pretermFactor).toFixed(1));
   }
 
-  const diffPt = totalBilirubin - ptThreshold;
+  const escalationThreshold = Number((exThreshold - 2.0).toFixed(1));
+  const deltaFromPhototherapy = Number((ptThreshold - totalBilirubin).toFixed(1));
+  const requiresTsbConfirmation =
+    measurementType === 'TcB' && (totalBilirubin >= 15.0 || deltaFromPhototherapy <= 3.0);
+  const followUpRecommendation =
+    guidelineUsed === 'AAP_2022'
+      ? getAap2022PostDischargeFollowUp(deltaFromPhototherapy, ageHours)
+      : deltaFromPhototherapy <= 0
+        ? 'Fototerapi endikasyonu mevcuttur; taburcu edilmemelidir.'
+        : deltaFromPhototherapy <= 2.0
+          ? '12–24 saat içinde kontrol TSB önerilir.'
+          : 'Klinik risk durumuna göre 24–72 saat içinde poliklinik izlemi.';
 
+  if (ageHours < 24) {
+    const first24Recs = [
+      'İlk 24 saatte fark edilen sarılık patolojiktir; acil hemoliz araştırması gerekir (Anne-bebek kan grubu, Direkt Coombs/DAT, Tam Kan, Periferik Yayma, Retikülosit, G6PD, TSB/Direkt Bilirubin).',
+      `Saat ${ageHours} referans fototerapi eşiği: ${ptThreshold.toFixed(1)} mg/dL | Kan değişimi eşiği: ${exThreshold.toFixed(1)} mg/dL (${guidelineUsed === 'AAP_2022' ? 'AAP 2022' : 'TND 24. saat'}).`,
+      'TSB artış hızı (>0.3 mg/dL/saat ilk 24 saatte veya >0.2 mg/dL/saat sonrasında) hemoliz lehinedir; 4–6 saat arayla TSB takip ediniz.'
+    ];
+    if (requiresTsbConfirmation) {
+      first24Recs.unshift('⚠️ TcB DOĞRULAMA ZORUNLULUĞU: Transkütan ölçüm derhal venöz/kapiller Serum Total Bilirubin (TSB) ile doğrulanmalıdır.');
+    }
+    return {
+      isValid: true,
+      ageHours,
+      totalBilirubin,
+      gestationalWeeks,
+      hasRiskFactors,
+      guidelineUsed,
+      guidelineLabel,
+      measurementType,
+      status: 'FIRST_24_HOURS_CRITICAL',
+      alertClass: 'danger',
+      riskCategory: 'Yüksek Risk (İlk 24 Saat Sarılığı)',
+      riskGroupLabel,
+      phototherapyThreshold: ptThreshold,
+      escalationThreshold,
+      exchangeThreshold: exThreshold,
+      deltaFromPhototherapy,
+      requiresTsbConfirmation,
+      followUpRecommendation,
+      interpretation: `İlk 24 saat içinde ortaya çıkan sarılık PATOLOJİKTİR (${measurementType}: ${totalBilirubin.toFixed(1)} mg/dL; Saatlik FT Eşiği: ${ptThreshold.toFixed(1)} mg/dL).`,
+      recommendations: first24Recs
+    };
+  }
+
+  const diffPt = totalBilirubin - ptThreshold;
   let status = 'NORMAL';
   let alertClass = 'success';
   let interpretation = '';
   const recommendations: string[] = [];
 
+  if (requiresTsbConfirmation) {
+    recommendations.push(
+      '⚠️ TcB DOĞRULAMA ZORUNLULUĞU (AAP 2022): Transkütan bilirubin ≥15.0 mg/dL veya fototerapi eşiğinin ≤3.0 mg/dL yakınında/üzerinde olduğundan venöz/kapiller TSB ile doğrulayınız.'
+    );
+  }
+
   if (isEarlyPreterm) {
-    recommendations.push('⚠️ DİKKAT: Standart Bhutani nomogramı ≥35 hafta bebekler içindir. <35 hafta prematürelerde TND/NICE gestasyon haftası ve doğum ağırlığına özgü preterm sarılık çizelgeleri esas alınmalıdır.');
+    recommendations.push(
+      '⚠️ DİKKAT: Standart AAP 2022 / Bhutani eğrileri ≥35 hafta bebekler içindir. <35 hafta prematürelerde TND/NICE gestasyon haftası ve doğum ağırlığına özgü preterm sarılık çizelgeleri esas alınmalıdır.'
+    );
   }
 
   if (totalBilirubin >= exThreshold) {
     status = 'EXCHANGE_TRANSFUSION_REQUIRED';
     alertClass = 'danger';
-    interpretation = `ACİL KAN DEĞİŞİMİ EŞİĞİ AŞILDI (TSB: ${totalBilirubin.toFixed(1)} mg/dL ≥ Eşik: ${exThreshold.toFixed(1)} mg/dL).`;
+    interpretation = `ACİL KAN DEĞİŞİMİ EŞİĞİ AŞILDI (${measurementType}: ${totalBilirubin.toFixed(1)} mg/dL ≥ Kan Değişimi Eşiği: ${exThreshold.toFixed(1)} mg/dL).`;
     recommendations.push(
       'Derhal Yenidoğan Yoğun Bakım Ünitesine (YYBÜ) yatış ve acil Kan Değişimi (Exchange Transfusion) hazırlığı yapınız.',
-      'Kan değişimi hazırlığı sürerken acilen en yüksek yoğunlukta Çift Yönlü Yoğun Fototerapi başlatınız.',
-      'Sıvı desteği sağlayınız, kan grubu ve çapraz karşılaştırma (cross-match) için uygun tam kan temin ediniz.',
-      'Kan değişimi sonrası 2-4 saatte bir TSB kontrolü yapınız.'
+      'Kan değişimi hazırlığı sürerken kesintisiz Çift Yönlü Yoğun Fototerapi ve IV hidrasyon başlatınız.',
+      'Acil TSB, Direkt Bilirubin, Albümin, DAT (Coombs), G6PD, Tam Kan, Retikülosit ve Cross-match çalışınız.',
+      'İzoimmün hemolitik hastalıkta (DAT+) kan değişimi hazırlanırken IVIG (0.5–1.0 g/kg, 2 saatte IV) değerlendirilebilir.'
+    );
+  } else if (guidelineUsed === 'AAP_2022' && totalBilirubin >= escalationThreshold) {
+    status = 'ESCALATION_OF_CARE';
+    alertClass = 'danger';
+    interpretation = `BAKIM ESKALASYONU (ESCALATION OF CARE) EŞİĞİ AŞILDI! (${measurementType}: ${totalBilirubin.toFixed(1)} mg/dL ≥ Eskalasyon: ${escalationThreshold.toFixed(1)} mg/dL | Kan Değişimi: ${exThreshold.toFixed(1)} mg/dL).`;
+    recommendations.push(
+      'Kan değişimi eşiğine ≤2.0 mg/dL yaklaşıldı! Derhal YYBÜ yatışı/nakli ve kesintisiz YOĞUN FOTOTERAPİ başlatınız.',
+      'IV sıvı desteği başlayınız; acil TSB, Direkt Bilirubin, Albümin, Tam Kan, Retikülosit, DAT, G6PD ve Cross-match gönderiniz.',
+      'TSB düzeyini her 2 saatte bir ölçünüz; akut bilirubin ensefalopatisi (letarji, hipotoni/hipertoni, tiz ağlama, opistotonus) açısından yakın izlem yapınız.',
+      'İzoimmün hemolitik hastalık (DAT+) varsa IVIG 0.5–1.0 g/kg (2 saatte IV infüzyon) verilebilir.'
     );
   } else if (totalBilirubin >= ptThreshold) {
     status = 'PHOTOTHERAPY_REQUIRED';
     alertClass = 'warning';
-    interpretation = `FOTOTERAPİ EŞİĞİ AŞILDI (TSB: ${totalBilirubin.toFixed(1)} mg/dL ≥ Eşik: ${ptThreshold.toFixed(1)} mg/dL).`;
+    interpretation = `FOTOTERAPİ EŞİĞİ AŞILDI (${measurementType}: ${totalBilirubin.toFixed(1)} mg/dL ≥ Fototerapi Eşiği: ${ptThreshold.toFixed(1)} mg/dL).`;
     recommendations.push(
-      'Hastaneye yatış ve konvansiyonel / yoğun fototerapi başlanması endikedir.',
-      'Bebeğin gözlerini ve genital bölgesini koruyarak geniş vücut yüzeyine fototerapi uygulayınız.',
-      'Oral beslenmeyi (tercihen anne sütü) 2-3 saatte bir sürdürünüz; dehidratasyon bulgularını takip ediniz.',
-      '4-12 saat sonra TSB kontrolü planlayınız (Eşiğin >2 mg/dL üzerindeyse 4-6 saatte, yakınsa 8-12 saatte).'
+      'Yoğun fototerapi (mavi-yeşil LED, ≥30 µW/cm²/nm, geniş vücut yüzeyi) başlatılması endikedir.',
+      'Gözleri koruyarak emzirme/beslenmeyi kesmeden (2–3 saatte bir) sürdürünüz.',
+      'Fototerapi başlangıcından 4–12 saat sonra TSB kontrolü ve altta yatan hemoliz açısından temel tetkikleri planlayınız.',
+      guidelineUsed === 'AAP_2022'
+        ? 'Fototerapi kesme kriteri (AAP 2022): Başlangıç fototerapi eşiğinin en az 2.0 mg/dL altına indiğinde kesilebilir; hemoliz/erken fototerapide 6–24 saat sonra rebound TSB bakınız.'
+        : 'TSB güvenli sınıra gerilediğinde fototerapi sonlandırılıp 12–24 saat sonra rebound kontrolü değerlendirilir.'
     );
-  } else if (diffPt >= -2.0) {
+  } else if ((guidelineUsed === 'AAP_2022' && deltaFromPhototherapy <= 3.0) || diffPt >= -2.0) {
     status = 'CLOSE_MONITORING';
     alertClass = 'info';
-    interpretation = `Fototerapi eşiğine yakın (Eşiğin ${Math.abs(diffPt).toFixed(1)} mg/dL altında). Eşik: ${ptThreshold.toFixed(1)} mg/dL.`;
+    interpretation = `Fototerapi eşiğine yakın izlem bölgesi (Eşiğin ${deltaFromPhototherapy.toFixed(1)} mg/dL altında; FT Eşiği: ${ptThreshold.toFixed(1)} mg/dL).`;
     recommendations.push(
-      'Şu an için fototerapi endikasyonu yoktur ancak 12-24 saat içinde TSB tekrar ölçülmelidir.',
-      'Yeterli beslenme ve hidrasyon sağlandığından emin olunuz.',
-      'Sarılığın yayılımı ve letarji, zayıf emme gibi tehlike işaretleri aileye anlatılmalıdır.'
+      `Taburculuk / Takip Planı: ${followUpRecommendation}`,
+      'Yeterli anne sütü alımı (günde 8–12 emzirme), tartı kaybı yüzdesi ve idrar/gaita çıkışı değerlendirilmelidir.',
+      'Letarji, emmeme veya sarılığın artması halinde acil başvuru eğitimi veriniz.'
     );
   } else {
     status = 'LOW_RISK';
     alertClass = 'success';
-    interpretation = `Düşük risk sınırında (TSB: ${totalBilirubin.toFixed(1)} mg/dL < Fototerapi Eşiği: ${ptThreshold.toFixed(1)} mg/dL).`;
+    interpretation = `Fototerapi eşiğinin güvenli altında (${measurementType}: ${totalBilirubin.toFixed(1)} mg/dL < FT Eşiği: ${ptThreshold.toFixed(1)} mg/dL; Fark: ${deltaFromPhototherapy.toFixed(1)} mg/dL).`;
     recommendations.push(
       'Fototerapi endikasyonu bulunmamaktadır.',
-      'Rutin yenidoğan izlemine devam ediniz. Emzirme desteği veriniz.',
-      'Sarılıkta belirgin artış olursa yeniden poliklinik kontrolü önerilir.'
+      `Takip Önerisi: ${followUpRecommendation}`,
+      'Emzirme desteği veriniz ve tehlike işaretlerini aileye anlatınız.'
     );
   }
 
@@ -228,9 +403,17 @@ export function calculateBhutaniJaundice(params: BhutaniParams = {}): BhutaniRes
     totalBilirubin,
     gestationalWeeks,
     hasRiskFactors,
+    guidelineUsed,
+    guidelineLabel,
+    measurementType,
+    riskCategory,
     riskGroupLabel,
     phototherapyThreshold: ptThreshold,
+    escalationThreshold,
     exchangeThreshold: exThreshold,
+    deltaFromPhototherapy,
+    requiresTsbConfirmation,
+    followUpRecommendation,
     status,
     alertClass,
     interpretation,

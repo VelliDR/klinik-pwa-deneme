@@ -18,7 +18,10 @@ export const appState: AppState = {
         weightKg: null,
         heightCm: null,
         bsa: null,
-        egfr: null
+        egfr: null,
+        egfrAbsolute: null,
+        egfrFormula: null,
+        cystatinC: null
     },
 
     // 2. Sekme-Spesifik Veriler

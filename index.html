@@ -421,14 +421,31 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Sistatin C (mg/L, Opsiyonel)</label>
+                            <input type="number" step="0.01" id="input-cystatin-c" placeholder="KDIGO 2024 kombine" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs font-mono" inputmode="decimal">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Pediatrik Kr. Yöntemi</label>
+                            <select id="select-creatinine-assay" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-[10px] text-slate-300 font-mono">
+                                <option value="idms" selected>IDMS Enzimatik (Standart)</option>
+                                <option value="jaffe">Klasik Jaffe (Eski Lab)</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="bg-slate-900 p-3 rounded-lg border border-slate-700/50 space-y-2">
                         <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
                             <span class="text-xs text-slate-400">Vücut Yüzey Alanı (BSA):</span>
                             <span id="output-bsa" class="text-xs font-bold font-mono text-emerald-400">--</span>
                         </div>
-                        <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
-                            <span class="text-xs text-slate-400">Tahmini GFR (eGFR):</span>
-                            <span id="output-egfr" class="text-xs font-bold font-mono text-cyan-400">--</span>
+                        <div class="border-b border-slate-800 pb-1.5 space-y-0.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-400">Tahmini GFR (eGFR):</span>
+                                <span id="output-egfr" class="text-xs font-bold font-mono text-cyan-400">--</span>
+                            </div>
+                            <div id="output-egfr-meta" class="hidden text-[9px] font-mono text-slate-400 text-right"></div>
                         </div>
 
                         <div id="container-percentiles" class="hidden space-y-1.5 pt-1">
@@ -908,9 +925,54 @@
                     </div>
                     <div id="output-alvarado" class="hidden text-[10px] font-mono text-rose-400 font-bold mb-2"></div>
 
-                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Parkland Yanık Sıvısı</span>
-                    <div><label class="text-[10px] text-slate-400 block mb-1">Yanık Yüzdesi (TBSA %)</label><input type="number" id="input-parkland-tbsa" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal"></div>
+                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">ATLS-10 Yanık Sıvı Resüsitasyonu (Modifiye Brooke / Elektrik)</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Yanık Yüzdesi (TBSA %)</label>
+                            <input type="number" id="input-parkland-tbsa" placeholder="Örn: 25" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-1">Yanık Protokolü</label>
+                            <select id="select-burn-type" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-[10px] text-slate-200 font-mono">
+                                <option value="atls10_thermal" selected>ATLS-10 Termal (Erişkin 2 / Çocuk 3 mL)</option>
+                                <option value="electrical">⚡ Yüksek Voltaj Elektrik (4 mL/kg)</option>
+                                <option value="classic_parkland">Klasik Parkland (4 mL/kg)</option>
+                            </select>
+                        </div>
+                    </div>
                     <div id="output-parkland" class="hidden text-[10px] p-2 bg-amber-950/40 border border-amber-600/50 text-amber-200 rounded-lg space-y-1 font-mono"></div>
+
+                    <!-- Ranson Akut Pankreatit Skoru -->
+                    <details class="text-[10px] bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60 group/ranson">
+                        <summary class="cursor-pointer select-none text-sky-400 font-bold flex justify-between items-center">
+                            <span>Ranson Akut Pankreatit Skoru (0 & 48. Saat)</span>
+                            <span class="text-slate-400 group-open/ranson:rotate-180 transition-transform text-[9px]">▼</span>
+                        </summary>
+                        <div class="mt-2 pt-2 border-t border-slate-800 space-y-2 text-[10px] text-slate-300">
+                            <div>
+                                <span class="text-[9px] font-semibold text-slate-400 block mb-1">Başvuru (0. Saat) Kriterleri:</span>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-age55" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Yaş &gt; 55 Yıl</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-wbc16" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> BK (WBC) &gt; 16.000/mm³</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-glu200" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Kan Şekeri &gt; 200 mg/dL</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-ldh350" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Serum LDH &gt; 350 IU/L</label>
+                                    <label class="flex items-center gap-1 cursor-pointer sm:col-span-2"><input type="checkbox" id="chk-ranson-ast250" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Serum AST &gt; 250 IU/L</label>
+                                </div>
+                            </div>
+                            <div class="pt-1.5 border-t border-slate-800/80">
+                                <span class="text-[9px] font-semibold text-slate-400 block mb-1">48. Saat Kriterleri:</span>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-hct10" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Hct Düşüşü &gt; %10</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-bun5" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> BUN Artışı &gt; 5 mg/dL</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-ca8" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Serum Ca &lt; 8.0 mg/dL</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-po260" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> PaO₂ &lt; 60 mmHg</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-bd4" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Baz Açığı &gt; 4 mEq/L</label>
+                                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chk-ranson-fluid6" class="accent-rose-500 bg-slate-900 border-slate-700 rounded"> Sıvı Sekestrasyonu &gt; 6 L</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="output-ranson" class="hidden mt-2 p-2 rounded-lg border font-mono space-y-1"></div>
+                    </details>
 
                     <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Sütür & Yara Bakım</span>
                     <select id="select-suture-loc" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-[10px] text-slate-300">
@@ -1216,17 +1278,35 @@
 
             <details id="card-demir" data-category="pediatri" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all">
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
-                    <span>Pediatrik Demir & Anemi</span>
+                    <span>Pediatrik Demir & Anemi (TPHD & SB)</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
                     <div class="grid grid-cols-2 gap-2 pt-2">
                         <div>
-                            <label class="text-[10px] text-slate-400 block mb-1">Hemoglobin (Hb)</label>
+                            <label class="text-[10px] text-slate-400 block mb-1">Hemoglobin (Hb, g/dL)</label>
                             <input type="number" step="0.1" id="input-hb" placeholder="11.5" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div class="flex items-center">
                             <span id="badge-iron-preterm" class="text-[10px] font-mono text-slate-400 pt-4"></span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-700/30">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">MCV (fL)</label>
+                            <input type="number" step="0.1" id="input-iron-mcv" placeholder="74" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">RBC (M/µL)</label>
+                            <input type="number" step="0.01" id="input-iron-rbc" placeholder="4.6" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">RDW (%)</label>
+                            <input type="number" step="0.1" id="input-iron-rdw" placeholder="15.2" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Ferritin (ng/mL)</label>
+                            <input type="number" step="0.1" id="input-iron-ferritin" placeholder="12" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                         </div>
                     </div>
                     <div id="output-iron-engine" class="hidden text-[10px] p-2 bg-slate-900/60 border border-slate-700/50 rounded-lg space-y-2 font-mono mt-2"></div>
@@ -1239,25 +1319,37 @@
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <!-- Bhutani Sarılık -->
-                    <span class="text-[10px] font-bold text-sky-400 block pt-2">Bhutani Yenidoğan Sarılığı & Fototerapi (TND/AAP)</span>
+                    <!-- Yenidoğan Sarılığı (AAP 2022 + TND 2014 İkili Kılavuz Seçici) -->
+                    <div class="flex flex-wrap items-center justify-between gap-1.5 pt-2">
+                        <span class="text-[10px] font-bold text-sky-400">Yenidoğan Sarılığı & Fototerapi (AAP 2022 / TND)</span>
+                        <div class="flex items-center gap-1">
+                            <select id="select-bhutani-guideline" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-sky-300 font-mono" title="Hiperbilirubinemi Kılavuz Seçimi">
+                                <option value="AAP_2022" selected>AAP 2022 (Güncel)</option>
+                                <option value="TND_2014">TND 2014 / AAP 2004 (Klasik)</option>
+                            </select>
+                            <select id="select-bhutani-method" class="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-slate-200 font-mono" title="Bilirubin Ölçüm Yöntemi">
+                                <option value="TSB" selected>TSB (Serum)</option>
+                                <option value="TcB">TcB (Cilt)</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-3 gap-2">
                         <div>
-                            <label class="text-[9px] text-slate-400 block mb-1">Bebeğin Yaşı (Saat)</label>
-                            <input type="number" id="input-bhutani-age-hours" placeholder="48" min="1" max="168" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
+                            <label class="text-[9px] text-slate-400 block mb-1">Postnatal Yaş (1–336s)</label>
+                            <input type="number" id="input-bhutani-age-hours" placeholder="48" min="1" max="336" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
-                            <label class="text-[9px] text-slate-400 block mb-1">Total Bilirubin (mg/dL)</label>
+                            <label class="text-[9px] text-slate-400 block mb-1">Bilirubin (mg/dL)</label>
                             <input type="number" step="0.1" id="input-bhutani-tsb" placeholder="13.2" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                         </div>
                         <div>
                             <label class="text-[9px] text-slate-400 block mb-1">Gestasyon Haftası</label>
-                            <input type="number" id="input-bhutani-gw" placeholder="38" min="35" max="42" value="38" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
+                            <input type="number" id="input-bhutani-gw" placeholder="39" min="28" max="42" value="39" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
                         </div>
                     </div>
                     <label class="flex items-center gap-1.5 text-[10px] text-amber-300 cursor-pointer">
                         <input type="checkbox" id="chk-bhutani-risk-factors" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
-                        <span>Nörotoksisite Risk Faktörleri Var (Hemoliz, G6PD, Asfiksi, Sepsis, Alb &lt; 3.0)</span>
+                        <span>Nörotoksisite Risk Faktörü Var (Alb &lt; 3.0, İzoimmün Hemoliz/DAT+, G6PD, Sepsis, İnstabilite)</span>
                     </label>
                     <div id="output-bhutani-result" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
 
@@ -2051,6 +2143,27 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 7. ÇEVRİMDIŞI KLİNİK İLAÇ MONOGRAFI & PROSPEKTÜS ÖZET MODALI -->
+    <div id="modal-drug-monograph" role="dialog" aria-modal="true" aria-labelledby="title-monograph-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-slate-900 border border-emerald-700/60 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-lg">📖</span>
+                    <div class="min-w-0">
+                        <h3 id="title-monograph-modal" class="text-xs sm:text-sm font-bold text-slate-100 truncate">Klinik İlaç Monografı</h3>
+                        <p class="text-[10px] text-slate-400">125 Çekirdek Etken Madde • Çevrimdışı Klinik Dozaj, Renal/Hepatik &amp; Gebelik Özeti</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-close-monograph-modal" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg text-xs leading-none" title="Kapat">✕</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3">
+                <div id="banner-monograph-offline-notice" class="hidden p-2.5 rounded-xl bg-amber-950/60 border border-amber-700/60 text-amber-200 text-xs leading-relaxed"></div>
+                <div id="container-monograph-body" class="space-y-2.5"></div>
+            </div>
+            <div id="container-monograph-external-links" class="hidden p-3 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-end gap-2"></div>
         </div>
     </div>
 

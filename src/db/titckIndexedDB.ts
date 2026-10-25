@@ -386,10 +386,7 @@ export async function ensureDrugCatalogReady(): Promise<NormalizedDrugRecord[]> 
       const candidatePaths = [
         './data/medicines.json',
         '/data/medicines.json',
-        'data/medicines.json',
-        './data/titck_skrs_prospektuslu.json',
-        '/data/titck_skrs_prospektuslu.json',
-        'data/titck_skrs_prospektuslu.json'
+        'data/medicines.json'
       ];
 
       for (const path of candidatePaths) {

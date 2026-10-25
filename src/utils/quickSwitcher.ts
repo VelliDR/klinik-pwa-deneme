@@ -76,8 +76,8 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
     shortName: 'Neonatoloji & Acil',
     category: 'pediatri',
     icon: '🍼',
-    desc: 'Bhutani Sarılık, APGAR, Westley Krup, CDS Dehidratasyon, Yenidoğan Tartı Takibi',
-    keywords: ['bhutani', 'sarilik', 'bilirubin', 'fototerapi', 'apgar', 'krup', 'westley', 'dehidratasyon', 'cds', 'ors', 'yenidogan', 'tarti kaybi']
+    desc: 'AAP 2022 & TND Yenidoğan Sarılığı, APGAR, Westley Krup, CDS Dehidratasyon, Tartı Takibi',
+    keywords: ['aap 2022', 'tnd', 'bhutani', 'sarilik', 'bilirubin', 'fototerapi', 'escalation', 'apgar', 'krup', 'westley', 'dehidratasyon', 'cds', 'ors', 'yenidogan', 'tarti kaybi']
   },
   {
     id: 'card-kangazi',
@@ -135,12 +135,12 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
   },
   {
     id: 'card-demir',
-    name: 'Pediatrik Demir Eksikliği & Profilaksi',
-    shortName: 'Demir Tedavisi (TDB)',
+    name: 'Pediatrik Demir Eksikliği & Talasemi Kalkanı',
+    shortName: 'Demir & Anemi (TPHD)',
     category: 'pediatri',
     icon: '🩸',
-    desc: 'TDB 2024 pediatrik demir profilaksisi, anemi eşikleri ve elemental demir damla/şurup dozu',
-    keywords: ['demir', 'anemi', 'profilaksi', 'ferrum', 'maltofer', 'sidefer', 'ferritin', 'hemoglobin', 'damla']
+    desc: 'TPHD & Sağlık Bakanlığı demir profilaksisi, Mentzer (talasemi) indeksi ve damla/şurup dozu',
+    keywords: ['demir', 'anemi', 'tphd', 'mentzer', 'talasemi', 'mcv', 'rbc', 'profilaksi', 'ferrum', 'maltofer', 'sidefer', 'ferritin', 'hemoglobin', 'damla']
   },
   {
     id: 'card-pediatri-surup',
@@ -180,21 +180,21 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
   },
   {
     id: 'card-cerrahi',
-    name: 'Cerrahi Skorlar & Yanık',
+    name: 'Cerrahi Skorlar & ATLS-10 Yanık Resüsitasyonu',
     shortName: 'Cerrahi & Yanık',
     category: 'cerrahi',
     icon: '🔪',
-    desc: 'Alvarado akut apandisit, Parkland yanık resüsitasyonu, Ranson pankreatit ve Sütür',
-    keywords: ['alvarado', 'apandisit', 'parkland', 'yanik', 'ranson', 'pankreatit', 'sutur', 'cerrahi']
+    desc: 'ATLS-10 Modifiye Brooke / Konsensüs & Elektrik yanık sıvısı, Alvarado apandisit, Ranson pankreatit ve Sütür',
+    keywords: ['alvarado', 'apandisit', 'atls', 'brooke', 'parkland', 'yanik', 'elektrik yanigi', 'ranson', 'pankreatit', 'sutur', 'cerrahi']
   },
   {
     id: 'card-ilac',
-    name: 'Akılcı Reçete, TİTCK & İlaç Güvenlik Kalkanı',
+    name: 'Akılcı Reçete, TİTCK & Çevrimdışı İlaç Monografları',
     shortName: 'Akılcı Reçete & İlaç Güvenliği',
     category: 'ilac',
     icon: '🛡️',
-    desc: '18.200+ TİTCK ilacı, O(1) arama, muadil bulucu, Triple Whammy, Serotonin, Hiperkalemi ve CYP3A4 kalkanı',
-    keywords: ['recete', 'ilac', 'titck', 'muadil', 'etkilesim', 'triple whammy', 'serotonin', 'hiperkalemi', 'statin', 'cyp3a4', 'gebelik', 'yenidogan ilac', 'prospektus', 'kub', 'kt', 'parol', 'parasetamol', 'aspirin', 'augmentin', 'arveles', 'apap', 'analjezik', 'antibiyotik']
+    desc: '18.212 TİTCK ilacı, 125 çevrimdışı ilaç monografı, muadil bulucu, Triple Whammy, Serotonin ve Renal kalkan',
+    keywords: ['recete', 'ilac', 'monograf', 'titck', 'muadil', 'etkilesim', 'triple whammy', 'serotonin', 'hiperkalemi', 'statin', 'cyp3a4', 'gebelik', 'yenidogan ilac', 'prospektus', 'kub', 'kt', 'parol', 'parasetamol', 'aspirin', 'augmentin', 'arveles', 'apap', 'analjezik', 'antibiyotik']
   },
   {
     id: 'card-soap',

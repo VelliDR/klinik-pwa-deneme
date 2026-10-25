@@ -2,6 +2,7 @@ import assert from 'assert';
 import fs from 'fs';
 import { normalizeText, normalizeDrugRecord, setMemoryDrugsCache, searchDrugsInDB, isDrugCatalogReady, getDrugCatalogIndex } from '../src/db/titckIndexedDB.js';
 import { findEquivalents, getDrugBadgesHTML } from '../src/drugEngine.js';
+import { setMonographsCache, findMonographSync, renderMonographCardHTML } from '../src/monographEngine.js';
 
 console.log('--- TESTING TİTCK DRUG SEARCH ENGINE & HYBRID CATALOG ---');
 
@@ -144,5 +145,39 @@ assert.strictEqual(barcodeModeRes.length, 1);
 assert.strictEqual(barcodeModeRes[0].barcode, '8699717010109');
 console.log(`✓ Barcode mode search passed (matched ${barcodeModeRes[0].brand})`);
 
-console.log('\n🎉 ALL DRUG SEARCH & EQUIVALENTS TESTS PASSED CLEANLY (100% HEALTHY)!');
+// 8. Offline 125 Clinical Monographs Engine & TİTCK Coverage Verification
+console.log('\n--- 8. TESTING OFFLINE 125 CLINICAL MONOGRAPHS ENGINE ---');
+const monographsData = JSON.parse(fs.readFileSync('public/data/clinical_monographs.json', 'utf8'));
+assert.strictEqual(monographsData.length, 125);
+setMonographsCache(monographsData);
+
+const monoParol = findMonographSync(sampleParol);
+assert.ok(monoParol, 'Parol must match Paracetamol monograph');
+assert.ok(monoParol.atcCodes.includes('N02BE01'));
+const monoCardHtml = renderMonographCardHTML(monoParol, sampleParol.brand);
+assert.ok(monoCardHtml.includes(sampleParol.brand));
+assert.ok(monoCardHtml.includes('Renal Doz Uyarlaması'));
+
+const { results: resAugmentin } = await runQuery('augmentin');
+const monoAugmentin = findMonographSync(resAugmentin[0]);
+assert.ok(monoAugmentin && monoAugmentin.atcCodes.includes('J01CR02'), 'Augmentin must match Amoxicillin-Clavulanate monograph');
+
+const monoArveles = findMonographSync(resArveles[0]);
+assert.ok(monoArveles && monoArveles.atcCodes.includes('M01AE17'), 'Arveles must match Dexketoprofen monograph');
+
+// False-positive guard: Somatropin must NOT match Atropine
+const fakeSomatropin = findMonographSync({ brand: 'GENOTROPIN', generic: 'somatropin', atc: 'H01AC01' });
+assert.strictEqual(fakeSomatropin, null, 'Somatropin must not misclassify as Atropine');
+
+// Coverage across 18,212 licensed drugs
+let matchedCount = 0;
+for (const rawItem of rawData) {
+    const rec = normalizeDrugRecord(rawItem, 0);
+    if (findMonographSync(rec)) matchedCount++;
+}
+assert.ok(matchedCount >= 5000, `Expected >=5,000 TİTCK drugs to match 125 core monographs, got ${matchedCount}`);
+console.log(`✓ Offline 125 Clinical Monographs verified (Matched ${matchedCount} / ${rawData.length} TİTCK records cleanly)`);
+
+console.log('\n🎉 ALL DRUG SEARCH, MONOGRAPH & EQUIVALENTS TESTS PASSED CLEANLY (100% HEALTHY)!');
+
 
