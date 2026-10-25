@@ -147,8 +147,8 @@ console.log(`✓ Equivalents (Muadil) O(1) indexed search passed: Found ${equiva
 // 5. Badges Test
 const badgesHtml = getDrugBadgesHTML(sampleParol);
 assert.ok(typeof badgesHtml === 'string');
-assert.ok(badgesHtml.includes('🛡️ SGK Ödüyor'), 'Parol 500 must show SGK Ödüyor badge');
-assert.ok(badgesHtml.includes('🤰 Gebelik: B'), 'Parol 500 must show Gebelik: B badge');
+assert.ok(badgesHtml.includes('SGK Ödüyor'), 'Parol 500 must show SGK Ödüyor badge');
+assert.ok(badgesHtml.includes('Gebelik: B'), 'Parol 500 must show Gebelik: B badge');
 console.log(`✓ sampleParol badges verified: SGK Ödüyor + Gebelik: B ("${badgesHtml}")`);
 
 // 5b. Cold Chain Badge Test (cz === 1)
@@ -156,7 +156,7 @@ const coldChainRaw = rawData.find(d => d.cz === 1);
 assert.ok(coldChainRaw, 'Should find at least one cold chain drug');
 const coldChainDrug = normalizeDrugRecord(coldChainRaw, 0);
 const coldBadges = getDrugBadgesHTML(coldChainDrug);
-assert.ok(coldBadges.includes('❄️ 2-8°C Soğuk Zincir'), `Cold chain drug (${coldChainDrug.brand}) must show 2-8°C Soğuk Zincir badge`);
+assert.ok(coldBadges.includes('2-8°C Soğuk Zincir'), `Cold chain drug (${coldChainDrug.brand}) must show 2-8°C Soğuk Zincir badge`);
 console.log(`✓ Cold chain badge verified for: ${coldChainDrug.brand}`);
 
 // 5c. Pregnancy Category X (Teratogenic / Contraindicated) Test (pr === 'X')
@@ -164,7 +164,7 @@ const pregXRaw = rawData.find(d => d.pr === 'X');
 assert.ok(pregXRaw, 'Should find at least one pregnancy category X drug');
 const pregXDrug = normalizeDrugRecord(pregXRaw, 0);
 const pregXBadges = getDrugBadgesHTML(pregXDrug);
-assert.ok(pregXBadges.includes('⛔ Gebelik: X (Kontrendike)'), `Category X drug (${pregXDrug.brand}) must show Contraindicated X badge`);
+assert.ok(pregXBadges.includes('Gebelik: X (Kontrendike)'), `Category X drug (${pregXDrug.brand}) must show Contraindicated X badge`);
 console.log(`✓ Pregnancy Category X contraindicated badge verified for: ${pregXDrug.brand}`);
 
 // 5d. SGK Non-Reimbursed Warning Badge Test (sg === 0)
@@ -172,26 +172,26 @@ const nonSgkRaw = rawData.find(d => d.sg === 0);
 assert.ok(nonSgkRaw, 'Should find at least one non-reimbursed drug');
 const nonSgkDrug = normalizeDrugRecord(nonSgkRaw, 0);
 const nonSgkBadges = getDrugBadgesHTML(nonSgkDrug);
-assert.ok(nonSgkBadges.includes('⚠️ SGK Ödemiyor'), `Non-reimbursed drug (${nonSgkDrug.brand}) must show SGK Ödemiyor badge`);
+assert.ok(nonSgkBadges.includes('SGK Kapsam Dışı'), `Non-reimbursed drug (${nonSgkDrug.brand}) must show SGK Kapsam Dışı badge`);
 console.log(`✓ SGK Non-Reimbursed warning badge verified for: ${nonSgkDrug.brand}`);
 
 // 5e. Prescription Type Badges (Kırmızı / Yeşil)
 const redRxRaw = rawData.find(d => d.r === 'Kırmızı');
 if (redRxRaw) {
     const redDrug = normalizeDrugRecord(redRxRaw, 0);
-    assert.ok(getDrugBadgesHTML(redDrug).includes('🔴 Kırmızı Reçete'), 'Red prescription badge must be rendered');
+    assert.ok(getDrugBadgesHTML(redDrug).includes('Kırmızı Reçete'), 'Red prescription badge must be rendered');
     console.log(`✓ Red prescription badge verified for: ${redDrug.brand}`);
 }
 const greenRxRaw = rawData.find(d => d.r === 'Yeşil');
 if (greenRxRaw) {
     const greenDrug = normalizeDrugRecord(greenRxRaw, 0);
-    assert.ok(getDrugBadgesHTML(greenDrug).includes('🟢 Yeşil Reçete'), 'Green prescription badge must be rendered');
+    assert.ok(getDrugBadgesHTML(greenDrug).includes('Yeşil Reçete'), 'Green prescription badge must be rendered');
     console.log(`✓ Green prescription badge verified for: ${greenDrug.brand}`);
 }
 
 // 5f. SGK Bioequivalent Group Tag Badge Test
 const pantoBadgeHtml = getDrugBadgesHTML(samplePantoprazole);
-assert.ok(pantoBadgeHtml.includes('🏷️ E267A'), 'Sample Pantoprazole must show E267A badge');
+assert.ok(pantoBadgeHtml.includes('E-Kodu: E267A'), 'Sample Pantoprazole must show E-Kodu: E267A badge');
 assert.ok(pantoBadgeHtml.includes('badge-esdeger-tag'), 'Sample Pantoprazole badge must have badge-esdeger-tag class for clickable filtering');
 console.log(`✓ Clickable SGK Bioequivalent Group badge verified for: ${samplePantoprazole.brand} (Group: ${samplePantoprazole.esdegerGroup})`);
 

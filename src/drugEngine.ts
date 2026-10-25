@@ -259,60 +259,60 @@ export function getDrugBadgesHTML(drug: DrugForBadges): string {
   // 1. Reçete Türü Rozeti
   const rx = (drug.prescriptionType || drug.rx || '').trim();
   if (rx === 'Kırmızı') {
-    badges.push('<span class="bg-red-950 text-red-300 border border-red-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🔴 Kırmızı Reçete</span>');
+    badges.push('<span class="bg-red-950 text-red-300 border border-red-700 px-1.5 py-0.5 rounded text-[10px] font-medium">Kırmızı Reçete</span>');
   } else if (rx === 'Yeşil') {
-    badges.push('<span class="bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🟢 Yeşil Reçete</span>');
+    badges.push('<span class="bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-medium">Yeşil Reçete</span>');
   } else if (rx === 'Mor') {
-    badges.push('<span class="bg-purple-950 text-purple-300 border border-purple-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🟣 Mor Reçete</span>');
+    badges.push('<span class="bg-purple-950 text-purple-300 border border-purple-700 px-1.5 py-0.5 rounded text-[10px] font-medium">Mor Reçete</span>');
   } else if (rx === 'Turuncu') {
-    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🟠 Turuncu Reçete</span>');
+    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium">Turuncu Reçete</span>');
   }
 
   // 2. SGK Geri Ödeme Rozeti
   const isSgk = drug.sgkReimbursed === 1 || drug.sg === 1 || drug.sgkReimbursed === true;
   const isNotSgk = drug.sgkReimbursed === 0 || drug.sg === 0;
   if (isSgk) {
-    badges.push('<span class="bg-emerald-950/90 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium" title="SGK Sağlık Uygulama Tebliği (SUT) Kapsamında Karşılanıyor">🛡️ SGK Ödüyor</span>');
+    badges.push('<span class="bg-emerald-950/90 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium" title="SGK Sağlık Uygulama Tebliği (SUT) Kapsamında Karşılanıyor">SGK Ödüyor</span>');
   } else if (isNotSgk) {
-    badges.push('<span class="bg-amber-950/80 text-amber-300 border border-amber-700/70 px-1.5 py-0.5 rounded text-[10px]" title="SGK Kapsam Dışı (Hastaya Cepten Maliyet Uyarısı)">⚠️ SGK Ödemiyor</span>');
+    badges.push('<span class="bg-amber-950/80 text-amber-300 border border-amber-700/70 px-1.5 py-0.5 rounded text-[10px]" title="SGK Kapsam Dışı (Hastaya Cepten Maliyet Uyarısı)">SGK Kapsam Dışı</span>');
   }
 
   // 3. Gebelik Güvenlik Kategorisi Rozeti
   const preg = String(drug.pregnancyCategory || drug.pr || '').trim().toUpperCase();
   if (preg === 'A') {
-    badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi A: Kontrollü insan çalışmalarında fetal risk kanıtı yok">🤰 Gebelik: A</span>');
+    badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi A: Kontrollü insan çalışmalarında fetal risk kanıtı yok">Gebelik: A</span>');
   } else if (preg === 'B') {
-    badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi B: Hayvan çalışmalarında risk yok veya insan çalışmalarında kanıtlanmamış">🤰 Gebelik: B</span>');
+    badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi B: Hayvan çalışmalarında risk yok veya insan çalışmalarında kanıtlanmamış">Gebelik: B</span>');
   } else if (preg === 'C') {
-    badges.push('<span class="bg-yellow-950 text-yellow-300 border border-yellow-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi C: Yalnızca potansiyel yarar riskten fazlaysa kullanılmalıdır">🤰 Gebelik: C</span>');
+    badges.push('<span class="bg-yellow-950 text-yellow-300 border border-yellow-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi C: Yalnızca potansiyel yarar riskten fazlaysa kullanılmalıdır">Gebelik: C</span>');
   } else if (preg === 'D') {
-    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Gebelik Kategorisi D: Fetal risk kanıtı mevcuttur (Hayati durumlarda değerlendirilir)">⚠️ Gebelik: D (Riskli)</span>');
+    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Gebelik Kategorisi D: Fetal risk kanıtı mevcuttur (Hayati durumlarda değerlendirilir)">Gebelik: D (Riskli)</span>');
   } else if (preg === 'X') {
-    badges.push('<span class="bg-rose-950 text-rose-200 border border-rose-600 px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse" title="Gebelik Kategorisi X: KESİNLİKLE KONTRENDİKE (Fetal Anomali / Teratojenik Risk!)">⛔ Gebelik: X (Kontrendike)</span>');
+    badges.push('<span class="bg-rose-950 text-rose-200 border border-rose-600 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Gebelik Kategorisi X: KESİNLİKLE KONTRENDİKE (Fetal Anomali / Teratojenik Risk!)">Gebelik: X (Kontrendike)</span>');
   }
 
   // 4. Soğuk Zincir Rozeti (2-8°C)
   const isCold = drug.isColdChain === true || drug.isColdChain === 1 || drug.cz === 1 || drug.cz === true;
   if (isCold) {
-    badges.push('<span class="bg-sky-950 text-sky-300 border border-sky-600 px-1.5 py-0.5 rounded text-[10px] font-medium" title="2-8°C Soğuk Zincir Dolabında Saklayınız">❄️ 2-8°C Soğuk Zincir</span>');
+    badges.push('<span class="bg-sky-950 text-sky-300 border border-sky-600 px-1.5 py-0.5 rounded text-[10px] font-medium" title="2-8°C Soğuk Zincir Dolabında Saklayınız">2-8°C Soğuk Zincir</span>');
   }
 
   // 5. SGK Eşdeğer Grubu Rozeti
   const eg = String(drug.esdegerGroup || drug.eg || '').trim().toUpperCase();
   if (eg) {
-    badges.push(`<span class="bg-slate-800 text-cyan-300 border border-slate-600 hover:border-cyan-500 px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors badge-esdeger-tag" data-esdeger="${eg}" title="SGK Eşdeğer Grubu: ${eg} (Gruptaki tüm resmi muadilleri listelemek için tıklayın)">🏷️ ${eg}</span>`);
+    badges.push(`<span class="bg-slate-800 text-cyan-300 border border-slate-600 hover:border-cyan-500 px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors badge-esdeger-tag" data-esdeger="${eg}" title="SGK Eşdeğer Grubu: ${eg} (Gruptaki tüm resmi muadilleri listelemek için tıklayın)">E-Kodu: ${eg}</span>`);
   }
 
   // 6. Pasif / İptal Kontrolü
   const isPassive = (drug.status && drug.status.toLowerCase().includes('pasif')) || (drug.sheet && drug.sheet.toUpperCase().includes('PASİF'));
   if (isPassive) {
-    badges.push('<span class="bg-amber-950 text-amber-300 border border-amber-600 px-1.5 py-0.5 rounded text-[10px]">⚠️ Pasif / İptal</span>');
+    badges.push('<span class="bg-amber-950 text-amber-300 border border-amber-600 px-1.5 py-0.5 rounded text-[10px]">Pasif / İptal</span>');
   }
 
   // 7. Temel İlaç Rozeti
   const isEssential = Number(drug.isEssential) === 1 || Number(drug.essential) === 1;
   if (isEssential) {
-    badges.push('<span class="bg-indigo-950 text-indigo-300 border border-indigo-700 px-1.5 py-0.5 rounded text-[10px]">⭐ Temel İlaç</span>');
+    badges.push('<span class="bg-indigo-950 text-indigo-300 border border-indigo-700 px-1.5 py-0.5 rounded text-[10px]">Temel İlaç</span>');
   }
 
   // 8. Çocuk / Yenidoğan Temel İlaç Rozetleri & Formülasyon Tespiti
@@ -323,17 +323,17 @@ export function getDrugBadgesHTML(drug: DrugForBadges): string {
   const isPediatricForm = textSearch.includes('pediatrik') || textSearch.includes('çocuk') || textSearch.includes('şurup') || textSearch.includes('süspansiyon') || textSearch.includes('damla') || textSearch.includes('pediatric');
 
   if (isChildFlag || isPediatricForm) {
-    badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]">👶 Pediatrik</span>');
+    badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]">Pediatrik</span>');
   }
   if (isNeonateFlag) {
-    badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]">🍼 Yenidoğan</span>');
+    badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]">Yenidoğan</span>');
   }
 
   // 9. Prospektüs / KÜB Belge Rozeti (Doğrudan TİTCK PDF'i olanlar)
   const hasKt = Boolean(drug.kt_pdf_prospektus_url || drug.kt);
   const hasKub = Boolean(drug.kub_pdf_url || drug.kub);
   if (hasKt || hasKub) {
-    badges.push('<span class="bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Resmi TİTCK PDF Belgesi Doğrudan Mevcut">📑 Resmi PDF (KÜB/KT)</span>');
+    badges.push('<span class="bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Resmi TİTCK PDF Belgesi Doğrudan Mevcut">Resmi PDF (KÜB/KT)</span>');
   }
 
   return badges.join(' ');

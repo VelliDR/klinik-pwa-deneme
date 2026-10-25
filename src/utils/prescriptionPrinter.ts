@@ -179,7 +179,7 @@ export function buildDefaultDrugSchedule(
     // Burun Spreyi
     dosage = 'Her burun deliğine 1 Puf';
     duration = '3–5 Gün (Maksimum 5 Gün)';
-    instructions = '⚠️ DİKKAT: Günde 2-3 kez uygulayınız. Kronik burun tıkanıklığı yapmaması için 5 günden uzun KULLANMAYINIZ!';
+    instructions = 'DİKKAT: Günde 2-3 kez uygulayınız. Kronik burun tıkanıklığı yapmaması için 5 günden uzun KULLANMAYINIZ!';
     morning = true; noon = false; evening = true; night = false;
     morningDose = '1 Puf'; noonDose = '-'; eveningDose = '1 Puf'; nightDose = '-';
     mealTiming = 'FARKETMEZ';
@@ -483,8 +483,9 @@ export function generatePrescriptionHTML(
 
       <!-- Alerji Uyarısı Varsa -->
       ${allergy.toLowerCase().includes('yok') ? '' : `
-      <div class="bg-red-50 border border-red-300 text-red-800 px-3 py-1 rounded text-xs mb-3 font-semibold flex items-center gap-2">
-        <span>⚠️</span> <span>İLAÇ ALERJİSİ: ${allergy}</span>
+      <div class="bg-red-50 border border-red-300 text-red-800 px-3 py-1.5 rounded text-xs mb-3 font-semibold flex items-center gap-2">
+        <span class="bg-red-700 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">ALERJİ</span>
+        <span>İLAÇ ALERJİSİ: ${allergy}</span>
       </div>
       `}
 
@@ -494,10 +495,10 @@ export function generatePrescriptionHTML(
           <tr class="bg-slate-100 border-b border-slate-300 text-slate-700 text-[10px] uppercase font-bold tracking-wider">
             <th class="p-2 border-r border-slate-300 w-1/4">İlaç Adı & Formu</th>
             <th class="p-2 border-r border-slate-300 text-center w-20">Tek Doz</th>
-            <th class="p-2 border-r border-slate-300 text-center w-12" title="Sabah">🌅 Sabah</th>
-            <th class="p-2 border-r border-slate-300 text-center w-12" title="Öğle">☀️ Öğle</th>
-            <th class="p-2 border-r border-slate-300 text-center w-12" title="Akşam">🌆 Akşam</th>
-            <th class="p-2 border-r border-slate-300 text-center w-12" title="Gece / Yatarken">🌙 Gece</th>
+            <th class="p-2 border-r border-slate-300 text-center w-12" title="Sabah">Sabah</th>
+            <th class="p-2 border-r border-slate-300 text-center w-12" title="Öğle">Öğle</th>
+            <th class="p-2 border-r border-slate-300 text-center w-12" title="Akşam">Akşam</th>
+            <th class="p-2 border-r border-slate-300 text-center w-12" title="Gece / Yatarken">Gece</th>
             <th class="p-2 border-r border-slate-300 text-center w-16">Öğün</th>
             <th class="p-2 border-r border-slate-300 text-center w-20">Süre</th>
             <th class="p-2 text-left">Kullanım Talimatı & Dikkat Edilecekler</th>

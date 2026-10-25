@@ -50,13 +50,13 @@ export function renderRefDrugCardHTML(drug: DrugInputForEquivalents & Partial<No
     <div class="bg-slate-950/80 border border-cyan-800/70 rounded-xl p-3 sm:p-3.5 space-y-2">
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <span class="text-[10px] font-mono tracking-wider uppercase text-cyan-400 font-bold bg-cyan-950/70 border border-cyan-800/80 px-2 py-0.5 rounded-full">
-          🎯 Karşılaştırılan Referans Müstahzar
+          Karşılaştırılan Referans Müstahzar
         </span>
         ${eg ? `<span class="text-[10px] font-mono text-cyan-300 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded">SGK Grubu: ${escapeHtmlSafe(eg)}</span>` : ''}
       </div>
       <div class="flex flex-wrap items-baseline gap-2">
         <h4 class="text-sm sm:text-base font-extrabold text-white">${escapeHtmlSafe(brand)}</h4>
-        ${company ? `<span class="text-[11px] text-slate-400">🏢 ${escapeHtmlSafe(company)}</span>` : ''}
+        ${company ? `<span class="text-[11px] text-slate-400">• ${escapeHtmlSafe(company)}</span>` : ''}
       </div>
       <div class="text-xs text-emerald-300 font-medium">${escapeHtmlSafe(generic)}</div>
       <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400 font-mono">
@@ -97,7 +97,7 @@ export function renderEquivalentsFilterBarHTML(
             ? 'bg-emerald-950 text-emerald-300 border-emerald-600'
             : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
         }" data-filter="official">
-          🟢 Resmi Biyoeşdeğerler (${officialCount})
+          Resmi Biyoeşdeğerler (${officialCount})
         </button>
       ` : ''}
 
@@ -106,7 +106,7 @@ export function renderEquivalentsFilterBarHTML(
           ? 'bg-teal-950 text-teal-300 border-teal-600'
           : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
       }" data-filter="sgk">
-        🛡️ SGK Ödeyenler (${sgkCount})
+        SGK Ödeyenler (${sgkCount})
       </button>
     </div>
 
@@ -133,7 +133,6 @@ export function renderEquivalentsListHTML(
   if (filtered.length === 0) {
     return `
       <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-6 text-center text-slate-400 space-y-1">
-        <div class="text-2xl">🔍</div>
         <div class="text-xs font-semibold text-slate-300">Bu filtre kriterine uygun eşdeğer ilaç bulunamadı.</div>
         <div class="text-[11px]">Diğer sekmeleri veya arama motorunu kullanabilirsiniz.</div>
       </div>
@@ -143,10 +142,10 @@ export function renderEquivalentsListHTML(
   return filtered.map((drug) => {
     const tier = drug.matchTier || 2;
     const tierBadge = tier === 1
-      ? '<span class="bg-emerald-950 text-emerald-300 border border-emerald-600/80 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Resmi SGK SUT Eşdeğer Grubu (Altın Standart İkame)">🟢 Resmi SGK Biyoeşdeğer</span>'
+      ? '<span class="bg-emerald-950 text-emerald-300 border border-emerald-600/80 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Resmi SGK SUT Eşdeğer Grubu (Altın Standart İkame)">Resmi SGK Biyoeşdeğer</span>'
       : tier === 2
-      ? '<span class="bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.5 rounded text-[10px] font-semibold" title="Aynı ATC 5. Seviye veya Birebir Etken Madde">🟡 Klinik Biyoeşdeğer</span>'
-      : '<span class="bg-blue-950 text-blue-300 border border-blue-700/80 px-1.5 py-0.5 rounded text-[10px]" title="Aynı Farmakolojik Grup / Terapötik Alternatif">🔵 Terapötik Alternatif</span>';
+      ? '<span class="bg-amber-950 text-amber-300 border border-amber-700/80 px-1.5 py-0.5 rounded text-[10px] font-semibold" title="Aynı ATC 5. Seviye veya Birebir Etken Madde">Klinik Biyoeşdeğer</span>'
+      : '<span class="bg-blue-950 text-blue-300 border border-blue-700/80 px-1.5 py-0.5 rounded text-[10px]" title="Aynı Farmakolojik Grup / Terapötik Alternatif">Terapötik Alternatif</span>';
 
     const badges = getDrugBadgesHTML(drug as any);
     const safeBrand = escapeHtmlSafe(drug.brand);
@@ -168,7 +167,7 @@ export function renderEquivalentsListHTML(
               ${tierBadge}
               <span class="text-xs font-bold text-white">${safeBrand}</span>
             </div>
-            <div class="text-[11px] text-slate-300 mt-0.5">${safeGeneric}${safeCompany ? ` • <span class="text-slate-400 font-normal">🏢 ${safeCompany}</span>` : ''}</div>
+            <div class="text-[11px] text-slate-300 mt-0.5">${safeGeneric}${safeCompany ? ` • <span class="text-slate-400 font-normal">${safeCompany}</span>` : ''}</div>
           </div>
           <button type="button" class="btn-eq-add-to-rx bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700 hover:border-emerald-500 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 flex-shrink-0"
             data-brand="${safeBrand}"
@@ -180,7 +179,7 @@ export function renderEquivalentsListHTML(
             data-kt="${escapeHtmlSafe(ktUrl || '')}"
             data-kub="${escapeHtmlSafe(kubUrl || '')}"
             title="Bu muadili reçete / tedavi listesine ekle">
-            <span>➕ Reçeteye Ekle</span>
+            <span>Reçeteye Ekle</span>
           </button>
         </div>
 
@@ -194,8 +193,8 @@ export function renderEquivalentsListHTML(
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800 text-[10px]">
           <span class="text-slate-400 font-mono text-[9px]">${escapeHtmlSafe(drug.matchReason || '')}</span>
           <div class="flex items-center gap-2">
-            ${ktUrl ? `<a href="${escapeHtmlSafe(ktUrl)}" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline">📄 Prospektüs (KT)</a>` : ''}
-            ${kubUrl ? `<a href="${escapeHtmlSafe(kubUrl)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline">📋 KÜB</a>` : ''}
+            ${ktUrl ? `<a href="${escapeHtmlSafe(ktUrl)}" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline">Prospektüs (KT)</a>` : ''}
+            ${kubUrl ? `<a href="${escapeHtmlSafe(kubUrl)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline">KÜB</a>` : ''}
           </div>
         </div>
       </div>
@@ -248,7 +247,7 @@ export async function openDrugEquivalentsModal(
     const egCode = drug.esdegerGroup || drug.eg || '';
     if (egCode && eqList.length > 0) {
       btnBatchToSearch.classList.remove('hidden');
-      btnBatchToSearch.textContent = `🔍 "${egCode}" Grubunu Arama Kutusuna Aktar`;
+      btnBatchToSearch.textContent = `"${egCode}" Grubunu Arama Kutusuna Aktar`;
       btnBatchToSearch.setAttribute('data-esdeger', egCode);
     } else {
       btnBatchToSearch.classList.add('hidden');
@@ -332,7 +331,7 @@ export function initEquivalentsModalController(callbacks?: {
         btn.classList.remove('bg-emerald-950', 'text-emerald-300', 'border-emerald-700');
         btn.classList.add('bg-cyan-950', 'text-cyan-300', 'border-cyan-600');
         setTimeout(() => {
-          btn.innerHTML = '<span>➕ Reçeteye Ekle</span>';
+          btn.innerHTML = '<span>Reçeteye Ekle</span>';
           btn.classList.remove('bg-cyan-950', 'text-cyan-300', 'border-cyan-600');
           btn.classList.add('bg-emerald-950', 'text-emerald-300', 'border-emerald-700');
         }, 1500);

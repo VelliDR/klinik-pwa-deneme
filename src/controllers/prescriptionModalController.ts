@@ -93,10 +93,9 @@ export function initPrescriptionModalController(): void {
 
     if (activePrescriptionDrugs.length === 0) {
       containerRxEditorList.innerHTML = `
-        <div class="p-8 text-center bg-slate-950/40 rounded-xl border border-dashed border-slate-800 text-slate-400 space-y-2">
-          <span class="text-3xl block">💊</span>
-          <p class="text-xs">Reçeteye henüz ilaç eklenmedi.</p>
-          <p class="text-[11px] text-slate-500">Yukarıdaki <strong>"+ İlaç Ekle"</strong> butonunu kullanabilir veya hazır bir reçete paketi yükleyebilirsiniz.</p>
+        <div class="p-8 text-center bg-slate-950/40 rounded-xl border border-dashed border-slate-800 text-slate-400 space-y-1.5">
+          <p class="text-xs font-semibold text-slate-300">Reçeteye henüz ilaç eklenmedi.</p>
+          <p class="text-[11px] text-slate-500">Yukarıdaki <strong>"+ İlaç Ekle"</strong> butonunu kullanabilir veya hazır bir reçete paketi seçebilirsiniz.</p>
         </div>
       `;
       refreshPrescriptionPreview();
@@ -122,7 +121,7 @@ export function initPrescriptionModalController(): void {
               <option value="Saşe" ${d.form === 'Saşe' ? 'selected' : ''}>Saşe</option>
               <option value="Fitil" ${d.form === 'Fitil' ? 'selected' : ''}>Fitil</option>
             </select>
-            <button type="button" class="rx-btn-delete text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 text-xs transition-colors" title="İlacı Kaldır">🗑️</button>
+            <button type="button" class="rx-btn-delete text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 text-xs font-bold transition-colors" title="İlacı Kaldır">✕</button>
           </div>
         </div>
 
@@ -132,19 +131,19 @@ export function initPrescriptionModalController(): void {
             <input type="text" class="rx-input-dosage w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200 font-mono" value="${escapeHtml(d.dosage)}" placeholder="1 Tablet">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-amber-300 block mb-0.5">🌅 Sabah</label>
+            <label class="text-[9px] text-amber-300 block mb-0.5">Sabah</label>
             <input type="text" class="rx-input-morning w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.morningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.morningDose || (d.morning ? '1' : '-'))}" placeholder="-">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-amber-300 block mb-0.5">☀️ Öğle</label>
+            <label class="text-[9px] text-amber-300 block mb-0.5">Öğle</label>
             <input type="text" class="rx-input-noon w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.noonDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.noonDose || (d.noon ? '1' : '-'))}" placeholder="-">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-amber-300 block mb-0.5">🌆 Akşam</label>
+            <label class="text-[9px] text-amber-300 block mb-0.5">Akşam</label>
             <input type="text" class="rx-input-evening w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.eveningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.eveningDose || (d.evening ? '1' : '-'))}" placeholder="-">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-indigo-300 block mb-0.5">🌙 Gece</label>
+            <label class="text-[9px] text-indigo-300 block mb-0.5">Gece</label>
             <input type="text" class="rx-input-night w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.nightDose !== '-' ? 'text-indigo-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.nightDose || (d.night ? '1' : '-'))}" placeholder="-">
           </div>
           <div>

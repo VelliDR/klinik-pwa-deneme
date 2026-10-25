@@ -43,7 +43,7 @@
             <div class="flex items-center gap-1.5 sm:gap-2">
                 <!-- Ctrl+K Hızlı Motor Atlama -->
                 <button type="button" id="btn-quick-switch" class="text-[11px] text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm" title="Klinik motorlarda hızlı ara ve atla (Ctrl+K)">
-                    <span>🔍</span> <span class="hidden md:inline">Ara</span>
+                    <span>Ara</span>
                     <kbd class="hidden sm:inline text-[9px] bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 font-mono text-slate-400">Ctrl+K</kbd>
                 </button>
 
@@ -54,16 +54,16 @@
 
                 <!-- Hasta Dozaj Çizelgesi Yazdır / PDF -->
                 <button type="button" id="btn-print-rx" class="text-[11px] text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm" title="Hastaya özel ilaç kullanım çizelgesi oluştur ve yazdır (A4 / PDF)">
-                    <span>🖨️</span> <span class="hidden md:inline">Hasta Çıktısı</span>
+                    <span>Reçete &amp; Çıktı</span>
                 </button>
 
                 <!-- Acil Durum Protokolleri (Anafilaksi & Status) -->
                 <button type="button" id="btn-emergency-protocols" class="text-[11px] text-white bg-rose-700 hover:bg-rose-600 border border-rose-500/80 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm shadow-rose-950/60 font-medium" title="Acil Durum Protokolleri: Anafilaksi (Canlı Sayaç) & Status Epilepticus (AES)">
-                    <span>🚨</span> <span class="hidden sm:inline">Acil Protokoller</span>
+                    <span>Acil Protokoller</span>
                 </button>
 
                 <button type="button" id="btn-reset-patient" class="text-[11px] text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm" title="Tüm form verilerini sıfırla">
-                    <span>🔄</span> <span class="hidden sm:inline">Yeni Hasta</span>
+                    <span>Yeni Hasta</span>
                 </button>
                 <div id="badge-offline-status" class="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span class="hidden sm:inline">Çevrimdışı</span> PWA Aktif
@@ -1501,16 +1501,16 @@
                     <!-- İlaç Arama Kriteri Seçici (Mod Tabları) -->
                     <div class="flex items-center gap-1.5 pt-2 text-[11px] font-medium" id="drug-search-mode-selector">
                         <button type="button" data-mode="all" class="drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-rose-950/90 text-rose-200 border-rose-500 font-semibold shadow-sm text-[11px]" title="İlaç adı, etken madde ve barkod üzerinde akıllı arama">
-                            ✨ Tümü
+                            Tümü
                         </button>
                         <button type="button" data-mode="brand" class="drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-600 font-normal text-[11px]" title="Sadece İlaç / Müstahzar Ticari Adı (Örn: Parol, Augmentin, Arveles)">
-                            💊 İlaç Adı
+                            İlaç Adı
                         </button>
                         <button type="button" data-mode="generic" class="drug-search-mode-btn flex-1 py-1 px-1.5 rounded-md border text-center transition-all bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-600 font-normal text-[11px]" title="Sadece Etken Madde / Jenerik Molekül Adı (Örn: Parasetamol, Amoksisilin)">
-                            🔬 Etken Madde
+                            Etken Madde
                         </button>
                         <button type="button" data-mode="barcode" class="drug-search-mode-btn py-1 px-2 rounded-md border text-center transition-all bg-slate-900 text-slate-400 border-slate-700 hover:text-slate-200 hover:border-slate-600 font-normal text-[11px]" title="Barkod Numarası veya ATC Kodu (Örn: 8699..., N02BE01)">
-                            🏷️ Barkod/ATC
+                            Barkod / ATC
                         </button>
                     </div>
 
@@ -1533,7 +1533,7 @@
                     <!-- Akılcı Reçete & İlaç Güvenliği Paneli -->
                     <div class="border-t border-slate-700/50 pt-3 space-y-2">
                         <div class="flex justify-between items-center">
-                            <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wide">🛡️ İlaç Güvenliği & DDI Koruma Motoru</span>
+                            <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wide">İlaç Güvenliği &amp; DDI Koruma Motoru</span>
                             <span id="badge-safety-status" class="text-[9px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Aktif</span>
                         </div>
                         <div class="grid grid-cols-2 gap-2">
@@ -1719,7 +1719,7 @@
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
                     <div class="flex items-center gap-1.5 pt-2">
                         <select id="select-soap-template" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[11px] text-slate-300 focus:outline-none focus:border-rose-500">
-                            <option value="">⚡ Hızlı Şablon Seç (Dot Phrase)...</option>
+                            <option value="">Hızlı Şablon Seç (Dot Phrase)...</option>
                             <option value=".apandisit">.apandisit - Akut Apandisit</option>
                             <option value=".tonsillit">.tonsillit - Akut Tonsillit & Centor</option>
                             <option value=".dvt_dislama">.dvt_dislama - DVT Dışlama (Wells)</option>
@@ -1737,7 +1737,7 @@
                     </div>
                     <textarea id="text-soap-output" readonly rows="9" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-[11px] font-mono text-slate-300 leading-relaxed resize-none mt-1"></textarea>
                     <button id="btn-copy-soap" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-3 rounded-xl transition-colors">
-                        📋 Notu Panoya Kopyala
+                        Notu Panoya Kopyala
                     </button>
                 </div>
             </details>
@@ -1751,7 +1751,6 @@
         <div class="max-w-md mx-auto pointer-events-auto">
             <button type="button" id="btn-open-soap-sheet" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-3 px-4 rounded-2xl shadow-xl shadow-rose-950/70 border border-rose-400/30 flex items-center justify-between backdrop-blur-md active:scale-[0.98] transition-all">
                 <div class="flex items-center gap-2">
-                    <span class="text-base">📋</span>
                     <span class="tracking-wide">SOAP Hasta Notu</span>
                 </div>
                 <div class="flex items-center gap-1.5 font-mono text-[11px] bg-rose-700/80 px-2.5 py-1 rounded-xl border border-rose-400/20">
@@ -1775,7 +1774,6 @@
             <!-- Header -->
             <div class="flex items-center justify-between border-b border-slate-800 pb-2">
                 <div class="flex items-center gap-2">
-                    <span class="text-rose-400 text-base">📋</span>
                     <h3 id="modal-soap-title" class="text-sm font-bold text-slate-100 uppercase tracking-wider">SOAP Hasta Notu (Mobil)</h3>
                 </div>
                 <div class="flex items-center gap-2">
@@ -1791,7 +1789,6 @@
 
             <!-- Copy Action Button -->
             <button type="button" id="btn-copy-soap-modal" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-3.5 rounded-xl transition-colors shadow-lg shadow-rose-950/50 flex items-center justify-center gap-2 active:scale-[0.99]">
-                <span>📋</span>
                 <span>Notu Panoya Kopyala (HBYS / HIS)</span>
             </button>
         </div>
@@ -1823,7 +1820,6 @@
             <!-- Modal Başlık & Eylemler -->
             <div class="p-3 sm:p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950">
                 <div class="flex items-center gap-2">
-                    <span class="text-xl">🖨️</span>
                     <div>
                         <div class="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-2">
                             <span>Hasta İlaç Kullanım & Dozaj Çizelgesi</span>
@@ -1834,7 +1830,6 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" id="btn-trigger-print" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-md">
-                        <span>🖨️</span>
                         <span>Yazdır / PDF Kaydet</span>
                     </button>
                     <button type="button" id="btn-close-print-modal" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg text-xs leading-none" title="Kapat">✕</button>
@@ -1845,15 +1840,15 @@
             <div class="p-2 sm:px-4 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div class="flex items-center gap-1.5">
                     <button type="button" id="btn-tab-rx-editor" class="px-3 py-1.5 rounded-lg bg-slate-800 text-rose-300 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition-all">
-                        <span>✏️</span> İlaçları Düzenle & Ekle
+                        <span>İlaçları Düzenle</span>
                     </button>
                     <button type="button" id="btn-tab-rx-preview" class="px-3 py-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white text-xs font-semibold flex items-center gap-1 transition-all">
-                        <span>👁️</span> A4 Yazıcı Önizlemesi
+                        <span>A4 Yazıcı Önizlemesi</span>
                     </button>
                 </div>
                 <div class="flex items-center gap-2 ml-auto">
                     <select id="select-rx-preset" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-rose-500">
-                        <option value="">⚡ Hazır Reçete Paketi Yükle...</option>
+                        <option value="">Hazır Reçete Paketi Yükle...</option>
                         <option value="rx-tonsillit">Akut Tonsillit & Faranjit (Amoklavin + Parol + Gargara)</option>
                         <option value="rx-gastrit">Akut Gastrit & Dispepsi (Pantoprazol + Antiasit)</option>
                         <option value="rx-kas-iskelet">Kas-İskelet Ağrısı (Arveles + Muscoril + Mide Koruyucu)</option>
@@ -2151,7 +2146,6 @@
         <div class="bg-slate-900 border border-emerald-700/60 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div class="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-lg">📖</span>
                     <div class="min-w-0">
                         <h3 id="title-monograph-modal" class="text-xs sm:text-sm font-bold text-slate-100 truncate">Klinik İlaç Monografı</h3>
                         <p class="text-[10px] text-slate-400">125 Çekirdek Etken Madde • Çevrimdışı Klinik Dozaj, Renal/Hepatik &amp; Gebelik Özeti</p>
@@ -2172,7 +2166,6 @@
         <div class="bg-slate-900 border border-cyan-700/60 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div class="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-lg">🔄</span>
                     <div class="min-w-0">
                         <h3 id="title-equivalents-modal" class="text-xs sm:text-sm font-bold text-slate-100 truncate">Eşdeğer &amp; Muadil İlaç Karşılaştırma</h3>
                         <p class="text-[10px] text-slate-400">Resmi SGK SUT Biyoeşdeğerlik • Kamu İskontoları • 3 Kademeli Hiyerarşi</p>
@@ -2186,9 +2179,9 @@
                 <div id="container-equivalents-list" class="space-y-2"></div>
             </div>
             <div class="p-2.5 sm:p-3 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
-                <span class="truncate">🛡️ SUT Madde 4.1 kapsamında eczacı resmi eşdeğer grubundan (E-Kodu) ikame yapabilir.</span>
+                <span class="truncate">SUT Madde 4.1 kapsamında eczacı resmi eşdeğer grubundan (E-Kodu) ikame yapabilir.</span>
                 <button type="button" id="btn-equivalents-batch-to-search" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/70 transition-colors hidden">
-                    🔍 Bu Grubu Arama Kutusuna Aktar
+                    Bu Grubu Arama Kutusuna Aktar
                 </button>
             </div>
         </div>

@@ -2510,30 +2510,30 @@ if (drugInput) {
                                         ${r.sgkDiscount ? `<span class="text-emerald-400 font-mono text-[10px]"> | Kamu İskonto: ${safeDiscount}</span>` : ''}
                                         ${r.sgkKamuNo ? `<span class="text-slate-400 font-mono text-[10px]"> | Kamu No: ${safeKamuNo}</span>` : ''}
                                     </div>
-                                    ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">🏢 ${safeCompany}</div>` : ''}
+                                    ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">${safeCompany}</div>` : ''}
                                 </div>
                                 <div class="flex items-center gap-1 flex-shrink-0">
-                                    <button type="button" class="btn-open-monograph ${hasMonograph ? 'bg-emerald-950/80 border-emerald-700/70 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-500'} border text-[10px] px-2 py-1 rounded font-semibold transition-all" ${dataAttrs} title="Çevrimdışı Klinik Monograf / Doz & Güvenlik Özeti">${hasMonograph ? '📖 Monograf' : '📖 Özet'}</button>
-                                    <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-id="${escapeHtml(r.id || '')}" data-brand="${safeBrand}" data-generic="${safeGeneric}" data-atc="${safeAtc}" data-barcode="${safeBarcode}" data-company="${safeCompany}" data-rx="${escapeHtml(r.prescriptionType || '')}" data-esdeger="${safeEg}" data-discount="${safeDiscount}" data-kamuno="${safeKamuNo}" data-pregnancy="${safePregnancy}" data-coldchain="${safeColdChain}" data-sgk="${safeSgk}" data-kt="${safeKtUrl}" data-kub="${safeKubUrl}" title="Eşdeğer / Muadil İlaçları ve Kamu İskontolarını Karşılaştır">🔄 Muadil</button>
+                                    <button type="button" class="btn-open-monograph ${hasMonograph ? 'bg-emerald-950/80 border-emerald-700/70 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-500'} border text-[10px] px-2 py-1 rounded font-semibold transition-all" ${dataAttrs} title="Çevrimdışı Klinik Monograf / Doz & Güvenlik Özeti">${hasMonograph ? 'Monograf' : 'Özet'}</button>
+                                    <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-id="${escapeHtml(r.id || '')}" data-brand="${safeBrand}" data-generic="${safeGeneric}" data-atc="${safeAtc}" data-barcode="${safeBarcode}" data-company="${safeCompany}" data-rx="${escapeHtml(r.prescriptionType || '')}" data-esdeger="${safeEg}" data-discount="${safeDiscount}" data-kamuno="${safeKamuNo}" data-pregnancy="${safePregnancy}" data-coldchain="${safeColdChain}" data-sgk="${safeSgk}" data-kt="${safeKtUrl}" data-kub="${safeKubUrl}" title="Eşdeğer / Muadil İlaçları ve Kamu İskontolarını Karşılaştır">Muadil</button>
                                 </div>
                             </div>
                             <div class="flex items-center flex-wrap gap-2 pt-1 border-t border-slate-800">
                                 ${ktUrl ? `
                                     <a href="${safeKtUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-700/60 hover:border-amber-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" ${dataAttrs} title="Resmi TİTCK Kullanma Talimatı (Prospektüs)">
-                                        <span>📄 Prospektüs (KT)</span>
+                                        <span>Prospektüs (KT)</span>
                                     </a>
                                 ` : ''}
                                 ${kubUrl ? `
                                     <a href="${safeKubUrl}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-1 bg-sky-950/70 hover:bg-sky-900 text-sky-300 border border-sky-700/60 hover:border-sky-500 px-2 py-0.5 rounded text-[10px] font-semibold transition-colors" ${dataAttrs} title="Resmi TİTCK Kısa Ürün Bilgisi (KÜB)">
-                                        <span>📋 KÜB</span>
+                                        <span>KÜB</span>
                                     </a>
                                 ` : ''}
                                 ${(!ktUrl && !kubUrl) ? `
                                     <a href="https://www.google.com/search?q=${encodeURIComponent(r.brand + ' prospektüs kub titck pdf')}" target="_blank" rel="noopener noreferrer" class="btn-ext-drug-bridge inline-flex items-center gap-1 bg-slate-800/90 hover:bg-amber-950/60 text-amber-300 border border-slate-700 hover:border-amber-600/70 px-2 py-0.5 rounded text-[10px] font-medium transition-colors" ${dataAttrs} title="Google / Web üzerinde prospektüs & KÜB PDF ara (Çevrimdışında yerel özet açılır)">
-                                        <span>🔍 Prospektüs Ara</span>
+                                        <span>Web'de Ara</span>
                                     </a>
                                     <a href="https://titck.gov.tr/ilac/kub-kt" target="_blank" rel="noopener noreferrer" class="btn-ext-drug-bridge inline-flex items-center gap-1 bg-slate-800/90 hover:bg-sky-950/60 text-sky-300 border border-slate-700 hover:border-sky-600/70 px-2 py-0.5 rounded text-[10px] font-medium transition-colors" ${dataAttrs} title="TİTCK Resmi KÜB/KT Portalı (Çevrimdışında yerel özet açılır)">
-                                        <span>🏛️ TİTCK Sorgula</span>
+                                        <span>TİTCK Portalı</span>
                                     </a>
                                 ` : ''}
                             </div>
@@ -2735,13 +2735,13 @@ export function renderSelectedDrugs(): void {
                 </div>
                 <span class="text-[10px] text-slate-400 mt-0.5">${safeGeneric}${d.company ? ` • <span class="text-slate-500">${escapeHtml(d.company)}</span>` : ''}</span>
                 <div class="flex flex-wrap items-center gap-2 mt-1">
-                    <button type="button" class="btn-open-monograph inline-flex items-center gap-0.5 text-[9px] ${hasMonograph ? 'text-emerald-400 hover:text-emerald-300 font-semibold' : 'text-slate-300 hover:text-white'} hover:underline" ${dataAttrs}>📖 ${hasMonograph ? 'Monograf' : 'Klinik Özet'}</button>
+                    <button type="button" class="btn-open-monograph inline-flex items-center gap-0.5 text-[9px] ${hasMonograph ? 'text-emerald-400 hover:text-emerald-300 font-semibold' : 'text-slate-300 hover:text-white'} hover:underline" ${dataAttrs}>${hasMonograph ? 'Monograf' : 'Klinik Özet'}</button>
                     ${(validKt || validKub) ? `
-                        ${validKt ? `<a href="${validKt}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline" ${dataAttrs}>📄 Prospektüs</a>` : ''}
-                        ${validKub ? `<a href="${validKub}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline" ${dataAttrs}>📋 KÜB</a>` : ''}
+                        ${validKt ? `<a href="${validKt}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline" ${dataAttrs}>Prospektüs</a>` : ''}
+                        ${validKub ? `<a href="${validKub}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline" ${dataAttrs}>KÜB</a>` : ''}
                     ` : `
-                        <a href="https://www.google.com/search?q=${encodeURIComponent((d.brand || '') + ' prospektüs kub titck pdf')}" target="_blank" rel="noopener noreferrer" class="btn-ext-drug-bridge inline-flex items-center gap-0.5 text-[9px] text-amber-400/80 hover:text-amber-300 hover:underline" ${dataAttrs} title="Google / Web üzerinde prospektüs ara">🔍 Prospektüs Ara</a>
-                        <a href="https://titck.gov.tr/ilac/kub-kt" target="_blank" rel="noopener noreferrer" class="btn-ext-drug-bridge inline-flex items-center gap-0.5 text-[9px] text-sky-400/80 hover:text-sky-300 hover:underline" ${dataAttrs} title="TİTCK Resmi KÜB/KT Portalı">🏛️ TİTCK</a>
+                        <a href="https://www.google.com/search?q=${encodeURIComponent((d.brand || '') + ' prospektüs kub titck pdf')}" target="_blank" rel="noopener noreferrer" class="btn-ext-drug-bridge inline-flex items-center gap-0.5 text-[9px] text-amber-400/80 hover:text-amber-300 hover:underline" ${dataAttrs} title="Google / Web üzerinde prospektüs ara">Web'de Ara</a>
+                        <a href="https://titck.gov.tr/ilac/kub-kt" target="_blank" rel="noopener noreferrer" class="btn-ext-drug-bridge inline-flex items-center gap-0.5 text-[9px] text-sky-400/80 hover:text-sky-300 hover:underline" ${dataAttrs} title="TİTCK Resmi KÜB/KT Portalı">TİTCK Portalı</a>
                     `}
                 </div>
             </div>
