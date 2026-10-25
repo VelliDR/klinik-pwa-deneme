@@ -123,7 +123,7 @@ export interface DrugCatalogIndex {
 }
 
 const DB_NAME = 'KlinikAsistanDB';
-const DB_VERSION = 23; // Invalidate any older partial or unnormalized stores (Aşama 2)
+const DB_VERSION = 24; // Invalidate any older partial or unnormalized stores (Aşama 5 Upgrade)
 const STORE_NAME = 'drugs';
 
 let cachedDb: IDBDatabase | null = null;
@@ -274,10 +274,15 @@ export function initDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       let store: IDBObjectStore;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      if (db.objectStoreNames.contains(STORE_NAME)) {
+        if (e.oldVersion < 24) {
+          db.deleteObjectStore(STORE_NAME);
+          store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        } else {
+          store = (e.target as IDBOpenDBRequest).transaction!.objectStore(STORE_NAME);
+        }
       } else {
-        store = (e.target as IDBOpenDBRequest).transaction!.objectStore(STORE_NAME);
+        store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
       }
       if (!store.indexNames.contains('barcode')) {
         store.createIndex('barcode', 'barcode', { unique: false });
@@ -478,12 +483,12 @@ export async function ensureDrugCatalogReady(): Promise<NormalizedDrugRecord[]> 
         req.onerror = () => resolve([]);
       });
 
-      if (list && list.length >= 17000) {
+      if (list && list.length >= 17000 && list[0] && list[0].pregnancyCategory !== undefined && list[0].isColdChain !== undefined) {
         setMemoryDrugsCache(list);
         console.log(`[TİTCK PWA] İlaç kataloğu IndexedDB üzerinden belleğe alındı ve indekslendi (${memoryDrugsCache?.length} kayıt).`);
         return memoryDrugsCache || [];
       } else if (list && list.length > 0) {
-        console.warn(`[TİTCK PWA] IndexedDB'de eksik/kısmi katalog tespit edildi (${list.length} kayıt). Tam JSON kaynağından yenileniyor...`);
+        console.warn(`[TİTCK PWA] IndexedDB'de eski şema veya eksik alanlar tespit edildi (${list.length} kayıt, gebelik/soğuk zincir eksik). Yeni JSON kaynağından yenileniyor...`);
       }
     } catch (e) {
       console.warn('[TİTCK PWA] IndexedDB okuma uyarısı, JSON indirmesi deneniyor:', e);
