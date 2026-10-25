@@ -2167,6 +2167,33 @@
         </div>
     </div>
 
+    <!-- 8. GELİŞMİŞ EŞDEĞER / MUADİL İLAÇ KARŞILAŞTIRMA MODALI (AŞAMA 4) -->
+    <div id="modal-drug-equivalents" role="dialog" aria-modal="true" aria-labelledby="title-equivalents-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-slate-900 border border-cyan-700/60 rounded-2xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-lg">🔄</span>
+                    <div class="min-w-0">
+                        <h3 id="title-equivalents-modal" class="text-xs sm:text-sm font-bold text-slate-100 truncate">Eşdeğer &amp; Muadil İlaç Karşılaştırma</h3>
+                        <p class="text-[10px] text-slate-400">Resmi SGK SUT Biyoeşdeğerlik • Kamu İskontoları • 3 Kademeli Hiyerarşi</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-close-equivalents-modal" class="text-slate-400 hover:text-white bg-slate-800 p-1.5 rounded-lg text-xs leading-none" title="Kapat">✕</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
+                <div id="container-equivalents-ref-drug" class="space-y-2"></div>
+                <div id="container-equivalents-filters" class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2"></div>
+                <div id="container-equivalents-list" class="space-y-2"></div>
+            </div>
+            <div class="p-2.5 sm:p-3 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+                <span class="truncate">🛡️ SUT Madde 4.1 kapsamında eczacı resmi eşdeğer grubundan (E-Kodu) ikame yapabilir.</span>
+                <button type="button" id="btn-equivalents-batch-to-search" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/70 transition-colors hidden">
+                    🔍 Bu Grubu Arama Kutusuna Aktar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="max-w-[1700px] mx-auto mt-6 px-3 sm:px-6">
         <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800/80 text-[10px] text-slate-400 space-y-2.5">

@@ -12,6 +12,8 @@ export interface DrugInputForEquivalents {
   atcCode?: string;
   atc?: string;
   generic?: string;
+  esdegerGroup?: string;
+  eg?: string;
   [key: string]: unknown;
 }
 
@@ -33,6 +35,16 @@ export interface DrugForBadges {
   kt?: string;
   kub_pdf_url?: string;
   kub?: string;
+  sgkReimbursed?: number | boolean;
+  sg?: number | boolean;
+  pregnancyCategory?: string;
+  pr?: string;
+  isColdChain?: boolean | number;
+  cz?: boolean | number;
+  esdegerGroup?: string;
+  eg?: string;
+  sgkDiscount?: string;
+  di?: string;
   [key: string]: unknown;
 }
 
@@ -100,7 +112,7 @@ export function parseDrugStrength(brandName?: string): DrugStrengthResult | null
 }
 
 /**
- * 2. EŞDEĞER / MUADİL İLAÇ BULUCU (ATC Kodu + Etken Madde Hibrit Taraması)
+ * 2. EŞDEĞER / MUADİL İLAÇ BULUCU (SGK Eşdeğer Grubu + ATC Kodu + Etken Madde Kademeli Taraması)
  */
 export async function findEquivalents(selectedDrug?: DrugInputForEquivalents): Promise<NormalizedDrugRecord[]> {
   if (!selectedDrug) return [];
@@ -108,10 +120,11 @@ export async function findEquivalents(selectedDrug?: DrugInputForEquivalents): P
   const rawAtc = String(selectedDrug.atcCode || selectedDrug.atc || '').trim().toUpperCase();
   const targetAtc = (rawAtc && rawAtc !== 'BELİRTİLMEDİ' && rawAtc !== 'BELIRTILMEDI') ? rawAtc : '';
   const targetGeneric = selectedDrug.generic ? normalizeText(selectedDrug.generic) : '';
+  const rawEg = String(selectedDrug.esdegerGroup || selectedDrug.eg || '').trim().toUpperCase();
   const currentId = String(selectedDrug.id);
 
-  // Hem ATC Kodu hem Etken Madde eksikse muadil aranamaz
-  if (!targetAtc && (!targetGeneric || targetGeneric === 'belirtilmedi')) {
+  // SGK Eşdeğer Grubu, ATC Kodu veya Etken Madde mevcut olmalıdır
+  if (!rawEg && !targetAtc && (!targetGeneric || targetGeneric === 'belirtilmedi')) {
     return [];
   }
 
@@ -121,54 +134,116 @@ export async function findEquivalents(selectedDrug?: DrugInputForEquivalents): P
 
     const catalogIndex = getDrugCatalogIndex();
     if (catalogIndex) {
-      const candidateSet = new Set<number>();
+      const tier1Indices = new Set<number>();
+      const tier2Indices = new Set<number>();
+      const tier3Indices = new Set<number>();
+
+      // Kademe 1: Resmi SGK Eşdeğer Grubu (Altın Standart SUT İkamesi)
+      if (rawEg) {
+        const esdegerMatches = catalogIndex.byEsdeger.get(rawEg);
+        if (esdegerMatches) {
+          for (let i = 0; i < esdegerMatches.length; i++) {
+            tier1Indices.add(esdegerMatches[i]);
+          }
+        }
+      }
+
+      // Kademe 2: ATC 5. Seviye (7 karakter) veya Tam Etken Madde Eşleşmesi
       if (targetAtc) {
         const atcMatches = catalogIndex.byAtc.get(targetAtc);
         if (atcMatches) {
-          for (let i = 0; i < atcMatches.length; i++) candidateSet.add(atcMatches[i]);
+          for (let i = 0; i < atcMatches.length; i++) {
+            const idx = atcMatches[i];
+            if (!tier1Indices.has(idx)) tier2Indices.add(idx);
+          }
         }
       }
       if (targetGeneric && targetGeneric !== 'belirtilmedi') {
         const genMatches = catalogIndex.byGenericExact.get(targetGeneric);
         if (genMatches) {
-          for (let i = 0; i < genMatches.length; i++) candidateSet.add(genMatches[i]);
+          for (let i = 0; i < genMatches.length; i++) {
+            const idx = genMatches[i];
+            if (!tier1Indices.has(idx)) tier2Indices.add(idx);
+          }
+        }
+      }
+
+      // Kademe 3: Terapötik Alternatifler (ATC Seviye 4 - İlk 5 karakter, örn: A02BC, C09AA, N02BE)
+      const atcPrefix5 = targetAtc && targetAtc.length >= 5 ? targetAtc.substring(0, 5) : '';
+      if (atcPrefix5) {
+        for (const [atcCode, indices] of catalogIndex.byAtc.entries()) {
+          if (atcCode.startsWith(atcPrefix5) && atcCode !== targetAtc) {
+            for (let i = 0; i < indices.length; i++) {
+              const idx = indices[i];
+              if (!tier1Indices.has(idx) && !tier2Indices.has(idx)) {
+                tier3Indices.add(idx);
+              }
+            }
+          }
         }
       }
 
       const results: NormalizedDrugRecord[] = [];
-      candidateSet.forEach(idx => {
+
+      const processCandidate = (idx: number, tier: 1 | 2 | 3, reason: string) => {
         const d = allDrugs[idx];
         if (!d || String(d.id) === currentId) return;
         if ((d.status && d.status.toLowerCase().includes('pasif')) || (d.sheet && d.sheet.toUpperCase().includes('PASİF'))) return;
-        results.push(d);
+        
+        results.push({
+          ...d,
+          matchTier: tier,
+          matchReason: reason
+        });
+      };
+
+      tier1Indices.forEach(idx => processCandidate(idx, 1, `SGK Eşdeğer Grubu: ${rawEg} (Resmi SUT İkamesi)`));
+      tier2Indices.forEach(idx => processCandidate(idx, 2, `Klinik Biyoeşdeğer (ATC: ${targetAtc || 'Aynı Etken Madde'})`));
+      tier3Indices.forEach(idx => processCandidate(idx, 3, `Terapötik Alternatif (${atcPrefix5} Sınıfı)`));
+
+      // Sıralama Algoritması:
+      // 1. matchTier (Tier 1 < Tier 2 < Tier 3)
+      // 2. SGK Ödeme Durumu (Ödenenler önce)
+      // 3. Alfabetik Marka Adı
+      results.sort((a, b) => {
+        const tierA = a.matchTier || 2;
+        const tierB = b.matchTier || 2;
+        if (tierA !== tierB) return tierA - tierB;
+
+        const sgkA = a.sgkReimbursed === 1 ? 1 : 0;
+        const sgkB = b.sgkReimbursed === 1 ? 1 : 0;
+        if (sgkA !== sgkB) return sgkB - sgkA;
+
+        return a.brand.localeCompare(b.brand, 'tr');
       });
+
       return results;
     }
 
-    return allDrugs.filter(d => {
-      // 1. Kendisini listeden çıkar
-      if (String(d.id) === currentId) return false;
+    // Fallback: Index hazır değilse doğrusal tarama
+    return allDrugs
+      .filter(d => {
+        if (String(d.id) === currentId) return false;
+        if ((d.status && d.status.toLowerCase().includes('pasif')) || (d.sheet && d.sheet.toUpperCase().includes('PASİF'))) return false;
 
-      // 2. Pasif/İptal ürünleri çıkar
-      if ((d.status && d.status.toLowerCase().includes('pasif')) || (d.sheet && d.sheet.toUpperCase().includes('PASİF'))) return false;
+        const dEg = d.esdegerGroup ? String(d.esdegerGroup).trim().toUpperCase() : '';
+        const dAtc = d.atcCode ? String(d.atcCode).trim().toUpperCase() : '';
+        const dGeneric = d._genericNorm || (d.generic ? normalizeText(d.generic) : '');
 
-      const dAtc = d.atcCode ? String(d.atcCode).trim().toUpperCase() : '';
-      const dGeneric = d._genericNorm || (d.generic ? normalizeText(d.generic) : '');
-
-      // Kriter A: 5. seviye (7 karakterli) tam ATC Kodu birebir eşleşiyorsa
-      if (targetAtc && dAtc && targetAtc === dAtc) {
-        return true;
-      }
-
-      // Kriter B: Etken Madde (Generic) adı birebir eşleşiyorsa (kombinasyon ilaçlarla tekli ilaçların karışmasını önler)
-      if (targetGeneric && targetGeneric !== 'belirtilmedi' && dGeneric && dGeneric !== 'belirtilmedi') {
-        if (dGeneric === targetGeneric) {
-          return true;
-        }
-      }
-
-      return false;
-    });
+        if (rawEg && dEg && rawEg === dEg) return true;
+        if (targetAtc && dAtc && targetAtc === dAtc) return true;
+        if (targetGeneric && targetGeneric !== 'belirtilmedi' && dGeneric && dGeneric === targetGeneric) return true;
+        return false;
+      })
+      .map(d => {
+        const dEg = d.esdegerGroup ? String(d.esdegerGroup).trim().toUpperCase() : '';
+        const isTier1 = Boolean(rawEg && dEg && rawEg === dEg);
+        return {
+          ...d,
+          matchTier: isTier1 ? (1 as const) : (2 as const),
+          matchReason: isTier1 ? `SGK Eşdeğer Grubu: ${rawEg} (Resmi SUT İkamesi)` : `Klinik Eşdeğer`
+        };
+      });
   } catch (err) {
     console.error("Muadil arama hatası:", err);
     return [];
@@ -181,29 +256,66 @@ export async function findEquivalents(selectedDrug?: DrugInputForEquivalents): P
 export function getDrugBadgesHTML(drug: DrugForBadges): string {
   const badges: string[] = [];
 
-  // Reçete Türü Rozeti
+  // 1. Reçete Türü Rozeti
   const rx = (drug.prescriptionType || drug.rx || '').trim();
   if (rx === 'Kırmızı') {
-    badges.push('<span class="bg-red-950 text-red-300 border border-red-700 px-1.5 py-0.5 rounded text-[10px]">🔴 Kırmızı Reçete</span>');
+    badges.push('<span class="bg-red-950 text-red-300 border border-red-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🔴 Kırmızı Reçete</span>');
   } else if (rx === 'Yeşil') {
-    badges.push('<span class="bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded text-[10px]">🟢 Yeşil Reçete</span>');
-  } else if (rx === 'Mor' || rx === 'Turuncu') {
-    badges.push('<span class="bg-purple-950 text-purple-300 border border-purple-700 px-1.5 py-0.5 rounded text-[10px]">🟣 Özellikli Reçete</span>');
+    badges.push('<span class="bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🟢 Yeşil Reçete</span>');
+  } else if (rx === 'Mor') {
+    badges.push('<span class="bg-purple-950 text-purple-300 border border-purple-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🟣 Mor Reçete</span>');
+  } else if (rx === 'Turuncu') {
+    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium">🟠 Turuncu Reçete</span>');
   }
 
-  // Pasif / İptal Kontrolü
+  // 2. SGK Geri Ödeme Rozeti
+  const isSgk = drug.sgkReimbursed === 1 || drug.sg === 1 || drug.sgkReimbursed === true;
+  const isNotSgk = drug.sgkReimbursed === 0 || drug.sg === 0;
+  if (isSgk) {
+    badges.push('<span class="bg-emerald-950/90 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium" title="SGK Sağlık Uygulama Tebliği (SUT) Kapsamında Karşılanıyor">🛡️ SGK Ödüyor</span>');
+  } else if (isNotSgk) {
+    badges.push('<span class="bg-amber-950/80 text-amber-300 border border-amber-700/70 px-1.5 py-0.5 rounded text-[10px]" title="SGK Kapsam Dışı (Hastaya Cepten Maliyet Uyarısı)">⚠️ SGK Ödemiyor</span>');
+  }
+
+  // 3. Gebelik Güvenlik Kategorisi Rozeti
+  const preg = String(drug.pregnancyCategory || drug.pr || '').trim().toUpperCase();
+  if (preg === 'A') {
+    badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi A: Kontrollü insan çalışmalarında fetal risk kanıtı yok">🤰 Gebelik: A</span>');
+  } else if (preg === 'B') {
+    badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi B: Hayvan çalışmalarında risk yok veya insan çalışmalarında kanıtlanmamış">🤰 Gebelik: B</span>');
+  } else if (preg === 'C') {
+    badges.push('<span class="bg-yellow-950 text-yellow-300 border border-yellow-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi C: Yalnızca potansiyel yarar riskten fazlaysa kullanılmalıdır">🤰 Gebelik: C</span>');
+  } else if (preg === 'D') {
+    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Gebelik Kategorisi D: Fetal risk kanıtı mevcuttur (Hayati durumlarda değerlendirilir)">⚠️ Gebelik: D (Riskli)</span>');
+  } else if (preg === 'X') {
+    badges.push('<span class="bg-rose-950 text-rose-200 border border-rose-600 px-1.5 py-0.5 rounded text-[10px] font-bold animate-pulse" title="Gebelik Kategorisi X: KESİNLİKLE KONTRENDİKE (Fetal Anomali / Teratojenik Risk!)">⛔ Gebelik: X (Kontrendike)</span>');
+  }
+
+  // 4. Soğuk Zincir Rozeti (2-8°C)
+  const isCold = drug.isColdChain === true || drug.isColdChain === 1 || drug.cz === 1 || drug.cz === true;
+  if (isCold) {
+    badges.push('<span class="bg-sky-950 text-sky-300 border border-sky-600 px-1.5 py-0.5 rounded text-[10px] font-medium" title="2-8°C Soğuk Zincir Dolabında Saklayınız">❄️ 2-8°C Soğuk Zincir</span>');
+  }
+
+  // 5. SGK Eşdeğer Grubu Rozeti
+  const eg = String(drug.esdegerGroup || drug.eg || '').trim().toUpperCase();
+  if (eg) {
+    badges.push(`<span class="bg-slate-800 text-cyan-300 border border-slate-600 hover:border-cyan-500 px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors badge-esdeger-tag" data-esdeger="${eg}" title="SGK Eşdeğer Grubu: ${eg} (Gruptaki tüm resmi muadilleri listelemek için tıklayın)">🏷️ ${eg}</span>`);
+  }
+
+  // 6. Pasif / İptal Kontrolü
   const isPassive = (drug.status && drug.status.toLowerCase().includes('pasif')) || (drug.sheet && drug.sheet.toUpperCase().includes('PASİF'));
   if (isPassive) {
     badges.push('<span class="bg-amber-950 text-amber-300 border border-amber-600 px-1.5 py-0.5 rounded text-[10px]">⚠️ Pasif / İptal</span>');
   }
 
-  // Temel İlaç Rozeti
+  // 7. Temel İlaç Rozeti
   const isEssential = Number(drug.isEssential) === 1 || Number(drug.essential) === 1;
   if (isEssential) {
     badges.push('<span class="bg-indigo-950 text-indigo-300 border border-indigo-700 px-1.5 py-0.5 rounded text-[10px]">⭐ Temel İlaç</span>');
   }
 
-  // Çocuk / Yenidoğan Temel İlaç Rozetleri & Formülasyon Tespiti
+  // 8. Çocuk / Yenidoğan Temel İlaç Rozetleri & Formülasyon Tespiti
   const isChildFlag = Number(drug.isChildEssential) === 1 || Number(drug.child) === 1 || drug.isChildEssential === true;
   const isNeonateFlag = Number(drug.isNeonateEssential) === 1 || Number(drug.neonate) === 1 || drug.isNeonateEssential === true;
 
@@ -217,7 +329,7 @@ export function getDrugBadgesHTML(drug: DrugForBadges): string {
     badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]">🍼 Yenidoğan</span>');
   }
 
-  // Prospektüs / KÜB Belge Rozeti (Doğrudan TİTCK PDF'i olanlar)
+  // 9. Prospektüs / KÜB Belge Rozeti (Doğrudan TİTCK PDF'i olanlar)
   const hasKt = Boolean(drug.kt_pdf_prospektus_url || drug.kt);
   const hasKub = Boolean(drug.kub_pdf_url || drug.kub);
   if (hasKt || hasKub) {

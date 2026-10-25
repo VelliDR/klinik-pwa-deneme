@@ -1,7 +1,8 @@
 import assert from 'assert';
 import fs from 'fs';
-import { normalizeText, normalizeDrugRecord, setMemoryDrugsCache, searchDrugsInDB, isDrugCatalogReady, getDrugCatalogIndex } from '../src/db/titckIndexedDB.js';
+import { normalizeText, normalizeDrugRecord, setMemoryDrugsCache, searchDrugsInDB, isDrugCatalogReady, getDrugCatalogIndex, getDrugsByEsdegerGroup } from '../src/db/titckIndexedDB.js';
 import { findEquivalents, getDrugBadgesHTML } from '../src/drugEngine.js';
+import { renderRefDrugCardHTML, renderEquivalentsFilterBarHTML, renderEquivalentsListHTML } from '../src/controllers/equivalentsModalController.js';
 import { setMonographsCache, findMonographSync, renderMonographCardHTML } from '../src/monographEngine.js';
 
 console.log('--- TESTING TİTCK DRUG SEARCH ENGINE & HYBRID CATALOG ---');
@@ -89,8 +90,50 @@ assert.ok(catalogIndex, 'DrugCatalogIndex must be initialized');
 assert.ok(catalogIndex.byBarcode.size > 10000, 'byBarcode index must be populated');
 assert.ok(catalogIndex.byAtc.size > 1000, 'byAtc index must be populated');
 assert.ok(catalogIndex.byGenericExact.size > 1000, 'byGenericExact index must be populated');
+assert.ok(catalogIndex.byEsdeger.size >= 2000, `byEsdeger index must have >= 2000 SGK equivalent groups (Found: ${catalogIndex.byEsdeger.size})`);
 assert.ok(catalogIndex.byWordPrefix.size > 5000, 'byWordPrefix inverted index must be populated');
-console.log(`✓ Inverted Drug Search Index verified (Barcodes: ${catalogIndex.byBarcode.size}, ATCs: ${catalogIndex.byAtc.size}, Generics: ${catalogIndex.byGenericExact.size}, Prefixes: ${catalogIndex.byWordPrefix.size})`);
+console.log(`✓ Inverted Drug Search Index verified (Barcodes: ${catalogIndex.byBarcode.size}, ATCs: ${catalogIndex.byAtc.size}, Generics: ${catalogIndex.byGenericExact.size}, SGK Eşdeğer: ${catalogIndex.byEsdeger.size}, Prefixes: ${catalogIndex.byWordPrefix.size})`);
+
+// 4b. O(1) SGK Eşdeğer Grubu Lookup Verification (E267A: Pantoprazol 40 mg enterik kaplı tabletler)
+const pantoprazoleGroup = getDrugsByEsdegerGroup('E267A');
+assert.strictEqual(pantoprazoleGroup.length, 23, 'E267A must contain exactly 23 official SGK equivalent drugs');
+assert.ok(pantoprazoleGroup.every(d => d.esdegerGroup === 'E267A'), 'All drugs in group must have E267A code');
+console.log(`✓ O(1) SGK Eşdeğer Grubu lookup verified: E267A returned ${pantoprazoleGroup.length} official bioequivalents`);
+
+const samplePantoprazole = pantoprazoleGroup[0];
+const pantoEquivalents = await findEquivalents(samplePantoprazole);
+assert.ok(pantoEquivalents.length >= 22, 'Should find all other 22 equivalents in E267A');
+assert.strictEqual(pantoEquivalents[0].esdegerGroup, 'E267A', 'Top equivalent must be an official SGK bioequivalent with E267A');
+assert.strictEqual(pantoEquivalents[0].matchTier, 1, 'Top equivalent must have matchTier === 1 (Official SGK)');
+assert.ok(pantoEquivalents[0].matchReason.includes('SGK Eşdeğer Grubu: E267A'), 'Top equivalent must have official SGK match reason');
+console.log(`✓ SGK Eşdeğer Group prioritization verified: Top match for "${samplePantoprazole.brand}" is "${pantoEquivalents[0].brand}" (Tier ${pantoEquivalents[0].matchTier}, Group: ${pantoEquivalents[0].esdegerGroup})`);
+
+// 4c. Verify 3-Tier Bioequivalents Hierarchy (Tier 1 -> Tier 2 -> Tier 3)
+const tier1Count = pantoEquivalents.filter(d => d.matchTier === 1).length;
+const tier3Count = pantoEquivalents.filter(d => d.matchTier === 3).length;
+assert.strictEqual(tier1Count, 22, 'All other 22 drugs in E267A must be classified as Tier 1');
+assert.ok(tier3Count > 0, `Should identify ATC-4 therapeutic alternatives (Found: ${tier3Count} in A02BC class)`);
+console.log(`✓ 3-Tier Hierarchy verified for Pantoprazole: Tier-1 (Official SUT): ${tier1Count}, Tier-3 (PPI Therapeutic Class): ${tier3Count}`);
+
+// 4d. Stage 4 Equivalents Modal Controller Render Verification
+const refCardHtml = renderRefDrugCardHTML(samplePantoprazole);
+assert.ok(refCardHtml.includes('Karşılaştırılan Referans Müstahzar'), 'Ref card must render reference badge');
+assert.ok(refCardHtml.includes('SGK Grubu: E267A'), 'Ref card must render SGK group badge');
+console.log('✓ renderRefDrugCardHTML verified cleanly');
+
+const filterBarHtml = renderEquivalentsFilterBarHTML(pantoEquivalents, 'all');
+assert.ok(filterBarHtml.includes('Resmi Biyoeşdeğerler (22)'), 'Filter bar must render Tier-1 official count');
+assert.ok(filterBarHtml.includes('SGK Ödeyenler'), 'Filter bar must render SGK reimbursed tab');
+console.log('✓ renderEquivalentsFilterBarHTML verified cleanly');
+
+const listHtmlAll = renderEquivalentsListHTML(pantoEquivalents, 'all');
+assert.ok(listHtmlAll.includes('Resmi SGK Biyoeşdeğer'), 'Equivalents list must render Tier-1 badges');
+assert.ok(listHtmlAll.includes('Reçeteye Ekle'), 'Equivalents list must include add to rx buttons');
+console.log('✓ renderEquivalentsListHTML (All) verified cleanly');
+
+const listHtmlOfficial = renderEquivalentsListHTML(pantoEquivalents, 'official');
+assert.ok(!listHtmlOfficial.includes('Terapötik Alternatif'), 'Official filter must isolate SUT Tier-1 only');
+console.log('✓ renderEquivalentsListHTML (Official Isolation) verified cleanly');
 
 const sampleParol = resParol.find(d => d.brand.includes('PAROL 500 MG 20 TABLET'));
 assert.ok(sampleParol, 'Sample Parol must exist');
@@ -104,15 +147,71 @@ console.log(`✓ Equivalents (Muadil) O(1) indexed search passed: Found ${equiva
 // 5. Badges Test
 const badgesHtml = getDrugBadgesHTML(sampleParol);
 assert.ok(typeof badgesHtml === 'string');
-console.log(`✓ getDrugBadgesHTML passed: "${badgesHtml}"`);
+assert.ok(badgesHtml.includes('🛡️ SGK Ödüyor'), 'Parol 500 must show SGK Ödüyor badge');
+assert.ok(badgesHtml.includes('🤰 Gebelik: B'), 'Parol 500 must show Gebelik: B badge');
+console.log(`✓ sampleParol badges verified: SGK Ödüyor + Gebelik: B ("${badgesHtml}")`);
+
+// 5b. Cold Chain Badge Test (cz === 1)
+const coldChainRaw = rawData.find(d => d.cz === 1);
+assert.ok(coldChainRaw, 'Should find at least one cold chain drug');
+const coldChainDrug = normalizeDrugRecord(coldChainRaw, 0);
+const coldBadges = getDrugBadgesHTML(coldChainDrug);
+assert.ok(coldBadges.includes('❄️ 2-8°C Soğuk Zincir'), `Cold chain drug (${coldChainDrug.brand}) must show 2-8°C Soğuk Zincir badge`);
+console.log(`✓ Cold chain badge verified for: ${coldChainDrug.brand}`);
+
+// 5c. Pregnancy Category X (Teratogenic / Contraindicated) Test (pr === 'X')
+const pregXRaw = rawData.find(d => d.pr === 'X');
+assert.ok(pregXRaw, 'Should find at least one pregnancy category X drug');
+const pregXDrug = normalizeDrugRecord(pregXRaw, 0);
+const pregXBadges = getDrugBadgesHTML(pregXDrug);
+assert.ok(pregXBadges.includes('⛔ Gebelik: X (Kontrendike)'), `Category X drug (${pregXDrug.brand}) must show Contraindicated X badge`);
+console.log(`✓ Pregnancy Category X contraindicated badge verified for: ${pregXDrug.brand}`);
+
+// 5d. SGK Non-Reimbursed Warning Badge Test (sg === 0)
+const nonSgkRaw = rawData.find(d => d.sg === 0);
+assert.ok(nonSgkRaw, 'Should find at least one non-reimbursed drug');
+const nonSgkDrug = normalizeDrugRecord(nonSgkRaw, 0);
+const nonSgkBadges = getDrugBadgesHTML(nonSgkDrug);
+assert.ok(nonSgkBadges.includes('⚠️ SGK Ödemiyor'), `Non-reimbursed drug (${nonSgkDrug.brand}) must show SGK Ödemiyor badge`);
+console.log(`✓ SGK Non-Reimbursed warning badge verified for: ${nonSgkDrug.brand}`);
+
+// 5e. Prescription Type Badges (Kırmızı / Yeşil)
+const redRxRaw = rawData.find(d => d.r === 'Kırmızı');
+if (redRxRaw) {
+    const redDrug = normalizeDrugRecord(redRxRaw, 0);
+    assert.ok(getDrugBadgesHTML(redDrug).includes('🔴 Kırmızı Reçete'), 'Red prescription badge must be rendered');
+    console.log(`✓ Red prescription badge verified for: ${redDrug.brand}`);
+}
+const greenRxRaw = rawData.find(d => d.r === 'Yeşil');
+if (greenRxRaw) {
+    const greenDrug = normalizeDrugRecord(greenRxRaw, 0);
+    assert.ok(getDrugBadgesHTML(greenDrug).includes('🟢 Yeşil Reçete'), 'Green prescription badge must be rendered');
+    console.log(`✓ Green prescription badge verified for: ${greenDrug.brand}`);
+}
+
+// 5f. SGK Bioequivalent Group Tag Badge Test
+const pantoBadgeHtml = getDrugBadgesHTML(samplePantoprazole);
+assert.ok(pantoBadgeHtml.includes('🏷️ E267A'), 'Sample Pantoprazole must show E267A badge');
+assert.ok(pantoBadgeHtml.includes('badge-esdeger-tag'), 'Sample Pantoprazole badge must have badge-esdeger-tag class for clickable filtering');
+console.log(`✓ Clickable SGK Bioequivalent Group badge verified for: ${samplePantoprazole.brand} (Group: ${samplePantoprazole.esdegerGroup})`);
+
 
 // 6. Prospektüs & KÜB Direct vs Fallback Verification
 const drugsWithDirectPdf = rawData.filter(d => Boolean(d.kt || d.kub || d.kt_pdf_prospektus_url || d.kub_pdf_url));
-assert.ok(drugsWithDirectPdf.length > 500, 'Should have official direct PDF drugs in dataset');
-const samplePdfDrug = drugsWithDirectPdf[0];
+assert.ok(drugsWithDirectPdf.length >= 2900, `Should have >= 2900 direct PDF drugs in dataset (Found: ${drugsWithDirectPdf.length})`);
+const samplePdfDrug = normalizeDrugRecord(drugsWithDirectPdf[0], 0);
 const samplePdfBadges = getDrugBadgesHTML(samplePdfDrug);
 assert.ok(samplePdfBadges.includes('Resmi PDF (KÜB/KT)'), 'Direct PDF drug should have Resmi PDF badge');
 console.log(`✓ Verified direct PDF drug (${samplePdfDrug.brand}) has official PDF badge (Found ${drugsWithDirectPdf.length} direct PDF drugs)`);
+
+// 6b. Verify Phase 1 Master Fields Integrity (SGK, Eşdeğer, Soğuk Zincir, Gebelik)
+const sgkReimbursedTotal = rawData.filter(d => d.sg === 1).length;
+assert.strictEqual(sgkReimbursedTotal, 7280, 'Must have 7,280 SGK reimbursed drugs');
+const esdegerTotal = rawData.filter(d => Boolean(d.eg)).length;
+assert.strictEqual(esdegerTotal, 6317, 'Must have 6,317 SGK equivalent group drugs');
+const coldChainTotal = rawData.filter(d => d.cz === 1).length;
+assert.strictEqual(coldChainTotal, 858, 'Must have 858 cold chain drugs');
+console.log(`✓ Phase 1 Master fields verified: SGK Reimbursed: ${sgkReimbursedTotal}, Eşdeğer: ${esdegerTotal}, Soğuk Zincir: ${coldChainTotal}`);
 
 // Fallback search link test for drugs without direct PDF
 const fallbackSearchQuery = encodeURIComponent(sampleParol.brand + ' prospektüs kub titck pdf');
@@ -144,6 +243,21 @@ const barcodeModeRes = await searchDrugsInDB('8699717010109', 'barcode');
 assert.strictEqual(barcodeModeRes.length, 1);
 assert.strictEqual(barcodeModeRes[0].barcode, '8699717010109');
 console.log(`✓ Barcode mode search passed (matched ${barcodeModeRes[0].brand})`);
+
+// 7e. SGK Eşdeğer Mode Search
+const esdegerModeRes = await searchDrugsInDB('E267A', 'esdeger');
+assert.strictEqual(esdegerModeRes.length, 23);
+assert.ok(esdegerModeRes.every(d => d.esdegerGroup === 'E267A'));
+console.log(`✓ Eşdeğer mode search passed (E267A returned ${esdegerModeRes.length} items)`);
+
+// 7f. Search Filter Options (onlySgk, onlyActive)
+const sgkFiltered = await searchDrugsInDB('parol', 'all', { onlySgk: true });
+assert.ok(sgkFiltered.length > 0 && sgkFiltered.every(d => d.sgkReimbursed === 1), 'All filtered results must be SGK reimbursed');
+console.log(`✓ Filtered search passed ({ onlySgk: true } returned ${sgkFiltered.length} items)`);
+
+const activeFiltered = await searchDrugsInDB('parol', 'all', { onlyActive: true });
+assert.ok(activeFiltered.length > 0 && activeFiltered.every(d => d.status === 'Aktif'), 'All filtered results must be active');
+console.log(`✓ Filtered search passed ({ onlyActive: true } returned ${activeFiltered.length} items)`);
 
 // 8. Offline 125 Clinical Monographs Engine & TİTCK Coverage Verification
 console.log('\n--- 8. TESTING OFFLINE 125 CLINICAL MONOGRAPHS ENGINE ---');

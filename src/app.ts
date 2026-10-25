@@ -44,6 +44,7 @@ import { searchQuickSwitcher, jumpToMotor, QUICK_SWITCHER_ITEMS, type QuickSwitc
 import { resetAnaphylaxisTimer, resetStatusStopwatch } from './utils/emergencyManager';
 import { expandDotPhrases, appendTemplateToText } from './utils/soapTemplates';
 import { initMonographModalController } from './controllers/monographModalController';
+import { initEquivalentsModalController, openDrugEquivalentsModal } from './controllers/equivalentsModalController';
 import { initPrescriptionModalController } from './controllers/prescriptionModalController';
 import { initEmergencyUiController } from './controllers/emergencyUiController';
 import { initEcgUiController } from './controllers/ecgUiController';
@@ -2398,8 +2399,10 @@ function updateSearchModeUI(newMode: DrugSearchMode): void {
             drugInput.placeholder = 'Etken madde / jenerik molekül adı ile ara (örn. Parasetamol, Amoksisilin)...';
         } else if (currentDrugSearchMode === 'barcode') {
             drugInput.placeholder = 'Barkod numarası veya ATC kodu ile ara (örn. 8699..., N02BE01)...';
+        } else if ((currentDrugSearchMode as string) === 'esdeger') {
+            drugInput.placeholder = 'SGK Eşdeğer Grubu Kodu ile ara (örn. E267A, E712B, E595A)...';
         } else {
-            drugInput.placeholder = 'İlaç adı, etken madde, barkod, firma...';
+            drugInput.placeholder = 'İlaç adı, etken madde, barkod, firma, eşdeğer kodu...';
         }
 
         const q = drugInput.value.trim();
@@ -2462,6 +2465,12 @@ if (drugInput) {
                         const safeBarcode = escapeHtml(r.barcode || '');
                         const safeRx = escapeHtml(r.prescriptionType || 'Normal');
                         const safeCompany = escapeHtml(r.company || '');
+                        const safeEg = escapeHtml(r.esdegerGroup || '');
+                        const safeDiscount = escapeHtml(r.sgkDiscount || '');
+                        const safeKamuNo = escapeHtml(r.sgkKamuNo || '');
+                        const safePregnancy = escapeHtml(r.pregnancyCategory || '');
+                        const safeColdChain = r.isColdChain ? '1' : '0';
+                        const safeSgk = String(r.sgkReimbursed ?? 0);
                         const safeKtUrl = escapeHtml(ktUrl);
                         const safeKubUrl = escapeHtml(kubUrl);
 
@@ -2474,7 +2483,7 @@ if (drugInput) {
                             : 'text-rose-300 font-bold';
 
                         const hasMonograph = Boolean(findMonographSync(r));
-                        const dataAttrs = `data-brand="${safeBrand}" data-generic="${safeGeneric}" data-atc="${safeAtc}" data-barcode="${safeBarcode}" data-rx="${safeRx}" data-kt="${safeKtUrl}" data-kub="${safeKubUrl}"`;
+                        const dataAttrs = `data-brand="${safeBrand}" data-generic="${safeGeneric}" data-atc="${safeAtc}" data-barcode="${safeBarcode}" data-rx="${safeRx}" data-esdeger="${safeEg}" data-sgk="${r.sgkReimbursed}" data-pregnancy="${safePregnancy}" data-kt="${safeKtUrl}" data-kub="${safeKubUrl}"`;
 
                         return `
                         <div class="mb-2 p-2.5 border-l-2 ${rxBorder} bg-slate-900 rounded-r-lg shadow-sm space-y-1.5 transition-all hover:bg-slate-850">
@@ -2485,6 +2494,7 @@ if (drugInput) {
                                      data-atc="${safeAtc}"
                                      data-barcode="${safeBarcode}"
                                      data-rx="${safeRx}"
+                                     data-esdeger="${safeEg}"
                                      data-company="${safeCompany}"
                                      data-kt="${safeKtUrl}"
                                      data-kub="${safeKubUrl}">
@@ -2496,12 +2506,15 @@ if (drugInput) {
                                         <span class="${genericHighlightClass}">${safeGeneric}</span>
                                         ${r.atcCode ? `<span class="text-slate-500 font-mono text-[10px]"> | ATC: ${safeAtc}</span>` : ''}
                                         ${r.barcode ? `<span class="text-slate-500 font-mono text-[10px]"> | Barkod: ${safeBarcode}</span>` : ''}
+                                        ${r.esdegerGroup ? `<span class="text-cyan-400 font-mono text-[10px]"> | Eşdeğer: ${safeEg}</span>` : ''}
+                                        ${r.sgkDiscount ? `<span class="text-emerald-400 font-mono text-[10px]"> | Kamu İskonto: ${safeDiscount}</span>` : ''}
+                                        ${r.sgkKamuNo ? `<span class="text-slate-400 font-mono text-[10px]"> | Kamu No: ${safeKamuNo}</span>` : ''}
                                     </div>
                                     ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">🏢 ${safeCompany}</div>` : ''}
                                 </div>
                                 <div class="flex items-center gap-1 flex-shrink-0">
                                     <button type="button" class="btn-open-monograph ${hasMonograph ? 'bg-emerald-950/80 border-emerald-700/70 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-500'} border text-[10px] px-2 py-1 rounded font-semibold transition-all" ${dataAttrs} title="Çevrimdışı Klinik Monograf / Doz & Güvenlik Özeti">${hasMonograph ? '📖 Monograf' : '📖 Özet'}</button>
-                                    <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-id="${escapeHtml(r.id || '')}" data-atc="${safeAtc}" data-generic="${safeGeneric}" title="Eşdeğer / Muadil İlaçları Bul">Muadil</button>
+                                    <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-id="${escapeHtml(r.id || '')}" data-brand="${safeBrand}" data-generic="${safeGeneric}" data-atc="${safeAtc}" data-barcode="${safeBarcode}" data-company="${safeCompany}" data-rx="${escapeHtml(r.prescriptionType || '')}" data-esdeger="${safeEg}" data-discount="${safeDiscount}" data-kamuno="${safeKamuNo}" data-pregnancy="${safePregnancy}" data-coldchain="${safeColdChain}" data-sgk="${safeSgk}" data-kt="${safeKtUrl}" data-kub="${safeKubUrl}" title="Eşdeğer / Muadil İlaçları ve Kamu İskontolarını Karşılaştır">🔄 Muadil</button>
                                 </div>
                             </div>
                             <div class="flex items-center flex-wrap gap-2 pt-1 border-t border-slate-800">
@@ -2611,23 +2624,52 @@ if (drugResult) {
             return;
         }
 
+        const badgeEsdeger = target.closest('.badge-esdeger-tag');
+        if (badgeEsdeger && drugInput) {
+            const esdeger = badgeEsdeger.getAttribute('data-esdeger') || '';
+            if (esdeger) {
+                updateSearchModeUI('esdeger');
+                drugInput.value = esdeger;
+                drugInput.dispatchEvent(new Event('input'));
+                return;
+            }
+        }
+
         const btnMuadil = target.closest('.btn-muadil');
-        if (btnMuadil && drugInput) {
+        if (btnMuadil) {
             const id = btnMuadil.getAttribute('data-id') || '';
-            const atc = btnMuadil.getAttribute('data-atc') || '';
+            const brand = btnMuadil.getAttribute('data-brand') || '';
             const generic = btnMuadil.getAttribute('data-generic') || '';
-            const eqList = await findEquivalents({ id, atcCode: atc, generic });
-            const query = (atc && atc !== 'Belirtilmedi') ? atc : generic;
-            if (currentDrugSearchMode === 'brand') {
-                updateSearchModeUI('all');
-            }
-            if (eqList.length > 0 && query) {
-                drugInput.value = query;
-                drugInput.dispatchEvent(new Event('input'));
-            } else if (query) {
-                drugInput.value = query;
-                drugInput.dispatchEvent(new Event('input'));
-            }
+            const atcCode = btnMuadil.getAttribute('data-atc') || '';
+            const barcode = btnMuadil.getAttribute('data-barcode') || '';
+            const company = btnMuadil.getAttribute('data-company') || '';
+            const prescriptionType = btnMuadil.getAttribute('data-rx') || '';
+            const esdegerGroup = btnMuadil.getAttribute('data-esdeger') || '';
+            const sgkDiscount = btnMuadil.getAttribute('data-discount') || '';
+            const sgkKamuNo = btnMuadil.getAttribute('data-kamuno') || '';
+            const pregnancyCategory = btnMuadil.getAttribute('data-pregnancy') || '';
+            const isColdChain = btnMuadil.getAttribute('data-coldchain') === '1';
+            const sgkReimbursed = Number(btnMuadil.getAttribute('data-sgk') || 0);
+            const kt_pdf_prospektus_url = btnMuadil.getAttribute('data-kt') || '';
+            const kub_pdf_url = btnMuadil.getAttribute('data-kub') || '';
+
+            await openDrugEquivalentsModal({
+                id,
+                brand,
+                generic,
+                atcCode,
+                barcode,
+                company,
+                prescriptionType,
+                esdegerGroup,
+                sgkDiscount,
+                sgkKamuNo,
+                pregnancyCategory,
+                isColdChain,
+                sgkReimbursed,
+                kt_pdf_prospektus_url,
+                kub_pdf_url
+            });
             return;
         }
 
@@ -3873,9 +3915,28 @@ export function initResponsiveWorkstation(): void {
     }
 
     // ========================================================================
-    // MODÜLER UI DENETLEYİCİLERİ (Monograf, Reçete A4, Acil Protokoller, EKG)
+    // MODÜLER UI DENETLEYİCİLERİ (Monograf, Muadil Karşılaştırma, Reçete A4, Acil Protokoller, EKG)
     // ========================================================================
     initMonographModalController();
+    initEquivalentsModalController({
+        onAddDrugToTreatment: (drugData) => {
+            if (!appState.treatment) appState.treatment = { selectedDrugs: [] };
+            if (!appState.treatment.selectedDrugs) appState.treatment.selectedDrugs = [];
+            if (!appState.treatment.selectedDrugs.find((d: any) => d.brand === drugData.brand)) {
+                appState.treatment.selectedDrugs.push(drugData);
+                renderSelectedDrugs();
+                updateAllTabs();
+            }
+        },
+        onSendToSearch: (query, mode) => {
+            const dInput = getEl<HTMLInputElement>('input-drug-search');
+            if (dInput) {
+                updateSearchModeUI(mode);
+                dInput.value = query;
+                dInput.dispatchEvent(new Event('input'));
+            }
+        }
+    });
     initPrescriptionModalController();
     initEmergencyUiController({
         onUpdateAllTabs: updateAllTabs,
