@@ -48,6 +48,8 @@ import type {
   PercentilesResult,
   TargetHeightResult,
   CorrectedAgeResult,
+  GrowthVelocityResult,
+  CranialScreeningResult,
   PediatricBPResult,
   CentorResult,
   PediatricDoseResult,
@@ -130,6 +132,8 @@ export interface AppState {
     pews: PEWSResult | null;
     pgcs: GCSResult | null;
     iron?: PediatricIronResult | null;
+    growthVelocity?: GrowthVelocityResult | null;
+    cranialScreening?: CranialScreeningResult | null;
   };
   surgery: {
     active: boolean;

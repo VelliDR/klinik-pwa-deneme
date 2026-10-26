@@ -1,4 +1,5 @@
 import { normalizeText, ensureDrugCatalogReady, getDrugCatalogIndex, type NormalizedDrugRecord } from './db/titckIndexedDB';
+import { resolveToRxNormConcept } from './engines/rxNormMappingEngine';
 
 export interface DrugStrengthResult {
   type: 'liquid' | 'solid';
@@ -336,5 +337,28 @@ export function getDrugBadgesHTML(drug: DrugForBadges): string {
     badges.push('<span class="bg-emerald-950/80 text-emerald-300 border border-emerald-700/80 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Resmi TİTCK PDF Belgesi Doğrudan Mevcut">Resmi PDF (KÜB/KT)</span>');
   }
 
+  // 10. Çevrimdışı RxNorm CUI Rozeti
+  const rxNormBadge = getDrugRxNormBadge(drug);
+  if (rxNormBadge) {
+    badges.push(rxNormBadge);
+  }
+
   return badges.join(' ');
 }
+
+/**
+ * 4. ÇEVRİMDİŞI RXNORM CUI ROZET OLUŞTURUCU
+ * TİTCK ilacını standart RxNorm CUI ontolojisi ile eşleştirip rozet üretir.
+ */
+export function getDrugRxNormBadge(drug: DrugForBadges): string {
+  if (!drug) return '';
+  const brand = drug.brand || '';
+  const generic = drug.generic || '';
+  const atc = String((drug as any).atcCode || (drug as any).atc || (drug as any).a || '');
+  const resolved = resolveToRxNormConcept({ brand, generic, atcCode: atc });
+  if (resolved) {
+    return `<span class="bg-violet-950 text-violet-300 border border-violet-700 px-1.5 py-0.5 rounded text-[10px] font-mono" title="RxNorm CUI: ${resolved.rxCui} (${resolved.displayNameEn})">RxCUI: ${resolved.rxCui}</span>`;
+  }
+  return '';
+}
+

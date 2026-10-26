@@ -147,9 +147,9 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
     name: 'Pediatrik Şurup & Süspansiyon Dozu',
     shortName: 'Pediatrik Şurup',
     category: 'pediatri',
-    icon: '🥄',
-    desc: 'Kilo bazlı mg/kg dozlama, ölçek (5 mL) ve günlük doz aralığı hesabı',
-    keywords: ['surup', 'suspansiyon', 'pediatrik doz', 'parol surup', 'calpol', 'dolven', 'olcek', 'mg/kg']
+    icon: '👶',
+    desc: 'Kilo bazlı mg/kg dozlama, ISMP mililitre (mL) ve oral enjektör hesabı',
+    keywords: ['surup', 'suspansiyon', 'pediatrik doz', 'parol surup', 'calpol', 'dolven', 'enjektor', 'ml', 'mg/kg']
   },
   {
     id: 'card-asi',
@@ -193,7 +193,7 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
     shortName: 'Akılcı Reçete & İlaç Güvenliği',
     category: 'ilac',
     icon: '🛡️',
-    desc: '18.212 TİTCK ilacı, 125 çevrimdışı ilaç monografı, muadil bulucu, Triple Whammy, Serotonin ve Renal kalkan',
+    desc: '18.212 TİTCK ilacı, 135 çevrimdışı ilaç monografı, muadil bulucu, Triple Whammy, Serotonin ve Renal kalkan',
     keywords: ['recete', 'ilac', 'monograf', 'titck', 'muadil', 'etkilesim', 'triple whammy', 'serotonin', 'hiperkalemi', 'statin', 'cyp3a4', 'gebelik', 'yenidogan ilac', 'prospektus', 'kub', 'kt', 'parol', 'parasetamol', 'aspirin', 'augmentin', 'arveles', 'apap', 'analjezik', 'antibiyotik']
   },
   {

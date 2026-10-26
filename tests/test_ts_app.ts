@@ -148,7 +148,53 @@ assert.strictEqual(bsaEl.textContent, '1.84');
 
 console.log('✓ updateAllTabs() in src/app.ts executed reactive biometry calculation (BSA: 1.84 m²).');
 
+console.log('--- 5. TESTING GLOBAL LAB FALLBACKS & CARDIOVASCULAR/OBGYN AUTO-SYNC ---');
+const { appState } = await import('../src/state.js');
+const { generateSOAP } = await import('../src/utils/soapGenerator.js');
+
+// 5.1 Global Lab Fallbacks: FENa & FEUrea should use global serum-na and creatinine when local is empty
+(document.getElementById('input-serum-na') as any).value = '140';
+(document.getElementById('input-creatinine') as any).value = '1.0';
+(document.getElementById('input-fena-u-na') as any).value = '20';
+(document.getElementById('input-fena-u-cr') as any).value = '50';
+
+appModule.updateAllTabs();
+
+assert.ok(appState.nephroTox.fena, 'FENa should calculate using global Na/Cr fallbacks');
+assert.strictEqual(appState.nephroTox.fena.etiology, 'Prerenal Azotemi', 'FENa < 1% should be classified as prerenal');
+
+// 5.2 Cardiovascular Demographics Auto-sync
+(document.getElementById('input-age') as any).value = '72';
+(document.getElementById('select-age-unit') as any).value = 'years';
+(document.getElementById('select-gender') as any).value = 'female';
+(document.getElementById('chk-af-htn') as any).checked = true;
+(document.getElementById('chk-bleeding-htn') as any).checked = true;
+
+appModule.updateAllTabs();
+
+const chkAfFemale = document.getElementById('chk-af-female') as any;
+const chkAfAge65 = document.getElementById('chk-af-age65') as any;
+const chkBleedElderly = document.getElementById('chk-bleeding-elderly') as any;
+
+assert.strictEqual(chkAfFemale.checked, true, 'CHA2DS2-VASc female checkbox should auto-sync with female gender');
+assert.strictEqual(chkAfAge65.checked, true, 'CHA2DS2-VASc age >= 65 checkbox should auto-sync for 72y');
+assert.strictEqual(chkBleedElderly.checked, true, 'HAS-BLED elderly checkbox should auto-sync for >= 65y');
+assert.ok(appState.thrombosis.cha2ds2vasc, 'CHA2DS2-VASc should calculate automatically');
+assert.ok(appState.thrombosis.hasbled, 'HAS-BLED should calculate automatically');
+
+// 5.3 Live Comprehensive SOAP Generator Verification
+const soapReport = generateSOAP();
+assert.ok(soapReport.includes('[S] SUBJEKTİF:'));
+assert.ok(soapReport.includes('[O] OBJEKTİF:'));
+assert.ok(soapReport.includes('[A] DEĞERLENDİRME:'));
+assert.ok(soapReport.includes('[P] PLAN & TEDAVİ:'));
+assert.ok(soapReport.includes('FENa:'), 'SOAP should include FENa calculation in objective findings');
+assert.ok(soapReport.includes('CHA₂DS₂-VASc'), 'SOAP should include CHA₂DS₂-VASc in assessment or objective');
+assert.ok(soapReport.includes('HAS-BLED'), 'SOAP should include HAS-BLED in assessment or objective');
+
+console.log('✓ Global lab fallbacks, cardio-sync, and comprehensive SOAP generation verified.');
 
 console.log('\n======================================================');
 console.log('🎉 ALL TypeScript APP & WORKSTATION TESTS PASSED (100% PARITY)! 🎉');
 console.log('======================================================\n');
+

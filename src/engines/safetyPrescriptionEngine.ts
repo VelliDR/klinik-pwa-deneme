@@ -31,6 +31,12 @@ import type {
   HyperkalemiaRiskResult,
   CypStatinInteractionResult
 } from '../types/engines';
+import {
+  evaluateComprehensiveRenalFunction,
+  identifyRenalDrugCategory
+} from './renalDoseEngine';
+import { resolveToRxNormConcept } from './rxNormMappingEngine';
+import { calculateDetailedEGFR } from './biometricsEngine';
 
 /**
  * 1. RENAL DOSE ADJUSTMENT DATABASE (eGFR cut-offs in mL/min/1.73m²)
@@ -175,6 +181,46 @@ export const RENAL_DRUG_DATABASE: RenalDrugEntry[] = [
       { maxEgfr: 9, status: 'DOSE_REDUCTION', message: 'eGFR < 10 mL/dk: Doz aralığı 24 saate çıkarılmalıdır (250-500 mg / 24 saat). Yüksek doz ve uzatılmış salımlı formlardan kaçınılmalıdır.' },
       { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'eGFR 10-29 mL/dk: Doz aralığı 12 saate çıkarılmalıdır (250-500 mg / 12 saat).' }
     ]
+  },
+  {
+    generic: 'apixaban',
+    aliases: ['apiksaban', 'eliquis'],
+    atcPrefix: 'B01AF02',
+    name: 'Apiksaban (Eliquis)',
+    rules: [
+      { maxEgfr: 14, status: 'CONTRAINDICATED', message: 'KONTRENDİKE / ÖNERİLMEZ! CrCl < 15 mL/dak: Klinik veri yetersizdir, kanama riski nedeniyle kullanılmamalıdır (EHRA 2021).' },
+      { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'CrCl 15-29 mL/dak: Doz günde iki kez 2.5 mg olarak azaltılmalıdır (veya Serum kreatinin ≥1.5 mg/dL + Yaş ≥80 veya Kilo ≤60 kg kriterlerinden en az ikisi varsa 2x2.5 mg; EHRA 2021).' }
+    ]
+  },
+  {
+    generic: 'edoxaban',
+    aliases: ['edoksaban', 'lixiana'],
+    atcPrefix: 'B01AF03',
+    name: 'Edoksaban (Lixiana)',
+    rules: [
+      { maxEgfr: 14, status: 'CONTRAINDICATED', message: 'KONTRENDİKE! CrCl < 15 mL/dak: Kullanımı önerilmez.' },
+      { maxEgfr: 50, status: 'DOSE_REDUCTION', message: 'CrCl 15-50 mL/dak: Doz günde tek doz 30 mg olarak azaltılmalıdır (Standart 60 mg yerine; EHRA 2021).' }
+    ]
+  },
+  {
+    generic: 'vancomycin',
+    aliases: ['vankomisin', 'vancocin', 'edicin', 'vancomax'],
+    atcPrefix: 'J01XA01',
+    name: 'Vankomisin (Vancomycin)',
+    rules: [
+      { maxEgfr: 20, status: 'DOSE_REDUCTION', message: 'Mutlak GFR < 20 mL/dak: Doz aralığı 48-72 saate çıkarılmalı veya seviye bazlı (AUC/MIC veya trough düzeyi) verilmelidir; TDM zorunludur.' },
+      { maxEgfr: 49, status: 'DOSE_REDUCTION', message: 'Mutlak GFR 20-49 mL/dak: Doz aralığı 24 saate çıkarılmalıdır (15-20 mg/kg / 24 saat); vadi düzeyi (trough) izlenmelidir.' }
+    ]
+  },
+  {
+    generic: 'digoxin',
+    aliases: ['digoksin', 'digoxin-sandoz'],
+    atcPrefix: 'C01AA05',
+    name: 'Digoksin (Digoxin)',
+    rules: [
+      { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'CrCl / GFR < 30 mL/dak: Doz %50 azaltılmalı (0.0625 mg günaşırı veya günde 1 kez); serum digoksin düzeyi sıkı izlenmelidir.' },
+      { maxEgfr: 50, status: 'DOSE_REDUCTION', message: 'CrCl / GFR 30-50 mL/dak: Doz %25-33 azaltılmalıdır (0.125 mg/gün).' }
+    ]
   }
 ];
 
@@ -314,16 +360,45 @@ function matchesNormalizedKeyword(normText: string, rawKeyword: string): boolean
 
 /**
  * 1. eGFR Bazlı Renal Doz ve Kontrendikasyon Analiz Motoru
+ * (KDIGO 2024 + Mosteller BSA De-indeksleme + EHRA 2021 Cockcroft-Gault Standardizasyonu)
  */
 export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): RenalDoseCheckResult {
-  const egfr = Number(params.egfr);
+  let egfr = Number(params.egfr);
   const drugs = Array.isArray(params.drugs) ? params.drugs : [];
+
+  // Eğer doğrudan eGFR verilmemişse ama Scr, yaş ve cinsiyet verilmişse CKD-EPI/Schwartz hesapla
+  if ((isNaN(egfr) || egfr <= 0) && params.serumCreatinineMgDl && params.ageYears !== undefined && params.ageYears !== null && params.gender) {
+    const detailed = calculateDetailedEGFR(
+      Number(params.serumCreatinineMgDl),
+      Number(params.ageYears),
+      params.gender,
+      params.heightCm ?? undefined,
+      { bsa: params.bsa ?? undefined }
+    );
+    if (detailed && detailed.egfrIndexed > 0) {
+      egfr = detailed.egfrIndexed;
+    }
+  }
 
   if (isNaN(egfr) || egfr <= 0) {
     return {
       isValid: false,
-      message: 'Lütfen geçerli bir eGFR değeri giriniz.'
+      message: 'Lütfen geçerli bir eGFR veya Serum Kreatinin değeri giriniz.'
     };
+  }
+
+  // Kapsamlı habitus ve de-indeksleme analizi
+  let compEvaluation: import('../engines/renalDoseEngine').ComprehensiveRenalEvaluation | null = null;
+  const hasHabitus = (params.heightCm && params.heightCm > 0) || (params.weightKg && params.weightKg > 0);
+  if (hasHabitus || params.serumCreatinineMgDl) {
+    compEvaluation = evaluateComprehensiveRenalFunction({
+      ageYears: params.ageYears ?? null,
+      gender: params.gender ?? null,
+      heightCm: params.heightCm ?? null,
+      weightKg: params.weightKg ?? null,
+      serumCreatinineMgDl: params.serumCreatinineMgDl ?? null,
+      egfrIndexed: egfr
+    }, drugs);
   }
 
   const warnings: RenalDoseWarning[] = [];
@@ -344,6 +419,7 @@ export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): Re
 
     const normName = normalizeStr(searchCombined);
     const normAtc = normalizeStr(atc);
+    const resolvedConcept = resolveToRxNormConcept(drugInput);
 
     // Veritabanında eşleşen ilacı bul
     const matchedEntry = RENAL_DRUG_DATABASE.find(entry => {
@@ -356,23 +432,59 @@ export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): Re
       if (matchesNormalizedKeyword(normName, entry.generic)) {
         return true;
       }
+      if (resolvedConcept && (resolvedConcept.canonicalKey === entry.generic || entry.aliases.includes(resolvedConcept.canonicalKey))) {
+        return true;
+      }
       return entry.aliases.some(alias => matchesNormalizedKeyword(normName, alias));
     });
 
     if (matchedEntry) {
+      const drugCategoryInfo = identifyRenalDrugCategory(drugInput);
+      let effectiveClearance = egfr;
+      let metricUsed: 'INDEXED_EGFR' | 'ABSOLUTE_EGFR' | 'COCKCROFT_GAULT_CRCL' = 'INDEXED_EGFR';
+      let clearanceUnit: string = 'mL/dak/1.73 m²';
+      const tdm = drugCategoryInfo.tdmRecommended;
+
+      if (compEvaluation) {
+        if (drugCategoryInfo.metric === 'COCKCROFT_GAULT_CRCL' && compEvaluation.cockcroftGault) {
+          effectiveClearance = compEvaluation.cockcroftGault.recommendedCrCl;
+          metricUsed = 'COCKCROFT_GAULT_CRCL';
+          clearanceUnit = 'mL/dak';
+        } else if (drugCategoryInfo.metric === 'ABSOLUTE_EGFR' && compEvaluation.egfrAbsolute !== null) {
+          effectiveClearance = compEvaluation.egfrAbsolute;
+          metricUsed = 'ABSOLUTE_EGFR';
+          clearanceUnit = 'mL/dak';
+        } else if (compEvaluation.bsa?.isDeviatedFromStandard && compEvaluation.egfrAbsolute !== null) {
+          effectiveClearance = compEvaluation.egfrAbsolute;
+          metricUsed = 'ABSOLUTE_EGFR';
+          clearanceUnit = 'mL/dak';
+        }
+      }
+
       // Kural kontrolü (en katı kuraldan başla; ondalıklı eGFR değerlerinde 29.5 gibi boşlukları önlemek için Math.floor kullan)
       const sortedRules = [...matchedEntry.rules].sort((a, b) => a.maxEgfr - b.maxEgfr);
-      const triggeredRule = sortedRules.find(r => Math.floor(egfr) <= r.maxEgfr);
+      const triggeredRule = sortedRules.find(r => Math.floor(effectiveClearance) <= r.maxEgfr);
 
       if (triggeredRule) {
+        let msg = triggeredRule.message;
+        if (metricUsed === 'COCKCROFT_GAULT_CRCL' && Math.abs(effectiveClearance - egfr) >= 5) {
+          msg += ` [EHRA 2021: Cockcroft-Gault CrCl (${effectiveClearance} mL/dak) esas alındı; eGFR: ${egfr}]`;
+        } else if (metricUsed === 'ABSOLUTE_EGFR' && Math.abs(effectiveClearance - egfr) >= 5) {
+          msg += ` [KDIGO 2024: De-indekslenmiş Mutlak GFR (${effectiveClearance} mL/dak) esas alındı; BSA: ${compEvaluation?.bsa?.bsaMosteller} m²]`;
+        }
+
         warnings.push({
           drug: matchedEntry.name,
           userDrugQuery: drugName,
           status: triggeredRule.status,
           alertClass: triggeredRule.status === 'CONTRAINDICATED' ? 'danger' : 'warning',
-          message: triggeredRule.message,
+          message: msg,
           thresholdEgfr: triggeredRule.maxEgfr,
-          currentEgfr: egfr
+          currentEgfr: egfr,
+          metricUsed,
+          effectiveClearanceValue: effectiveClearance,
+          clearanceUnit,
+          tdmRecommended: tdm
         });
       }
     }
@@ -383,11 +495,14 @@ export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): Re
   return {
     isValid: true,
     egfr,
+    deindexedAbsoluteGfr: compEvaluation?.egfrAbsolute ?? null,
+    cockcroftGaultCrCl: compEvaluation?.cockcroftGault?.recommendedCrCl ?? null,
     totalChecked: drugs.length,
     alertsCount: warnings.length,
     hasContraindication,
     alertClass: hasContraindication ? 'danger' : (warnings.length > 0 ? 'warning' : 'success'),
-    warnings
+    warnings,
+    comprehensiveEvaluation: compEvaluation
   };
 }
 
@@ -1486,3 +1601,39 @@ export function checkCypStatinInteraction(drugs: DrugInputItem[] = []): CypStati
     recommendations: []
   };
 }
+
+/**
+ * 8. ÇEVRİMDİŞI RXNORM CUI & ATC İLAÇ EŞLEŞTİRME VE DDI MOTORU
+ * (Sunset/deprecated NLM RxNav Drug Interaction API yerine %100 çevrimdışı yerel motor)
+ */
+export {
+  OFFLINE_RXNORM_CONCEPTS,
+  normalizeRxText,
+  isRxNavApiDeprecated,
+  getOfflineOntologyStats,
+  getRxNormConceptByCui,
+  getRxNormConceptByAtc,
+  getRxNormConceptByKey,
+  resolveToRxNormConcept,
+  resolveBatchRxNormConcepts,
+  type RxNormConceptDefinition,
+  type ConceptMatchConfidence,
+  type ResolvedRxConcept,
+  type OfflineOntologyStats
+} from './rxNormMappingEngine';
+
+/**
+ * 9. 4 KADEMELİ ETKİLEŞİM HİYERARŞİSİ (TIER 1-4) & ACORN VPT DOWNGRADE MOTORU
+ */
+export {
+  evaluatePrescriptionInteractions,
+  isAcornVptRegimen,
+  type AlertTierLevel,
+  type InteractionAlertCode,
+  type PatientSafetyContext,
+  type DrugInvolvedRef,
+  type InteractionAlert,
+  type InteractionEvaluationResult
+} from './interactionTierEngine';
+
+

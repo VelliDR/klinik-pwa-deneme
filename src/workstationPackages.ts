@@ -141,7 +141,7 @@ export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
     icon: '👶',
     shortName: 'Pediatrik Dozaj',
     category: 'pediatri',
-    desc: 'Kilo bazlı Parasetamol, İbuprofen ve antibiyotik şurup ölçek hesabı'
+    desc: 'Kilo bazlı Parasetamol, İbuprofen ve antibiyotik sıvı mililitre (mL) ve enjektör hesabı'
   },
   'card-antibiyotik': {
     id: 'card-antibiyotik',
@@ -173,7 +173,7 @@ export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
     icon: '💊',
     shortName: 'TİTCK & İlaç Güvenliği',
     category: 'ilac',
-    desc: 'TİTCK ilaç arama, 125 çevrimdışı monograf, muadil bulucu, Triple Whammy ve renal kalkan'
+    desc: 'TİTCK ilaç arama, 135 çevrimdışı monograf, muadil bulucu, Triple Whammy ve renal kalkan'
   },
   'card-infuzyon': {
     id: 'card-infuzyon',

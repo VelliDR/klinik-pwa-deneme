@@ -76,7 +76,7 @@ export function renderFallbackOfflineDrugSummaryHTML(drug: MonographLookupInput 
         </div>
       ` : `
         <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-2.5 text-slate-300 leading-relaxed">
-          Bu müstahzar, çekirdek 125 çevrimdışı klinik monograf listesi dışındadır. Etkileşim kalkanı (Triple Whammy, Serotonin Sendromu, Hiperkalemi, CYP3A4, Renal & Gebelik kontrolleri) reçeteye eklendiğinde çevrimdışı olarak aktif çalışmaya devam eder.
+          Bu müstahzar, çekirdek 135 çevrimdışı klinik monograf listesi dışındadır. Etkileşim kalkanı (Triple Whammy, Serotonin Sendromu, Hiperkalemi, CYP3A4, Renal & Gebelik kontrolleri) reçeteye eklendiğinde çevrimdışı olarak aktif çalışmaya devam eder.
         </div>
       `}
     </div>

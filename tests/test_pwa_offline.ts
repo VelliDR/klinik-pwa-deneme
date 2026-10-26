@@ -50,9 +50,9 @@ assert.ok(pregCount >= 1000, `Must have >= 1,000 pregnancy category drugs (Found
 console.log(`✓ Public TİTCK medicines.json dataset verified (18,212 records, SGK: ${sgkCount}, E-Kod: ${egCount}, Soğuk Zincir: ${coldCount}, PDF: ${pdfCount}, Gebelik: ${pregCount})`);
 
 const monographs = JSON.parse(fs.readFileSync('public/data/clinical_monographs.json', 'utf8'));
-assert.strictEqual(monographs.length, 125, 'Offline clinical monographs dataset must have exactly 125 items');
+assert.strictEqual(monographs.length, 135, 'Offline clinical monographs dataset must have exactly 135 items');
 const uniqueMonographIds = new Set(monographs.map((m: any) => m.id));
-assert.strictEqual(uniqueMonographIds.size, 125, 'All 125 monograph IDs must be unique');
+assert.strictEqual(uniqueMonographIds.size, 135, 'All 135 monograph IDs must be unique');
 const requiredMonoFields = [
     'id', 'genericTr', 'genericEn', 'atcCodes', 'genericKeywords', 'brandExamples',
     'drugClass', 'indications', 'adultDose', 'pediatricDose', 'maxDailyDose',
@@ -63,7 +63,27 @@ for (const m of monographs) {
         assert.ok(m[f] !== undefined && m[f] !== null && String(m[f]).trim().length > 0, `Monograph ${m.id} missing required field ${f}`);
     }
 }
-console.log('✓ Offline clinical_monographs.json verified with 125 complete clinical drug cards');
+
+// Verify that all 25 critical pediatric drugs have structured profiles (schema compliance)
+const criticalPediatricDrugs = [
+    'epinephrine', 'ceftriaxone', 'cefotaxime', 'ampicillin', 'gentamicin',
+    'vancomycin', 'midazolam', 'diazepam', 'levetiracetam', 'phenobarbital',
+    'phenytoin', 'acyclovir', 'oseltamivir', 'budesonide', 'ipratropium',
+    'morphine', 'fentanyl', 'ketamine', 'ors', 'paracetamol',
+    'metronidazole', 'fluconazole', 'lorazepam', 'methylprednisolone',
+    'zinc_sulfate'
+];
+const monoMap = new Map<string, any>(monographs.map((m: any) => [m.id, m]));
+for (const drugId of criticalPediatricDrugs) {
+    const m = monoMap.get(drugId);
+    assert.ok(m, `Critical pediatric drug ${drugId} must be present in monographs`);
+    assert.ok(Array.isArray(m.formulations) && m.formulations.length > 0, `${drugId} must have formulations`);
+    assert.ok(m.dosing && Array.isArray(m.dosing.pediatric_dosing) && m.dosing.pediatric_dosing.length > 0, `${drugId} must have pediatric_dosing`);
+    assert.ok(m.reproductive_safety && m.reproductive_safety.pregnancy_trimester_risk && m.reproductive_safety.lactation, `${drugId} must have reproductive_safety`);
+    assert.ok(m.safety_warnings && m.safety_warnings.neonatal_specific_notes, `${drugId} must have neonatal safety notes`);
+    assert.ok(m.metadata && Array.isArray(m.metadata.source_documents), `${drugId} must have metadata`);
+}
+console.log('✓ Offline clinical_monographs.json verified with 135 complete clinical drug cards (All 25 critical pediatric drugs 100% structured)');
 
 // 3. Verify Legacy SW Isolation
 assert.ok(!fs.existsSync('sw.js'), 'Legacy sw.js in root must not exist');

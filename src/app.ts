@@ -5,7 +5,7 @@
 import { appState } from './state';
 import { calculateBSA, calculateDetailedEGFR, type PediatricCreatinineAssay } from './engines/biometricsEngine';
 import { calculatePediatricDose, getVaccineSchedule, classifyPediatricBP, calculateCentorMcIsaac } from './engines/pediatricEngine';
-import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge } from './engines/percentileEngine';
+import { calculatePercentiles, calculateTargetHeight, calculateCorrectedAge, calculateGrowthVelocity, calculateCranialScreening, type GrowthStandard, type MeasurementPosition } from './engines/percentileEngine';
 import { calculatePediatricIron } from './engines/ironEngine';
 import { calculateAlvarado, calculateParkland, calculateRanson, getSutureGuidance, type BurnProtocolType } from './engines/surgeryEngine';
 import { calculateObstetrics, calculateBishop, calculatePreeclampsia } from './engines/obgynEngine';
@@ -29,6 +29,7 @@ import { ensureMonographsReady, findMonographSync } from './monographEngine';
 import { calculateWellsDVT, calculateWellsPTE, evaluatePERC, calculateCHA2DS2VASc, calculateHASBLED, calculateHEART } from './engines/thrombosisEngine';
 import { calculateFENa, calculateFEUrea, evaluateOliguriaDifferential, calculateCorrectedSodium, calculateOsmolalGap, evaluateRumackMatthew, calculateCURB65 } from './engines/nephroToxEngine';
 import { calculateBhutaniJaundice, calculateAPGAR, calculateWestleyCroup, calculateCDSDehydration, calculateNeonatalWeightLoss } from './engines/neonatologyEngine';
+import { evaluateAap2022Jaundice } from './engines/jaundiceEngine';
 import type { BhutaniGuideline, BilirubinMeasurementType } from './types/engines';
 import { 
     checkRenalDoseAdjustments, 
@@ -330,9 +331,13 @@ export function calculatePatientAge(): PatientAgeResult {
     // Yenidoğanda (<= 14 gün / 336 saat) Sarılık Postnatal Saati Otomatik Doldurma
     if (hours !== null && days !== null && days <= 14) {
         const bhutaniInput = getEl<HTMLInputElement>('input-bhutani-age-hours');
-        if (bhutaniInput && (!bhutaniInput.value || bhutaniInput.dataset.autofilled === 'true')) {
-            bhutaniInput.value = String(Math.min(336, Math.max(1, hours)));
-            bhutaniInput.dataset.autofilled = 'true';
+        if (bhutaniInput) {
+            if (typeof document !== 'undefined' && document.activeElement === bhutaniInput) {
+                bhutaniInput.dataset.autofilled = 'false';
+            } else if (!bhutaniInput.value || bhutaniInput.dataset.autofilled === 'true') {
+                bhutaniInput.value = String(Math.min(336, Math.max(1, hours)));
+                bhutaniInput.dataset.autofilled = 'true';
+            }
         }
     }
 
@@ -560,44 +565,112 @@ export function updateAllTabs(): void {
     const outputHeadCirc = getEl('output-p-head');
     const outPWeight = getEl('output-p-weight');
     const outPHeight = getEl('output-p-height');
+    const growthStandardEl = getEl<HTMLSelectElement>('select-growth-standard');
+    const growthPositionEl = getEl<HTMLSelectElement>('select-growth-position');
+    const rowPosAlert = getEl('row-position-alert');
+    const outPosAlert = getEl('output-position-alert');
+    const rowDiscAlert = getEl('row-discordance-alert');
+    const outDiscAlert = getEl('output-discordance-alert');
+
+    const selectedGrowthStandard = (growthStandardEl?.value as GrowthStandard) || 'neyzi_2015';
+    const selectedGrowthPosition = (growthPositionEl?.value as MeasurementPosition) || 'auto';
 
     // Preterm bebeklerde ilk 36 ayda persentil hesabı düzeltilmiş yaşa göre yapılır
     const growthMonths = (appState.pediatrics.correctedAge && appState.pediatrics.correctedAge.isPreterm && totalMonths !== null && totalMonths <= 36)
         ? appState.pediatrics.correctedAge.correctedMonths
         : totalMonths;
 
-    if (appState.biometry.weightKg && appState.biometry.heightCm && appState.biometry.gender && growthMonths !== null) {
+    const prevHc = getNum('input-cs-prev-hc');
+    const csDays = getNum('input-cs-days');
+    const csFontanelle = getChk('check-cs-fontanelle');
+    const csSunset = getChk('check-cs-sunset');
+    const csVomiting = getChk('check-cs-vomiting');
+    const csSutures = getChk('check-cs-sutures');
+    const csParental = getChk('check-cs-parental');
+
+    if ((appState.biometry.weightKg || appState.biometry.heightCm || headCirc) && appState.biometry.gender && growthMonths !== null) {
         appState.pediatrics.percentiles = calculatePercentiles({
             totalMonths: growthMonths,
             gender: appState.biometry.gender,
             weightKg: appState.biometry.weightKg,
             heightCm: appState.biometry.heightCm,
             headCircumferenceCm: headCirc || undefined,
-            isPediatric: growthMonths <= 216
+            isPediatric: growthMonths <= 216,
+            standard: selectedGrowthStandard,
+            measurementPosition: selectedGrowthPosition,
+            previousHeadCircCm: prevHc ?? undefined,
+            headCircDaysBetween: csDays ?? undefined,
+            hasBulgingFontanelle: csFontanelle,
+            hasSunsetEyes: csSunset,
+            hasVomitingLethargy: csVomiting,
+            hasSeparatedSutures: csSutures,
+            parentalMacrocephaly: csParental
         });
         if (appState.pediatrics.percentiles && percContainer) {
             percContainer.classList.remove('hidden');
+            const p = appState.pediatrics.percentiles;
+            const stdBadge = p.standardUsed === 'who_2022' ? 'DSÖ' : 'Neyzi';
             if (outPWeight) {
-                outPWeight.innerHTML = appState.pediatrics.percentiles.weightPercentile ? `%${appState.pediatrics.percentiles.weightPercentile} <span class="text-[9px] text-slate-500">(Z: ${appState.pediatrics.percentiles.weightZ})</span>` : '--';
+                outPWeight.innerHTML = p.weightPercentile !== null ? `%${p.weightPercentile} <span class="text-[9px] text-slate-500">(Z: ${p.weightZ}) [${stdBadge}]</span>` : '--';
             }
             if (outPHeight) {
-                outPHeight.innerHTML = appState.pediatrics.percentiles.heightPercentile ? `%${appState.pediatrics.percentiles.heightPercentile} <span class="text-[9px] text-slate-500">(Z: ${appState.pediatrics.percentiles.heightZ})</span>` : '--';
+                outPHeight.innerHTML = p.heightPercentile !== null ? `%${p.heightPercentile} <span class="text-[9px] text-slate-500">(Z: ${p.heightZ}) [${stdBadge}]</span>` : '--';
             }
 
-            if (appState.pediatrics.percentiles.headCircumferencePercentile !== null && rowHeadCirc && outputHeadCirc) {
+            const rowCranialAlert = getEl('row-cranial-alert');
+            const outCranialAlertTitle = getEl('output-cranial-alert-title');
+            const outCranialAlertBody = getEl('output-cranial-alert-body');
+
+            if (p.headCircumferencePercentile !== null && rowHeadCirc && outputHeadCirc) {
                 rowHeadCirc.classList.remove('hidden');
-                outputHeadCirc.innerHTML = `%${appState.pediatrics.percentiles.headCircumferencePercentile} <span class="text-[9px] text-slate-500">(Z: ${appState.pediatrics.percentiles.headCircZ})</span> <span class="text-[9px] ml-1">${appState.pediatrics.percentiles.headCircCategory || ''}</span>`;
-            } else if (rowHeadCirc) {
-                rowHeadCirc.classList.add('hidden');
+                outputHeadCirc.innerHTML = `%${p.headCircumferencePercentile} <span class="text-[9px] text-slate-500">(Z: ${p.headCircZ}) [${stdBadge}]</span>`;
+
+                if (p.cranialScreening && p.cranialScreening.hydrocephalusRisk !== 'SAFE' && rowCranialAlert && outCranialAlertTitle && outCranialAlertBody) {
+                    rowCranialAlert.classList.remove('hidden');
+                    const isDanger = p.cranialScreening.alertClass === 'danger';
+                    rowCranialAlert.className = `p-1.5 rounded text-[10px] leading-tight space-y-0.5 ${isDanger ? 'bg-rose-950/80 border border-rose-800 text-rose-300' : 'bg-amber-950/80 border border-amber-800 text-amber-300'}`;
+                    outCranialAlertTitle.innerText = p.cranialScreening.riskTitle;
+                    outCranialAlertBody.innerText = p.cranialScreening.clinicalRecommendations[0] || '';
+                } else if (rowCranialAlert) {
+                    rowCranialAlert.classList.add('hidden');
+                }
+            } else {
+                if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
+                if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
+            }
+
+            // Pozisyonel geçiş düzeltme uyarısı
+            if (p.positionCorrectionApplied && rowPosAlert && outPosAlert && p.positionCorrectionNote) {
+                rowPosAlert.classList.remove('hidden');
+                outPosAlert.innerText = p.positionCorrectionNote;
+            } else if (rowPosAlert) {
+                rowPosAlert.classList.add('hidden');
+            }
+
+            // Çift referans ayrışma ve klinik uyumsuzluk uyarısı (Neyzi vs DSÖ)
+            const discordance = p.comparisonWithAlternative?.heightDiscordanceAlert || p.comparisonWithAlternative?.weightDiscordanceAlert;
+            if (discordance && rowDiscAlert && outDiscAlert) {
+                rowDiscAlert.classList.remove('hidden');
+                outDiscAlert.innerText = discordance;
+            } else if (rowDiscAlert) {
+                rowDiscAlert.classList.add('hidden');
             }
         } else if (percContainer) {
             percContainer.classList.add('hidden');
             if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
+            const rowCranialAlert = getEl('row-cranial-alert');
+            if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
+            if (rowPosAlert) rowPosAlert.classList.add('hidden');
+            if (rowDiscAlert) rowDiscAlert.classList.add('hidden');
         }
     } else {
         appState.pediatrics.percentiles = null;
         if (percContainer) percContainer.classList.add('hidden');
         if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
+        const rowCranialAlert = getEl('row-cranial-alert');
+        if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
+        if (rowPosAlert) rowPosAlert.classList.add('hidden');
+        if (rowDiscAlert) rowDiscAlert.classList.add('hidden');
     }
 
     // ÇEDD Hedef Boy & Genetik Potansiyel (Tanner Metodu)
@@ -629,14 +702,158 @@ export function updateAllTabs(): void {
         if (targetHContainer) targetHContainer.classList.add('hidden');
     }
 
+    // Erken Süt Çocukluğu (<6 Ay) Büyüme Hızı & Akut Malnütrisyon Taraması (WHO 2022/2023)
+    const prevWeightKg = getNum('input-gv-prev-weight');
+    const gvDays = getNum('input-gv-days');
+    const gvMuac = getNum('input-gv-muac');
+    const gvEdema = getChk('check-gv-edema');
+    const gvComplications = getChk('check-gv-complications');
+    const gvContainer = getEl('output-growth-velocity');
+
+    if (appState.biometry.weightKg && prevWeightKg && gvDays && gvDays > 0 && totalMonths !== null) {
+        const curPerc = appState.pediatrics.percentiles ? appState.pediatrics.percentiles.weightPercentile : undefined;
+        const curWlZ = appState.pediatrics.percentiles ? appState.pediatrics.percentiles.weightZ : undefined;
+
+        appState.pediatrics.growthVelocity = calculateGrowthVelocity({
+            currentWeightKg: appState.biometry.weightKg,
+            previousWeightKg: prevWeightKg,
+            daysBetween: gvDays,
+            ageMonths: totalMonths,
+            currentPercentile: curPerc ?? undefined,
+            muacMm: gvMuac ?? undefined,
+            weightForLengthZ: curWlZ ?? undefined,
+            hasBilateralEdema: gvEdema,
+            hasMedicalComplications: gvComplications
+        });
+
+        const gv = appState.pediatrics.growthVelocity;
+        if (gv && gv.isValid && gvContainer) {
+            gvContainer.classList.remove('hidden');
+            let gvHtml = `<div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                <span class="text-slate-400">Büyüme Hızı:</span>
+                <span class="font-bold ${gv.velocityStatus === 'WEIGHT_LOSS' || gv.velocityStatus === 'INADEQUATE' ? 'text-rose-400' : 'text-emerald-400'}">
+                    ${gv.gramsPerDay} g/gün <span class="text-[9px] text-slate-400">(${gv.gramsPerWeek} g/hf)</span>
+                </span>
+            </div>`;
+
+            gvHtml += `<div class="text-[9px] text-slate-400">Beklenen Referans: ${escapeHtml(gv.expectedRange.referenceLabel)}</div>`;
+            gvHtml += `<div class="text-[10px] font-semibold ${gv.velocityStatus === 'WEIGHT_LOSS' ? 'text-rose-400' : (gv.velocityStatus === 'INADEQUATE' ? 'text-amber-400' : 'text-emerald-400')}">
+                Durum: ${escapeHtml(gv.velocityStatusText)}
+            </div>`;
+
+            if (gv.centileDropAnalysis) {
+                const cda = gv.centileDropAnalysis;
+                gvHtml += `<div class="pt-1 border-t border-slate-800 text-[9px] ${cda.isPathologicalFaltering ? 'text-rose-400' : 'text-slate-300'}">
+                    <strong>Persentil Kanalı:</strong> ${escapeHtml(cda.initialChannel.label)} → ${escapeHtml(cda.currentChannel.label)} (${cda.channelsDropped > 0 ? `${cda.channelsDropped} kanal düşüş` : 'Stabil/Yükseliş'})
+                    ${cda.falteringReason ? `<div class="text-rose-400 font-bold mt-0.5">⚠️ ${escapeHtml(cda.falteringReason)}</div>` : ''}
+                </div>`;
+            }
+
+            if (gv.malnutritionAssessment) {
+                const ma = gv.malnutritionAssessment;
+                const badgeColor = ma.alertClass === 'danger' ? 'bg-rose-950/80 text-rose-300 border-rose-800' : (ma.alertClass === 'warning' ? 'bg-amber-950/80 text-amber-300 border-amber-800' : 'bg-emerald-950/80 text-emerald-300 border-emerald-800');
+
+                gvHtml += `<div class="mt-1.5 p-1.5 rounded border ${badgeColor} space-y-1">
+                    <div class="font-bold text-[10px] flex justify-between items-center">
+                        <span>${escapeHtml(ma.categoryText)}</span>
+                        <span class="text-[8px] uppercase px-1 py-0.5 rounded bg-slate-900 border border-slate-700">${ma.treatmentProtocol.setting === 'INPATIENT' ? 'Yatarak İzlem' : 'Ayaktan İzlem'}</span>
+                    </div>
+                    <div class="text-[9px] text-slate-300"><strong>Kalori Hedefi:</strong> ${escapeHtml(ma.treatmentProtocol.caloricTargetKcalKgDay)}</div>
+                    <div class="text-[9px] text-slate-300"><strong>Beslenme Protokolü:</strong> ${escapeHtml(ma.treatmentProtocol.dietRecommendation)}</div>
+                    ${ma.treatmentProtocol.contraindications.length ? `<div class="text-[9px] text-rose-300"><strong>⚠️ Kontrendikasyon:</strong> ${escapeHtml(ma.treatmentProtocol.contraindications.join(' '))}</div>` : ''}
+                    <div class="text-[8px] text-slate-400"><strong>İzlem:</strong> ${escapeHtml(ma.treatmentProtocol.monitoringAdvice)}</div>
+                </div>`;
+            }
+
+            gvContainer.innerHTML = gvHtml;
+        } else if (gvContainer) {
+            gvContainer.classList.add('hidden');
+        }
+    } else {
+        appState.pediatrics.growthVelocity = null;
+        if (gvContainer) gvContainer.classList.add('hidden');
+    }
+
+    // Kraniyal İzlem & Hidrosefali / Mikrosefali Tarama Kalkanı (Kara 2016 / Neyzi 2015)
+    const csContainer = getEl('output-cranial-screening');
+    if (headCirc && appState.biometry.gender && growthMonths !== null) {
+        appState.pediatrics.cranialScreening = calculateCranialScreening({
+            currentHeadCircCm: headCirc,
+            ageMonths: growthMonths,
+            gender: appState.biometry.gender,
+            previousHeadCircCm: prevHc ?? undefined,
+            daysBetween: csDays ?? undefined,
+            hasBulgingFontanelle: csFontanelle,
+            hasSunsetEyes: csSunset,
+            hasVomitingLethargy: csVomiting,
+            hasSeparatedSutures: csSutures,
+            parentalMacrocephaly: csParental,
+            standard: selectedGrowthStandard
+        });
+
+        const cs = appState.pediatrics.cranialScreening;
+        if (cs && cs.isValid && csContainer) {
+            csContainer.classList.remove('hidden');
+            let csHtml = `<div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                <span class="text-slate-400">Statik Baş Çevresi:</span>
+                <span class="font-bold ${cs.alertClass === 'danger' ? 'text-rose-400' : (cs.alertClass === 'warning' ? 'text-amber-400' : 'text-emerald-400')}">
+                    ${cs.headCircCm} cm (%${cs.percentile}, Z: ${cs.zScore})
+                </span>
+            </div>`;
+
+            csHtml += `<div class="text-[9px] text-slate-300 font-medium">Sınıflama: ${escapeHtml(cs.staticClassificationText)}</div>`;
+
+            if (cs.dynamicVelocity) {
+                const dv = cs.dynamicVelocity;
+                csHtml += `<div class="pt-1 border-t border-slate-800 text-[9px] ${dv.isVelocityElevated ? 'text-rose-400 font-bold' : (dv.isVelocityDepressed ? 'text-amber-400 font-bold' : 'text-slate-300')}">
+                    <strong>Aylık Büyüme Hızı:</strong> ${dv.monthlyRateCm} cm/ay <span class="text-slate-400 font-normal">(Beklenen: ${dv.expectedMonthlyRange.label})</span>
+                    <div class="mt-0.5">${escapeHtml(dv.velocityStatusText)}</div>
+                </div>`;
+            }
+
+            if (cs.kibasSignsDetected.length > 0) {
+                csHtml += `<div class="p-1 rounded bg-rose-950/60 border border-rose-800/60 text-rose-300 text-[9px]">
+                    <strong>⚠️ Tespit Edilen KİBAS Bulguları:</strong> ${escapeHtml(cs.kibasSignsDetected.join(', '))}
+                </div>`;
+            }
+
+            const badgeColor = cs.alertClass === 'danger' ? 'bg-rose-950/80 text-rose-300 border-rose-800' : (cs.alertClass === 'warning' ? 'bg-amber-950/80 text-amber-300 border-amber-800' : 'bg-emerald-950/80 text-emerald-300 border-emerald-800');
+            csHtml += `<div class="mt-1.5 p-1.5 rounded border ${badgeColor} space-y-1">
+                <div class="font-bold text-[10px] flex justify-between items-center">
+                    <span>${escapeHtml(cs.riskTitle)}</span>
+                    <span class="text-[8px] uppercase px-1 py-0.5 rounded bg-slate-900 border border-slate-700 font-mono">
+                        ${cs.urgencyLevel === 'EMERGENCY_IMAGING' ? 'ACİL GÖRÜNTÜLEME' : (cs.urgencyLevel === 'PLANNED_USG' ? 'PLANLI USG' : 'RUTİN İZLEM')}
+                    </span>
+                </div>
+                <div class="text-[9px] text-slate-300 space-y-0.5">
+                    ${cs.clinicalRecommendations.map(r => `<div>• ${escapeHtml(r)}</div>`).join('')}
+                </div>
+            </div>`;
+
+            csContainer.innerHTML = csHtml;
+        } else if (csContainer) {
+            csContainer.classList.add('hidden');
+        }
+    } else {
+        appState.pediatrics.cranialScreening = null;
+        if (csContainer) csContainer.classList.add('hidden');
+    }
+
     // Vaccines
     if (totalMonths !== null) {
         const vax = getVaccineSchedule(totalMonths);
+        appState.pediatrics.vaccines = vax || null;
         const vaxEl = getEl('output-ped-vaccines');
         if (vaxEl) {
             vaxEl.innerHTML = vax && vax.length 
                 ? `<ul class="list-disc pl-4 text-slate-300">${vax.map((v: string) => `<li>${v}</li>`).join('')}</ul>`
                 : 'Bu ay için planlı aşı bulunamadı.';
+        }
+    } else {
+        appState.pediatrics.vaccines = null;
+        const vaxEl = getEl('output-ped-vaccines');
+        if (vaxEl) {
+            vaxEl.innerHTML = '<span class="text-slate-500 italic text-xs">Aşı takvimi için lütfen yaş giriniz.</span>';
         }
     }
 
@@ -707,7 +924,7 @@ export function updateAllTabs(): void {
             if (ir.prophylaxis.eligible) {
                 ironHtml += `<div class="mt-1"><strong>Profilaksi:</strong> ${ir.prophylaxis.mgDay} mg/gün<br><span class="text-[9px] text-slate-300">Damla: Ferrum ${ir.prophylaxis.ferrumDrops} damla | Ferro Sanol ${ir.prophylaxis.ferroDrops} damla</span>`;
                 if (ir.prophylaxis.syrupMl) {
-                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${ir.prophylaxis.syrupMl} mL (${ir.prophylaxis.syrupOlcek} ölçek)</span>`;
+                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${ir.prophylaxis.syrupMl} mL (Oral Enjektör ile)</span>`;
                 }
                 ironHtml += `<br><span class="text-[9px] text-amber-400">${ir.prophylaxis.text}</span></div>`;
             } else if (ir.prophylaxis.text) {
@@ -718,7 +935,7 @@ export function updateAllTabs(): void {
             if (ir.treatment.eligible) {
                 ironHtml += `<div class="mt-1"><strong>Tedavi:</strong> ${ir.treatment.mgDay} mg/gün<br><span class="text-[9px] text-slate-300">Damla: Ferrum ${ir.treatment.ferrumDrops} damla | Ferro Sanol ${ir.treatment.ferroDrops} damla</span>`;
                 if (ir.treatment.syrupMl) {
-                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${ir.treatment.syrupMl} mL (${ir.treatment.syrupOlcek} ölçek)</span>`;
+                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${ir.treatment.syrupMl} mL (Oral Enjektör ile)</span>`;
                 }
                 ironHtml += `<br><span class="text-[9px] text-rose-400">${ir.treatment.text}</span></div>`;
             } else if (ir.treatment.text) {
@@ -736,28 +953,171 @@ export function updateAllTabs(): void {
         if (ironRes) ironRes.classList.add('hidden');
     }
 
-    // PEDIATRIC SYRUP
+    // PEDIATRIC LIQUID DOSING (ISMP & AAP METRIC STANDARDS, ADULT CAP & OBESITY IBW, ADIM 7 SAFETY SHIELD)
     const syrupVal = getVal('select-ped-syrup');
     const syrupRes = getEl('output-ped-syrup');
+    const useIbwChk = getEl('chk-ped-use-ibw') as HTMLInputElement | null;
+    const allowTitckChk = getEl('chk-ped-allow-titck') as HTMLInputElement | null;
+    const aomHighChk = getEl('chk-ped-aom-high') as HTMLInputElement | null;
+    const obeseBadge = getEl('badge-ped-obese-status');
+    const useIbw = useIbwChk ? useIbwChk.checked : false;
+    const allowOffLabelTitck = allowTitckChk ? allowTitckChk.checked : false;
+    const indication = aomHighChk && aomHighChk.checked ? 'aom_high_dose' : 'general';
+
     if (syrupVal && syrupRes) {
         if (appState.biometry.weightKg) {
-            const syrupDose = calculatePediatricDose(appState.biometry.weightKg, syrupVal);
+            const syrupDose = calculatePediatricDose(appState.biometry.weightKg, syrupVal, {
+                ageMonths: appState.biometry.ageMonths,
+                ageDays: appState.biometry.ageDays,
+                ageYears: appState.biometry.ageYears,
+                heightCm: appState.biometry.heightCm,
+                gender: appState.biometry.gender || 'male',
+                useIbw,
+                allowOffLabelTitck,
+                indication
+            });
             appState.pediatrics.syrupDose = syrupDose;
+
+            if (obeseBadge) {
+                if (syrupDose?.isObeseAlert) {
+                    obeseBadge.classList.remove('hidden');
+                } else {
+                    obeseBadge.classList.add('hidden');
+                }
+            }
+
             if (syrupDose) {
                 syrupRes.classList.remove('hidden');
-                syrupRes.innerHTML = `<strong>Doz:</strong> ${syrupDose.targetDoseMg} mg<br>
-                                   <strong>Hacim:</strong> ${syrupDose.volumeMl} ml<br>
-                                   <strong>Ölçek:</strong> ${syrupDose.olcekText} (${syrupDose.freq})`;
+                if (syrupDose.isBlocked) {
+                    syrupRes.innerHTML = `
+                        <div class="space-y-1.5 font-mono text-[10px]">
+                            <div class="flex items-center justify-between pb-1 border-b border-rose-800">
+                                <span class="font-bold text-rose-300">${syrupDose.name}</span>
+                                <span class="text-[9px] font-bold text-rose-400 bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-800">🛑 BLOKE EDİLDİ</span>
+                            </div>
+                            <div class="p-2 rounded bg-rose-950/80 border border-rose-700 text-rose-200 text-xs font-bold space-y-1">
+                                <div class="flex items-start gap-1.5">
+                                    <span class="text-base">🛑</span>
+                                    <div>${syrupDose.blockReason}</div>
+                                </div>
+                            </div>
+                            ${syrupDose.dualStandardWarning ? `
+                                <div class="p-1.5 rounded bg-amber-950/50 border border-amber-600/80 text-amber-200 text-[10px]">
+                                    ${syrupDose.dualStandardWarning}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.ratioNotice ? `
+                                <div class="p-1.5 rounded bg-amber-950/40 border border-amber-700 text-amber-300 text-[10px]">
+                                    ${syrupDose.ratioNotice}
+                                </div>
+                            ` : ''}
+                            <div class="p-1.5 rounded border border-rose-900 bg-rose-950/40 text-rose-300 text-[9px]">
+                                ${syrupDose.syringeWarning}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    syrupRes.innerHTML = `
+                        <div class="space-y-1.5 font-mono text-[10px]">
+                            <div class="flex items-center justify-between pb-1 border-b border-slate-700/50">
+                                <span class="font-bold text-slate-200">${syrupDose.name}</span>
+                                <span class="text-[9px] text-slate-400">${syrupDose.freq}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 p-1.5 rounded bg-slate-950/70 border border-slate-800">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block">Hedef Aktif Madde</span>
+                                    <span class="text-xs font-bold text-emerald-400">${syrupDose.targetDoseMg} mg</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[9px] text-slate-400 block">Uygulanacak Hacim</span>
+                                    ${syrupDose.volumeMl !== null 
+                                        ? `<span class="text-xs font-bold text-cyan-400">${syrupDose.volumeMl} mL</span>`
+                                        : `<span class="text-xs font-bold text-amber-400">🔒 Kilitli</span>`}
+                                </div>
+                            </div>
+                            <div class="text-[9px] text-slate-300">
+                                <strong>Metrik Dozaj:</strong> ${syrupDose.metricDoseText}
+                                ${syrupDose.concentrationText ? `<br><span class="text-slate-400">Konsantrasyon: ${syrupDose.concentrationText}</span>` : ''}
+                            </div>
+                            ${syrupDose.hasDualStandardAlert && syrupDose.dualStandardWarning ? `
+                                <div class="p-1.5 rounded bg-amber-950/50 border border-amber-600/80 text-amber-200 text-[10px] space-y-0.5">
+                                    <div>${syrupDose.dualStandardWarning}</div>
+                                </div>
+                            ` : ''}
+                            ${syrupDose.ratioNotice ? `
+                                <div class="p-1.5 rounded ${syrupDose.ratio === '14:1' ? 'bg-emerald-950/40 border border-emerald-700/70 text-emerald-300' : 'bg-amber-950/40 border border-amber-700/70 text-amber-300'} text-[10px]">
+                                    ${syrupDose.ratioNotice}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.negativeGuidelineWarning ? `
+                                <div class="p-1.5 rounded bg-rose-950/40 border border-rose-700/70 text-rose-300 text-[10px]">
+                                    ${syrupDose.negativeGuidelineWarning}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.offLabelNotice ? `
+                                <div class="p-1.5 rounded bg-sky-950/40 border border-sky-700/70 text-sky-300 text-[10px]">
+                                    ${syrupDose.offLabelNotice}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.confusionWarning ? `
+                                <div class="p-1.5 rounded bg-amber-950/40 border border-amber-700/70 text-amber-300 text-[10px]">
+                                    ${syrupDose.confusionWarning}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.reconstitutionStability ? `
+                                <div class="p-1.5 rounded bg-slate-950/50 border border-slate-700/70 text-slate-300 text-[10px]">
+                                    ${syrupDose.reconstitutionStability}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.ageWarning ? `
+                                <div class="p-1.5 rounded bg-amber-950/40 border border-amber-700/70 text-amber-300 text-[10px]">
+                                    ${syrupDose.ageWarning}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.indicationBandNote ? `
+                                <div class="p-1.5 rounded bg-indigo-950/40 border border-indigo-700/70 text-indigo-300 text-[10px]">
+                                    ${syrupDose.indicationBandNote}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.isCapped && syrupDose.capNotice ? `
+                                <div class="p-1.5 rounded bg-amber-950/40 border border-amber-700/70 text-amber-300 text-[10px] flex items-start gap-1.5">
+                                    <span>🛡️</span>
+                                    <div>${syrupDose.capNotice}</div>
+                                </div>
+                            ` : ''}
+                            ${syrupDose.isObeseAlert && syrupDose.obesityWarning ? `
+                                <div class="p-1.5 rounded bg-rose-950/40 border border-rose-700/70 text-rose-300 text-[10px] space-y-1">
+                                    <div>${syrupDose.obesityWarning}</div>
+                                    <div class="text-[9px] text-slate-300">
+                                        TBW: <strong>${syrupDose.tbwKg} kg</strong> | IBW: <strong>${syrupDose.ibwKg} kg</strong> | AdjBW: <strong>${syrupDose.adjBwKg} kg</strong>
+                                        ${syrupDose.ibwDoseMg ? ` | IBW Dozu: <strong>${syrupDose.ibwDoseMg} mg</strong> (${syrupDose.ibwVolumeMl ?? '🔒'} mL)` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            <div class="p-1.5 rounded border text-[9px] ${
+                                syrupDose.isLocked
+                                    ? 'bg-amber-950/40 border-amber-800 text-amber-300'
+                                    : syrupDose.volumeMl !== null && syrupDose.volumeMl < 10
+                                        ? 'bg-rose-950/30 border-rose-800/80 text-rose-300'
+                                        : 'bg-sky-950/30 border-sky-800/80 text-sky-300'
+                            }">
+                                ${syrupDose.syringeWarning}
+                            </div>
+                        </div>
+                    `;
+                }
             } else {
                 syrupRes.classList.add('hidden');
             }
         } else {
             syrupRes.classList.remove('hidden');
-            syrupRes.innerHTML = `⚠️ Lütfen hesaplama için Kilo giriniz.`;
+            syrupRes.innerHTML = `<span class="text-amber-400">⚠️ Dozaj hesabı için lütfen kilo (kg) giriniz.</span>`;
+            if (obeseBadge) obeseBadge.classList.add('hidden');
         }
     } else if (syrupRes) {
         appState.pediatrics.syrupDose = null;
         syrupRes.classList.add('hidden');
+        if (obeseBadge) obeseBadge.classList.add('hidden');
     }
 
     // VITALS / TRIAGE
@@ -919,6 +1279,10 @@ export function updateAllTabs(): void {
         } else {
             pkRes.classList.add('hidden');
         }
+    } else if (tbsa && !appState.biometry.weightKg && pkRes) {
+        appState.surgery.parkland = null;
+        pkRes.classList.remove('hidden');
+        pkRes.innerHTML = `<span class="text-amber-400 text-xs">⚠️ Yanık sıvı hesabı için lütfen hasta kilosunu (kg) giriniz.</span>`;
     } else {
         appState.surgery.parkland = null;
         if (pkRes) pkRes.classList.add('hidden');
@@ -1056,31 +1420,200 @@ export function updateAllTabs(): void {
     const bMethod: BilirubinMeasurementType = getVal('select-bhutani-method') === 'TcB' ? 'TcB' : 'TSB';
     const bhutaniOut = getEl('output-bhutani-result');
 
+    // İleri Parametreler (Adım 14)
+    const bAlbumin = getNum('input-bhutani-albumin');
+    const bDirect = getNum('input-bhutani-direct');
+    const bPrevTsb = getNum('input-bhutani-prev-tsb');
+    const bPrevHours = getNum('input-bhutani-prev-hours');
+    const bDat = getChk('chk-bhutani-dat');
+    const bG6pd = getChk('chk-bhutani-g6pd');
+    const bSepsis = getChk('chk-bhutani-sepsis');
+    const bAbe = getChk('chk-bhutani-abe');
+    const bDischarge = getChk('chk-bhutani-discharge');
+    const bPriorPt = getChk('chk-bhutani-prior-pt');
+    const bRebound = getChk('chk-bhutani-rebound');
+    const bPtStartAge = getNum('input-bhutani-pt-start');
+
     if (bAgeH && bTsb) {
-        const bRes = calculateBhutaniJaundice({
-            ageHours: bAgeH,
-            totalBilirubin: bTsb,
-            gestationalWeeks: bGw,
-            hasRiskFactors: bRisk,
-            guideline: bGuideline,
-            measurementType: bMethod
-        });
-        appState.neonatology.bhutani = bRes;
-        if (bhutaniOut) {
-            const escStr = bRes.escalationThreshold !== undefined ? ` | Bakım Eskalasyonu: ${bRes.escalationThreshold} mg/dL` : '';
-            const extra = `
-                <div class="text-[9px] text-cyan-300 font-semibold">${escapeHtml(bRes.guidelineLabel || '')}</div>
-                ${bRes.phototherapyThreshold ? `<div class="text-[10px]">Fototerapi Eşiği: ${bRes.phototherapyThreshold} mg/dL${escStr} | Kan Değişimi: ${bRes.exchangeThreshold} mg/dL</div>` : ''}
-                <div class="text-[10px] font-semibold">${bRes.interpretation || ''}</div>
-                ${bRes.followUpRecommendation ? `<div class="text-[9px] text-amber-300 pt-0.5 border-t border-slate-700/50">📅 İzlem: ${escapeHtml(bRes.followUpRecommendation)}</div>` : ''}
-            `;
-            renderClinicalCardResult(bhutaniOut, {
-                title: `${bRes.ageHours}. Saat: ${bMethod} ${bRes.totalBilirubin} mg/dL`,
-                riskText: bRes.riskGroupLabel || '',
-                recommendations: bRes.recommendations,
-                alertClass: bRes.alertClass,
-                extraHtml: extra
+        if (bGuideline === 'AAP_2022') {
+            const aapRes = evaluateAap2022Jaundice({
+                ageHours: bAgeH,
+                totalBilirubin: bTsb,
+                gestationalWeeks: bGw,
+                measurementType: bMethod,
+                hasNeurotoxicityRisk: bRisk,
+                albuminGPerDl: bAlbumin,
+                directBilirubinMgDl: bDirect,
+                previousTsbMgDl: bPrevTsb,
+                previousAgeHours: bPrevHours,
+                isDischargePlanning: bDischarge,
+                priorPhototherapyWithin24h: bPriorPt,
+                isPhototherapyDiscontinuationEvaluation: bRebound,
+                phototherapyStartAgeHours: bPtStartAge,
+                riskFactors: {
+                    hypoalbuminemia: bAlbumin !== null && bAlbumin < 3.0,
+                    isoimmuneHemolysis: bDat,
+                    g6pdDeficiency: bG6pd,
+                    sepsis: bSepsis
+                },
+                abeSymptoms: bAbe ? {
+                    retrocollis: true,
+                    opisthotonos: true,
+                    highPitchedCry: true,
+                    hypertonia: true
+                } : undefined
             });
+
+            // Map to appState.neonatology.bhutani for backward compatibility
+            appState.neonatology.bhutani = {
+                isValid: aapRes.isValid,
+                ageHours: aapRes.ageHours,
+                totalBilirubin: aapRes.totalBilirubin,
+                gestationalWeeks: aapRes.gestationalAge.truncatedWeeks,
+                phototherapyThreshold: aapRes.thresholds.phototherapy,
+                escalationThreshold: aapRes.thresholds.escalation,
+                exchangeThreshold: aapRes.thresholds.exchange,
+                deltaFromPhototherapy: aapRes.deltaFromPhototherapy,
+                status: aapRes.status,
+                alertClass: aapRes.alertClass,
+                requiresTsbConfirmation: aapRes.requiresTsbConfirmation,
+                tsbConfirmationReason: aapRes.tsbConfirmationReason,
+                guidelineLabel: 'AAP 2022 (Doğrusal Enterpolasyonlu Güncel Kılavuz)',
+                riskGroupLabel: aapRes.hasNeurotoxicityRisk ? 'Nörotoksisite Riski VAR' : 'Nörotoksisite Riski YOK',
+                interpretation: aapRes.interpretation,
+                recommendations: aapRes.recommendations,
+                followUpRecommendation: aapRes.followUpRecommendation
+            };
+
+            if (bhutaniOut) {
+                const escStr = ` | Bakım Eskalasyonu: ${aapRes.thresholds.escalation} mg/dL`;
+                let extra = `
+                    <div class="text-[9px] text-cyan-300 font-semibold">AAP 2022 (Doğrusal Enterpolasyon & Tamamlanmış Hafta: ${aapRes.gestationalAge.truncatedWeeks}h)</div>
+                    <div class="text-[10px]">Fototerapi: ${aapRes.thresholds.phototherapy} mg/dL${escStr} | Kan Değişimi: ${aapRes.thresholds.exchange} mg/dL (Fark Δ: ${aapRes.deltaFromPhototherapy > 0 ? '-' : '+'}${Math.abs(aapRes.deltaFromPhototherapy)} mg/dL)</div>
+                    <div class="text-[10px] font-semibold">${escapeHtml(aapRes.interpretation)}</div>
+                `;
+
+                if (aapRes.tcBValidity && !aapRes.tcBValidity.isValidForTreatmentDecision) {
+                    extra += `
+                        <div class="text-[9px] bg-amber-950/40 border border-amber-700/60 p-1.5 rounded mt-1 space-y-0.5 text-amber-200">
+                            <div class="font-bold text-amber-300">⚠️ TcB DOĞRULAMA KALKANI (AAP 2022 KAS 6)</div>
+                            <div>• ${escapeHtml(aapRes.tcBValidity.warning || '')}</div>
+                        </div>
+                    `;
+                }
+
+                if (aapRes.rateOfRiseAnalysis) {
+                    const r = aapRes.rateOfRiseAnalysis;
+                    extra += `
+                        <div class="text-[9px] ${r.isRapidRise ? 'text-rose-400 font-bold' : 'text-slate-300'} pt-0.5">
+                            ⚡ Saatlik Artış: ${r.rateMgDlPerHour} mg/dL/saat (Eşik: ≥${r.thresholdMgDlPerHour}) ${r.isRapidRise ? '— 🚨 PATOLOJİK HEMOLİZ ŞÜPHESİ!' : '— Normal Klirens'}
+                        </div>
+                    `;
+                }
+
+                if (aapRes.bilirubinAlbuminRatio) {
+                    const ba = aapRes.bilirubinAlbuminRatio;
+                    extra += `
+                        <div class="text-[9px] ${ba.isThresholdExceeded ? 'text-rose-400 font-bold' : 'text-slate-300'} pt-0.5">
+                            🧪 B/A Oranı: ${ba.ratio} mg/g (Eşik: ${ba.threshold} mg/g) ${ba.isThresholdExceeded ? '— 🚨 KAN DEĞİŞİMİ SINIRI AŞILDI!' : '— Güvenli'}
+                        </div>
+                    `;
+                }
+
+                if (aapRes.escalationProtocol && aapRes.escalationProtocol.isEscalationActive) {
+                    const esc = aapRes.escalationProtocol;
+                    extra += `
+                        <div class="text-[9px] bg-rose-950/40 border border-rose-700/60 p-1.5 rounded mt-1 space-y-0.5 text-rose-200">
+                            <div class="font-bold text-rose-300">🚨 ACİL BAKIM ESKALASYONU PROTOKOLÜ (KAS 17)</div>
+                            <div>• ${escapeHtml(esc.targetNicuTransfer)}</div>
+                            <div>• ${escapeHtml(esc.phototherapyRegimen)}</div>
+                            <div>• ${escapeHtml(esc.hydrationProtocol)}</div>
+                            ${esc.ivigProtocol ? `<div class="text-amber-300 font-semibold">• IVIG Protokolü: ${escapeHtml(esc.ivigProtocol.dose)} (${escapeHtml(esc.ivigProtocol.indication)})</div>` : ''}
+                        </div>
+                    `;
+                }
+
+                if (aapRes.reboundEvaluation) {
+                    const reb = aapRes.reboundEvaluation;
+                    const rebColor = reb.isHighReboundRisk ? 'rose' : 'teal';
+                    extra += `
+                        <div class="text-[9px] bg-${rebColor}-950/40 border border-${rebColor}-700/60 p-1.5 rounded mt-1 space-y-0.5 text-${rebColor}-200">
+                            <div class="font-bold text-${rebColor}-300">🔄 FOTOTERAPİ SONLANDIRMA & REBOUND İZLEM (KAS 14 & 15)</div>
+                            <div>• FT Kesilme Durumu: <strong>${reb.isDiscontinuationPermitted ? '✅ FT Kesilebilir' : '⛔ FT Kesilemez (TSB henüz eşiğin 2 mg/dL altına inmedi)'}</strong> (Kesilme Eşiği: ${reb.discontinuationThreshold} mg/dL)</div>
+                            <div>• Rebound Risk Düzeyi: <strong>${reb.riskTier === 'HIGH_REBOUND_RISK' ? '🚨 YÜKSEK RİSK' : '✅ DÜŞÜK RİSK'}</strong> (Kontrol: ${reb.reboundFollowUpHours})</div>
+                            <div>• ${escapeHtml(reb.protocol)}</div>
+                        </div>
+                    `;
+                }
+
+                if (aapRes.dischargeEvaluation) {
+                    const dc = aapRes.dischargeEvaluation;
+                    const dcColor = dc.isDischargeEligible ? 'teal' : 'amber';
+                    extra += `
+                        <div class="text-[9px] bg-${dcColor}-950/40 border border-${dcColor}-700/60 p-1.5 rounded mt-1 space-y-0.5 text-${dcColor}-200">
+                            <div class="font-bold text-${dcColor}-300">📋 TABURCULUK İZLEM MATRİSİ (AAP 2022 TABLO 4 | Δ: ${dc.deltaMgDl} mg/dL [${dc.matrixBand}])</div>
+                            <div>• Önerilen Zamanlama: <strong>${escapeHtml(dc.followUpTiming)}</strong> (${dc.followUpModality})</div>
+                            <div>• ${escapeHtml(dc.dischargeRecommendation)}</div>
+                        </div>
+                    `;
+                }
+
+                if (aapRes.clinicalAlerts && aapRes.clinicalAlerts.length > 0) {
+                    extra += '<div class="space-y-1 pt-1">';
+                    for (const al of aapRes.clinicalAlerts) {
+                        const bg = al.severity === 'CRITICAL' ? 'bg-rose-900/40 text-rose-200 border-rose-700/50' : 'bg-amber-900/40 text-amber-200 border-amber-700/50';
+                        extra += `<div class="text-[9px] p-1 rounded border ${bg}"><strong>${escapeHtml(al.title)}:</strong> ${escapeHtml(al.message)}</div>`;
+                    }
+                    extra += '</div>';
+                }
+
+                if (aapRes.gestationalAge.isPreterm && aapRes.pretermGuidance) {
+                    const pg = aapRes.pretermGuidance;
+                    extra += `
+                        <div class="text-[9px] bg-sky-950/40 border border-sky-700/60 p-1.5 rounded mt-1 space-y-0.5 text-sky-200">
+                            <div class="font-bold text-sky-300">👶 PREMATÜRE MAISELS 2012 PMA & TND PROTOKOLÜ (PMA: ${pg.pmaWeeks} Hafta)</div>
+                            <div>• Maisels FT Bandı: ${escapeHtml(pg.maiselsPhototherapyRange)}</div>
+                            <div>• Maisels Kan Değişimi: ${escapeHtml(pg.maiselsExchangeRange)}</div>
+                            <div>• TND 2023 / NICE Preterm Eşiği: ${pg.tndNiceThreshold} mg/dL</div>
+                        </div>
+                    `;
+                }
+
+                renderClinicalCardResult(bhutaniOut, {
+                    title: `${aapRes.ageHours}. Saat: ${bMethod} ${aapRes.totalBilirubin} mg/dL (${aapRes.hasNeurotoxicityRisk ? 'Riskli Eğri' : 'Risksiz Eğri'})`,
+                    riskText: aapRes.status,
+                    recommendations: aapRes.recommendations,
+                    alertClass: aapRes.alertClass,
+                    extraHtml: extra
+                });
+            }
+        } else {
+            // TND 2014 Klasik Mod
+            const bRes = calculateBhutaniJaundice({
+                ageHours: bAgeH,
+                totalBilirubin: bTsb,
+                gestationalWeeks: bGw,
+                hasRiskFactors: bRisk,
+                guideline: bGuideline,
+                measurementType: bMethod
+            });
+            appState.neonatology.bhutani = bRes;
+            if (bhutaniOut) {
+                const escStr = bRes.escalationThreshold !== undefined ? ` | Bakım Eskalasyonu: ${bRes.escalationThreshold} mg/dL` : '';
+                const extra = `
+                    <div class="text-[9px] text-cyan-300 font-semibold">${escapeHtml(bRes.guidelineLabel || '')}</div>
+                    ${bRes.phototherapyThreshold ? `<div class="text-[10px]">Fototerapi Eşiği: ${bRes.phototherapyThreshold} mg/dL${escStr} | Kan Değişimi: ${bRes.exchangeThreshold} mg/dL</div>` : ''}
+                    <div class="text-[10px] font-semibold">${bRes.interpretation || ''}</div>
+                    ${bRes.followUpRecommendation ? `<div class="text-[9px] text-amber-300 pt-0.5 border-t border-slate-700/50">📅 İzlem: ${escapeHtml(bRes.followUpRecommendation)}</div>` : ''}
+                `;
+                renderClinicalCardResult(bhutaniOut, {
+                    title: `${bRes.ageHours}. Saat: ${bMethod} ${bRes.totalBilirubin} mg/dL`,
+                    riskText: bRes.riskGroupLabel || '',
+                    recommendations: bRes.recommendations,
+                    alertClass: bRes.alertClass,
+                    extraHtml: extra
+                });
+            }
         }
     } else {
         appState.neonatology.bhutani = null;
@@ -1105,9 +1638,12 @@ export function updateAllTabs(): void {
                 appState.neonatology.bhutani.status === 'EXCHANGE_TRANSFUSION_REQUIRED'
             )
         );
+        const birthWeightKg = appState.biometry.birthWeightG ? appState.biometry.birthWeightG / 1000 : undefined;
         const neoFluid = calculateNeonatalFluid({
             ageDays: ageData.days,
             weightKg: appState.biometry.weightKg,
+            birthWeightKg: birthWeightKg,
+            gestationalWeeks: bGw || undefined,
             isPreterm: isPreterm,
             isPhototherapy: isPhototherapy
         });
@@ -1127,9 +1663,18 @@ export function updateAllTabs(): void {
 
             if (neoFluidBanner) {
                 neoFluidBanner.classList.remove('hidden');
-                if (neoFluidDayText) neoFluidDayText.textContent = `🍼 ${neoFluid.dayTitle} (${neoFluid.mlPerKgRange} mL/kg)`;
-                if (neoFluidTargetText) neoFluidTargetText.textContent = `GIR: ${neoFluid.girMgKgMin} mg/kg/dk (%10D)`;
-                if (neoFluidDescText) neoFluidDescText.innerHTML = `${neoFluid.soluteAdvice} <span class="text-rose-400 font-semibold block mt-0.5">${neoFluid.contraindicationNotice}</span>`;
+                const catLabel = neoFluid.weightCategory === 'PRETERM_ELBW' ? ' [ELBW <1000g]' : (neoFluid.weightCategory === 'PRETERM_VLBW' ? ' [VLBW]' : '');
+                if (neoFluidDayText) neoFluidDayText.textContent = `🍼 ${neoFluid.dayTitle}${catLabel} (${neoFluid.mlPerKgRange} mL/kg)`;
+                if (neoFluidTargetText) neoFluidTargetText.textContent = `GIR: ${neoFluid.girMgKgMin} mg/kg/dk`;
+                let bannerHtml = `${neoFluid.soluteAdvice}`;
+                if (neoFluid.incubatorHumidityRecommendation) {
+                    bannerHtml += `<span class="text-cyan-300 font-semibold block mt-0.5">💧 ${escapeHtml(neoFluid.incubatorHumidityRecommendation)}</span>`;
+                }
+                if (neoFluid.weightLossAnalysis && neoFluid.weightLossAnalysis.warning) {
+                    bannerHtml += `<span class="text-rose-400 font-bold block mt-0.5">⚖️ ${escapeHtml(neoFluid.weightLossAnalysis.warning)}</span>`;
+                }
+                bannerHtml += `<span class="text-rose-400 font-semibold block mt-0.5">${neoFluid.contraindicationNotice}</span>`;
+                if (neoFluidDescText) neoFluidDescText.innerHTML = bannerHtml;
             }
         }
     } else if (appState.biometry.weightKg) {
@@ -1172,8 +1717,16 @@ export function updateAllTabs(): void {
 
     if (ionNa !== null && appState.biometry.weightKg && appState.biometry.gender) {
         const isMale = appState.biometry.gender === 'male' || appState.biometry.gender === 'M';
-        const ageYears = appState.biometry.ageYears ?? 30; // fallback only when null/undefined
-        const tbwFraction = isMale ? (ageYears > 65 ? 0.5 : 0.6) : (ageYears > 65 ? 0.45 : 0.5);
+        const ageYears = appState.biometry.ageYears ?? y ?? 30;
+        const isPed = (ageYears !== null && ageYears < 18) || (totalMonths !== null && totalMonths < 216);
+        let tbwFraction = isMale ? (ageYears > 65 ? 0.5 : 0.6) : (ageYears > 65 ? 0.45 : 0.5);
+        if (isNeonate) {
+            tbwFraction = 0.70;
+        } else if (totalMonths !== null && totalMonths <= 12) {
+            tbwFraction = 0.65;
+        } else if (isPed) {
+            tbwFraction = 0.60;
+        }
         
         const targetNa = ionNa < 135
             ? ionNa + targetNaDelta
@@ -1211,7 +1764,7 @@ export function updateAllTabs(): void {
             pH: ph, 
             pCO2: pco2, 
             HCO3: hco3, 
-            Na: getNum('input-bg-na') ?? undefined, 
+            Na: getNum('input-bg-na') ?? getNum('input-serum-na') ?? undefined, 
             Cl: getNum('input-bg-cl') ?? undefined, 
             Albumin: getNum('input-albumin') ?? undefined, 
             sampleType: (getVal('select-bg-type') as 'ABG' | 'VBG') || 'ABG'
@@ -1235,7 +1788,8 @@ export function updateAllTabs(): void {
     const infVol = getNum('input-inf-vol');
     const infUnit = (getVal('select-inf-unit') as 'mcg_kg_min' | 'mcg_min' | 'mg_kg_hr') || 'mcg_kg_min';
     const outInfRate = getEl('output-infusion-rate');
-    if (infDose !== null && infMg !== null && infVol !== null && appState.biometry.weightKg) {
+    const infNeedsWeight = infUnit !== 'mcg_min';
+    if (infDose !== null && infMg !== null && infVol !== null && (!infNeedsWeight || appState.biometry.weightKg)) {
         const infObj = calculateInfusionRate({
             drugAmountMg: infMg,
             totalVolumeMl: infVol,
@@ -1249,7 +1803,13 @@ export function updateAllTabs(): void {
         }
     } else {
         appState.medicine.infusion = null;
-        if (outInfRate) outInfRate.textContent = '--';
+        if (outInfRate) {
+            if (infDose !== null && infNeedsWeight && !appState.biometry.weightKg) {
+                outInfRate.textContent = 'Kilo giriniz';
+            } else {
+                outInfRate.textContent = '--';
+            }
+        }
     }
 
     // GLUCOSE INFUSION RATE (GIR) & NEONATAL
@@ -1726,6 +2286,31 @@ export function updateAllTabs(): void {
     }
 
     // E. CHA2DS2-VASc & HAS-BLED
+    const chkAfFemaleEl = getEl<HTMLInputElement>('chk-af-female');
+    const chkAfAge75El = getEl<HTMLInputElement>('chk-af-age75');
+    const chkAfAge65El = getEl<HTMLInputElement>('chk-af-age65');
+    const afChfRaw = getChk('chk-af-chf');
+    const afHtnRaw = getChk('chk-af-htn');
+    const afDmRaw = getChk('chk-af-dm');
+    const afStrokeRaw = getChk('chk-af-stroke');
+    const afVascRaw = getChk('chk-af-vasc');
+    const hasAfRisk = afChfRaw || afHtnRaw || afDmRaw || afStrokeRaw || afVascRaw;
+
+    if (hasAfRisk && typeof document !== 'undefined') {
+        if (chkAfFemaleEl && document.activeElement !== chkAfFemaleEl) {
+            chkAfFemaleEl.checked = (appState.biometry.gender === 'female' || appState.biometry.gender === 'F');
+        }
+        if (y !== null) {
+            if (y >= 75) {
+                if (chkAfAge75El && document.activeElement !== chkAfAge75El) chkAfAge75El.checked = true;
+                if (chkAfAge65El && document.activeElement !== chkAfAge65El) chkAfAge65El.checked = false;
+            } else if (y >= 65) {
+                if (chkAfAge65El && document.activeElement !== chkAfAge65El) chkAfAge65El.checked = true;
+                if (chkAfAge75El && document.activeElement !== chkAfAge75El) chkAfAge75El.checked = false;
+            }
+        }
+    }
+
     const afChf = getChk('chk-af-chf');
     const afHtn = getChk('chk-af-htn');
     const afAge75 = getChk('chk-af-age75');
@@ -1762,6 +2347,22 @@ export function updateAllTabs(): void {
     }
 
     // HAS-BLED
+    const chkBleedElderlyEl = getEl<HTMLInputElement>('chk-bleeding-elderly');
+    const bHtnRaw = getChk('chk-bleeding-htn');
+    const bRenalRaw = getChk('chk-bleeding-renal');
+    const bLiverRaw = getChk('chk-bleeding-liver');
+    const bStrokeRaw = getChk('chk-bleeding-stroke');
+    const bHistRaw = getChk('chk-bleeding-history');
+    const bInrRaw = getChk('chk-bleeding-inr');
+    const bDrugsRaw = getChk('chk-bleeding-drugs');
+    const bAlcRaw = getChk('chk-bleeding-alcohol');
+    const hasBleedRisk = bHtnRaw || bRenalRaw || bLiverRaw || bStrokeRaw || bHistRaw || bInrRaw || bDrugsRaw || bAlcRaw;
+    if (hasBleedRisk && typeof document !== 'undefined' && chkBleedElderlyEl && document.activeElement !== chkBleedElderlyEl) {
+        if (y !== null && y >= 65) {
+            chkBleedElderlyEl.checked = true;
+        }
+    }
+
     const bHtn = getChk('chk-bleeding-htn');
     const bRenal = getChk('chk-bleeding-renal');
     const bLiver = getChk('chk-bleeding-liver');
@@ -1803,9 +2404,9 @@ export function updateAllTabs(): void {
     // NEFROLOJİ, TOKSİKOLOJİ & PNÖMONİ MOTORLARI
     // ------------------------------------------------------------------------
     // A. FENa & FEUrea
-    const fenaSNa = getNum('input-fena-s-na');
+    const fenaSNa = getNum('input-fena-s-na') ?? getNum('input-serum-na');
     const fenaUNa = getNum('input-fena-u-na');
-    const fenaSCr = getNum('input-fena-s-cr');
+    const fenaSCr = getNum('input-fena-s-cr') ?? getNum('input-creatinine');
     const fenaUCr = getNum('input-fena-u-cr');
     const fenaDiuretic = getChk('chk-fena-diuretic');
     const feureaUnit = getVal('select-feurea-unit') || 'bun';
@@ -1884,7 +2485,7 @@ export function updateAllTabs(): void {
     }
 
     // B. Düzeltilmiş Sodyum & Osmolal Gap
-    const corrNaMeas = getNum('input-corr-na-meas');
+    const corrNaMeas = getNum('input-corr-na-meas') ?? getNum('input-serum-na');
     const corrGlu = getNum('input-corr-glucose');
     const osmMeas = getNum('input-osm-measured');
     const corrNaOut = getEl('output-corr-na-osm');
@@ -2136,6 +2737,11 @@ export function updateAllTabs(): void {
     const selectedDrugs = (appState.treatment && appState.treatment.selectedDrugs) ? appState.treatment.selectedDrugs : [];
     appState.safetyPrescription.selectedSafetyDrugs = selectedDrugs;
     const safetyEgfr = getNum('input-safety-egfr') ?? appState.biometry.egfr;
+    const safetyTrimEl = getEl<HTMLSelectElement>('select-safety-trimester');
+    if (safetyTrimEl && appState.obgyn.eddData?.trimester && safetyTrimEl.value === '0' &&
+        (typeof document === 'undefined' || document.activeElement !== safetyTrimEl)) {
+        safetyTrimEl.value = String(appState.obgyn.eddData.trimester);
+    }
     const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.eddData?.trimester || 0);
 
     const outWhammy = getEl('output-safety-triple-whammy');

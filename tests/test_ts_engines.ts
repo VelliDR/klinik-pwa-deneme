@@ -32,6 +32,18 @@ import {
   calculateBSA,
   calculatePercentiles,
   calculateTargetHeight,
+  calculateLMSZScore,
+  calculateRestrictedLMSZScore,
+  calculateStandardLMSZScore,
+  calculateValueFromLMS,
+  adjustHeightForPosition,
+  calculateGrowthVelocity,
+  calculateCranialScreening,
+  getCentileChannel,
+  CENTILE_CHANNELS,
+  WHO_2022_DATA,
+  zToExactPercentile,
+  standardNormalCDF,
   calculateNeonatalFluid,
   calculateMaintenanceFluid,
   calculateSodiumCorrection,
@@ -56,6 +68,7 @@ import {
   calculateRanson,
   getSutureGuidance,
   calculatePediatricDose,
+  calculateIdealBodyWeight,
   getVaccineSchedule,
   classifyPediatricBP,
   calculateCentorMcIsaac,
@@ -83,6 +96,67 @@ import {
   resetAnaphylaxisTimer,
   computeStatusPhase
 } from '../src/utils/emergencyManager';
+import fs from 'fs';
+import {
+  findMonographSync,
+  setMonographsCache,
+  evaluateTrimesterRiskLevel,
+  getMeasuringDeviceBadge,
+  renderMonographCardHTML,
+  ClinicalMonograph
+} from '../src/monographEngine';
+import {
+  OFFLINE_RXNORM_CONCEPTS,
+  normalizeRxText,
+  isRxNavApiDeprecated,
+  getOfflineOntologyStats,
+  getRxNormConceptByCui,
+  getRxNormConceptByAtc,
+  getRxNormConceptByKey,
+  resolveToRxNormConcept,
+  resolveBatchRxNormConcepts
+} from '../src/engines/rxNormMappingEngine';
+import { getDrugRxNormBadge } from '../src/drugEngine';
+import {
+  evaluatePrescriptionInteractions,
+  isAcornVptRegimen
+} from '../src/engines/interactionTierEngine';
+import {
+  calculateMostellerBSA,
+  calculateDuboisBSA,
+  deindexEgfrToAbsolute,
+  indexEgfrFromAbsolute,
+  calculateDevineIBW,
+  calculateAdjustedBodyWeight,
+  analyzeBodyWeightHabitus,
+  calculateCockcroftGaultCrCl,
+  identifyRenalDrugCategory,
+  evaluateComprehensiveRenalFunction
+} from '../src/engines/renalDoseEngine';
+import {
+  AAP2022_HOURLY_MILESTONES,
+  AAP2022_PT_NO_RISK_EXACT,
+  AAP2022_PT_WITH_RISK_EXACT,
+  AAP2022_EX_NO_RISK_EXACT,
+  AAP2022_EX_WITH_RISK_EXACT,
+  truncateGestationalWeeks,
+  interpolateHourlyCurve,
+  calculateAap2022Thresholds,
+  getAap2022FollowUpRecommendation,
+  evaluateBilirubinAlbuminRatio,
+  getPretermGuidance,
+  calculateBilirubinRateOfRise,
+  evaluateAbeSymptoms,
+  generateAap2022EscalationProtocol,
+  evaluateAap2022Jaundice,
+  MAISELS_2012_PRETERM_BANDS,
+  calculatePretermTndNiceThreshold,
+  evaluatePretermJaundice,
+  evaluateAap2022DischargeMatrix,
+  evaluatePhototherapyReboundRisk,
+  evaluateTcBValidity
+} from '../src/engines/jaundiceEngine';
+
 
 console.log('--- 1. VERIFYING TYPESCRIPT THROMBOSIS ENGINE ---');
 const dvtLow = calculateWellsDVT({});
@@ -743,6 +817,2270 @@ assert.strictEqual(computeStatusPhase(1200), 3);
 assert.strictEqual(computeStatusPhase(2400), 4);
 console.log('✓ Section 10 Clinical Audit v2.0 Upgrades passed (100% healthy)');
 
-console.log('\n🎉 ALL 21 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+console.log('--- 11. COLE & GREEN RESTRICTED LMS ENGINE & DATA INTEGRITY (ADIM 1) ---');
+// 11.1 Abramowitz & Stegun Yüksek Hassasiyetli Normal CDF ve Exact Percentile
+assert.strictEqual(standardNormalCDF(0), 0.5);
+assert.strictEqual(zToExactPercentile(0, 2), 50.0);
+assert.strictEqual(zToExactPercentile(2.0, 2), 97.72);
+assert.strictEqual(zToExactPercentile(-2.0, 2), 2.28);
+assert.strictEqual(zToExactPercentile(3.0, 2), 99.87);
+assert.strictEqual(zToExactPercentile(-3.0, 2), 0.13);
+assert.strictEqual(zToExactPercentile(1.88, 1), 97.0);
+assert.strictEqual(zToExactPercentile(-1.88, 1), 3.0);
+console.log('✓ Abramowitz & Stegun Eq. 26.2.19 Gaussian CDF & Exact Percentiles verified');
+
+// 11.2 Standard vs Restricted LMS |Z| <= 3 Özdeşliği
+const testL = -0.34;
+const testM = 69.2;
+const testS = 0.146;
+const rawZWithin = calculateStandardLMSZScore(75, testL, testM, testS);
+const restrictedZWithin = calculateRestrictedLMSZScore(75, testL, testM, testS);
+assert.ok(rawZWithin !== null && restrictedZWithin !== null);
+assert.strictEqual(Number(rawZWithin.toFixed(4)), Number(restrictedZWithin.toFixed(4)));
+
+// 11.3 Restricted LMS: Z > +3 SD Doğrusal Ekstrapolasyon (Sağa Çarpık Dağılım Koruması)
+const sd2Pos = calculateValueFromLMS(2, testL, testM, testS, false);
+const sd3Pos = calculateValueFromLMS(3, testL, testM, testS, false);
+assert.ok(sd2Pos !== null && sd3Pos !== null);
+const sd23Pos = sd3Pos - sd2Pos;
+
+// SD3 noktasındaki değer Z = 3.0 vermelidir
+const zAtSd3 = calculateRestrictedLMSZScore(sd3Pos, testL, testM, testS);
+assert.ok(zAtSd3 !== null && Math.abs(zAtSd3 - 3.0) < 0.001);
+
+// SD3 + SD23 noktasındaki aşırı uç değer doğrusal olarak Z = 4.0 vermelidir
+const zAtPlus4 = calculateRestrictedLMSZScore(sd3Pos + sd23Pos, testL, testM, testS);
+assert.ok(zAtPlus4 !== null && Math.abs(zAtPlus4 - 4.0) < 0.001);
+
+// Standart LMS'te ise negatif L nedeniyle yapay sıkışma oluşur (Z_raw < 4.0)
+const zRawAtPlus4 = calculateStandardLMSZScore(sd3Pos + sd23Pos, testL, testM, testS);
+assert.ok(zRawAtPlus4 !== null && zRawAtPlus4 < 4.0);
+
+// 11.4 Restricted LMS: Z < -3 SD Doğrusal Ekstrapolasyon
+const sd2Neg = calculateValueFromLMS(-2, testL, testM, testS, false);
+const sd3Neg = calculateValueFromLMS(-3, testL, testM, testS, false);
+assert.ok(sd2Neg !== null && sd3Neg !== null);
+const sd23Neg = sd2Neg - sd3Neg;
+
+const zAtSd3Neg = calculateRestrictedLMSZScore(sd3Neg, testL, testM, testS);
+assert.ok(zAtSd3Neg !== null && Math.abs(zAtSd3Neg - (-3.0)) < 0.001);
+
+const zAtMinus4 = calculateRestrictedLMSZScore(sd3Neg - sd23Neg, testL, testM, testS);
+assert.ok(zAtMinus4 !== null && Math.abs(zAtMinus4 - (-4.0)) < 0.001);
+
+// 11.5 Ters Dönüşüm Tutarlılığı (Forward & Backward Inversion)
+const testExtrapolatedWeight = calculateValueFromLMS(4.5, testL, testM, testS, true);
+assert.ok(testExtrapolatedWeight !== null);
+const roundTripZ = calculateLMSZScore(testExtrapolatedWeight, testL, testM, testS, { restricted: true });
+assert.ok(roundTripZ !== null && Math.abs(roundTripZ - 4.5) < 0.001);
+console.log('✓ WHO Restricted LMS Linear Extrapolation (±3 SD) & Inverse Function verified');
+
+// 11.6 Neyzi 2015 17-18 Yaş Veri Bütünlüğü ve Target Height Kontrolü
+const boy18y = calculatePercentiles({
+  ageMonths: 216,
+  gender: 'male',
+  heightCm: 176.2,
+  weightKg: 71.8
+});
+assert.ok(boy18y !== null);
+assert.strictEqual(boy18y.heightZ, 0.0);
+assert.strictEqual(boy18y.heightPercentile, 50);
+assert.strictEqual(boy18y.weightZ, 0.0);
+assert.strictEqual(boy18y.weightPercentile, 50);
+
+const girl18y = calculatePercentiles({
+  ageMonths: 216,
+  gender: 'female',
+  heightCm: 163.1,
+  weightKg: 58.1
+});
+assert.ok(girl18y !== null);
+assert.strictEqual(girl18y.heightZ, 0.0);
+assert.strictEqual(girl18y.heightPercentile, 50);
+assert.strictEqual(girl18y.weightZ, 0.0);
+assert.strictEqual(girl18y.weightPercentile, 50);
+
+// Mid-parental Target Height doğrulaması (176.2 cm yetişkin erkek medyanı ile)
+const targetHeightBoy = calculateTargetHeight({
+  fatherHeightCm: 180,
+  motherHeightCm: 165,
+  childGender: 'male'
+});
+assert.ok(targetHeightBoy !== null);
+assert.strictEqual(targetHeightBoy.targetHeightCm, 179.0); // (180 + 165 + 13) / 2 = 179.0
+assert.ok(targetHeightBoy.targetZ !== null && targetHeightBoy.targetZ > 0);
+console.log('✓ Neyzi 2015 18y Data Integrity & Updated Target Height verified');
+
+console.log('--- 12. POSITIONAL TRANSITION & DUAL STANDARDS (NEYZI 2015 vs WHO 2022) (ADIM 2) ---');
+// 12.1 Pozisyonel Geçiş Kırılması (24-36 Ay Arası Stadiometre vs İnfantometre)
+// 30 aylık çocuk ayakta (standing) ölçüldü:
+// Neyzi'de 36 aya kadar yatarak baz alındığından +0.7 cm omurga kompresyonu telafisi uygulanmalıdır
+const posNeyzi30m = adjustHeightForPosition(91.2, 30, 'standing', 'neyzi_2015');
+assert.strictEqual(posNeyzi30m.wasAdjusted, true);
+assert.strictEqual(posNeyzi30m.adjustmentCm, 0.7);
+assert.strictEqual(posNeyzi30m.adjustedHeightCm, 91.9);
+assert.ok(posNeyzi30m.note !== null && posNeyzi30m.note.includes('Neyzi'));
+
+// Aynı 30 aylık çocuk DSÖ'ye göre değerlendirildiğinde:
+// DSÖ 24 aydan sonra zaten ayakta ölçüm bekler; düzeltme yapılmaz (adjustment = 0)
+const posWho30m = adjustHeightForPosition(91.9, 30, 'standing', 'who_2022');
+assert.strictEqual(posWho30m.wasAdjusted, false);
+assert.strictEqual(posWho30m.adjustmentCm, 0);
+assert.strictEqual(posWho30m.adjustedHeightCm, 91.9);
+
+// 18 aylık infant ayakta ölçüldüğünde DSÖ kuralı gereği +0.7 cm eklenmelidir
+const posWho18m = adjustHeightForPosition(81.6, 18, 'standing', 'who_2022');
+assert.strictEqual(posWho18m.wasAdjusted, true);
+assert.strictEqual(posWho18m.adjustedHeightCm, 82.3);
+
+// 48 aylık çocuk yatarak ölçüldüğünde -0.7 cm çıkarılmalıdır
+const posNeyzi48m = adjustHeightForPosition(104.0, 48, 'recumbent', 'neyzi_2015');
+assert.strictEqual(posNeyzi48m.wasAdjusted, true);
+assert.strictEqual(posNeyzi48m.adjustedHeightCm, 103.3);
+
+// Otomatik modda protokol içi ölçüm varsayılır (0 cm düzeltme)
+const posAuto = adjustHeightForPosition(87.1, 24, 'auto', 'who_2022');
+assert.strictEqual(posAuto.wasAdjusted, false);
+assert.strictEqual(posAuto.positionUsed, 'standing');
+console.log('✓ Positional transition break (24-36m recumbent vs standing) verified');
+
+// 12.2 DSÖ 2022 Büyüme Standartları Motoru
+const whoBoy12m = calculatePercentiles({
+  ageMonths: 12,
+  gender: 'male',
+  heightCm: 75.7,
+  weightKg: 9.6,
+  standard: 'who_2022'
+});
+assert.ok(whoBoy12m !== null);
+assert.strictEqual(whoBoy12m.standardUsed, 'who_2022');
+assert.strictEqual(whoBoy12m.heightZ, 0.0);
+assert.strictEqual(whoBoy12m.heightPercentile, 50);
+assert.strictEqual(whoBoy12m.weightZ, 0.0);
+assert.strictEqual(whoBoy12m.weightPercentile, 50);
+
+const whoBoy24m = calculatePercentiles({
+  ageMonths: 24,
+  gender: 'male',
+  heightCm: 87.1,
+  weightKg: 12.2,
+  standard: 'who_2022'
+});
+assert.ok(whoBoy24m !== null);
+assert.strictEqual(whoBoy24m.heightZ, 0.0);
+assert.strictEqual(whoBoy24m.heightPercentile, 50);
+assert.strictEqual(whoBoy24m.weightZ, 0.0);
+assert.strictEqual(whoBoy24m.weightPercentile, 50);
+console.log('✓ WHO 2022 Child Growth Standards (MGRS 0-5y) verified');
+
+// 12.3 Çift Referans Karşılaştırması ve Klinik Uyumsuzluk Tespiti (Bundak, Neyzi 2022)
+// Sınırda boy kısalığı senaryosu: Çocuk DSÖ'ye göre Z < -2.0 SD (Bodurluk) iken Neyzi'ye göre normal persentil bandında
+const borderlineShortBoy = calculatePercentiles({
+  ageMonths: 18,
+  gender: 'male',
+  heightCm: 75.6, // Neyzi M=82.3, S=0.038 => Z ~ -2.14; DSÖ M=82.3, S=0.037 => Z ~ -2.2
+  weightKg: 10.9,
+  standard: 'neyzi_2015'
+});
+assert.ok(borderlineShortBoy !== null);
+assert.ok(borderlineShortBoy.comparisonWithAlternative !== null);
+assert.strictEqual(borderlineShortBoy.comparisonWithAlternative?.alternativeStandard, 'who_2022');
+assert.ok(borderlineShortBoy.comparisonWithAlternative?.alternativeHeightZ !== null);
+console.log('✓ Dual reference comparison & discordance engine verified');
+
+console.log('--- 13. VERIFYING GROWTH VELOCITY, CENTILE CHANNELS & ACUTE MALNUTRITION (ADIM 3) ---');
+// 13.1 Persentil Kanalları (NICE / WHO 10-Kanal Yapısı)
+assert.strictEqual(CENTILE_CHANNELS.length, 10);
+assert.strictEqual(getCentileChannel(0.2).channelIndex, 1);
+assert.strictEqual(getCentileChannel(1.5).channelIndex, 2);
+assert.strictEqual(getCentileChannel(5).channelIndex, 3);
+assert.strictEqual(getCentileChannel(15).channelIndex, 4);
+assert.strictEqual(getCentileChannel(50).channelIndex, 6);
+assert.strictEqual(getCentileChannel(95).channelIndex, 8);
+assert.strictEqual(getCentileChannel(99.8).channelIndex, 10);
+console.log('✓ Centile Channels (10-channel NICE/WHO structure) verified');
+
+// 13.2 0-3 Ay Normal Büyüme Hızı (20-30 g/gün, 150-200 g/hafta)
+const normalInfant2m = calculateGrowthVelocity({
+  currentWeightKg: 4.62,
+  previousWeightKg: 4.20,
+  daysBetween: 14,
+  ageMonths: 2
+});
+assert.strictEqual(normalInfant2m.isValid, true);
+assert.strictEqual(normalInfant2m.gramsPerDay, 30.0);
+assert.strictEqual(normalInfant2m.gramsPerWeek, 210.0);
+assert.strictEqual(normalInfant2m.velocityStatus, 'ADEQUATE');
+assert.strictEqual(normalInfant2m.malnutritionAssessment?.category, 'WELL_NOURISHED');
+
+// 13.3 3-6 Ay Büyüme Duraklaması & Yetersiz Kilo Alımı (<15 g/gün)
+const falteringInfant4m = calculateGrowthVelocity({
+  currentWeightKg: 5.60,
+  previousWeightKg: 5.50,
+  daysBetween: 20,
+  ageMonths: 4
+});
+assert.strictEqual(falteringInfant4m.isValid, true);
+assert.strictEqual(falteringInfant4m.gramsPerDay, 5.0);
+assert.strictEqual(falteringInfant4m.velocityStatus, 'INADEQUATE');
+assert.strictEqual(falteringInfant4m.malnutritionAssessment?.category, 'AT_RISK_INFANT');
+assert.ok(falteringInfant4m.malnutritionAssessment?.treatmentProtocol.dietRecommendation.includes('Anne sütü'));
+console.log('✓ Growth velocity calculation & age-specific expected ranges verified');
+
+// 13.4 Persentil Kanal Düşüşü Analizi (Growth Faltering - NICE Kriterleri)
+// Doğum persentili 75p (Kanal 7) iken 5p (Kanal 3)'e gerileme -> 4 kanal düşüş (≥2 kanal düşüş patolojiktir)
+const dropInfant = calculateGrowthVelocity({
+  currentWeightKg: 5.8,
+  previousWeightKg: 5.7,
+  daysBetween: 30,
+  ageMonths: 5,
+  birthPercentile: 75,
+  currentPercentile: 5
+});
+assert.strictEqual(dropInfant.centileDropAnalysis?.channelsDropped, 4);
+assert.strictEqual(dropInfant.centileDropAnalysis?.isPathologicalFaltering, true);
+assert.ok(dropInfant.centileDropAnalysis?.falteringReason?.includes('≥2 persentil kanalı düşüş'));
+
+// Doğum persentili <9p (Kanal 3) iken 1 kanal düşüş patolojiktir
+const lowBirthDrop = calculateGrowthVelocity({
+  currentWeightKg: 4.0,
+  previousWeightKg: 3.9,
+  daysBetween: 20,
+  ageMonths: 2,
+  birthPercentile: 6, // Kanal 3
+  currentPercentile: 1 // Kanal 2
+});
+assert.strictEqual(lowBirthDrop.centileDropAnalysis?.isPathologicalFaltering, true);
+assert.ok(lowBirthDrop.centileDropAnalysis?.falteringReason?.includes('≥1 persentil kanalı düşüş'));
+console.log('✓ Centile channel drop faltering analysis (NICE/WHO) verified');
+
+// 13.5 Akut Malnütrisyon Taraması (DSÖ 2022/2023 Güncel Standartları)
+// Senaryo A: 4 aylık bebek, MUAC < 110 mm -> DSÖ 2023 kriterine göre doğrudan SAM & RUTF KONTRENDİKASYONU
+const samInfantUnder6m = calculateGrowthVelocity({
+  currentWeightKg: 4.1,
+  previousWeightKg: 4.0,
+  daysBetween: 15,
+  ageMonths: 4,
+  muacMm: 105
+});
+assert.strictEqual(samInfantUnder6m.malnutritionAssessment?.category, 'SAM');
+assert.strictEqual(samInfantUnder6m.malnutritionAssessment?.treatmentProtocol.setting, 'INPATIENT');
+assert.ok(samInfantUnder6m.malnutritionAssessment?.treatmentProtocol.contraindications.some(c => c.includes('KONTRENDİKEDİR')));
+
+// Senaryo B: 18 aylık çocuk, MUAC 112 mm (<115 mm) -> SAM, 150-185 kcal/kg/gün RUTF ayaktan tedavi
+const samChildOver6m = calculateGrowthVelocity({
+  currentWeightKg: 8.5,
+  previousWeightKg: 8.4,
+  daysBetween: 14,
+  ageMonths: 18,
+  muacMm: 112
+});
+assert.strictEqual(samChildOver6m.malnutritionAssessment?.category, 'SAM');
+assert.strictEqual(samChildOver6m.malnutritionAssessment?.treatmentProtocol.setting, 'OUTPATIENT');
+assert.ok(samChildOver6m.malnutritionAssessment?.treatmentProtocol.caloricTargetKcalKgDay.includes('150-185'));
+
+// Senaryo C: Besinsel Bilateral Gode Bırakan Ödem (Kwashiorkor) -> Antropometriden bağımsız SAM
+const kwashiorkorChild = calculateGrowthVelocity({
+  currentWeightKg: 10.0,
+  previousWeightKg: 9.8,
+  daysBetween: 10,
+  ageMonths: 24,
+  hasBilateralEdema: true
+});
+assert.strictEqual(kwashiorkorChild.malnutritionAssessment?.category, 'SAM');
+assert.strictEqual(kwashiorkorChild.malnutritionAssessment?.treatmentProtocol.setting, 'INPATIENT');
+
+// Senaryo D: 10 aylık çocuk, MUAC 120 mm (115-124 mm) -> MAM, 100-130 kcal/kg/gün RUSF
+const mamChild = calculateGrowthVelocity({
+  currentWeightKg: 7.9,
+  previousWeightKg: 7.8,
+  daysBetween: 14,
+  ageMonths: 10,
+  muacMm: 120
+});
+assert.strictEqual(mamChild.malnutritionAssessment?.category, 'MAM');
+assert.strictEqual(mamChild.malnutritionAssessment?.treatmentProtocol.setting, 'OUTPATIENT');
+assert.ok(mamChild.malnutritionAssessment?.treatmentProtocol.caloricTargetKcalKgDay.includes('100-130'));
+console.log('✓ WHO 2022/2023 Acute Malnutrition (SAM, MAM, infant dyad & RUTF locks) verified');
+
+console.log('--- 14. VERIFYING CRANIAL HEAD CIRCUMFERENCE 0-18Y & HYDROCEPHALUS SCREENING (ADIM 4) ---');
+// 14.1 0-18 Yaş (0-216 Ay) Baş Çevresi Uzatımı & 18 Yaş Medyan Doğrulaması (Kara 2016 / Neyzi 2015)
+const hcBoy18y = calculatePercentiles({
+  totalMonths: 216,
+  gender: 'male',
+  heightCm: 176.2,
+  weightKg: 71.8,
+  headCircumferenceCm: 57.7,
+  standard: 'neyzi_2015'
+});
+assert.ok(hcBoy18y !== null);
+assert.strictEqual(hcBoy18y.headCircZ, 0.0);
+assert.strictEqual(hcBoy18y.headCircumferencePercentile, 50);
+
+const hcGirl18y = calculatePercentiles({
+  totalMonths: 216,
+  gender: 'female',
+  heightCm: 163.1,
+  weightKg: 58.1,
+  headCircumferenceCm: 56.1,
+  standard: 'neyzi_2015'
+});
+assert.ok(hcGirl18y !== null);
+assert.strictEqual(hcGirl18y.headCircZ, 0.0);
+assert.strictEqual(hcGirl18y.headCircumferencePercentile, 50);
+
+// 5 Yaşındaki (60 ay) çocukta baş çevresi hesaplama doğrulaması (>36 ay kilidinin kaldırılması)
+const hcChild5y = calculatePercentiles({
+  totalMonths: 60,
+  gender: 'male',
+  heightCm: 110.0,
+  weightKg: 18.3,
+  headCircumferenceCm: 51.6,
+  standard: 'neyzi_2015'
+});
+assert.ok(hcChild5y !== null);
+assert.strictEqual(hcChild5y.headCircZ, 0.0);
+assert.strictEqual(hcChild5y.headCircumferencePercentile, 50);
+console.log('✓ Head circumference 0-18 years (0-216m) normative extension verified');
+
+// 14.2 İleri Makrosefali (Z > +3.0 SD) Statik Tarama
+const severeMacro = calculateCranialScreening({
+  currentHeadCircCm: 48.0,
+  ageMonths: 6,
+  gender: 'male',
+  standard: 'neyzi_2015'
+});
+assert.strictEqual(severeMacro.isValid, true);
+assert.ok((severeMacro.zScore ?? 0) > 3.0);
+assert.strictEqual(severeMacro.staticClassification, 'SEVERE_MACROCEPHALY');
+assert.strictEqual(severeMacro.hydrocephalusRisk, 'CRITICAL');
+assert.strictEqual(severeMacro.urgencyLevel, 'EMERGENCY_IMAGING');
+assert.ok(severeMacro.clinicalRecommendations.some(r => r.includes('TFUS')));
+
+// 14.3 Dinamik Hızlı Baş Büyümesi (Crossing Percentiles Upwards)
+// 2 aylık bebek: 1 ayda 3.5 cm artış (0-3 ay için normal 1.5-2.0 cm/ay, azami 2.2 cm/ay)
+const rapidCranialGrowth = calculateCranialScreening({
+  currentHeadCircCm: 41.5,
+  previousHeadCircCm: 38.0,
+  daysBetween: 30,
+  ageMonths: 2,
+  gender: 'male'
+});
+assert.strictEqual(rapidCranialGrowth.dynamicVelocity?.isVelocityElevated, true);
+assert.strictEqual(rapidCranialGrowth.hydrocephalusRisk, 'WARNING');
+assert.strictEqual(rapidCranialGrowth.urgencyLevel, 'PLANNED_USG');
+assert.ok(rapidCranialGrowth.dynamicVelocity?.velocityStatusText.includes('Hızlı Baş Büyümesi'));
+
+// 14.4 KİBAS Bulguları ile Kombine Acil Hidrosefali Alarmı
+const emergencyHydrocephalus = calculateCranialScreening({
+  currentHeadCircCm: 44.5,
+  previousHeadCircCm: 42.0,
+  daysBetween: 20,
+  ageMonths: 4,
+  gender: 'female',
+  hasBulgingFontanelle: true,
+  hasSunsetEyes: true,
+  hasVomitingLethargy: true
+});
+assert.strictEqual(emergencyHydrocephalus.hydrocephalusRisk, 'CRITICAL');
+assert.strictEqual(emergencyHydrocephalus.urgencyLevel, 'EMERGENCY_IMAGING');
+assert.strictEqual(emergencyHydrocephalus.kibasSignsDetected.length, 3);
+assert.ok(emergencyHydrocephalus.clinicalRecommendations.some(r => r.includes('KONTRENDİKEDİR')));
+
+// 14.5 Ailesel (Benign) Makrosefali
+const familialMacro = calculateCranialScreening({
+  currentHeadCircCm: 49.5,
+  ageMonths: 12,
+  gender: 'male',
+  parentalMacrocephaly: true
+});
+assert.strictEqual(familialMacro.staticClassification, 'MACROCEPHALY');
+assert.strictEqual(familialMacro.hydrocephalusRisk, 'BENIGN_FAMILIAL');
+assert.strictEqual(familialMacro.alertClass, 'success');
+assert.strictEqual(familialMacro.urgencyLevel, 'ROUTINE_FOLLOWUP');
+
+// 14.6 Ağır Mikrosefali (Z < -3.0 SD)
+const severeMicro = calculateCranialScreening({
+  currentHeadCircCm: 41.5,
+  ageMonths: 12,
+  gender: 'male'
+});
+assert.strictEqual(severeMicro.staticClassification, 'SEVERE_MICROCEPHALY');
+assert.strictEqual(severeMicro.hydrocephalusRisk, 'CRITICAL');
+assert.ok(severeMicro.clinicalRecommendations.some(r => r.includes('Kraniyosinostoz')));
+console.log('✓ Combined Hydrocephalus & Microcephaly Screening Engine verified');
+
+console.log('\n--- 15. VERIFYING METRIC PEDIATRIC DOSING, CONCENTRATION LOCK & SYRINGE PROTOCOLS (ADIM 5) ---');
+
+// 15.1 Metrik Doz Formatı (X mg = Y mL) ve Ölçek/Kaşık Tasfiyesi
+const p120 = calculatePediatricDose(15, 'paracetamol_120');
+assert.ok(p120);
+assert.strictEqual(p120.targetDoseMg, 225); // 15 kg * 15 mg/kg
+assert.strictEqual(p120.volumeMl, 9.4);     // 225 / 24 = 9.375 -> 9.4 mL
+assert.strictEqual(p120.metricDoseText, '225 mg (9.4 mL)');
+assert.strictEqual(p120.isLocked, false);
+assert.ok(p120.syringeWarning.includes('oral dozaj enjektörü'));
+// Asla kontrolsüz "ölçek" ve "kaşık" kelimesi içermemeli (uyarıdaki olumsuz ikaz hariç)
+assert.ok(!p120.metricDoseText.includes('ölçek') && !p120.metricDoseText.includes('kaşık'));
+assert.ok(p120.olcekText && !p120.olcekText.includes('ölçek') && !p120.olcekText.includes('kaşık'));
+
+// 15.2 Ticari Şişe Konsantrasyonları Karşılaştırması (Calpol 120/5 vs Calpol 6 Plus 250/5)
+const p250 = calculatePediatricDose(15, 'paracetamol_250');
+assert.ok(p250);
+assert.strictEqual(p250.targetDoseMg, 225);
+assert.strictEqual(p250.volumeMl, 4.5);     // 225 / 50 = 4.5 mL
+assert.strictEqual(p250.metricDoseText, '225 mg (4.5 mL)');
+
+// 15.3 Konsantrasyon Güvenlik Kilidi (🔒)
+const pLocked = calculatePediatricDose(15, 'paracetamol_no_conc');
+assert.ok(pLocked);
+assert.strictEqual(pLocked.targetDoseMg, 225);
+assert.strictEqual(pLocked.volumeMl, null);
+assert.strictEqual(pLocked.isLocked, true);
+assert.ok(pLocked.lockReason && pLocked.lockReason.includes('🔒'));
+assert.ok(pLocked.metricDoseText.includes('kilitli'));
+assert.ok(pLocked.syringeWarning.includes('seçilmeden'));
+
+// 15.4 Oral Enjektör vs Ölçü Kabı Eşik Kuralı (< 10 mL vs ≥ 10 mL)
+const pSub10 = calculatePediatricDose(10, 'paracetamol_120'); // 150 mg / 24 = 6.3 mL (< 10 mL)
+assert.ok(pSub10);
+assert.strictEqual(pSub10.volumeMl, 6.3);
+assert.ok(pSub10.syringeWarning.includes('oral dozaj enjektörü'));
+
+const pAbove10 = calculatePediatricDose(40, 'paracetamol_120'); // 600 mg / 24 = 25.0 mL (≥ 10 mL)
+assert.ok(pAbove10);
+assert.strictEqual(pAbove10.volumeMl, 25.0);
+assert.ok(pAbove10.syringeWarning.includes('ölçü kabı'));
+
+// 15.5 Amoksisilin-Klavulanat Standart (7:1) vs Yüksek Doz (14:1 ES)
+const amoxStd = calculatePediatricDose(10, 'amoklavin_400');
+assert.ok(amoxStd);
+assert.strictEqual(amoxStd.targetDoseMg, 200); // 20 mg/kg
+assert.strictEqual(amoxStd.volumeMl, 2.5);     // 200 / 80 = 2.5 mL
+
+const amoxES = calculatePediatricDose(10, 'amoklavin_600');
+assert.ok(amoxES);
+assert.strictEqual(amoxES.targetDoseMg, 450);  // 45 mg/kg (90 mg/kg/gün 2 doz)
+assert.strictEqual(amoxES.volumeMl, 3.8);      // 450 / 120 = 3.75 -> 3.8 mL
+
+// 15.6 Geriye Dönük Uyumluluk (Legacy Aliases: paracetamol, ibuprofen, laroxyl_25)
+const legacyParol = calculatePediatricDose(15, 'paracetamol');
+assert.ok(legacyParol);
+assert.strictEqual(legacyParol.targetDoseMg, 225);
+assert.strictEqual(legacyParol.volumeMl, 9.4);
+
+const legacyDolven = calculatePediatricDose(15, 'ibuprofen');
+assert.ok(legacyDolven);
+assert.strictEqual(legacyDolven.targetDoseMg, 150); // 15 * 10
+assert.strictEqual(legacyDolven.volumeMl, 7.5);    // 150 / 20 = 7.5 mL
+
+console.log('✓ Metric Pediatric Dosing, Concentration Lock & Oral Syringe Protocol verified');
+
+console.log('\n--- 16. VERIFYING ADULT CAP CLAMPING & PEDIATRIC OBESITY IBW ENGINE (ADIM 6) ---');
+
+// 16.1 calculateIdealBodyWeight Formül Doğrulaması (PPAG Kılavuzu)
+// 10 yaş (120m) erkek, boy 140 cm (1.40 m), kilo 55 kg (Obez)
+const ibwTest = calculateIdealBodyWeight({
+  ageMonths: 120,
+  gender: 'male',
+  heightCm: 140,
+  weightKg: 55
+});
+assert.ok(ibwTest);
+assert.strictEqual(ibwTest.bmi, 28.1);      // 55 / 1.96 = 28.06 -> 28.1
+assert.strictEqual(ibwTest.bmi50, 17.5);    // 10 yaş erkek Neyzi 2015 medyanı
+assert.strictEqual(ibwTest.ibwKg, 34.3);     // 17.5 * 1.96 = 34.3 kg
+assert.strictEqual(ibwTest.adjBwKg, 42.6);   // 34.3 + 0.4 * (55 - 34.3) = 42.58 -> 42.6 kg
+assert.strictEqual(ibwTest.isObese, true);   // BMI Z-skoru > +1.645 SD (>95.p)
+assert.strictEqual(ibwTest.isOverweight, false);
+
+// 16.2 Yetişkin Tavan Doz Budaması: Parasetamol (Max 1000 mg/doz, 4000 mg/gün)
+// 75 kg adölesan: 75 * 15 = 1125 mg -> 1000 mg'a budanmalı!
+const paracetamolCapped = calculatePediatricDose(75, 'paracetamol_120');
+assert.ok(paracetamolCapped);
+assert.strictEqual(paracetamolCapped.isCapped, true);
+assert.strictEqual(paracetamolCapped.uncappedDoseMg, 1125);
+assert.strictEqual(paracetamolCapped.targetDoseMg, 1000); // Clamped to 1000 mg
+assert.strictEqual(paracetamolCapped.volumeMl, 41.7);     // 1000 / 24 = 41.66 -> 41.7 mL
+assert.ok(paracetamolCapped.capNotice && paracetamolCapped.capNotice.includes('1000 mg'));
+assert.ok(paracetamolCapped.capNotice && paracetamolCapped.capNotice.includes('4000 mg'));
+
+// 16.3 Yetişkin Tavan Doz Budaması: İbuprofen (Max 400 mg/doz, 1200 mg/gün)
+// 50 kg çocuk: 50 * 10 = 500 mg -> 400 mg'a budanmalı!
+const ibuprofenCapped = calculatePediatricDose(50, 'ibuprofen_100');
+assert.ok(ibuprofenCapped);
+assert.strictEqual(ibuprofenCapped.isCapped, true);
+assert.strictEqual(ibuprofenCapped.uncappedDoseMg, 500);
+assert.strictEqual(ibuprofenCapped.targetDoseMg, 400);    // Clamped to 400 mg
+assert.strictEqual(ibuprofenCapped.volumeMl, 20.0);      // 400 / 20 = 20.0 mL
+assert.ok(ibuprofenCapped.capNotice && ibuprofenCapped.capNotice.includes('400 mg'));
+
+// 16.4 Yetişkin Tavan Doz Budaması: Ondansetron (Max 8 mg/doz)
+// 60 kg çocuk: 60 * 0.15 = 9.0 mg -> 8.0 mg'a budanmalı!
+const ondanCapped = calculatePediatricDose(60, 'ondansetron_4');
+assert.ok(ondanCapped);
+assert.strictEqual(ondanCapped.isCapped, true);
+assert.strictEqual(ondanCapped.uncappedDoseMg, 9.0);
+assert.strictEqual(ondanCapped.targetDoseMg, 8.0);
+assert.strictEqual(ondanCapped.volumeMl, 10.0);          // 8 / 0.8 = 10.0 mL
+
+// 16.5 Obez Çocukta Hidrofilik Parasetamol Dozlaması ve IBW Uyarısı
+// 10 yaş erkek, 140 cm, 55 kg (TBW)
+const obeseParacetamolTBW = calculatePediatricDose(55, 'paracetamol_120', {
+  ageMonths: 120,
+  heightCm: 140,
+  gender: 'male',
+  useIbw: false
+});
+assert.ok(obeseParacetamolTBW);
+assert.strictEqual(obeseParacetamolTBW.isObeseAlert, true);
+assert.strictEqual(obeseParacetamolTBW.tbwKg, 55);
+assert.strictEqual(obeseParacetamolTBW.ibwKg, 34.3);
+assert.strictEqual(obeseParacetamolTBW.adjBwKg, 42.6);
+assert.strictEqual(obeseParacetamolTBW.targetDoseMg, 825); // 55 * 15 = 825 mg (TBW)
+assert.strictEqual(obeseParacetamolTBW.ibwDoseMg, 514.5);  // 34.3 * 15 = 514.5 mg (IBW güvenli doz)
+assert.strictEqual(obeseParacetamolTBW.ibwVolumeMl, 21.4); // 514.5 / 24 = 21.43 -> 21.4 mL
+assert.ok(obeseParacetamolTBW.obesityWarning && obeseParacetamolTBW.obesityWarning.includes('NAPQI'));
+assert.ok(obeseParacetamolTBW.obesityWarning && obeseParacetamolTBW.obesityWarning.includes('hepatotoksisite'));
+
+// 16.6 Obez Çocukta IBW Seçimi Aktif (useIbw: true)
+const obeseParacetamolIBW = calculatePediatricDose(55, 'paracetamol_120', {
+  ageMonths: 120,
+  heightCm: 140,
+  gender: 'male',
+  useIbw: true
+});
+assert.ok(obeseParacetamolIBW);
+assert.strictEqual(obeseParacetamolIBW.usedWeightType, 'IBW');
+assert.strictEqual(obeseParacetamolIBW.targetDoseMg, 514.5);
+assert.strictEqual(obeseParacetamolIBW.volumeMl, 21.4);
+assert.ok(obeseParacetamolIBW.metricDoseText.includes('IBW Bazlı Doz'));
+
+// 16.7 Normal Kilo Çocukta Tavan veya Obezite Uyarısı Üretilmez
+const normalChild = calculatePediatricDose(33, 'paracetamol_120', {
+  ageMonths: 120,
+  heightCm: 140,
+  gender: 'male'
+});
+assert.ok(normalChild);
+assert.strictEqual(normalChild.isObeseAlert, false);
+assert.strictEqual(normalChild.isCapped, false);
+assert.strictEqual(normalChild.targetDoseMg, 495); // 33 * 15 = 495 mg
+assert.strictEqual(normalChild.volumeMl, 20.6);   // 495 / 24 = 20.625 -> 20.6 mL
+
+console.log('✓ Adult Cap Clamping & Pediatric Obesity IBW Engine verified');
+
+console.log('\n--- 17. VERIFYING TİTCK VS BNFC DUAL THRESHOLDS, RATIO LOCKS & HARD STOPS (ADIM 7) ---');
+
+// 17.1 TC-001: İbuprofen Asgari Kilo Sınırı (Sınır Altı - 6.9 kg, 7 ay)
+const tc001Blocked = calculatePediatricDose(6.9, 'ibuprofen_100', { ageMonths: 7 });
+assert.ok(tc001Blocked);
+assert.strictEqual(tc001Blocked.isBlocked, true);
+assert.strictEqual(tc001Blocked.hasDualStandardAlert, true);
+assert.strictEqual(tc001Blocked.targetDoseMg, 0);
+assert.strictEqual(tc001Blocked.volumeMl, null);
+assert.ok(tc001Blocked.blockReason && tc001Blocked.blockReason.includes('7 kg altındadır'));
+
+// TC-001 ile Hekim Bilinçli Onayı (allowOffLabelTitck: true)
+const tc001Allowed = calculatePediatricDose(6.9, 'ibuprofen_100', { ageMonths: 7, allowOffLabelTitck: true });
+assert.ok(tc001Allowed);
+assert.strictEqual(tc001Allowed.isBlocked, false);
+assert.strictEqual(tc001Allowed.hasDualStandardAlert, true);
+assert.strictEqual(tc001Allowed.targetDoseMg, 69);
+assert.strictEqual(tc001Allowed.volumeMl, 3.5); // 69 / 20 = 3.45 -> 3.5 mL
+assert.ok(tc001Allowed.dualStandardWarning && tc001Allowed.dualStandardWarning.includes('TİTCK'));
+
+// 17.2 TC-002: İbuprofen Asgari Kilo Sınırı (Tam Sınır - 7.0 kg, 7 ay)
+const tc002 = calculatePediatricDose(7.0, 'ibuprofen_100', { ageMonths: 7 });
+assert.ok(tc002);
+assert.strictEqual(tc002.isBlocked, false);
+assert.strictEqual(tc002.hasDualStandardAlert, false);
+assert.strictEqual(tc002.targetDoseMg, 70);
+assert.strictEqual(tc002.volumeMl, 3.5);
+
+// 17.3 TC-003: İbuprofen Asgari Yaş Sınırı (Sınır Altı - 8.5 kg, 5 ay 29 gün)
+const tc003 = calculatePediatricDose(8.5, 'ibuprofen_100', { ageMonths: 5.9 });
+assert.ok(tc003);
+assert.strictEqual(tc003.isBlocked, true);
+assert.strictEqual(tc003.hasDualStandardAlert, true);
+assert.ok(tc003.blockReason && tc003.blockReason.includes('6 aydan küçüktür'));
+
+// 17.4 TC-004: İbuprofen Asgari Yaş Sınırı (Tam Sınır - 8.5 kg, 6 ay)
+const tc004 = calculatePediatricDose(8.5, 'ibuprofen_100', { ageMonths: 6.0 });
+assert.ok(tc004);
+assert.strictEqual(tc004.isBlocked, false);
+assert.strictEqual(tc004.hasDualStandardAlert, false);
+assert.strictEqual(tc004.targetDoseMg, 85);
+assert.strictEqual(tc004.volumeMl, 4.3); // 85 / 20 = 4.25 -> 4.3 mL
+
+// 17.5 İbuprofen Mutlak Alt Sınır (<3 ay veya <5 kg) - Hekim onaylasa dahi KESİN KONTRENDİKE
+const tcIbAbsFloorWeight = calculatePediatricDose(4.5, 'ibuprofen_100', { ageMonths: 4, allowOffLabelTitck: true });
+assert.ok(tcIbAbsFloorWeight);
+assert.strictEqual(tcIbAbsFloorWeight.isBlocked, true);
+assert.ok(tcIbAbsFloorWeight.blockReason && tcIbAbsFloorWeight.blockReason.includes('KESİN KONTRENDİKASYON'));
+
+const tcIbAbsFloorAge = calculatePediatricDose(6.0, 'ibuprofen_100', { ageMonths: 2, allowOffLabelTitck: true });
+assert.ok(tcIbAbsFloorAge);
+assert.strictEqual(tcIbAbsFloorAge.isBlocked, true);
+assert.ok(tcIbAbsFloorAge.blockReason && tcIbAbsFloorAge.blockReason.includes('KESİN KONTRENDİKASYON'));
+
+// 17.6 TC-005 & TC-006: TMP-SMX Neonatal Yaş Sınırı ve Kernikterus Hard Stopu (<42 gün)
+const tc005 = calculatePediatricDose(4.8, 'tmp_smx_200_40', { ageDays: 41 });
+assert.ok(tc005);
+assert.strictEqual(tc005.isBlocked, true);
+assert.strictEqual(tc005.targetDoseMg, 0);
+assert.ok(tc005.blockReason && tc005.blockReason.includes('Kernikterus'));
+
+const tc006 = calculatePediatricDose(5.0, 'tmp_smx_200_40', { ageDays: 42 });
+assert.ok(tc006);
+assert.strictEqual(tc006.isBlocked, false);
+assert.strictEqual(tc006.targetDoseMg, 20); // 5.0 * 4 = 20 mg TMP
+assert.strictEqual(tc006.volumeMl, 2.5);     // 20 / 8 = 2.5 mL BID
+
+// 17.7 TC-009 & TC-010: Amoksisilin-Klavulanat 7:1 vs 14:1 (ES) Oran Kilidi
+// TC-009: 16 kg, 2 yaş, Augmentin ES (600/42.9)
+const tc009 = calculatePediatricDose(16, 'amoklavin_600', { ageMonths: 24, indication: 'aom_high_dose' });
+assert.ok(tc009);
+assert.strictEqual(tc009.isBlocked, false);
+assert.strictEqual(tc009.targetDoseMg, 720); // 16 * 45 = 720 mg BID
+assert.strictEqual(tc009.volumeMl, 6.0);     // 720 / 120 = 6.0 mL
+assert.strictEqual(tc009.ratio, '14:1');
+assert.ok(tc009.ratioNotice && tc009.ratioNotice.includes('14:1 ES Formülasyonu'));
+
+// TC-010: 16 kg, 2 yaş, Croxilex BID 400/57 ile Yüksek Doz AOM (7:1 formülasyon BLOKE!)
+const tc010 = calculatePediatricDose(16, 'amoklavin_400', { ageMonths: 24, indication: 'aom_high_dose' });
+assert.ok(tc010);
+assert.strictEqual(tc010.isBlocked, true);
+assert.strictEqual(tc010.ratio, '7:1');
+assert.ok(tc010.blockReason && tc010.blockReason.includes('Klavulanat Toksisitesi ve Şiddetli Diyare Riski'));
+
+// Standart AOM'da 7:1 formülasyon hesaplanır ancak uyarı iliştirilir
+const amoxStd7 = calculatePediatricDose(16, 'amoklavin_400', { ageMonths: 24 });
+assert.ok(amoxStd7);
+assert.strictEqual(amoxStd7.isBlocked, false);
+assert.strictEqual(amoxStd7.targetDoseMg, 320); // 16 * 20 = 320 mg BID
+assert.strictEqual(amoxStd7.volumeMl, 4.0);     // 320 / 80 = 4.0 mL
+assert.ok(amoxStd7.ratioNotice && amoxStd7.ratioNotice.includes('Klavulanat Toksisitesi Uyarısı'));
+
+// 17.8 TC-012 & TC-013: Ondansetron Akut Gastroenterit Kilo Bandı & <6 ay Kontrendikasyonu
+const tc012 = calculatePediatricDose(14.8, 'ondansetron_4', { ageMonths: 36 });
+assert.ok(tc012);
+assert.strictEqual(tc012.isBlocked, false);
+assert.strictEqual(tc012.targetDoseMg, 2);   // 8-15 kg bandı: 2 mg
+assert.strictEqual(tc012.volumeMl, 2.5);     // 2 / 0.8 = 2.5 mL
+assert.ok(tc012.offLabelNotice && tc012.offLabelNotice.includes('akut gastroenterit ruhsatı yoktur'));
+
+const tc013 = calculatePediatricDose(15.2, 'ondansetron_4', { ageMonths: 42 });
+assert.ok(tc013);
+assert.strictEqual(tc013.isBlocked, false);
+assert.strictEqual(tc013.targetDoseMg, 4);   // 15.1-30 kg bandı: 4 mg
+assert.strictEqual(tc013.volumeMl, 5.0);     // 4 / 0.8 = 5.0 mL
+
+const tcOndanInfant = calculatePediatricDose(7.5, 'ondansetron_4', { ageMonths: 5 });
+assert.ok(tcOndanInfant);
+assert.strictEqual(tcOndanInfant.isBlocked, true);
+assert.ok(tcOndanInfant.blockReason && tcOndanInfant.blockReason.includes('AAP / CPS'));
+
+// 17.9 TC-015: Kodein ve Tramadol <12 Yaş Mutlak Hard Stop (CYP2D6 Solunum Arresti)
+const tc015Codeine = calculatePediatricDose(35, 'codeine_syrup', { ageMonths: 120 });
+assert.ok(tc015Codeine);
+assert.strictEqual(tc015Codeine.isBlocked, true);
+assert.strictEqual(tc015Codeine.targetDoseMg, 0);
+assert.ok(tc015Codeine.blockReason && tc015Codeine.blockReason.includes('CYP2D6 ultra-hızlı metabolizör'));
+
+const tc015Tramadol = calculatePediatricDose(35, 'tramadol_drop', { ageMonths: 120 });
+assert.ok(tc015Tramadol);
+assert.strictEqual(tc015Tramadol.isBlocked, true);
+assert.strictEqual(tc015Tramadol.targetDoseMg, 0);
+assert.ok(tc015Tramadol.blockReason && tc015Tramadol.blockReason.includes('CYP2D6 ultra-hızlı metabolizör'));
+
+// ≥12 yaş adölesanda Kodein dozu hesaplanabilir
+const adolCodeine = calculatePediatricDose(50, 'codeine_syrup', { ageMonths: 168 });
+assert.ok(adolCodeine);
+assert.strictEqual(adolCodeine.isBlocked, false);
+assert.strictEqual(adolCodeine.targetDoseMg, 25); // 50 * 0.5 = 25 mg
+assert.strictEqual(adolCodeine.volumeMl, 25.0);
+
+// 17.10 GINA / AAP Negatif Kılavuz Uyarısı: Salbutamol Oral Şurup
+const salbutamolOral = calculatePediatricDose(15, 'salbutamol_syrup');
+assert.ok(salbutamolOral);
+assert.strictEqual(salbutamolOral.targetDoseMg, 1.5);
+assert.strictEqual(salbutamolOral.volumeMl, 3.8); // 1.5 / 0.4 = 3.75 -> 3.8 mL
+assert.ok(salbutamolOral.negativeGuidelineWarning && salbutamolOral.negativeGuidelineWarning.includes('GINA / AAP Negatif Kılavuz Uyarısı'));
+
+// 17.11 TC-014: Demir Preparatı Şurup ve Damla Karışıklığı Uyarısı
+const feSyrup = calculatePediatricDose(10, 'iron_fe3_syrup');
+assert.ok(feSyrup);
+assert.ok(feSyrup.confusionWarning && feSyrup.confusionWarning.includes('Damla ve Şurup Ayrımı'));
+
+// 17.12 Süspansiyon Sulandırma Sonrası Stabilite Bildirimi
+const amoxStab = calculatePediatricDose(12, 'amoklavin_200');
+assert.ok(amoxStab && amoxStab.reconstitutionStability && amoxStab.reconstitutionStability.includes('buzdolabında'));
+const klacidStab = calculatePediatricDose(15, 'clarithromycin_125');
+assert.ok(klacidStab && klacidStab.reconstitutionStability && klacidStab.reconstitutionStability.includes('ODA SICAKLIĞINDA'));
+
+console.log('✓ TİTCK vs BNFc Dual Thresholds, Ratio Locks, Hard Stops & Monograph Safety Shields verified');
+
+// --- 18. VERIFYING CLINICAL MONOGRAPH CARDS & 25 CRITICAL PEDIATRIC DRUGS (ADIM 8) ---
+console.log('\n--- 18. VERIFYING CLINICAL MONOGRAPH CARDS & 25 CRITICAL PEDIATRIC DRUGS (ADIM 8) ---');
+const monoDataRaw = JSON.parse(fs.readFileSync('public/data/clinical_monographs.json', 'utf8')) as ClinicalMonograph[];
+assert.strictEqual(monoDataRaw.length, 135, 'Dataset must contain 135 complete monographs');
+setMonographsCache(monoDataRaw);
+
+// 18.1 Verify 25 Critical Pediatric Drugs Presence & Complete Structure
+const expected25Drugs = [
+  'epinephrine', 'ceftriaxone', 'cefotaxime', 'ampicillin', 'gentamicin',
+  'vancomycin', 'midazolam', 'diazepam', 'levetiracetam', 'phenobarbital',
+  'phenytoin', 'acyclovir', 'oseltamivir', 'budesonide', 'ipratropium',
+  'morphine', 'fentanyl', 'ketamine', 'ors', 'paracetamol',
+  'metronidazole', 'fluconazole', 'lorazepam', 'methylprednisolone',
+  'zinc_sulfate'
+];
+
+const monoDict = new Map<string, ClinicalMonograph>(monoDataRaw.map(m => [m.id, m]));
+for (const drugId of expected25Drugs) {
+  const m = monoDict.get(drugId);
+  assert.ok(m, `Drug ${drugId} must exist in monographs`);
+  assert.strictEqual(m.drug_id, drugId, `${drugId} must have matching drug_id`);
+  assert.ok(m.generic_name && m.generic_name.length > 0, `${drugId} must have generic_name`);
+  assert.ok(m.atc_code && m.atc_code.length > 0, `${drugId} must have atc_code`);
+  assert.ok(Array.isArray(m.formulations) && m.formulations.length > 0, `${drugId} must have formulations`);
+  assert.ok(m.dosing?.pediatric_dosing && m.dosing.pediatric_dosing.length > 0, `${drugId} must have pediatric_dosing`);
+  assert.ok(m.reproductive_safety?.pregnancy_trimester_risk, `${drugId} must have pregnancy_trimester_risk`);
+  assert.ok(m.reproductive_safety?.lactation, `${drugId} must have lactation`);
+  assert.ok(m.safety_warnings?.neonatal_specific_notes, `${drugId} must have neonatal safety notes`);
+  assert.ok(m.metadata?.source_documents && m.metadata.source_documents.length > 0, `${drugId} must have source_documents`);
+}
+
+// 18.2 FDA 2015 PLLR Trimester Status Bar Evaluation
+const tIbuT1 = evaluateTrimesterRiskLevel('Düşük ve kardiyak defekt riski bildirilmiştir; zorunlu değilse kaçınılmalıdır.');
+assert.strictEqual(tIbuT1.level, 'CONTRAINDICATED'); // 'kaçınılmalıdır' triggers CONTRAINDICATED
+
+const tIbuT3 = evaluateTrimesterRiskLevel('KESİN KONTRENDİKE: Ductus arteriosus vaktinden önce kapanması riski');
+assert.strictEqual(tIbuT3.level, 'CONTRAINDICATED');
+assert.strictEqual(tIbuT3.label, 'KONTRENDİKE');
+
+const tParoT1 = evaluateTrimesterRiskLevel('Gebelikte en güvenli analjezik ve antipiretiktir.');
+assert.strictEqual(tParoT1.level, 'SAFE');
+assert.strictEqual(tParoT1.label, 'GÜVENLİ');
+
+const tFlucoT1 = evaluateTrimesterRiskLevel('KONTRENDİKE: Yüksek doz veya uzun süreli kullanımda kraniyofasiyal anomali.');
+assert.strictEqual(tFlucoT1.level, 'CONTRAINDICATED');
+
+// 18.3 Measuring Device Badges (ISMP 2024-2026 Pediatric Liquid Standards)
+const devSyringe = getMeasuringDeviceBadge('oral_syringe');
+assert.ok(devSyringe.label.includes('Oral Enjektör'));
+assert.strictEqual(devSyringe.icon, '💉');
+
+const devDrop = getMeasuringDeviceBadge('dropper');
+assert.ok(devDrop.label.includes('Damlalık'));
+assert.strictEqual(devDrop.icon, '💧');
+
+const devCup = getMeasuringDeviceBadge('calibrated_cup');
+assert.ok(devCup.label.includes('Ölçü Kabı'));
+
+// 18.4 LactMed Safety Verdict & Relative Infant Dose (RID %)
+const mParol = monoDict.get('paracetamol')!;
+assert.strictEqual(mParol.reproductive_safety?.lactation?.safety_verdict, 'COMPATIBLE');
+assert.ok(mParol.reproductive_safety?.lactation?.relative_infant_dose_percent! < 10, 'Paracetamol RID must be <10%');
+
+const mMorph = monoDict.get('morphine')!;
+assert.strictEqual(mMorph.reproductive_safety?.lactation?.safety_verdict, 'USE_WITH_CAUTION');
+
+// 18.5 Reconstitution Stability & Packaging Checks
+const mAugmentin = monoDict.get('amoxicillin-clavulanate')!;
+const esForm = mAugmentin.formulations?.find(f => f.form_name.includes('ES'));
+assert.ok(esForm);
+assert.strictEqual(esForm.reconstitution_stability_days, 10);
+assert.strictEqual(esForm.measuring_device, 'oral_syringe');
+
+const mAmox = monoDict.get('amoxicillin')!;
+const amoxForm = mAmox.formulations?.[0];
+assert.ok(amoxForm);
+assert.strictEqual(amoxForm.reconstitution_stability_days, 14);
+
+// 18.6 Black Box Warnings & Neonatal Rules
+const mCeft = monoDict.get('ceftriaxone')!;
+assert.ok(mCeft.safety_warnings?.black_box_warnings?.some(w => w.includes('kalsiyum')));
+assert.ok(mCeft.safety_warnings?.neonatal_specific_notes?.includes('kernikterus'));
+
+const mPheno = monoDict.get('phenobarbital')!;
+const phenoLoad = mPheno.dosing?.pediatric_dosing?.find(d => d.indication.includes('Neonatal'));
+assert.ok(phenoLoad);
+assert.strictEqual(phenoLoad.dose_per_kg_single, 20); // 20 mg/kg loading dose
+
+// 18.7 renderMonographCardHTML Verification
+const htmlCeft = renderMonographCardHTML(mCeft, 'Rocephin 1g');
+assert.ok(htmlCeft.includes('KARA KUTU UYARISI'));
+assert.ok(htmlCeft.includes('kalsiyum'));
+assert.ok(htmlCeft.includes('Trimester Durum Çubuğu'));
+assert.ok(htmlCeft.includes('LactMed: Uyumlu'));
+
+const htmlIbu = renderMonographCardHTML(monoDict.get('ibuprofen')!, 'Dolven Şurup');
+assert.ok(htmlIbu.includes('Oral Enjektör Zorunlu'));
+assert.ok(htmlIbu.includes('3. Trimester (T3)'));
+assert.ok(htmlIbu.includes('KONTRENDİKE'));
+
+console.log('✓ Clinical Monograph Cards, 25 Critical Pediatric Drugs & FDA PLLR Trimester Status Bar verified');
+
+console.log('\n--- 19. VERIFYING OFFLINE RXNORM CUI & ATC MAPPING ENGINE (NLM RxNav Deprecation Replacement) ---');
+
+// 19.1 NLM RxNav Deprecation Notice & Offline Guarantee
+assert.strictEqual(isRxNavApiDeprecated(), true, 'RxNav API must be recorded as permanently deprecated in 2024');
+const stats = getOfflineOntologyStats();
+assert.strictEqual(stats.offlineGuaranteed, true);
+assert.strictEqual(stats.rxNavApiStatus, 'PERMANENTLY_DEPRECATED_UPSTREAM');
+assert.ok(stats.totalConcepts >= 80, `Expected at least 80 curated concepts, got ${stats.totalConcepts}`);
+assert.ok(stats.totalAliases > 150, `Expected >150 aliases, got ${stats.totalAliases}`);
+
+// 19.2 Direct CUI and ATC Resolvers
+const ceftByCui = getRxNormConceptByCui('2193')!;
+assert.ok(ceftByCui);
+assert.strictEqual(ceftByCui.canonicalKey, 'ceftriaxone');
+assert.strictEqual(ceftByCui.displayNameEn, 'Ceftriaxone');
+assert.ok(ceftByCui.drugClasses.includes('cephalosporin_3g'));
+assert.ok(ceftByCui.drugClasses.includes('calcium_incompatible_neonatal'));
+
+const meroByAtc = getRxNormConceptByAtc('J01DH02')!;
+assert.ok(meroByAtc);
+assert.strictEqual(meroByAtc.canonicalKey, 'meropenem');
+assert.strictEqual(meroByAtc.rxCui, '29560');
+assert.ok(meroByAtc.drugClasses.includes('valproate_incompatible'));
+
+const mtxByKey = getRxNormConceptByKey('methotrexate')!;
+assert.ok(mtxByKey);
+assert.strictEqual(mtxByKey.rxCui, '6851');
+assert.strictEqual(mtxByKey.displayNameTr, 'Metotreksat');
+assert.strictEqual(mtxByKey.boxedWarning, true);
+
+// 19.3 Turkish Brand Names & TİTCK Trade Names Resolution
+const c1 = resolveToRxNormConcept('Rocephin 1g Flakon')!;
+assert.ok(c1);
+assert.strictEqual(c1.canonicalKey, 'ceftriaxone');
+assert.strictEqual(c1.rxCui, '2193');
+
+const c2 = resolveToRxNormConcept('Desefin 500 mg')!;
+assert.ok(c2);
+assert.strictEqual(c2.canonicalKey, 'ceftriaxone');
+
+const c3 = resolveToRxNormConcept('Depakin 500 mg Chrono')!;
+assert.ok(c3);
+assert.strictEqual(c3.canonicalKey, 'valproic_acid');
+assert.strictEqual(c3.rxCui, '11170');
+assert.ok(c3.drugClasses.includes('carbapenem_incompatible_hard_stop'));
+
+const c4 = resolveToRxNormConcept('Meronem 1g IV')!;
+assert.ok(c4);
+assert.strictEqual(c4.canonicalKey, 'meropenem');
+assert.strictEqual(c4.rxCui, '29560');
+
+const c5 = resolveToRxNormConcept('Zyloric 300 mg')!;
+assert.ok(c5);
+assert.strictEqual(c5.canonicalKey, 'allopurinol');
+assert.strictEqual(c5.rxCui, '519');
+
+const c6 = resolveToRxNormConcept('İmuran 50 mg')!;
+assert.ok(c6);
+assert.strictEqual(c6.canonicalKey, 'azathioprine');
+assert.strictEqual(c6.rxCui, '1256');
+
+const c7 = resolveToRxNormConcept('Viagra 100 mg')!;
+assert.ok(c7);
+assert.strictEqual(c7.canonicalKey, 'sildenafil');
+assert.strictEqual(c7.rxCui, '136411');
+assert.ok(c7.drugClasses.includes('nitrate_contraindicated_hard_stop'));
+
+const c8 = resolveToRxNormConcept('Perlinganit 10 mg/10 ml')!;
+assert.ok(c8);
+assert.strictEqual(c8.canonicalKey, 'nitroglycerin');
+assert.strictEqual(c8.rxCui, '7454');
+assert.ok(c8.drugClasses.includes('pde5_contraindicated_hard_stop'));
+
+const c9 = resolveToRxNormConcept('Kolsin 0.5 mg')!;
+assert.ok(c9);
+assert.strictEqual(c9.canonicalKey, 'colchicine');
+assert.strictEqual(c9.rxCui, '2683');
+
+const c10 = resolveToRxNormConcept('Klacid 500 mg')!;
+assert.ok(c10);
+assert.strictEqual(c10.canonicalKey, 'clarithromycin');
+assert.strictEqual(c10.rxCui, '21212');
+
+const c11 = resolveToRxNormConcept('Tazocin 4.5 g')!;
+assert.ok(c11);
+assert.strictEqual(c11.canonicalKey, 'piperacillin_tazobactam');
+assert.strictEqual(c11.rxCui, '54136');
+
+const c12 = resolveToRxNormConcept('Contramal 50 mg Kapsül')!;
+assert.ok(c12);
+assert.strictEqual(c12.canonicalKey, 'tramadol');
+assert.strictEqual(c12.rxCui, '10689');
+assert.ok(c12.isControlledSubstance);
+assert.ok(c12.drugClasses.includes('pediatric_under_12_hard_stop'));
+
+const c13 = resolveToRxNormConcept('Bactrim Forte')!;
+assert.ok(c13);
+assert.strictEqual(c13.canonicalKey, 'trimethoprim_sulfamethoxazole');
+assert.strictEqual(c13.rxCui, '10834');
+assert.ok(c13.drugClasses.includes('neonatal_kernicterus_risk'));
+
+const c14 = resolveToRxNormConcept('Eliquis 5 mg')!;
+assert.ok(c14);
+assert.strictEqual(c14.canonicalKey, 'apixaban');
+assert.strictEqual(c14.rxCui, '1364430');
+assert.ok(c14.drugClasses.includes('cockcroft_gault_mandatory'));
+
+const c15 = resolveToRxNormConcept('Aldactone 25 mg')!;
+assert.ok(c15);
+assert.strictEqual(c15.canonicalKey, 'spironolactone');
+assert.strictEqual(c15.rxCui, '9997');
+
+const c16 = resolveToRxNormConcept('K-Contin 600 mg')!;
+assert.ok(c16);
+assert.strictEqual(c16.canonicalKey, 'potassium_chloride');
+assert.strictEqual(c16.rxCui, '8591');
+
+const c17 = resolveToRxNormConcept('Ringer Laktat 500 ml')!;
+assert.ok(c17);
+assert.strictEqual(c17.canonicalKey, 'ringer_lactate');
+assert.strictEqual(c17.rxCui, '9390');
+
+// 19.4 Turkish Uppercase & Diacritic Normalization
+const tIbu = resolveToRxNormConcept('İBUFEN 100 MG SURUP')!;
+assert.ok(tIbu);
+assert.strictEqual(tIbu.canonicalKey, 'ibuprofen');
+assert.strictEqual(tIbu.rxCui, '5640');
+
+const tSipro = resolveToRxNormConcept('SİPROFLOKSASİN 500 MG')!;
+assert.ok(tSipro);
+assert.strictEqual(tSipro.canonicalKey, 'ciprofloxacin');
+assert.strictEqual(tSipro.rxCui, '2551');
+
+const tAllo = resolveToRxNormConcept('ALLOPÜRİNOL')!;
+assert.ok(tAllo);
+assert.strictEqual(tAllo.canonicalKey, 'allopurinol');
+assert.strictEqual(tAllo.rxCui, '519');
+
+const tKols = resolveToRxNormConcept('KOLŞİSİN')!;
+assert.ok(tKols);
+assert.strictEqual(tKols.canonicalKey, 'colchicine');
+assert.strictEqual(tKols.rxCui, '2683');
+
+// 19.5 Batch Prescription Resolution
+const batchResults = resolveBatchRxNormConcepts([
+  'Rocephin 1g',
+  'Kalsiyum Glukonat %10',
+  'Depakin Chrono',
+  'Meronem 1g',
+  'Gecersiz Ilac Adi 123'
+]);
+assert.strictEqual(batchResults.length, 4, 'Should resolve 4 valid drugs and ignore unrecognized input');
+assert.strictEqual(batchResults[0].rxCui, '2193');
+assert.strictEqual(batchResults[1].rxCui, '1908');
+assert.strictEqual(batchResults[2].rxCui, '11170');
+assert.strictEqual(batchResults[3].rxCui, '29560');
+
+// 19.6 getDrugRxNormBadge Integration
+const badgeRocephin = getDrugRxNormBadge({ brand: 'ROCEPHIN 1 G FLAKON' });
+assert.ok(badgeRocephin.includes('RxCUI: 2193'));
+assert.ok(badgeRocephin.includes('Ceftriaxone'));
+
+const badgeDolven = getDrugRxNormBadge({ brand: 'DOLVEN 100 MG/5 ML SURUP' });
+assert.ok(badgeDolven.includes('RxCUI: 5640'));
+assert.ok(badgeDolven.includes('Ibuprofen'));
+
+console.log('✓ Offline RxNorm CUI & ATC Concept Mapping Engine verified (100% offline, NLM API replacement)');
+
+console.log('\n--- 20. VERIFYING 4-TIER INTERACTION HIERARCHY & ACORN TRIAL VPT DOWNGRADE (ADIM 10) ---');
+
+// 20.1 TC-001: Yenidoğanda seftriakson ve kalsiyum presipitasyonu (≤28 Gün -> TIER 1 HARD STOP)
+const ddiTc001 = evaluatePrescriptionInteractions(
+  [
+    { name: 'Seftriakson', route: 'IV', dose: '50 mg/kg/gun' },
+    { name: 'Kalsiyum Glukonat', route: 'IV', dose: 'Infusyon' }
+  ],
+  { ageDays: 21, gestationalAgeWeeks: 39, weightKg: 3.4, gender: 'male' }
+);
+assert.strictEqual(ddiTc001.hasHardStop, true, 'TC-001 must trigger a Hard Stop');
+assert.strictEqual(ddiTc001.canConfirmWithoutOverride, false);
+assert.strictEqual(ddiTc001.highestTier, 'TIER_1_HARD_STOP');
+const ddiTc001Alert = ddiTc001.alerts.find(a => a.ruleId === 'NEO_CEFT_CA_001')!;
+assert.ok(ddiTc001Alert, 'Rule NEO_CEFT_CA_001 must trigger');
+assert.strictEqual(ddiTc001Alert.alertLevel, 'HARD_STOP_CONTRAINDICATION');
+assert.strictEqual(ddiTc001Alert.tier, 1);
+assert.strictEqual(ddiTc001Alert.interruptive, true);
+assert.strictEqual(ddiTc001Alert.blocksConfirmation, true);
+assert.ok(ddiTc001Alert.alertTitle.includes('KESİN KONTRENDİKASYON'));
+assert.ok(ddiTc001Alert.message.includes('21 günlük yenidoğanda'));
+assert.ok(ddiTc001Alert.message.toLowerCase().includes('sefotaksim'));
+
+
+// 20.2 TC-002: Süt çocuğunda seftriakson ve kalsiyum ardışık infüzyon (>28 Gün -> TIER 2 SOFT STOP / OPERATIONAL WARNING)
+const ddiTc002 = evaluatePrescriptionInteractions(
+  [
+    { name: 'Seftriakson', route: 'IV', dose: '80 mg/kg/gun' },
+    { name: 'Ringer Laktat', route: 'IV', dose: 'Idame' }
+  ],
+  { ageDays: 60, gestationalAgeWeeks: 40, weightKg: 5.2, gender: 'female' }
+);
+assert.strictEqual(ddiTc002.hasHardStop, false, 'TC-002 must NOT trigger a Hard Stop for infant >28 days');
+const ddiTc002Alert = ddiTc002.alerts.find(a => a.ruleId === 'INF_CEFT_CA_002')!;
+assert.ok(ddiTc002Alert, 'Rule INF_CEFT_CA_002 must trigger');
+assert.strictEqual(ddiTc002Alert.alertLevel, 'WARNING_MONITOR');
+assert.strictEqual(ddiTc002Alert.tier, 2);
+assert.strictEqual(ddiTc002Alert.interruptive, false);
+assert.strictEqual(ddiTc002Alert.blocksConfirmation, false);
+assert.ok(ddiTc002Alert.alertTitle.includes('DİKKAT'));
+assert.ok(ddiTc002Alert.message.includes('Hasta 28 günden büyüktür'));
+assert.ok(ddiTc002Alert.message.includes('ardışık'));
+
+// 20.3 TC-003: Epilepsi hastasında karbapenem ve valproik asit etkileşimi (TIER 1 HARD STOP)
+const ddiTc003 = evaluatePrescriptionInteractions(
+  [
+    { name: 'Sodyum Valproat', route: 'Oral', dose: '1000 mg/gun' },
+    { name: 'Meropenem', route: 'IV', dose: '1 g q8h' }
+  ],
+  { ageYears: 28, weightKg: 70, gender: 'male', history: ['Epilepsi'] }
+);
+assert.strictEqual(ddiTc003.hasHardStop, true);
+assert.strictEqual(ddiTc003.canConfirmWithoutOverride, false);
+const ddiTc003Alert = ddiTc003.alerts.find(a => a.ruleId === 'DDI_VPA_CARB_001')!;
+assert.ok(ddiTc003Alert, 'Rule DDI_VPA_CARB_001 must trigger');
+assert.strictEqual(ddiTc003Alert.alertLevel, 'HARD_STOP_CONTRAINDICATION');
+assert.strictEqual(ddiTc003Alert.tier, 1);
+assert.strictEqual(ddiTc003Alert.interruptive, true);
+assert.strictEqual(ddiTc003Alert.blocksConfirmation, true);
+assert.ok(ddiTc003Alert.alertTitle.includes('HAYATİ ETKİLEŞİM'));
+assert.ok(ddiTc003Alert.message.includes('%80-90 oranında düşürerek'));
+
+// 20.4 TC-005: Pediatrik tonsillektomi sonrası tramadol reçetesi (TIER 1 HARD STOP)
+const ddiTc005 = evaluatePrescriptionInteractions(
+  [
+    { name: 'Tramadol Damla', route: 'Oral', dose: '1 mg/kg' }
+  ],
+  { ageYears: 8, weightKg: 25, gender: 'male', diagnosis: 'Post-tonsilektomi ağrısı' }
+);
+assert.strictEqual(ddiTc005.hasHardStop, true);
+assert.strictEqual(ddiTc005.canConfirmWithoutOverride, false);
+const ddiTc005Alert = ddiTc005.alerts.find(a => a.ruleId === 'PUD_TRAMADOL_AGE_001')!;
+assert.ok(ddiTc005Alert, 'Rule PUD_TRAMADOL_AGE_001 must trigger');
+assert.strictEqual(ddiTc005Alert.alertLevel, 'HARD_STOP_CONTRAINDICATION');
+assert.strictEqual(ddiTc005Alert.tier, 1);
+assert.strictEqual(ddiTc005Alert.interruptive, true);
+assert.strictEqual(ddiTc005Alert.blocksConfirmation, true);
+assert.ok(ddiTc005Alert.alertTitle.includes('12 Yaş Altında Tramadol Kullanımı'));
+
+// 20.5 TC-006: Sepsis şüpheli hastada vankomisin ve piperasilin/tazobaktam reçetelenmesi (ACORN DDI_VAN_TZP_001 Downgrade)
+const ddiTc006 = evaluatePrescriptionInteractions(
+  [
+    { name: 'Vankomisin', route: 'IV', dose: '15 mg/kg q12h' },
+    { name: 'Piperasilin-Tazobaktam', route: 'IV', dose: '4.5 g q8h' }
+  ],
+  { ageYears: 62, weightKg: 75, gender: 'male', admissionUnit: 'Acil Servis' }
+);
+assert.strictEqual(ddiTc006.hasHardStop, false, 'ACORN VPT must NOT trigger Hard Stop');
+assert.strictEqual(ddiTc006.hasSoftStop, false, 'ACORN VPT must NOT trigger Soft Stop modal');
+assert.strictEqual(ddiTc006.canConfirmWithoutOverride, true, 'ACORN VPT prescription must be confirmable without disruptive override');
+assert.strictEqual(ddiTc006.highestTier, 'TIER_4_INFORMATIONAL');
+const ddiTc006Alert = ddiTc006.alerts.find(a => a.ruleId === 'DDI_VAN_TZP_001')!;
+assert.ok(ddiTc006Alert, 'Rule DDI_VAN_TZP_001 must trigger');
+assert.strictEqual(ddiTc006Alert.alertLevel, 'INFO_PASSIVE');
+assert.strictEqual(ddiTc006Alert.tier, 4);
+assert.strictEqual(ddiTc006Alert.interruptive, false);
+assert.strictEqual(ddiTc006Alert.blocksConfirmation, false);
+assert.ok(ddiTc006Alert.alertTitle.includes('BİLGİ: Vankomisin + Piperasilin/Tazobaktam Rejimi'));
+assert.ok(ddiTc006Alert.message.includes('ACORN, JAMA 2023'));
+assert.ok(ddiTc006Alert.message.includes('psödo-AKI'));
+assert.ok(ddiTc006Alert.message.includes('diyaliz ihtiyacı veya 14 günlük mortalitede artış göstermemiştir'));
+assert.ok(ddiTc006Alert.message.includes('sefepime geçiş nörotoksisite riskini artırabilir'));
+
+// 20.6 isAcornVptRegimen Helper Verification
+assert.strictEqual(isAcornVptRegimen(['Vankomisin Flakon', 'Tazocin 4.5g']), true);
+assert.strictEqual(isAcornVptRegimen(['Vankomisin Flakon', 'Meronem']), false);
+
+
+// 20.7 Additional Tier 1 & Tier 2 Special High-Alert Triggers
+// A. Allopurinol + Azathioprine -> Hard Stop
+const resAllo = evaluatePrescriptionInteractions(['Zyloric 300mg', 'İmuran 50mg']);
+assert.strictEqual(resAllo.hasHardStop, true);
+assert.ok(resAllo.alerts.some(a => a.ruleId === 'DDI_ALLO_THIO_001'));
+
+// B. Sildenafil + Nitroglycerin -> Hard Stop
+const resNit = evaluatePrescriptionInteractions(['Viagra 100mg', 'Perlinganit']);
+assert.strictEqual(resNit.hasHardStop, true);
+assert.ok(resNit.alerts.some(a => a.ruleId === 'DDI_PDE5_NITRATE_001'));
+
+// C. Colchicine + Clarithromycin -> Hard Stop
+const resColch = evaluatePrescriptionInteractions(['Kolsin 0.5mg', 'Klacid 500mg']);
+assert.strictEqual(resColch.hasHardStop, true);
+assert.ok(resColch.alerts.some(a => a.ruleId === 'DDI_COLCH_CYP3A4_001'));
+
+// D. Triple Whammy (Delix + Lasix + Apranax) -> Soft Stop (Tier 2)
+const resTw = evaluatePrescriptionInteractions(['Delix 5mg', 'Lasix 40mg', 'Apranax 550mg']);
+assert.strictEqual(resTw.hasHardStop, false);
+assert.strictEqual(resTw.hasSoftStop, true);
+assert.ok(resTw.alerts.some(a => a.ruleId === 'DDI_TRIPLE_WHAMMY_001'));
+
+// E. Clopidogrel + Omeprazole -> Monitoring (Tier 3)
+const resPlavix = evaluatePrescriptionInteractions(['Plavix 75mg', 'Losec 20mg']);
+assert.strictEqual(resPlavix.hasHardStop, false);
+assert.strictEqual(resPlavix.hasSoftStop, false);
+assert.strictEqual(resPlavix.countsByTier.tier3, 1);
+assert.ok(resPlavix.alerts.some(a => a.ruleId === 'DDI_CLOPIDOGREL_PPI_001'));
+
+console.log('✓ 4-Tier Interaction Hierarchy & ACORN Trial VPT Downgrade verified (100% parity with Dosya 3)');
+
+console.log('\n--- 21. VERIFYING SPECIAL HIGH-RISK INTERACTIONS & HARD STOPS (ADIM 11) ---');
+
+// 21.1 TC-HR-001: Spironolakton + Oral Potasyum Klorür (Ölümcül Hiperkalemi / Kardiyak Arrest)
+// A. Normal veya bilinmeyen K+ düzeyi (TIER 1 HARD STOP)
+const kHardStopRes = evaluatePrescriptionInteractions(['Aldactone 25mg', 'K-Contin 600mg'], { ageYears: 65, baselineK: 4.4 });
+assert.strictEqual(kHardStopRes.hasHardStop, true);
+assert.strictEqual(kHardStopRes.canConfirmWithoutOverride, false);
+const kAlert = kHardStopRes.alerts.find(a => a.ruleId === 'DDI_K_SPARING_K_SUPP_001')!;
+assert.ok(kAlert, 'Rule DDI_K_SPARING_K_SUPP_001 must trigger');
+assert.strictEqual(kAlert.tier, 1);
+assert.strictEqual(kAlert.blocksConfirmation, true);
+assert.ok(kAlert.alertTitle.includes('ÖLÜMCÜL HİPERKALEMİ RİSKİ'));
+assert.ok(kAlert.message.includes('sinüs arresti, ventriküler fibrilasyon'));
+
+// B. Belgelenmiş derin hipokalemi (<3.0 mEq/L) - Monitörize replasman (TIER 2 SOFT STOP)
+const kSoftStopRes = evaluatePrescriptionInteractions(['Aldactone 25mg', 'K-Contin 600mg'], { ageYears: 65, baselineK: 2.6 });
+assert.strictEqual(kSoftStopRes.hasHardStop, false);
+assert.strictEqual(kSoftStopRes.hasSoftStop, true);
+assert.strictEqual(kSoftStopRes.canConfirmWithoutOverride, false);
+const kHypoAlert = kSoftStopRes.alerts.find(a => a.ruleId === 'DDI_K_SPARING_K_SUPP_002')!;
+assert.ok(kHypoAlert, 'Rule DDI_K_SPARING_K_SUPP_002 must trigger');
+assert.strictEqual(kHypoAlert.tier, 2);
+assert.strictEqual(kHypoAlert.blocksConfirmation, false);
+assert.ok(kHypoAlert.alertTitle.includes('AĞIR HİPOKALEMİ REPLASMANI'));
+
+// 21.2 TC-HR-002: Metotreksat + TMP-SMX (Ölümcül Pansitopeni ve Nefrotoksisite - TIER 1 HARD STOP)
+const mtxBactrimRes = evaluatePrescriptionInteractions(['Metotreksat 15mg', 'Bactrim Forte']);
+assert.strictEqual(mtxBactrimRes.hasHardStop, true);
+assert.strictEqual(mtxBactrimRes.canConfirmWithoutOverride, false);
+const mtxAlert = mtxBactrimRes.alerts.find(a => a.ruleId === 'DDI_MTX_TMPSMX_001')!;
+assert.ok(mtxAlert, 'Rule DDI_MTX_TMPSMX_001 must trigger');
+assert.strictEqual(mtxAlert.tier, 1);
+assert.strictEqual(mtxAlert.blocksConfirmation, true);
+assert.ok(mtxAlert.message.includes('dihidrofolat redüktaz'));
+assert.ok(mtxAlert.recommendations.some(r => r.includes('Lökovorin')));
+
+// 21.3 TC-HR-003: Çift "Bilinen Risk" QT Uzatıcı İlaç Kombinasyonu (TdP Hard Stop)
+// A. Sotalol + Haloperidol (İki "Bilinen Risk" -> TIER 1 HARD STOP)
+const qtDualKnownRes = evaluatePrescriptionInteractions(['Darob 80mg', 'Norodol 5mg']);
+assert.strictEqual(qtDualKnownRes.hasHardStop, true);
+assert.strictEqual(qtDualKnownRes.canConfirmWithoutOverride, false);
+const qtDualAlert = qtDualKnownRes.alerts.find(a => a.ruleId === 'DDI_QT_DUAL_KNOWN_001')!;
+assert.ok(qtDualAlert, 'Rule DDI_QT_DUAL_KNOWN_001 must trigger');
+assert.strictEqual(qtDualAlert.tier, 1);
+assert.strictEqual(qtDualAlert.blocksConfirmation, true);
+assert.ok(qtDualAlert.alertTitle.includes('HAYATİ ARİTMİ (TdP) RİSKİ'));
+assert.ok(qtDualAlert.message.includes('Torsades de Pointes (TdP)'));
+
+// B. Sitalopram + Moksifloksasin (İki "Bilinen Risk" -> TIER 1 HARD STOP)
+const qtMoxiRes = evaluatePrescriptionInteractions(['Cipram 20mg', 'Avelox 400mg']);
+assert.strictEqual(qtMoxiRes.hasHardStop, true);
+assert.ok(qtMoxiRes.alerts.some(a => a.ruleId === 'DDI_QT_DUAL_KNOWN_001'));
+
+// C. Sitalopram + Ondansetron (Bir "Bilinen Risk" + Bir "Koşullu Risk" -> TIER 3 MONITORING ROZET)
+const qtCondRes = evaluatePrescriptionInteractions(['Cipram 20mg', 'Zofran 4mg']);
+assert.strictEqual(qtCondRes.hasHardStop, false);
+assert.strictEqual(qtCondRes.canConfirmWithoutOverride, true);
+assert.strictEqual(qtCondRes.countsByTier.tier3, 1);
+const qtCondAlert = qtCondRes.alerts.find(a => a.ruleId === 'DDI_QT_POSSIBLE_001')!;
+assert.ok(qtCondAlert, 'Rule DDI_QT_POSSIBLE_001 must trigger');
+assert.strictEqual(qtCondAlert.tier, 3);
+assert.strictEqual(qtCondAlert.blocksConfirmation, false);
+
+// 21.4 TC-HR-004: DOAC + Güçlü CYP3A4 / P-gp Modülatörleri (TIER 1 HARD STOP)
+// A. Apiksaban + Ketokonazol (İnhibitör -> Majör Kanama)
+const doacInhibRes = evaluatePrescriptionInteractions(['Eliquis 5mg', 'Nizoral 200mg']);
+assert.strictEqual(doacInhibRes.hasHardStop, true);
+const doacInhibAlert = doacInhibRes.alerts.find(a => a.ruleId === 'DDI_DOAC_CYP3A4_001')!;
+assert.ok(doacInhibAlert);
+assert.strictEqual(doacInhibAlert.tier, 1);
+assert.strictEqual(doacInhibAlert.blocksConfirmation, true);
+assert.ok(doacInhibAlert.alertTitle.includes('ÖLÜMCÜL KANAMA RİSKİ'));
+
+// B. Rivaroksaban + Rifampisin (İndükleyici -> Tromboemboli & İnme)
+const doacInducRes = evaluatePrescriptionInteractions(['Xarelto 20mg', 'Rifadin 300mg']);
+assert.strictEqual(doacInducRes.hasHardStop, true);
+const doacInducAlert = doacInducRes.alerts.find(a => a.ruleId === 'DDI_DOAC_CYP3A4_001')!;
+assert.ok(doacInducAlert);
+assert.strictEqual(doacInducAlert.tier, 1);
+assert.strictEqual(doacInducAlert.blocksConfirmation, true);
+assert.ok(doacInducAlert.alertTitle.includes('HAYATİ TROMBOEMBOLİ RİSKİ'));
+
+// 21.5 TC-HR-005: 60 Gün Altında Yenidoğan/İnfant Sülfonamid (Kernikterus - TIER 1 HARD STOP)
+const neoSmxRes = evaluatePrescriptionInteractions(['Bactrim Süspansiyon'], { ageDays: 28 });
+assert.strictEqual(neoSmxRes.hasHardStop, true);
+const neoSmxAlert = neoSmxRes.alerts.find(a => a.ruleId === 'NEO_SULFONAMIDE_001')!;
+assert.ok(neoSmxAlert, 'Rule NEO_SULFONAMIDE_001 must trigger');
+assert.strictEqual(neoSmxAlert.tier, 1);
+assert.strictEqual(neoSmxAlert.blocksConfirmation, true);
+assert.ok(neoSmxAlert.message.includes('kernikterus'));
+assert.ok(neoSmxAlert.message.includes('albümin'));
+
+// 21.6 TC-HR-006: 8 Yaş Altında Doksisiklin ve Kene/Riketsiya İstisnası
+// A. Rutin endikasyon (TIER 1 HARD STOP - Diş Lekelenmesi)
+const tetChildRes = evaluatePrescriptionInteractions(['Monodoks 100mg'], { ageYears: 5, diagnosis: 'Bronşit' });
+assert.strictEqual(tetChildRes.hasHardStop, true);
+const tetChildAlert = tetChildRes.alerts.find(a => a.ruleId === 'PUD_TETRACYCLINE_AGE_001')!;
+assert.ok(tetChildAlert);
+assert.strictEqual(tetChildAlert.tier, 1);
+assert.strictEqual(tetChildAlert.blocksConfirmation, true);
+assert.ok(tetChildAlert.message.includes('diş renk değişikliği'));
+
+// B. Kene / Riketsiya şüphesi (TIER 2 SOFT STOP - CDC/AAP İstisnası)
+const tetTickRes = evaluatePrescriptionInteractions(['Monodoks 100mg'], { ageYears: 5, diagnosis: 'Kene ısırığı, şüpheli riketsiya' });
+assert.strictEqual(tetTickRes.hasHardStop, false);
+assert.strictEqual(tetTickRes.hasSoftStop, true);
+const tetTickAlert = tetTickRes.alerts.find(a => a.ruleId === 'PUD_TETRACYCLINE_TICK_002')!;
+assert.ok(tetTickAlert);
+assert.strictEqual(tetTickAlert.tier, 2);
+assert.strictEqual(tetTickAlert.blocksConfirmation, false);
+assert.ok(tetTickAlert.message.includes('hayat kurtarıcıdır'));
+
+// 21.7 TC-HR-007: Seftriakson + Kalsiyum Prematüre Postmenstrüel Yaş Kuralı (PMA ≤41 hafta)
+// Hasta 35 günlük (>28 gün) ancak 33 haftalık prematüre doğmuş (PMA: 33 + 5 = 38 hafta ≤ 41 hafta) -> TIER 1 HARD STOP
+const ceftPretermRes = evaluatePrescriptionInteractions(
+  ['Rocephin', 'Ringer Laktat'],
+  { ageDays: 35, gestationalAgeWeeks: 33 }
+);
+assert.strictEqual(ceftPretermRes.hasHardStop, true);
+const ceftPretermAlert = ceftPretermRes.alerts.find(a => a.ruleId === 'NEO_CEFT_CA_001')!;
+assert.ok(ceftPretermAlert, 'Must trigger NEO_CEFT_CA_001 for preterm with PMA <= 41 weeks');
+assert.strictEqual(ceftPretermAlert.tier, 1);
+assert.strictEqual(ceftPretermAlert.blocksConfirmation, true);
+
+// 21.8 TC-HR-008: Gebelik Teratojen ve Fetotoksisite Hard Stopları (Dosya 3 Tablo 3)
+// A. Retinoid (Roaccutane / Asitretin)
+const pregRetRes = evaluatePrescriptionInteractions(['Roaccutane 20mg'], { isPregnant: true, trimester: 1 });
+assert.strictEqual(pregRetRes.hasHardStop, true);
+const pregRetAlert = pregRetRes.alerts.find(a => a.ruleId === 'PREG_RETINOID_001')!;
+assert.ok(pregRetAlert);
+assert.strictEqual(pregRetAlert.tier, 1);
+assert.strictEqual(pregRetAlert.blocksConfirmation, true);
+assert.ok(pregRetAlert.message.includes('Retinoid Embriyopatisi'));
+
+// B. Valproik Asit
+const pregVpaRes = evaluatePrescriptionInteractions(['Depakin 500mg'], { isPregnant: true });
+assert.strictEqual(pregVpaRes.hasHardStop, true);
+assert.ok(pregVpaRes.alerts.some(a => a.ruleId === 'PREG_VALPROATE_001'));
+
+// C. RAAS Blokörü (Enalapril - 2. Trimester)
+const pregRaasRes = evaluatePrescriptionInteractions(['Enap 10mg'], { isPregnant: true, trimester: 2 });
+assert.strictEqual(pregRaasRes.hasHardStop, true);
+const pregRaasAlert = pregRaasRes.alerts.find(a => a.ruleId === 'PREG_RAAS_001')!;
+assert.ok(pregRaasAlert);
+assert.strictEqual(pregRaasAlert.tier, 1);
+assert.strictEqual(pregRaasAlert.blocksConfirmation, true);
+assert.ok(pregRaasAlert.message.includes('Potter dizisi'));
+
+// D. Metotreksat
+const pregMtxRes = evaluatePrescriptionInteractions(['Trexan 10mg'], { isPregnant: true });
+assert.strictEqual(pregMtxRes.hasHardStop, true);
+assert.ok(pregMtxRes.alerts.some(a => a.ruleId === 'PREG_MTX_001'));
+
+// E. Varfarin (Coumadin - 8. Gebelik Haftası)
+const pregWarfRes = evaluatePrescriptionInteractions(['Coumadin 5mg'], { isPregnant: true, pregnancyWeeks: 8 });
+assert.strictEqual(pregWarfRes.hasHardStop, true);
+const pregWarfAlert = pregWarfRes.alerts.find(a => a.ruleId === 'PREG_WARFARIN_001')!;
+assert.ok(pregWarfAlert);
+assert.strictEqual(pregWarfAlert.tier, 1);
+assert.strictEqual(pregWarfAlert.blocksConfirmation, true);
+assert.ok(pregWarfAlert.message.includes('Fetal Varfarin Sendromu'));
+
+// F. Sistemik NSAİİ (30. Gebelik Haftası - Duktus Kapanması)
+const pregNsaidRes = evaluatePrescriptionInteractions(['Apranax 550mg'], { isPregnant: true, pregnancyWeeks: 30 });
+assert.strictEqual(pregNsaidRes.hasHardStop, true);
+const pregNsaidAlert = pregNsaidRes.alerts.find(a => a.ruleId === 'PREG_NSAID_001')!;
+assert.ok(pregNsaidAlert);
+assert.strictEqual(pregNsaidAlert.tier, 1);
+assert.strictEqual(pregNsaidAlert.blocksConfirmation, true);
+assert.ok(pregNsaidAlert.message.includes('duktus arteriyozus'));
+
+// 21.9 TC-HR-009: Digoksin + Amiodaron (Zorunlu %50 Doz İndirimi - TIER 2 SOFT STOP)
+const digAmioRes = evaluatePrescriptionInteractions(['Digoksin 0.25mg', 'Cordarone 200mg']);
+assert.strictEqual(digAmioRes.hasHardStop, false);
+assert.strictEqual(digAmioRes.hasSoftStop, true);
+const digAmioAlert = digAmioRes.alerts.find(a => a.ruleId === 'DDI_DIGOXIN_AMIO_001')!;
+assert.ok(digAmioAlert);
+assert.strictEqual(digAmioAlert.tier, 2);
+assert.strictEqual(digAmioAlert.blocksConfirmation, false);
+assert.ok(digAmioAlert.alertTitle.includes('%50'));
+assert.ok(digAmioAlert.recommendations.some(r => r.includes('%50')));
+
+// 21.10 TC-HR-010: Varfarin + Flukonazol (CYP2C9 İnhibisyonu - TIER 2 SOFT STOP)
+const warfFluRes = evaluatePrescriptionInteractions(['Coumadin 5mg', 'Triflucan 200mg']);
+assert.strictEqual(warfFluRes.hasHardStop, false);
+assert.strictEqual(warfFluRes.hasSoftStop, true);
+const warfFluAlert = warfFluRes.alerts.find(a => a.ruleId === 'DDI_WARFARIN_CYP2C9_001')!;
+assert.ok(warfFluAlert);
+assert.strictEqual(warfFluAlert.tier, 2);
+assert.strictEqual(warfFluAlert.blocksConfirmation, false);
+assert.ok(warfFluAlert.message.includes('INR'));
+
+// 21.11 TC-HR-011: Pediatrik Florokinolon (<18 Yaş - TIER 2 SOFT STOP)
+const fqPedRes = evaluatePrescriptionInteractions(['Cipro 500mg'], { ageYears: 12, diagnosis: 'Sinüzit' });
+assert.strictEqual(fqPedRes.hasHardStop, false);
+assert.strictEqual(fqPedRes.hasSoftStop, true);
+const fqPedAlert = fqPedRes.alerts.find(a => a.ruleId === 'PUD_FQ_AGE_001')!;
+assert.ok(fqPedAlert);
+assert.strictEqual(fqPedAlert.tier, 2);
+assert.strictEqual(fqPedAlert.blocksConfirmation, false);
+assert.ok(fqPedAlert.message.includes('artropati'));
+
+// 21.12 TC-HR-012: Metformin + İyotlu Kontrast Madde (MALA Laktik Asidoz - TIER 2 SOFT STOP)
+const metContrastRes = evaluatePrescriptionInteractions(['Glucophage 1000mg', 'Omnipaque 350']);
+assert.strictEqual(metContrastRes.hasHardStop, false);
+assert.strictEqual(metContrastRes.hasSoftStop, true);
+const metContrastAlert = metContrastRes.alerts.find(a => a.ruleId === 'DDI_METFORMIN_CONTRAST_001')!;
+assert.ok(metContrastAlert);
+assert.strictEqual(metContrastAlert.tier, 2);
+assert.strictEqual(metContrastAlert.blocksConfirmation, false);
+assert.ok(metContrastAlert.alertTitle.includes('MALA'));
+
+console.log('✓ Special High-Risk Interactions & Hard Stops verified (100% parity with Dosya 3)');
+
+console.log('\n--- 22. VERIFYING RENAL DOSE MOSTELLER BSA DE-INDEXING & COCKCROFT-GAULT ENGINE (ADIM 12) ---');
+
+// 22.1 TC-RD-001: Mosteller & DuBois BSA Exact Formulas
+const bsaStandard = calculateMostellerBSA(175, 70);
+assert.strictEqual(bsaStandard, 1.84);
+const bsaDuboisStd = calculateDuboisBSA(175, 70);
+assert.strictEqual(bsaDuboisStd, 1.85);
+
+const bsaObese = calculateMostellerBSA(165, 105); // sqrt(165*105/3600) = sqrt(4.8125) = 2.1937 -> 2.19
+assert.strictEqual(bsaObese, 2.19);
+
+const bsaCachectic = calculateMostellerBSA(160, 38); // sqrt(160*38/3600) = sqrt(1.6888) = 1.2995 -> 1.30
+assert.strictEqual(bsaCachectic, 1.30);
+
+// 22.2 TC-RD-002: KDIGO 2024 Absolute GFR De-indexing & Inverse Indexing
+// Obese: eGFR = 60 mL/min/1.73m², BSA = 2.19 m² -> (60 * 2.19) / 1.73 = 75.95 -> 76.0 mL/min
+const absGfrObese = deindexEgfrToAbsolute(60, 2.19);
+assert.strictEqual(absGfrObese, 76.0);
+
+// Cachectic: eGFR = 60 mL/min/1.73m², BSA = 1.30 m² -> (60 * 1.30) / 1.73 = 45.08 -> 45.1 mL/min
+const absGfrCachectic = deindexEgfrToAbsolute(60, 1.30);
+assert.strictEqual(absGfrCachectic, 45.1);
+
+// Inverse indexing
+const indexedRestored = indexEgfrFromAbsolute(45.1, 1.30);
+assert.strictEqual(indexedRestored, 60);
+
+// 22.3 TC-RD-003: Devine IBW & ABW40 in Obesity vs Underweight
+// Male 175 cm, 110 kg
+const habitusObeseMale = analyzeBodyWeightHabitus(175, 110, 'male');
+assert.strictEqual(habitusObeseMale.bmi, 35.9);
+assert.strictEqual(habitusObeseMale.isObese, true);
+assert.strictEqual(habitusObeseMale.isUnderweight, false);
+assert.strictEqual(habitusObeseMale.ibwDevineKg, 70.5);
+assert.strictEqual(habitusObeseMale.adjustedBodyWeightKg, 86.3); // 70.5 + 0.4*(110-70.5) = 86.3
+assert.strictEqual(habitusObeseMale.recommendedCrClWeightKg, 86.3); // ABW40 used for CrCl in obesity
+
+// Female 160 cm, 38 kg (Underweight / Cachexia)
+const habitusCachecticFemale = analyzeBodyWeightHabitus(160, 38, 'female');
+assert.strictEqual(habitusCachecticFemale.bmi, 14.8);
+assert.strictEqual(habitusCachecticFemale.isObese, false);
+assert.strictEqual(habitusCachecticFemale.isUnderweight, true);
+assert.strictEqual(habitusCachecticFemale.ibwDevineKg, 52.4);
+assert.strictEqual(habitusCachecticFemale.recommendedCrClWeightKg, 38); // Actual weight used to avoid overestimating
+
+// 22.4 TC-RD-004: Cockcroft-Gault CrCl with Obesity ABW40 Adjustment
+const cgObese = calculateCockcroftGaultCrCl({
+  ageYears: 75,
+  gender: 'male',
+  serumCreatinineMgDl: 1.6,
+  actualWeightKg: 110,
+  heightCm: 168
+});
+assert.ok(cgObese);
+assert.strictEqual(cgObese.isAdjustedForObesity, true);
+assert.strictEqual(cgObese.crClActualWeight, 62.1); // (65 * 110) / (72 * 1.6) = 62.1
+assert.strictEqual(cgObese.crClAdjustedWeight, 46.5); // (65 * 82.5) / (72 * 1.6) = 46.5
+assert.strictEqual(cgObese.recommendedCrCl, 46.5); // ABW40 recommended
+
+// 22.5 TC-RD-005: EHRA 2021 / KDIGO 2024 DOAC Obesity Discordance Detection
+// Patient: Obese male, eGFR = 62 mL/min/1.73m², recommended CrCl = 46.5 mL/min (Delta = +15.5 mL/min >= 15)
+const compEvalObese = evaluateComprehensiveRenalFunction({
+  ageYears: 75,
+  gender: 'male',
+  heightCm: 168,
+  weightKg: 110,
+  serumCreatinineMgDl: 1.6,
+  egfrIndexed: 62
+}, ['Xarelto 20mg']);
+assert.strictEqual(compEvalObese.isObesityDiscordant, true);
+assert.strictEqual(compEvalObese.discrepancyDelta, 15.5);
+assert.strictEqual(compEvalObese.clinicalAlerts.some(a => a.type === 'DOAC_OBESITY_OVERESTIMATION'), true);
+const doacDrugGuide = compEvalObese.evaluatedDrugs.find(d => d.canonicalKey === 'rivaroxaban');
+assert.ok(doacDrugGuide);
+assert.strictEqual(doacDrugGuide.recommendedMetric, 'COCKCROFT_GAULT_CRCL');
+assert.strictEqual(doacDrugGuide.clearanceValue, 46.5); // CrCl used, NOT 62!
+
+// 22.6 TC-RD-006: Drug Category & Metric Identification
+const rivaIdent = identifyRenalDrugCategory('Xarelto 15mg');
+assert.strictEqual(rivaIdent.category, 'DOAC_COCKCROFT_MANDATORY');
+assert.strictEqual(rivaIdent.metric, 'COCKCROFT_GAULT_CRCL');
+assert.strictEqual(rivaIdent.tdmRecommended, false);
+
+const apixIdent = identifyRenalDrugCategory('Eliquis 5mg');
+assert.strictEqual(apixIdent.category, 'DOAC_COCKCROFT_MANDATORY');
+assert.strictEqual(apixIdent.metric, 'COCKCROFT_GAULT_CRCL');
+
+const vancIdent = identifyRenalDrugCategory('Vancocin 500mg');
+assert.strictEqual(vancIdent.category, 'NARROW_THERAPEUTIC_INDEX');
+assert.strictEqual(vancIdent.metric, 'ABSOLUTE_EGFR');
+assert.strictEqual(vancIdent.tdmRecommended, true);
+
+const digIdent = identifyRenalDrugCategory('Digoksin 0.25mg');
+assert.strictEqual(digIdent.category, 'NARROW_THERAPEUTIC_INDEX');
+assert.strictEqual(digIdent.metric, 'ABSOLUTE_EGFR');
+assert.strictEqual(digIdent.tdmRecommended, true);
+
+// 22.7 TC-RD-007: checkRenalDoseAdjustments Obese DOAC Clinical Hazard Prevention
+// With eGFR = 62, Rivaroxaban would NOT trigger (threshold is 49).
+// But with Cockcroft-Gault CrCl = 46.5, DOSE_REDUCTION is triggered!
+const renalCheckObeseDoac = checkRenalDoseAdjustments({
+  egfr: 62,
+  ageYears: 75,
+  gender: 'male',
+  heightCm: 168,
+  weightKg: 110,
+  serumCreatinineMgDl: 1.6,
+  drugs: ['Xarelto 20mg']
+});
+assert.strictEqual(renalCheckObeseDoac.isValid, true);
+assert.strictEqual(renalCheckObeseDoac.alertsCount, 1);
+const xareltoWarn = renalCheckObeseDoac.warnings![0];
+assert.strictEqual(xareltoWarn.status, 'DOSE_REDUCTION');
+assert.strictEqual(xareltoWarn.metricUsed, 'COCKCROFT_GAULT_CRCL');
+assert.strictEqual(xareltoWarn.effectiveClearanceValue, 46.5);
+assert.ok(xareltoWarn.message.includes('Cockcroft-Gault CrCl (46.5 mL/dak)'));
+
+// 22.8 TC-RD-008: Cachectic De-indexing for Narrow Therapeutic Index (Vancomycin)
+// Cachectic female: 160 cm, 38 kg, BSA = 1.30 m². Lab eGFR = 55 mL/min/1.73m² (Normal/Mild).
+// De-indexed Absolute GFR = (55 * 1.30) / 1.73 = 41.3 mL/min.
+// Vancomycin rule: maxEgfr: 49 -> DOSE_REDUCTION triggered!
+const renalCheckCachecticVanc = checkRenalDoseAdjustments({
+  egfr: 55,
+  ageYears: 50,
+  gender: 'female',
+  heightCm: 160,
+  weightKg: 38,
+  drugs: ['Vancocin 1g']
+});
+assert.strictEqual(renalCheckCachecticVanc.isValid, true);
+assert.strictEqual(renalCheckCachecticVanc.alertsCount, 1);
+const vancWarn = renalCheckCachecticVanc.warnings![0];
+assert.strictEqual(vancWarn.status, 'DOSE_REDUCTION');
+assert.strictEqual(vancWarn.metricUsed, 'ABSOLUTE_EGFR');
+assert.strictEqual(vancWarn.effectiveClearanceValue, 41.3);
+assert.strictEqual(vancWarn.tdmRecommended, true);
+assert.ok(vancWarn.message.includes('De-indekslenmiş Mutlak GFR (41.3 mL/dak)'));
+
+// 22.9 TC-RD-009: Direct Creatinine input without explicit eGFR
+const renalCheckScrOnly = checkRenalDoseAdjustments({
+  ageYears: 65,
+  gender: 'female',
+  heightCm: 162,
+  weightKg: 60,
+  serumCreatinineMgDl: 2.2,
+  drugs: ['Glucophage 1000mg']
+});
+assert.strictEqual(renalCheckScrOnly.isValid, true);
+assert.ok(renalCheckScrOnly.egfr! < 30);
+assert.strictEqual(renalCheckScrOnly.hasContraindication, true);
+
+// 22.10 TC-RD-010: Backwards Compatibility (Legacy calls with only egfr and drugs)
+const renalCheckLegacy = checkRenalDoseAdjustments({
+  egfr: 25,
+  drugs: ['Glifor 1000mg', 'Cipro 500mg']
+});
+assert.strictEqual(renalCheckLegacy.isValid, true);
+assert.strictEqual(renalCheckLegacy.hasContraindication, true);
+assert.strictEqual(renalCheckLegacy.alertsCount, 2);
+assert.strictEqual(renalCheckLegacy.warnings![0].metricUsed, 'INDEXED_EGFR');
+
+console.log('✓ Renal Dose Mosteller BSA De-indexing & Cockcroft-Gault Engine verified (100% parity with Dosya 3)');
+
+console.log('\n--- 23. VERIFYING AAP 2022 FULL JAUNDICE ENGINE & LINEAR INTERPOLATION (ADIM 13) ---');
+
+// 23.1 TC-J-001: Truncation Rule (Tamamlanmış Hafta Kuralı - Paragraph 542 & 577)
+const trunc36w5d = truncateGestationalWeeks(36, 5);
+assert.strictEqual(trunc36w5d.truncatedWeeks, 36);
+assert.strictEqual(trunc36w5d.isPreterm, false);
+
+const trunc36_7 = truncateGestationalWeeks(36.7);
+assert.strictEqual(trunc36_7.truncatedWeeks, 36);
+assert.strictEqual(trunc36_7.isPreterm, false);
+
+const trunc34w6d = truncateGestationalWeeks(34, 6);
+assert.strictEqual(trunc34w6d.truncatedWeeks, 34);
+assert.strictEqual(trunc34w6d.isPreterm, true);
+
+// 23.2 TC-J-002: Exact Hourly Knot Interpolation (Table 0 Verified Values)
+// 38 wk, No Risk: 24h: 11.0, 48h: 14.7, 72h: 17.3, 96h: 19.3, 120h: 20.0, 168h: 20.5, 336h: 20.5
+const t38_24 = calculateAap2022Thresholds(38, false, 24);
+assert.strictEqual(t38_24.phototherapy, 11.0);
+assert.strictEqual(t38_24.exchange, 20.5);
+
+const t38_48 = calculateAap2022Thresholds(38, false, 48);
+assert.strictEqual(t38_48.phototherapy, 14.7); // Matches TC-01!
+assert.strictEqual(t38_48.exchange, 23.0);
+
+const t38_72 = calculateAap2022Thresholds(38, false, 72);
+assert.strictEqual(t38_72.phototherapy, 17.3);
+assert.strictEqual(t38_72.exchange, 25.0);
+
+// 40 wk, No Risk at 36h: Midpoint between 24h (12.0) and 48h (16.0) -> 14.0 mg/dL (Matches TC-08!)
+const t40_36 = calculateAap2022Thresholds(40, false, 36);
+assert.strictEqual(t40_36.phototherapy, 14.0);
+assert.strictEqual(t40_36.exchange, 22.75); // Midpoint of 21.5 and 24.0
+
+// 36 wk, With Risk at 72h: Exactly 14.9 mg/dL (Matches TC-03!)
+const t36_72_risk = calculateAap2022Thresholds(36, true, 72);
+assert.strictEqual(t36_72_risk.phototherapy, 14.9);
+assert.strictEqual(t36_72_risk.exchange, 21.8);
+
+// 23.3 TC-01: Sınırda Fototerapi Eşiği Kontrolü (Table 11 TC-01)
+// GH: 38 0/7 hf, Postnatal Yaş: 48 saat, TSB: 16.2 mg/dL, Risk: Yok
+const tc01 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  gestationalDays: 0,
+  ageHours: 48,
+  totalBilirubin: 16.2,
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tc01.isValid, true);
+assert.strictEqual(tc01.thresholds.phototherapy, 14.7);
+assert.strictEqual(tc01.deltaFromPhototherapy, -1.5);
+assert.strictEqual(tc01.status, 'PHOTOTHERAPY_REQUIRED');
+assert.ok(tc01.interpretation.includes('Yoğun LED Fototerapi Başlatılmalıdır'));
+
+// 23.4 TC-02: Prematüre Güvenlik Kilidi ve Kesme Kuralı (Table 11 TC-02)
+// GH: 34 6/7 hf, Postnatal Yaş: 36 saat, TSB: 11.0 mg/dL, Risk: DAT Negatif
+const tc02 = evaluateAap2022Jaundice({
+  gestationalWeeks: 34,
+  gestationalDays: 6,
+  ageHours: 36,
+  totalBilirubin: 11.0,
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tc02.gestationalAge.isPreterm, true);
+assert.strictEqual(tc02.gestationalAge.isAapBlocked, true);
+assert.strictEqual(tc02.status, 'PRETERM_ROUTED');
+assert.ok(tc02.interpretation.includes('AAP 2022 uygulanamaz'));
+assert.ok(tc02.clinicalAlerts.some(a => a.type === 'PRETERM_LOCK'));
+assert.ok(tc02.pretermGuidance);
+assert.ok(tc02.pretermGuidance.maiselsPhototherapyRange.includes('12 - 14'));
+
+// 23.5 TC-03: Tamamlanmış Hafta ve Nörotoksisite Kayması (Table 11 TC-03)
+// GH: 36 5/7 hf, Postnatal Yaş: 72 saat, TSB: 15.0 mg/dL, Risk: Albumin 2.8 g/dL
+const tc03 = evaluateAap2022Jaundice({
+  gestationalWeeks: 36,
+  gestationalDays: 5,
+  ageHours: 72,
+  totalBilirubin: 15.0,
+  albuminGPerDl: 2.8
+});
+assert.strictEqual(tc03.gestationalAge.truncatedWeeks, 36);
+assert.strictEqual(tc03.hasNeurotoxicityRisk, true); // Albumin < 3.0 automatically triggered neuro risk!
+assert.strictEqual(tc03.thresholds.phototherapy, 14.9);
+assert.strictEqual(tc03.status, 'PHOTOTHERAPY_REQUIRED');
+
+// 23.6 TC-04: TcB Doğrulama Eşiği Sınırı (Table 11 TC-04)
+// GH: 40 0/7 hf, Postnatal Yaş: 60 saat, TcB: 17.0 mg/dL, Risk: Yok
+const tc04 = evaluateAap2022Jaundice({
+  gestationalWeeks: 40,
+  gestationalDays: 0,
+  ageHours: 60,
+  totalBilirubin: 17.0,
+  measurementType: 'TcB',
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tc04.requiresTsbConfirmation, true);
+assert.ok(tc04.clinicalAlerts.some(a => a.type === 'TCB_CONFIRMATION'));
+assert.ok(tc04.tsbConfirmationReason!.includes('STAT kan TSB'));
+
+// 23.7 TC-05: Bakım Eskalasyonu Acil Alarmı (Table 11 TC-05)
+// GH: 39 0/7 hf, Postnatal Yaş: 48 saat, TSB: 22.5 mg/dL, Risk: Yok
+const tc05 = evaluateAap2022Jaundice({
+  gestationalWeeks: 39,
+  gestationalDays: 0,
+  ageHours: 48,
+  totalBilirubin: 22.5,
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tc05.status, 'ESCALATION_OF_CARE');
+assert.strictEqual(tc05.alertClass, 'danger');
+assert.ok(tc05.clinicalAlerts.some(a => a.type === 'ESCALATION'));
+assert.ok(tc05.recommendations.some(r => r.includes('YYBÜ yatışı')));
+
+// 23.8 TC-06: B/A Oranı Kan Değişimi Tetiklemesi (Table 11 TC-06)
+// GH: 38 0/7 hf, Postnatal Yaş: 72 saat, TSB: 23.5 mg/dL, Albümin: 2.8 g/dL, Risk: DAT Pozitif
+const tc06 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  gestationalDays: 0,
+  ageHours: 72,
+  totalBilirubin: 23.5,
+  albuminGPerDl: 2.8,
+  hasNeurotoxicityRisk: true
+});
+assert.strictEqual(tc06.thresholds.exchange, 23.0);
+assert.ok(tc06.bilirubinAlbuminRatio);
+assert.strictEqual(tc06.bilirubinAlbuminRatio.ratio, 8.39);
+assert.strictEqual(tc06.bilirubinAlbuminRatio.threshold, 7.2);
+assert.strictEqual(tc06.bilirubinAlbuminRatio.isThresholdExceeded, true);
+assert.strictEqual(tc06.status, 'EXCHANGE_TRANSFUSION_REQUIRED'); // Triggered by B/A ratio!
+assert.ok(tc06.clinicalAlerts.some(a => a.type === 'BA_RATIO'));
+
+// 23.9 TC-07: Yaşamın İlk 12 Saati Patoloji Alarmı (Table 11 TC-07)
+// GH: 37 0/7 hf, Postnatal Yaş: 8 saat, Klinik: Belirgin Sarılık
+const tc07 = evaluateAap2022Jaundice({
+  gestationalWeeks: 37,
+  ageHours: 8,
+  totalBilirubin: 7.5
+});
+assert.strictEqual(tc07.status, 'FIRST_12_HOURS_CRITICAL');
+assert.strictEqual(tc07.alertClass, 'danger');
+assert.ok(tc07.interpretation.includes('PATOLOJİK HEMOLİZ DÜŞÜNÜLMELİDİR'));
+assert.ok(tc07.clinicalAlerts.some(a => a.type === 'FIRST_12H_PATHOLOGY'));
+
+// 23.10 TC-08: Taburculuk Sonrası Takip Şeması (Table 11 TC-08)
+// GH: 40 0/7 hf, Postnatal Yaş: 36 saat, TSB: 10.0 mg/dL, Taburculuk Planı
+const tc08 = evaluateAap2022Jaundice({
+  gestationalWeeks: 40,
+  ageHours: 36,
+  totalBilirubin: 10.0,
+  hasNeurotoxicityRisk: false,
+  isDischargePlanning: true
+});
+assert.strictEqual(tc08.thresholds.phototherapy, 14.0);
+assert.strictEqual(tc08.deltaFromPhototherapy, 4.0);
+assert.strictEqual(tc08.status, 'LOW_RISK');
+assert.ok(tc08.followUpRecommendation.includes('1 ila 2 gün (24–48 saat) içinde TSB veya TcB kontrolü'));
+
+// 23.11 Direct Bilirubin Safety Shield (Never subtract direct from total)
+const directCheck = evaluateAap2022Jaundice({
+  gestationalWeeks: 39,
+  ageHours: 72,
+  totalBilirubin: 16.0,
+  directBilirubinMgDl: 9.0 // > 50%
+});
+assert.strictEqual(directCheck.directBilirubinAnalysis?.isCholestasisSuspected, true);
+assert.ok(directCheck.clinicalAlerts.some(a => a.type === 'CHOLESTASIS_BRONZE'));
+
+console.log('✓ AAP 2022 Full Jaundice Engine & Linear Interpolation verified (100% parity with Dosya 4)');
+
+console.log('\n--- 24. VERIFYING NEUROTOXICITY RISK STRATIFICATION, B/A RATIO & ESCALATION OF CARE (ADIM 14) ---');
+
+// 24.1 TC-NR-001: Multi-Risk Factor Synthesis
+const tcNr01 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  ageHours: 48,
+  totalBilirubin: 14.5,
+  riskFactors: {
+    hypoalbuminemia: false,
+    isoimmuneHemolysis: true,
+    sepsis: true
+  }
+});
+assert.strictEqual(tcNr01.hasNeurotoxicityRisk, true);
+assert.ok(tcNr01.riskFactorDetails);
+assert.strictEqual(tcNr01.riskFactorDetails.isoimmuneHemolysis, true);
+assert.strictEqual(tcNr01.riskFactorDetails.sepsis, true);
+assert.strictEqual(tcNr01.riskFactorDetails.activeRisks.length, 2);
+assert.strictEqual(tcNr01.thresholds.phototherapy, 14.0); // 38w with risk at 48h
+assert.strictEqual(tcNr01.status, 'PHOTOTHERAPY_REQUIRED');
+
+// 24.2 TC-NR-002: KAS 7 Rate of Rise in First 24 Hours (>=0.3 mg/dL/h)
+const tcNr02 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  ageHours: 20,
+  totalBilirubin: 8.0,
+  previousTsbMgDl: 4.5,
+  previousAgeHours: 10
+});
+assert.ok(tcNr02.rateOfRiseAnalysis);
+assert.strictEqual(tcNr02.rateOfRiseAnalysis.rateMgDlPerHour, 0.35);
+assert.strictEqual(tcNr02.rateOfRiseAnalysis.isRapidRise, true);
+assert.strictEqual(tcNr02.rateOfRiseAnalysis.thresholdMgDlPerHour, 0.3);
+assert.strictEqual(tcNr02.hasNeurotoxicityRisk, true); // Automatic neuro risk activation!
+assert.ok(tcNr02.clinicalAlerts.some(a => a.type === 'HEMOLYSIS_RATE' && a.severity === 'CRITICAL'));
+
+// 24.3 TC-NR-003: KAS 7 Rate of Rise After 24 Hours (>=0.2 mg/dL/h)
+const tcNr03 = evaluateAap2022Jaundice({
+  gestationalWeeks: 39,
+  ageHours: 36,
+  totalBilirubin: 14.0,
+  previousTsbMgDl: 11.0,
+  previousAgeHours: 24
+});
+assert.ok(tcNr03.rateOfRiseAnalysis);
+assert.strictEqual(tcNr03.rateOfRiseAnalysis.rateMgDlPerHour, 0.25);
+assert.strictEqual(tcNr03.rateOfRiseAnalysis.isRapidRise, true);
+assert.strictEqual(tcNr03.rateOfRiseAnalysis.thresholdMgDlPerHour, 0.2);
+assert.strictEqual(tcNr03.hasNeurotoxicityRisk, true);
+assert.ok(tcNr03.clinicalAlerts.some(a => a.type === 'HEMOLYSIS_RATE'));
+
+// 24.4 TC-NR-004: Physiological Rate of Rise (<0.2 mg/dL/h)
+const tcNr04 = evaluateAap2022Jaundice({
+  gestationalWeeks: 40,
+  ageHours: 48,
+  totalBilirubin: 10.0,
+  previousTsbMgDl: 8.5,
+  previousAgeHours: 36
+});
+assert.ok(tcNr04.rateOfRiseAnalysis);
+assert.strictEqual(tcNr04.rateOfRiseAnalysis.rateMgDlPerHour, 0.13);
+assert.strictEqual(tcNr04.rateOfRiseAnalysis.isRapidRise, false);
+assert.ok(!tcNr04.clinicalAlerts.some(a => a.type === 'HEMOLYSIS_RATE'));
+
+// 24.5 TC-NR-005: G6PD Deficiency Alert & 3-Month Retest Advisory
+const tcNr05 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  ageHours: 60,
+  totalBilirubin: 13.0,
+  riskFactors: { g6pdDeficiency: true }
+});
+assert.strictEqual(tcNr05.hasNeurotoxicityRisk, true);
+const g6pdAlert = tcNr05.clinicalAlerts.find(a => a.type === 'G6PD_RETEST_REMINDER');
+assert.ok(g6pdAlert);
+assert.ok(g6pdAlert.message.includes('3 ay sonra test tekrarı'));
+assert.ok(g6pdAlert.message.includes('retikülosit'));
+
+// 24.6 TC-NR-006: Acute Bilirubin Encephalopathy (ABE) Emergency Immediate Exchange
+const tcNr06 = evaluateAap2022Jaundice({
+  gestationalWeeks: 39,
+  ageHours: 48,
+  totalBilirubin: 15.0, // Below Exchange threshold of 23.5 mg/dL!
+  abeSymptoms: {
+    retrocollis: true,
+    opisthotonos: true,
+    highPitchedCry: true
+  }
+});
+assert.ok(tcNr06.abeAssessment);
+assert.strictEqual(tcNr06.abeAssessment.isImmediateExchangeTriggered, true);
+assert.strictEqual(tcNr06.status, 'EXCHANGE_TRANSFUSION_REQUIRED');
+assert.strictEqual(tcNr06.alertClass, 'danger');
+assert.ok(tcNr06.clinicalAlerts.some(a => a.type === 'ABE_EMERGENCY' && a.severity === 'CRITICAL'));
+assert.ok(tcNr06.interpretation.includes('AKUT BİLİRUBİN ENSEFALOPATİSİ'));
+
+// 24.7 TC-NR-007: Escalation of Care Protocol & STAT Order Bundle (KAS 17)
+const tcNr07 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  ageHours: 72,
+  totalBilirubin: 23.5, // 38w No Risk: Exchange is 25.0, Escalation is 23.0
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tcNr07.status, 'ESCALATION_OF_CARE');
+assert.ok(tcNr07.escalationProtocol);
+assert.strictEqual(tcNr07.escalationProtocol.isEscalationActive, true);
+assert.strictEqual(tcNr07.escalationProtocol.urgency, 'MEDICAL_EMERGENCY');
+assert.strictEqual(tcNr07.escalationProtocol.statOrderBundle.length, 8);
+assert.strictEqual(tcNr07.escalationProtocol.reassessmentIntervalHours, 2);
+assert.ok(tcNr07.escalationProtocol.phototherapyRegimen.includes('≥ 30 µW/cm²/nm'));
+assert.ok(tcNr07.escalationProtocol.hydrationProtocol.includes('kesinlikle yasaktır'));
+
+// 24.8 TC-NR-008: Isoimmune Hemolysis in Escalation -> IVIG Protocol
+const tcNr08 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  ageHours: 72,
+  totalBilirubin: 21.5, // 38w With Risk: Exchange is 23.0, Escalation is 21.0
+  riskFactors: { isoimmuneHemolysis: true }
+});
+assert.strictEqual(tcNr08.status, 'ESCALATION_OF_CARE');
+assert.ok(tcNr08.escalationProtocol);
+assert.ok(tcNr08.escalationProtocol.ivigProtocol);
+assert.strictEqual(tcNr08.escalationProtocol.ivigProtocol.recommended, true);
+assert.strictEqual(tcNr08.escalationProtocol.ivigProtocol.dose, '0.5 – 1.0 g/kg IV infüzyon, 2 saatte verilir.');
+assert.ok(tcNr08.recommendations.some(r => r.includes('IVIG infüzyonu')));
+
+// 24.9 TC-NR-009: B/A Ratio Tiers (8.0, 7.2, 6.8 mg/g)
+const baTier1 = evaluateBilirubinAlbuminRatio({ tsbMgDl: 22.0, albuminGPerDl: 3.0, gestationalWeeks: 40, hasRiskFactors: false });
+assert.ok(baTier1);
+assert.strictEqual(baTier1.threshold, 8.0);
+assert.strictEqual(baTier1.ratio, 7.33);
+assert.strictEqual(baTier1.isThresholdExceeded, false);
+
+const baTier2 = evaluateBilirubinAlbuminRatio({ tsbMgDl: 22.0, albuminGPerDl: 3.0, gestationalWeeks: 38, hasRiskFactors: true });
+assert.ok(baTier2);
+assert.strictEqual(baTier2.threshold, 7.2);
+assert.strictEqual(baTier2.ratio, 7.33);
+assert.strictEqual(baTier2.isThresholdExceeded, true);
+
+const baTier3 = evaluateBilirubinAlbuminRatio({ tsbMgDl: 21.0, albuminGPerDl: 3.0, gestationalWeeks: 36, hasRiskFactors: true });
+assert.ok(baTier3);
+assert.strictEqual(baTier3.threshold, 6.8);
+assert.strictEqual(baTier3.ratio, 7.0);
+assert.strictEqual(baTier3.isThresholdExceeded, true);
+
+// 24.10 TC-NR-010: B/A Ratio Kan Değişimi Tetiklemesi (Sub-threshold TSB with High B/A)
+const tcNr10 = evaluateAap2022Jaundice({
+  gestationalWeeks: 38,
+  ageHours: 72,
+  totalBilirubin: 22.5, // Below Exchange threshold of 23.0 mg/dL!
+  albuminGPerDl: 2.8,
+  riskFactors: { isoimmuneHemolysis: true }
+});
+assert.strictEqual(tcNr10.thresholds.exchange, 23.0);
+assert.ok(tcNr10.bilirubinAlbuminRatio);
+assert.strictEqual(tcNr10.bilirubinAlbuminRatio.ratio, 8.04);
+assert.strictEqual(tcNr10.bilirubinAlbuminRatio.threshold, 7.2);
+assert.strictEqual(tcNr10.bilirubinAlbuminRatio.isThresholdExceeded, true);
+assert.strictEqual(tcNr10.status, 'EXCHANGE_TRANSFUSION_REQUIRED');
+assert.ok(tcNr10.interpretation.includes('B/A oranı'));
+assert.ok(tcNr10.clinicalAlerts.some(a => a.type === 'BA_RATIO'));
+
+console.log('✓ Neurotoxicity Risk Stratification, B/A Ratio & Escalation of Care verified (100% parity with Dosya 4)');
+
+console.log('\n--- 25. VERIFYING PRETERM <35W MAISELS 2012 CONSENSUS, TND/NICE FORMULA & FLUID PROTOCOLS (ADIM 15) ---');
+
+// 25.1 TC-PR-001: Band 1 (<28 0/7 wk PMA)
+const tcPr01NoRisk = evaluatePretermJaundice({
+  gestationalWeeks: 26,
+  gestationalDays: 0,
+  ageHours: 24, // PMA: 26.14w (<28w)
+  totalBilirubin: 5.5,
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tcPr01NoRisk.activeMaiselsBand.bandId, '<28');
+assert.strictEqual(tcPr01NoRisk.activeMaiselsBand.phototherapyMinMgDl, 5.0);
+assert.strictEqual(tcPr01NoRisk.activeMaiselsBand.phototherapyMaxMgDl, 6.0);
+assert.strictEqual(tcPr01NoRisk.activeMaiselsBand.phototherapyMinUmolL, 85);
+assert.strictEqual(tcPr01NoRisk.activeMaiselsBand.phototherapyMaxUmolL, 103);
+assert.strictEqual(tcPr01NoRisk.activeMaiselsBand.exchangeMinMgDl, 11.0);
+assert.strictEqual(tcPr01NoRisk.activeMaiselsBand.exchangeMaxMgDl, 14.0);
+assert.strictEqual(tcPr01NoRisk.effectiveThresholds.phototherapy, 6.0);
+assert.strictEqual(tcPr01NoRisk.status, 'CLOSE_MONITORING');
+
+const tcPr01WithRisk = evaluatePretermJaundice({
+  gestationalWeeks: 26,
+  gestationalDays: 0,
+  ageHours: 24,
+  totalBilirubin: 5.5,
+  hasNeurotoxicityRisk: true
+});
+assert.strictEqual(tcPr01WithRisk.effectiveThresholds.phototherapy, 5.0);
+assert.strictEqual(tcPr01WithRisk.effectiveThresholds.exchange, 11.0);
+assert.strictEqual(tcPr01WithRisk.status, 'PHOTOTHERAPY_REQUIRED');
+
+// 25.2 TC-PR-002: Band 2 (28 0/7 - 29 6/7 wk PMA)
+const tcPr02 = evaluatePretermJaundice({
+  gestationalWeeks: 28,
+  gestationalDays: 0,
+  ageHours: 48, // PMA: 28.29w
+  totalBilirubin: 7.0,
+  hasNeurotoxicityRisk: true
+});
+assert.strictEqual(tcPr02.activeMaiselsBand.bandId, '28-29');
+assert.strictEqual(tcPr02.activeMaiselsBand.phototherapyMinMgDl, 6.0);
+assert.strictEqual(tcPr02.activeMaiselsBand.phototherapyMaxMgDl, 8.0);
+assert.strictEqual(tcPr02.effectiveThresholds.phototherapy, 6.0);
+assert.strictEqual(tcPr02.effectiveThresholds.exchange, 12.0);
+assert.strictEqual(tcPr02.status, 'PHOTOTHERAPY_REQUIRED');
+
+// 25.3 TC-PR-003: Band 3 (30 0/7 - 31 6/7 wk PMA)
+const tcPr03 = evaluatePretermJaundice({
+  gestationalWeeks: 30,
+  gestationalDays: 0,
+  ageHours: 72, // PMA: 30.43w
+  totalBilirubin: 9.0,
+  hasNeurotoxicityRisk: true
+});
+assert.strictEqual(tcPr03.activeMaiselsBand.bandId, '30-31');
+assert.strictEqual(tcPr03.activeMaiselsBand.phototherapyMinMgDl, 8.0);
+assert.strictEqual(tcPr03.activeMaiselsBand.phototherapyMaxMgDl, 10.0);
+assert.strictEqual(tcPr03.activeMaiselsBand.exchangeMinMgDl, 13.0);
+assert.strictEqual(tcPr03.activeMaiselsBand.exchangeMaxMgDl, 16.0);
+assert.strictEqual(tcPr03.effectiveThresholds.phototherapy, 8.0);
+assert.strictEqual(tcPr03.effectiveThresholds.exchange, 13.0);
+assert.strictEqual(tcPr03.status, 'PHOTOTHERAPY_REQUIRED');
+
+// 25.4 TC-PR-004: Band 4 (32 0/7 - 33 6/7 wk PMA)
+const tcPr04 = evaluatePretermJaundice({
+  gestationalWeeks: 32,
+  gestationalDays: 0,
+  ageHours: 72, // PMA: 32.43w
+  totalBilirubin: 11.0,
+  hasNeurotoxicityRisk: true
+});
+assert.strictEqual(tcPr04.activeMaiselsBand.bandId, '32-33');
+assert.strictEqual(tcPr04.activeMaiselsBand.phototherapyMinMgDl, 10.0);
+assert.strictEqual(tcPr04.activeMaiselsBand.phototherapyMaxMgDl, 12.0);
+assert.strictEqual(tcPr04.activeMaiselsBand.exchangeMinMgDl, 15.0);
+assert.strictEqual(tcPr04.activeMaiselsBand.exchangeMaxMgDl, 18.0);
+assert.strictEqual(tcPr04.status, 'PHOTOTHERAPY_REQUIRED');
+
+// 25.5 TC-PR-005: Band 5 (34 0/7 - 34 6/7 wk PMA)
+const tcPr05 = evaluatePretermJaundice({
+  gestationalWeeks: 34,
+  gestationalDays: 0,
+  ageHours: 24, // PMA: 34.14w
+  totalBilirubin: 13.0,
+  hasNeurotoxicityRisk: true
+});
+assert.strictEqual(tcPr05.activeMaiselsBand.bandId, '34');
+assert.strictEqual(tcPr05.activeMaiselsBand.phototherapyMinMgDl, 12.0);
+assert.strictEqual(tcPr05.activeMaiselsBand.phototherapyMaxMgDl, 14.0);
+assert.strictEqual(tcPr05.activeMaiselsBand.exchangeMinMgDl, 17.0);
+assert.strictEqual(tcPr05.activeMaiselsBand.exchangeMaxMgDl, 19.0);
+assert.strictEqual(tcPr05.status, 'PHOTOTHERAPY_REQUIRED');
+
+// 25.6 TC-PR-006: Stanford Premie BiliRecs Clamping Rule (PMA >= 35w)
+const tcPr06 = evaluatePretermJaundice({
+  gestationalWeeks: 28,
+  gestationalDays: 0,
+  ageHours: 1344, // 8 weeks chronological age -> PMA = 36.0w
+  totalBilirubin: 13.5,
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tcPr06.isPmaClamped, true);
+assert.strictEqual(tcPr06.activeMaiselsBand.bandId, '34');
+assert.strictEqual(tcPr06.effectiveThresholds.phototherapy, 14.0); // Clamped to 34w ceiling!
+assert.strictEqual(tcPr06.effectiveThresholds.exchange, 19.0);
+const clampAlert = tcPr06.clinicalAlerts.find(a => a.type === 'PRETERM_PMA_CLAMPED_WARNING');
+assert.ok(clampAlert);
+assert.ok(clampAlert.message.includes('Stanford Premie BiliRecs'));
+assert.ok(clampAlert.message.includes('34 0/7 - 34 6/7'));
+
+// 25.7 TC-PR-007: ELBW (<750g) Irradiance Safety Shield
+const tcPr07 = evaluatePretermJaundice({
+  gestationalWeeks: 26,
+  birthWeightGrams: 680,
+  ageHours: 48,
+  totalBilirubin: 5.5
+});
+assert.strictEqual(tcPr07.hasElbwIrradianceShield, true);
+const elbwAlert = tcPr07.clinicalAlerts.find(a => a.type === 'PRETERM_IRRADIANCE_WARNING');
+assert.ok(elbwAlert);
+assert.strictEqual(elbwAlert.severity, 'CRITICAL');
+assert.ok(elbwAlert.message.includes('15–20 µW/cm²/nm'));
+assert.ok(elbwAlert.message.includes('mortalite'));
+
+// 25.8 TC-PR-008: TND 2023 / NICE CG98 Preterm Dynamic Ramp (36h vs 72h)
+const tndRamp = calculatePretermTndNiceThreshold({ gestationalWeeks: 30, ageHours: 36 });
+assert.strictEqual(tndRamp.plateauThresholdMgDl, 12.0);
+assert.strictEqual(tndRamp.dynamicThresholdMgDl, 6.0); // 36/72 * 12.0 = 6.0
+assert.strictEqual(tndRamp.niceUmolLPlateau, 200); // 30*10 - 100 = 200
+assert.strictEqual(tndRamp.niceUmolLDynamic, 100); // 36/72 * 200 = 100
+assert.strictEqual(tndRamp.isRamping, true);
+
+const tndPlateau = calculatePretermTndNiceThreshold({ gestationalWeeks: 30, ageHours: 72 });
+assert.strictEqual(tndPlateau.dynamicThresholdMgDl, 12.0);
+assert.strictEqual(tndPlateau.niceUmolLDynamic, 200);
+assert.strictEqual(tndPlateau.isRamping, false);
+
+// 25.9 TC-PR-009: Preterm Fluid Protocol for ELBW (<1000g, 80-90% Humidity) - TND Table 7
+const fluidElbwDay1 = calculateNeonatalFluid({ weightKg: 0.85, ageDays: 0 });
+assert.ok(fluidElbwDay1);
+assert.strictEqual(fluidElbwDay1.weightCategory, 'PRETERM_ELBW');
+assert.strictEqual(fluidElbwDay1.mlPerKgRange, '80-90');
+assert.strictEqual(fluidElbwDay1.pathologicalLossThresholdPercent, 15.0);
+assert.ok(fluidElbwDay1.incubatorHumidityRecommendation && fluidElbwDay1.incubatorHumidityRecommendation.includes('%80–90'));
+
+const fluidElbwDay2 = calculateNeonatalFluid({ weightKg: 0.85, ageDays: 1 });
+assert.ok(fluidElbwDay2);
+assert.strictEqual(fluidElbwDay2.mlPerKgRange, '90-100');
+
+const fluidElbwDay3 = calculateNeonatalFluid({ weightKg: 0.85, ageDays: 2 });
+assert.ok(fluidElbwDay3);
+assert.strictEqual(fluidElbwDay3.mlPerKgRange, '110-120');
+
+const fluidElbwMaint = calculateNeonatalFluid({ weightKg: 0.85, ageDays: 5 });
+assert.ok(fluidElbwMaint);
+assert.strictEqual(fluidElbwMaint.mlPerKgRange, '150-180');
+
+// 25.10 TC-PR-010: Pathological Weight Loss Screening (>15% in ELBW) & Phototherapy Fluid Adjustments
+const fluidWeightLoss = calculateNeonatalFluid({
+  birthWeightKg: 0.90,
+  weightKg: 0.75, // Loss: 150g = 16.7% (>15% threshold!)
+  ageDays: 3,
+  isPhototherapy: true,
+  phototherapyType: 'LED'
+});
+assert.ok(fluidWeightLoss);
+assert.ok(fluidWeightLoss.weightLossAnalysis);
+assert.strictEqual(fluidWeightLoss.weightLossAnalysis.isPathological, true);
+assert.strictEqual(fluidWeightLoss.weightLossAnalysis.weightLossPercent, 16.7);
+assert.ok(fluidWeightLoss.weightLossAnalysis.warning && fluidWeightLoss.weightLossAnalysis.warning.includes('PATOLOJİK KİLO KAYBI ALARMI'));
+assert.strictEqual(fluidWeightLoss.phototherapyAdjustmentMl, 10);
+assert.ok(fluidWeightLoss.soluteAdvice.includes('+10 mL/kg/gün'));
+assert.ok(fluidWeightLoss.contraindicationNotice.includes('KESİNLİKLE YASAKTIR'));
+
+const fluidHalogen = calculateNeonatalFluid({
+  weightKg: 2.0,
+  ageDays: 2,
+  isPhototherapy: true,
+  phototherapyType: 'HALOGEN'
+});
+assert.ok(fluidHalogen);
+assert.strictEqual(fluidHalogen.phototherapyAdjustmentMl, 25);
+assert.ok(fluidHalogen.soluteAdvice.includes('+20-30 mL/kg/gün'));
+
+console.log('✓ Preterm <35w Maisels 2012 PMA Bands, TND/NICE Dynamic Formula & Fluid Protocols verified (100% parity with Dosya 4)');
+
+console.log('\n--- 26. VERIFYING POST-DISCHARGE DELTA MODEL, TCB-TO-TSB VALIDATION & REBOUND MONITORING (ADIM 16) ---');
+
+// 26.1 TC-04 (Dosya 4): TcB Doğrulama Eşiği Sınırı (KAS 6)
+// GH: 40 0/7 hf, Postnatal Yaş: 60 saat, TcB: 17.0 mg/dL, Risk: Yok
+const tc04Jaundice = evaluateAap2022Jaundice({
+  gestationalWeeks: 40,
+  ageHours: 60,
+  totalBilirubin: 17.0,
+  measurementType: 'TcB',
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tc04Jaundice.thresholds.phototherapy, 17.25); // 60h enterpolasyonlu eşik (16.0 + 18.5) / 2 = 17.25
+assert.strictEqual(tc04Jaundice.deltaFromPhototherapy, 0.25);     // 17.25 - 17.0 = 0.25 mg/dL (<= 3.0 mg/dL içinde)
+assert.strictEqual(tc04Jaundice.requiresTsbConfirmation, true);
+assert.ok(tc04Jaundice.tsbConfirmationReason && tc04Jaundice.tsbConfirmationReason.includes('STAT kan TSB'));
+assert.ok(tc04Jaundice.tcBValidity);
+assert.strictEqual(tc04Jaundice.tcBValidity.trigger, 'THRESHOLD_PROXIMITY');
+assert.strictEqual(tc04Jaundice.tcBValidity.isValidForTreatmentDecision, false);
+assert.strictEqual(tc04Jaundice.tcBValidity.isTsbMandatory, true);
+
+// TC-04 Part 2: Dosya 4 s.631 Eşik 19.75 mg/dL ve Fark 2.75 mg/dL Noktası (87. saat)
+const tc04At87h = evaluateAap2022Jaundice({
+  gestationalWeeks: 40,
+  ageHours: 87,
+  totalBilirubin: 17.0,
+  measurementType: 'TcB',
+  hasNeurotoxicityRisk: false
+});
+assert.strictEqual(tc04At87h.thresholds.phototherapy, 19.75); // 87h enterpolasyonlu eşik: 18.5 + (15/24)*2 = 19.75
+assert.strictEqual(tc04At87h.deltaFromPhototherapy, 2.75);     // 19.75 - 17.0 = 2.75 mg/dL (<= 3.0 mg/dL içinde)
+assert.strictEqual(tc04At87h.requiresTsbConfirmation, true);
+assert.strictEqual(tc04At87h.tcBValidity?.trigger, 'THRESHOLD_PROXIMITY');
+
+// 26.2 TC-07 (Dosya 4): Yaşamın İlk 12 Saati Patoloji Alarmı
+// GH: 37 0/7 hf, Postnatal Yaş: 8 saat, Klinik: Belirgin Sarılık
+const tc07Jaundice = evaluateAap2022Jaundice({
+  gestationalWeeks: 37,
+  ageHours: 8,
+  totalBilirubin: 7.5,
+  measurementType: 'TSB'
+});
+assert.strictEqual(tc07Jaundice.status, 'FIRST_12_HOURS_CRITICAL');
+assert.strictEqual(tc07Jaundice.requiresTsbConfirmation, true);
+assert.ok(tc07Jaundice.clinicalAlerts.some(a => a.type === 'FIRST_12H_PATHOLOGY'));
+assert.ok(tc07Jaundice.interpretation.includes('PATOLOJİK HEMOLİZ'));
+assert.ok(tc07Jaundice.dischargeEvaluation);
+assert.strictEqual(tc07Jaundice.dischargeEvaluation.isDischargeEligible, false);
+assert.strictEqual(tc07Jaundice.dischargeEvaluation.actionCode, 'FIRST_12H_CONTRAINDICATED');
+assert.ok(tc07Jaundice.dischargeEvaluation.dischargeRecommendation.includes('Yaşamın ilk 12 saatinde taburculuk planlanamaz'));
+
+// 26.3 TC-08 (Dosya 4): Taburculuk Sonrası Takip Şeması (AAP 2022 Tablo 4)
+// GH: 40 0/7 hf, Postnatal Yaş: 36 saat, TSB: 10.0 mg/dL, Taburculuk Planı
+const tc08Jaundice = evaluateAap2022Jaundice({
+  gestationalWeeks: 40,
+  ageHours: 36,
+  totalBilirubin: 10.0,
+  measurementType: 'TSB',
+  isDischargePlanning: true
+});
+assert.strictEqual(tc08Jaundice.thresholds.phototherapy, 14.0);
+assert.strictEqual(tc08Jaundice.deltaFromPhototherapy, 4.0); // 14.0 - 10.0 = 4.0 mg/dL (3.5 - 5.4 bandı)
+assert.ok(tc08Jaundice.dischargeEvaluation);
+assert.strictEqual(tc08Jaundice.dischargeEvaluation.matrixBand, '3.5 – 5.4 mg/dL');
+assert.strictEqual(tc08Jaundice.dischargeEvaluation.actionCode, 'INTERMEDIATE_MONITORING');
+assert.strictEqual(tc08Jaundice.dischargeEvaluation.isDischargeEligible, true);
+assert.strictEqual(tc08.dischargeEvaluation.followUpModality, 'TSB_OR_TCB');
+assert.ok(tc08.dischargeEvaluation.dischargeRecommendation.includes('1 ila 2 gün'));
+
+// 26.4 TC-DC-001: Taburculuk Matrisi Band 1 (Delta <= 0 mg/dL - FT Eşiği Aşılmış)
+const dcBand1 = evaluateAap2022DischargeMatrix({
+  deltaMgDl: -0.8,
+  ageHours: 48,
+  phototherapyThreshold: 15.0,
+  totalBilirubin: 15.8
+});
+assert.strictEqual(dcBand1.matrixBand, '≤ 0.0 mg/dL');
+assert.strictEqual(dcBand1.isDischargeEligible, false);
+assert.strictEqual(dcBand1.actionCode, 'CANNOT_DISCHARGE_PT_REQUIRED');
+assert.strictEqual(dcBand1.followUpTiming, 'Taburcu Etmeyiniz - Fototerapi Endikasyonu');
+assert.strictEqual(dcBand1.followUpModality, 'TSB_ONLY');
+assert.ok(dcBand1.dischargeRecommendation.includes('Taburcu etmeyiniz; fototerapi başlatınız'));
+
+// 26.5 TC-DC-002 & TC-DC-003: Taburculuk Matrisi Band 2 (0.1 - 1.9 mg/dL: <24h vs >=24h)
+const dcBand2Under24 = evaluateAap2022DischargeMatrix({ deltaMgDl: 1.5, ageHours: 20 });
+assert.strictEqual(dcBand2Under24.matrixBand, '0.1 – 1.9 mg/dL');
+assert.strictEqual(dcBand2Under24.actionCode, 'DELAY_DISCHARGE_OR_ADMIT');
+assert.strictEqual(dcBand2Under24.isDischargeEligible, false);
+assert.strictEqual(dcBand2Under24.followUpTiming, '4–8 saat içinde TSB kontrolü');
+assert.strictEqual(dcBand2Under24.followUpModality, 'TSB_ONLY');
+
+const dcBand2Over24 = evaluateAap2022DischargeMatrix({ deltaMgDl: 1.5, ageHours: 36 });
+assert.strictEqual(dcBand2Over24.matrixBand, '0.1 – 1.9 mg/dL');
+assert.strictEqual(dcBand2Over24.actionCode, 'CLOSE_MONITORING_OR_HOME_PT');
+assert.strictEqual(dcBand2Over24.followUpTiming, '4–24 saatte TSB kontrolü');
+assert.strictEqual(dcBand2Over24.followUpModality, 'TSB_ONLY');
+assert.ok(dcBand2Over24.dischargeRecommendation.includes('evde fototerapi'));
+
+// 26.6 TC-DC-004: Taburculuk Matrisi Band 3 (2.0 - 3.4 mg/dL: Herhangi bir yaşta)
+const dcBand3 = evaluateAap2022DischargeMatrix({ deltaMgDl: 2.8, ageHours: 30 });
+assert.strictEqual(dcBand3.matrixBand, '2.0 – 3.4 mg/dL');
+assert.strictEqual(dcBand3.actionCode, 'CLOSE_MONITORING');
+assert.strictEqual(dcBand3.isDischargeEligible, true);
+assert.strictEqual(dcBand3.followUpTiming, '4 ila 24 saat içinde TSB veya TcB kontrolü');
+assert.strictEqual(dcBand3.followUpModality, 'TSB_OR_TCB');
+
+// 26.7 TC-DC-005: Taburculuk Matrisi Band 5 (5.5 - 6.9 mg/dL: <72h vs >=72h)
+const dcBand5Under72 = evaluateAap2022DischargeMatrix({ deltaMgDl: 6.0, ageHours: 48 });
+assert.strictEqual(dcBand5Under72.matrixBand, '5.5 – 6.9 mg/dL');
+assert.strictEqual(dcBand5Under72.actionCode, 'OUTPATIENT_48H');
+assert.strictEqual(dcBand5Under72.followUpTiming, '2 gün içinde klinik izlem');
+assert.strictEqual(dcBand5Under72.followUpModality, 'CLINICAL_OR_TEST');
+
+const dcBand5Over72 = evaluateAap2022DischargeMatrix({ deltaMgDl: 6.0, ageHours: 96 });
+assert.strictEqual(dcBand5Over72.matrixBand, '5.5 – 6.9 mg/dL');
+assert.strictEqual(dcBand5Over72.actionCode, 'CLINICAL_DISCRETION');
+assert.ok(dcBand5Over72.dischargeRecommendation.includes('Klinik yargıya ve risk durumuna göre'));
+
+// 26.8 TC-DC-006: Taburculuk Matrisi Band 6 (>= 7.0 mg/dL: <72h vs >=72h)
+const dcBand6Under72 = evaluateAap2022DischargeMatrix({ deltaMgDl: 8.0, ageHours: 48 });
+assert.strictEqual(dcBand6Under72.matrixBand, '≥ 7.0 mg/dL');
+assert.strictEqual(dcBand6Under72.actionCode, 'OUTPATIENT_72H');
+assert.strictEqual(dcBand6Under72.followUpTiming, '3 gün içinde klinik izlem');
+
+const dcBand6Over72 = evaluateAap2022DischargeMatrix({ deltaMgDl: 8.0, ageHours: 96 });
+assert.strictEqual(dcBand6Over72.matrixBand, '≥ 7.0 mg/dL');
+assert.strictEqual(dcBand6Over72.actionCode, 'ROUTINE_CARE');
+assert.strictEqual(dcBand6Over72.followUpTiming, 'Rutin yenidoğan poliklinik izlemi');
+assert.strictEqual(dcBand6Over72.followUpModality, 'CLINICAL_ROUTINE');
+
+// 26.9 TC-DC-007: Fototerapi Kesilme Eşiği Analizi (AAP 2022 KAS 14)
+// Eşik: 18.0 mg/dL -> Kesilme Eşiği: 16.0 mg/dL
+const ftStopNotPermitted = evaluatePhototherapyReboundRisk({
+  currentTsb: 16.5, // 16.5 > 16.0 -> Kesilemez!
+  currentAgeHours: 72,
+  phototherapyThreshold: 18.0,
+  gestationalWeeks: 39
+});
+assert.strictEqual(ftStopNotPermitted.discontinuationThreshold, 16.0);
+assert.strictEqual(ftStopNotPermitted.isDiscontinuationPermitted, false);
+assert.ok(ftStopNotPermitted.recommendations[0].includes('Fototerapi sonlandırılamaz'));
+
+const ftStopPermitted = evaluatePhototherapyReboundRisk({
+  currentTsb: 15.2, // 15.2 <= 16.0 -> Kesilebilir!
+  currentAgeHours: 72,
+  phototherapyThreshold: 18.0,
+  gestationalWeeks: 39
+});
+assert.strictEqual(ftStopPermitted.isDiscontinuationPermitted, true);
+assert.strictEqual(ftStopPermitted.marginBelowThreshold, 2.8);
+assert.ok(ftStopPermitted.recommendations[0].includes('Fototerapi sonlandırılabilir'));
+
+// 26.10 TC-DC-008: Yüksek Rebound Riski Tabakalandırması (AAP 2022 KAS 15)
+// Bebek 36w (<38w), FT Başlama: 24h (<48h), DAT+ -> 3 Risk Faktörü!
+const rebHighRisk = evaluatePhototherapyReboundRisk({
+  currentTsb: 12.0,
+  currentAgeHours: 48,
+  phototherapyThreshold: 15.0,
+  gestationalWeeks: 36,
+  phototherapyStartAgeHours: 24,
+  hasIsoimmuneHemolysis: true
+});
+assert.strictEqual(rebHighRisk.isHighReboundRisk, true);
+assert.strictEqual(rebHighRisk.riskTier, 'HIGH_REBOUND_RISK');
+assert.strictEqual(rebHighRisk.reboundFollowUpHours, '6–12 saat');
+assert.ok(rebHighRisk.protocol.includes('6–12 saat'));
+assert.ok(rebHighRisk.protocol.includes('Taburculuk ertelenmeli'));
+assert.strictEqual(rebHighRisk.riskFactors.isEarlyInitiation, true);
+assert.strictEqual(rebHighRisk.riskFactors.isPositiveDatOrHemolysis, true);
+assert.strictEqual(rebHighRisk.riskFactors.isNearTermGestationalAge, true);
+
+// 26.11 TC-DC-009: Düşük Rebound Riski Tabakalandırması (AAP 2022 KAS 15)
+// Bebek 39w (>=38w), FT Başlama: 60h (>=48h), DAT negatif, geniş marj
+const rebLowRisk = evaluatePhototherapyReboundRisk({
+  currentTsb: 14.0,
+  currentAgeHours: 84,
+  phototherapyThreshold: 19.0,
+  gestationalWeeks: 39,
+  phototherapyStartAgeHours: 60,
+  hasIsoimmuneHemolysis: false
+});
+assert.strictEqual(rebLowRisk.isHighReboundRisk, false);
+assert.strictEqual(rebLowRisk.riskTier, 'LOW_REBOUND_RISK');
+assert.strictEqual(rebLowRisk.reboundFollowUpHours, '24–48 saat (1–2 gün)');
+assert.ok(rebLowRisk.protocol.includes('24–48 saat'));
+assert.ok(rebLowRisk.protocol.includes('DÜŞÜK REBOUND RİSKİ'));
+
+// 26.12 TC-DC-010: TcB Güvenlik Kalkanı Triggers (AAP 2022 KAS 6)
+// A. Son 24 saatte fototerapi (Cilt beyazlaması / Skin bleaching)
+const tcbPriorPt = evaluateTcBValidity({
+  measurementType: 'TcB',
+  totalBilirubin: 10.0,
+  phototherapyThreshold: 18.0,
+  ageHours: 48,
+  gestationalWeeks: 39,
+  priorPhototherapyWithin24h: true
+});
+assert.strictEqual(tcbPriorPt.trigger, 'PRIOR_PHOTOTHERAPY');
+assert.strictEqual(tcbPriorPt.isTsbMandatory, true);
+assert.ok(tcbPriorPt.warning && tcbPriorPt.warning.includes('cilt beyazlaması'));
+
+// B. TcB >= 15.0 mg/dL (Cihaz doygunluğu)
+const tcbHighSat = evaluateTcBValidity({
+  measurementType: 'TcB',
+  totalBilirubin: 15.5,
+  phototherapyThreshold: 20.0,
+  ageHours: 72,
+  gestationalWeeks: 40
+});
+assert.strictEqual(tcbHighSat.trigger, 'TCB_HIGH_SATURATION');
+assert.strictEqual(tcbHighSat.isTsbMandatory, true);
+assert.ok(tcbHighSat.warning && tcbHighSat.warning.includes('doygunluk'));
+
+// C. Yaşamın ilk 12 saati
+const tcbEarly = evaluateTcBValidity({
+  measurementType: 'TcB',
+  totalBilirubin: 6.0,
+  phototherapyThreshold: 10.0,
+  ageHours: 8,
+  gestationalWeeks: 38
+});
+assert.strictEqual(tcbEarly.trigger, 'FIRST_12H');
+assert.strictEqual(tcbEarly.isTsbMandatory, true);
+
+// D. Prematüre bebek (<35 hafta)
+const tcbPreterm = evaluateTcBValidity({
+  measurementType: 'TcB',
+  totalBilirubin: 8.0,
+  phototherapyThreshold: 12.0,
+  ageHours: 48,
+  gestationalWeeks: 33
+});
+assert.strictEqual(tcbPreterm.trigger, 'PRETERM');
+assert.strictEqual(tcbPreterm.isTsbMandatory, true);
+
+// E. Güvenli TcB (Eşiğin >3.0 mg/dL altında ve <15.0 mg/dL)
+const tcbSafe = evaluateTcBValidity({
+  measurementType: 'TcB',
+  totalBilirubin: 10.0,
+  phototherapyThreshold: 18.5,
+  ageHours: 72,
+  gestationalWeeks: 40
+});
+assert.strictEqual(tcbSafe.trigger, 'NONE');
+assert.strictEqual(tcbSafe.isTsbMandatory, false);
+assert.strictEqual(tcbSafe.isValidForTreatmentDecision, true);
+
+console.log('✓ Post-discharge Delta Model, TcB-to-TSB Validation & Rebound Monitoring verified (100% parity with Dosya 4)');
+
+console.log('\n🎉 ALL 26 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+
+
+
+
+
+
+
+
 
 

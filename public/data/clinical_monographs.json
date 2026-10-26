@@ -29,7 +29,130 @@
     "hepaticAdjustment": "Ağır karaciğer yetmezliği ve akut aktif hepatitte KONTRENDİKE; hafif-orta kronik karaciğer hastalığında maksimum 2 g/gün.",
     "pregnancyLactation": "Gebelik: Güvenli (tüm trimesterlerde ilk tercih analjezik/antipiretik; en düşük etkin doz ve en kısa süreyle). Emzirme: Uyumlu.",
     "contraindications": "Ağır hepatoselüler yetmezlik, dekompanse aktif karaciğer hastalığı, parasetamole aşırı duyarlılık.",
-    "clinicalPearls": "IV form 15 dakikada infüze edilir; <10 kg bebekte 10 kat doz hatasını önlemek için flakon doğrudan asılmaz, hesaplanan hacim enjektöre çekilerek verilir. Akut toksisitede (>150 mg/kg veya >7.5–10 g) spesifik antidot N-Asetilsistein'dir (Rumack-Matthew nomogramı)."
+    "clinicalPearls": "IV form 15 dakikada infüze edilir; <10 kg bebekte 10 kat doz hatasını önlemek için flakon doğrudan asılmaz, hesaplanan hacim enjektöre çekilerek verilir. Akut toksisitede (>150 mg/kg veya >7.5–10 g) spesifik antidot N-Asetilsistein'dir (Rumack-Matthew nomogramı).",
+    "drug_id": "paracetamol",
+    "generic_name": "Parasetamol (Asetaminofen)",
+    "atc_code": "N02BE01",
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte en güvenli analjezik ve antipiretiktir.",
+        "second_trimester": "Kısa süreli en düşük etkili dozda güvenle kullanılır.",
+        "third_trimester": "NSAİİ aksine duktus arteriozusu kapatmaz; 3. trimesterde ilk tercihtir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok az geçer; emzirmede ilk basamak altın standart analjeziktir.",
+        "relative_infant_dose_percent": 1.8,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Hepatotoksisite: Tek dozda 1000 mg ve günlük 4000 mg tavanının aşılması akut karaciğer nekrozuna yol açar."
+      ],
+      "absolute_contraindications": [
+        "Ağır karaciğer yetmezliği veya akut aktif hepatit."
+      ],
+      "neonatal_specific_notes": "Prematüre ve term yenidoğanlarda IV formda 10 kat dozaj hesaplama hatalarına karşı mg ve mL doğrulaması zorunludur. ≤10 kg için tek doz 7.5 mg/kg tavanına uyulmalıdır."
+    },
+    "formulations": [
+      {
+        "form_name": "Parasetamol 120 mg / 5 mL Süspansiyon (Parol / Calpol)",
+        "concentration_mg_per_ml": 24.0,
+        "concentration_display": "120 mg / 5 mL (24 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "Parasetamol 250 mg / 5 mL Süspansiyon (Parol Plus / Calpol 6 Plus)",
+        "concentration_mg_per_ml": 50.0,
+        "concentration_display": "250 mg / 5 mL (50 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Parasetamol 10 mg / 1 mL IV İnfüzyonluk Çözelti (100 mL)",
+        "concentration_mg_per_ml": 10.0,
+        "concentration_display": "10 mg/mL (1000 mg/100 mL)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          4,
+          6
+        ],
+        "max_daily_dose_mg": 4000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Ateş ve Akut Hafif-Orta Ağrı (Oral)",
+          "min_age_months": 0.0,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 15.0,
+          "interval_hours": 6,
+          "max_daily_dose_mg_per_kg": 60.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 4000.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Post-operatif ve Akut Ağrı (IV İnfüzyon ≤10 kg)",
+          "min_age_months": 0.0,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 7.5,
+          "interval_hours": 6,
+          "max_daily_dose_mg_per_kg": 30.0,
+          "absolute_max_single_dose_mg": 75.0,
+          "absolute_max_daily_dose_mg": 300.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Post-operatif ve Akut Ağrı (IV İnfüzyon >10 kg)",
+          "min_age_months": 12.0,
+          "min_weight_kg": 10.0,
+          "dose_per_kg_single": 15.0,
+          "interval_hours": 6,
+          "max_daily_dose_mg_per_kg": 60.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 2000.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 10.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 9.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "Doz aralığı en az 8 saate açılmalıdır (q8h)."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Ağır karaciğer yetmezliğinde kesinlikle KONTRENDİKEDİR."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "FDA Acetaminophen Overdose & Labeling Rules",
+        "TİTCK Parasetamol KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "dexketoprofen",
@@ -90,7 +213,121 @@
     "hepaticAdjustment": "Hafif-orta yetmezlikte dikkatli ve düşük dozda; ağır karaciğer yetmezliğinde (Child-Pugh C) KONTRENDİKE.",
     "pregnancyLactation": "Gebelik: ≥28. haftada (3. trimester) duktus arteriozusun erken kapanması, fetal pulmoner hipertansiyon ve oligohidramniyoz nedeniyle KESİN KONTRENDİKE; ≥20. haftada oligohidramniyoz riski. Emzirme: Uyumlu (anne sütüne geçişi minimaldir, ilk tercih NSAİİ).",
     "contraindications": "Aktif peptik ülser/GİS kanaması, koroner arter bypass greft (KABG) perioperatif ağrısı, eGFR <30 mL/dk, ağır kalp/karaciğer yetmezliği, ASA/NSAİİ aşırı duyarlılığı, 3. trimester gebelik.",
-    "clinicalPearls": "Suçiçeği (varisella) ve dehidrate akut gastroenteritli çocuklarda nekrotizan fasiit ve prerenal ABH riski nedeniyle kaçınılmalıdır. Kardiyoprotektif düşük doz Aspirin'den en az 2 saat sonra (veya 8 saat önce) alınmalıdır; aksi halde COX-1 yarışmasıyla antiagregan etkiyi bloke eder."
+    "clinicalPearls": "Suçiçeği (varisella) ve dehidrate akut gastroenteritli çocuklarda nekrotizan fasiit ve prerenal ABH riski nedeniyle kaçınılmalıdır. Kardiyoprotektif düşük doz Aspirin'den en az 2 saat sonra (veya 8 saat önce) alınmalıdır; aksi halde COX-1 yarışmasıyla antiagregan etkiyi bloke eder.",
+    "drug_id": "ibuprofen",
+    "generic_name": "İbuprofen",
+    "atc_code": "M01AE01",
+    "formulations": [
+      {
+        "form_name": "İbuprofen 100 mg / 5 mL Süspansiyon (İbufen / Dolven / Pedifen)",
+        "concentration_mg_per_ml": 20.0,
+        "concentration_display": "100 mg / 5 mL (20 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "İbuprofen 400 mg Film Tablet",
+        "concentration_mg_per_ml": 400.0,
+        "concentration_display": "400 mg tablet",
+        "measuring_device": "none",
+        "storage_condition": "Oda sıcaklığında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 400.0,
+        "standard_interval_hours": [
+          8
+        ],
+        "max_daily_dose_mg": 1200.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Ateş ve Enflamasyon (≥3 Ay ve ≥5 kg)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 5.0,
+          "dose_per_kg_single": 10.0,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 30.0,
+          "absolute_max_single_dose_mg": 400.0,
+          "absolute_max_daily_dose_mg": 1200.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Juvenil İdiyopatik Artrit (JIA)",
+          "min_age_months": 6.0,
+          "min_weight_kg": 7.0,
+          "dose_per_kg_single": 10.0,
+          "interval_hours": 6,
+          "max_daily_dose_mg_per_kg": 40.0,
+          "absolute_max_single_dose_mg": 400.0,
+          "absolute_max_daily_dose_mg": 1200.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 30.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz; dehidrate çocukta kullanılmamalıdır."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 29.9,
+          "action_type": "CONTRAINDICATED",
+          "adjustment_instruction": "eGFR <30 mL/dk olan olgularda nefrotoksisite riski nedeniyle KONTRENDİKEDİR."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Ağır karaciğer yetmezliğinde kontrendikedir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Düşük ve kardiyak defekt riski bildirilmiştir; zorunlu değilse kaçınılmalıdır.",
+        "second_trimester": "Kısa süreli kullanılabilir. 20. haftadan sonra fetal böbrek disfonksiyonu ve oligohidramniyos yapabilir.",
+        "third_trimester": "KESİN KONTRENDİKE: Ductus arteriosus vaktinden önce kapanması, persistan pulmoner hipertansiyon ve doğumun gecikmesi riski!"
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne ihmal edilebilir oranda geçer; emzirme ile uyumludur.",
+        "relative_infant_dose_percent": 0.6,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Kardiyovasküler trombotik olaylar ve gastrointestinal kanama, ülserasyon veya perforasyon riski."
+      ],
+      "absolute_contraindications": [
+        "<3 ay veya <5 kg infantlar",
+        "Aktif gastrointestinal kanama veya peptik ülser",
+        "Ağır böbrek veya kalp yetmezliği",
+        "Gebeliğin 3. trimesteri (20. haftadan itibaren)"
+      ],
+      "neonatal_specific_notes": "Oral ibuprofen süspansiyon <3 ay veya <5 kg bebeklerde KESİN KONTRENDİKEDİR (3-6 ay veya 5-7 kg arası TİTCK ruhsat kısıtı taşır).",
+      "critical_drug_interactions": [
+        {
+          "interacting_drug": "ACE İnhibitörleri / ARB + Diüretikler (Triple Whammy)",
+          "severity": "MAJOR",
+          "clinical_management": "Akut böbrek yetmezliği riski nedeniyle birlikte kullanılmamalı veya sıkı hidrasyon ve eGFR takibi yapılmalıdır."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "FDA NSAID Warning: Fetal Renal Dysfunction",
+        "TİTCK İbuprofen KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "diclofenac",
@@ -272,7 +509,95 @@
     "hepaticAdjustment": "CYP3A4 ile karaciğerde metabolize olur; ağır karaciğer yetmezliğinde yarı ömür uzar, başlangıç dozu azaltılıp doz aralığı açılmalıdır.",
     "pregnancyLactation": "Gebelik: Uzun süreli kullanımda neonatal yoksunluk, doğum eyleminde neonatal solunum depresyonu riski (nalokson hazır bulundurulmalıdır). Emzirme: Kısa süreli tek IV doz uyumlu; transdermal kronik kullanım önerilmez.",
     "contraindications": "Opioid-naif hastalarda ve akut/postoperatif ağrıda transdermal/bukkal fentanil kullanımı KESİN KONTRENDİKEDİR; ağır solunum depresyonu, MAO inhibitörü kullanımı (son 14 gün).",
-    "clinicalPearls": "Kırmızı reçeteye tabidir. Hızlı IV puşe uygulaması göğüs duvarı rijiditesine ('Wooden Chest Syndrome' — balon-valf-maske ile bile havalandırılamama!) yol açar; yavaş verilmeli, rijiditede Nalokson veya nöromüsküler blokör (Roküronyum) uygulanmalıdır. Flaster üzerine ısıtıcı ped/sıcak su torbası konması veya yüksek ateş, emilimi katlayarak ölümcül aşırı doza neden olur! SSRI/SNRI/MAOI ile Serotonin Sendromu riski taşır."
+    "clinicalPearls": "Kırmızı reçeteye tabidir. Hızlı IV puşe uygulaması göğüs duvarı rijiditesine ('Wooden Chest Syndrome' — balon-valf-maske ile bile havalandırılamama!) yol açar; yavaş verilmeli, rijiditede Nalokson veya nöromüsküler blokör (Roküronyum) uygulanmalıdır. Flaster üzerine ısıtıcı ped/sıcak su torbası konması veya yüksek ateş, emilimi katlayarak ölümcül aşırı doza neden olur! SSRI/SNRI/MAOI ile Serotonin Sendromu riski taşır.",
+    "drug_id": "fentanyl",
+    "generic_name": "Fentanil",
+    "atc_code": "N01AH01",
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Hızlı IV puşede ölümcül göğüs duvarı rijititesi (wooden chest syndrome) ve solunum durması riski; yavaş titre edilmeli ve kas gevşetici/Nalokson hazır tutulmalıdır."
+      ],
+      "absolute_contraindications": [
+        "Akut ağır bronşiyal astım",
+        "Solunum depresyonu"
+      ],
+      "neonatal_specific_notes": "Yenidoğan entübasyonunda mikrogram (1-2 mcg/kg) hassasiyeti şarttır; 10 kat doz aşımını önlemek için SF ile 10 mcg/mL konsantrasyona seyreltilerek çekilmelidir."
+    },
+    "formulations": [
+      {
+        "form_name": "Fentanil 100 mcg / 2 mL Ampul",
+        "concentration_mg_per_ml": 0.05,
+        "concentration_display": "50 mcg/mL (100 mcg/2 mL)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak saklayınız (Kırmızı Reçete)"
+      },
+      {
+        "form_name": "Fentanil 500 mcg / 10 mL Flakon",
+        "concentration_mg_per_ml": 0.05,
+        "concentration_display": "50 mcg/mL (500 mcg/10 mL)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 0.1,
+        "standard_interval_hours": [
+          1
+        ],
+        "max_daily_dose_mg": 0.5
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Ağrılı Girişim / Prosedürel Sedasyon (IV)",
+          "min_age_months": 0.0,
+          "min_weight_kg": 1.0,
+          "dose_per_kg_single": 0.0015,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 0.005,
+          "absolute_max_single_dose_mg": 0.05,
+          "absolute_max_daily_dose_mg": 0.2,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Karaciğerde metabolize olur; böbrek yetmezliğinde morfine göre daha güvenlidir."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğer yetmezliğinde klerens azalır; titrasyonla verilmelidir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Acil anestezi ve cerrahide kullanılabilir.",
+        "second_trimester": "Güvenle titre edilir.",
+        "third_trimester": "Doğuma yakın kullanımda yenidoğan solunum depresyonuna dikkat edilmelidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne çok az miktarda geçer; emzirmeden önce birkaç saat beklenmesi önerilir.",
+        "relative_infant_dose_percent": 2.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "metadata": {
+      "source_documents": [
+        "AAP Pediatric Sedation Guidelines",
+        "TİTCK Fentanil KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "thiocolchicoside",
@@ -390,7 +715,128 @@
     "hepaticAdjustment": "Daha önce ko-amoksiklava bağlı kolestatik sarılık/hepatit öyküsü olanlarda KONTRENDİKE; karaciğer hastalığında dikkatli kullanılmalı ve KCFT izlenmelidir.",
     "pregnancyLactation": "Gebelik: Güvenli (ancak preterm membran rüptürü [PPROM] olgularında yenidoğanda nekrotizan enterokolit [NEK] riskini artırdığı için PPROM'da kaçınılır!). Emzirme: Uyumlu.",
     "contraindications": "Penisilin/beta-laktam aşırı duyarlılığı (anafilaksi), geçmişte amoksisilin-klavulanata bağlı kolestatik sarılık/karaciğer disfonksiyonu.",
-    "clinicalPearls": "İki adet 625 mg (500/125 mg) tablet toplam 250 mg klavulanat içerdiğinden bir adet 1000 mg (875/125 mg) tablete EŞDEĞER DEĞİLDİR (şiddetli ishal yapar!). Yemeğin hemen başında alınması GİS intoleransını azaltır ve klavulanat emilimini optimize eder. EBV (Enfeksiyöz Mononükleoz) varlığında %80–90 non-alerjik makülopapüler döküntü yapar."
+    "clinicalPearls": "İki adet 625 mg (500/125 mg) tablet toplam 250 mg klavulanat içerdiğinden bir adet 1000 mg (875/125 mg) tablete EŞDEĞER DEĞİLDİR (şiddetli ishal yapar!). Yemeğin hemen başında alınması GİS intoleransını azaltır ve klavulanat emilimini optimize eder. EBV (Enfeksiyöz Mononükleoz) varlığında %80–90 non-alerjik makülopapüler döküntü yapar.",
+    "drug_id": "amoxicillin-clavulanate",
+    "generic_name": "Amoksisilin + Klavulanik Asit",
+    "atc_code": "J01CR02",
+    "formulations": [
+      {
+        "form_name": "Augmentin BID 200/28 mg Oral Süspansiyon (7:1)",
+        "concentration_mg_per_ml": 45.6,
+        "concentration_display": "200 mg Amoksisilin + 28.5 mg Klavulanat / 5 mL",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 7,
+        "storage_condition": "Sulandırıldıktan sonra 2-8C buzdolabında 7 gün saklayınız"
+      },
+      {
+        "form_name": "Augmentin BID 400/57 mg Oral Süspansiyon (7:1 - Forte)",
+        "concentration_mg_per_ml": 91.4,
+        "concentration_display": "400 mg Amoksisilin + 57 mg Klavulanat / 5 mL",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 7,
+        "storage_condition": "Sulandırıldıktan sonra 2-8C buzdolabında 7 gün saklayınız"
+      },
+      {
+        "form_name": "Augmentin ES 600/42.9 mg Oral Süspansiyon (14:1)",
+        "concentration_mg_per_ml": 128.5,
+        "concentration_display": "600 mg Amoksisilin + 42.9 mg Klavulanat / 5 mL",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 10,
+        "storage_condition": "Sulandırıldıktan sonra 2-8C buzdolabında 10 gün saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 2000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Hafif-Orta Enfeksiyonlar (7:1 BID Formu)",
+          "min_age_months": 2.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 20.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 45.0,
+          "absolute_max_single_dose_mg": 875.0,
+          "absolute_max_daily_dose_mg": 1750.0,
+          "weight_metric_in_obesity": "IBW"
+        },
+        {
+          "indication": "Dirençli Akut Otitis Media / Sinüzit (14:1 ES Formu)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 5.0,
+          "dose_per_kg_single": 45.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 90.0,
+          "absolute_max_single_dose_mg": 2000.0,
+          "absolute_max_daily_dose_mg": 4000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 30.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz ayarlaması gerekmez."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 29.9,
+          "action_type": "CONTRAINDICATED",
+          "adjustment_instruction": "eGFR <30 olan çocuklarda 14:1 ES veya BID 875/125 formları önerilmez; standart formülasyona geçilmelidir."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Klavulanat kolestaz yapabilir; karaciğer fonksiyonları izlenmelidir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gerekli olmadıkça kaçınılmalıdır.",
+        "second_trimester": "Kullanılabilir.",
+        "third_trimester": "Kullanılabilir; preterm erken membran rüptüründe profilaktik kullanım nekrotizan enterokolit riskini artırabilir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne çok az miktarda geçer; infantta diyare ve kandidiyazis izlenmelidir.",
+        "relative_infant_dose_percent": 0.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Penisilin ve beta-laktamlara anafilaksi",
+        "Amoksisilin-klavulanat ilişkili kolestatik sarılık veya hepatik disfonksiyon öyküsü",
+        "<3 ay bebekler (14:1 ES için)"
+      ],
+      "neonatal_specific_notes": "7:1 formülasyonu ile 90 mg/kg yüksek doz verilmesi klavulanat toksisitesine ve şiddetli ozmotik diyareye yol açar! Yüksek doz (80-90 mg/kg) için 14:1 (ES) şarttır.",
+      "critical_drug_interactions": [
+        {
+          "interacting_drug": "Metotreksat",
+          "severity": "MAJOR",
+          "clinical_management": "Böbrek tübüler sekresyonunu bloke ederek metotreksat klerensini azaltır; toksisiteyi önlemek için birlikte verilmemelidir."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "AAP Acute Otitis Media Guidelines",
+        "TİTCK Augmentin KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "amoxicillin",
@@ -418,7 +864,117 @@
     "hepaticAdjustment": "Karaciğer yetmezliğinde spesifik doz azaltımı gerekmez.",
     "pregnancyLactation": "Gebelik: Güvenli (tüm trimesterlerde ilk tercih penisilinlerden; gebe asemptomatik bakteriürisi ve klamidyada da kullanılır). Emzirme: Uyumlu.",
     "contraindications": "Penisilinlere veya diğer beta-laktamlara karşı ciddi erken tip aşırı duyarlılık (anafilaksi, anjiyoödem, SJS).",
-    "clinicalPearls": "AGBHS (Strep A) beta-laktamaz üretmediğinden akut streptokoksik tonsillofarenjitte klavulanat eklenmesine GEREK YOKTUR; saf Amoksisilin dar spektrumu ve çok daha düşük ishal oranıyla altın standarttır. Besinlerden etkilenmez (aç/tok alınabilir). EBV mononükleozunda yaygın döküntü yapar."
+    "clinicalPearls": "AGBHS (Strep A) beta-laktamaz üretmediğinden akut streptokoksik tonsillofarenjitte klavulanat eklenmesine GEREK YOKTUR; saf Amoksisilin dar spektrumu ve çok daha düşük ishal oranıyla altın standarttır. Besinlerden etkilenmez (aç/tok alınabilir). EBV mononükleozunda yaygın döküntü yapar.",
+    "drug_id": "amoxicillin",
+    "generic_name": "Amoksisilin",
+    "atc_code": "J01CA04",
+    "formulations": [
+      {
+        "form_name": "Amoksisilin 250 mg / 5 mL Süspansiyon (Largopen / Alfoxil)",
+        "concentration_mg_per_ml": 50.0,
+        "concentration_display": "250 mg / 5 mL (50 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 14,
+        "storage_condition": "Sulandırıldıktan sonra 2-8C buzdolabında 14 gün saklayınız"
+      },
+      {
+        "form_name": "Amoksisilin 500 mg / 5 mL Süspansiyon (Largopen Forte)",
+        "concentration_mg_per_ml": 100.0,
+        "concentration_display": "500 mg / 5 mL (100 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 14,
+        "storage_condition": "Sulandırıldıktan sonra 2-8C buzdolabında 14 gün saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 500.0,
+        "standard_interval_hours": [
+          8
+        ],
+        "max_daily_dose_mg": 3000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Hafif-Orta Solunum Yolu Enfeksiyonu",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 20.0,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 50.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 2000.0,
+          "weight_metric_in_obesity": "IBW"
+        },
+        {
+          "indication": "Akut Otitis Media / Yüksek Doz Pnömokok",
+          "min_age_months": 2.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 45.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 90.0,
+          "absolute_max_single_dose_mg": 1500.0,
+          "absolute_max_daily_dose_mg": 3000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 30.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz."
+        },
+        {
+          "egfr_min": 10.0,
+          "egfr_max": 29.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "Doz aralığı 12 saate açılır (q12h)."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 9.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "Doz aralığı 24 saate açılır (q24h)."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Doz ayarlaması gerekmez."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenle kullanılır; ilk basamak antibiyotiktir.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne çok az miktarda geçer; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 0.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Penisilin grubu antibiyotiklere anafilaksi öyküsü"
+      ],
+      "neonatal_specific_notes": "AOM protokolünde yüksek doz (80-90 mg/kg) dirençli pnömokok suşlarını eradike etmek için önerilir."
+    },
+    "metadata": {
+      "source_documents": [
+        "AAP AOM Guidelines",
+        "TİTCK Largopen KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "ampicillin-sulbactam",
@@ -480,7 +1036,117 @@
     "hepaticAdjustment": "Esas olarak böbreklerden değişmeden atılır; karaciğer yetmezliğinde doz ayarı gerekmez.",
     "pregnancyLactation": "Gebelik: Güvenli (tüm trimesterlerde gebelik İYE ve solunum enfeksiyonlarında güvenle kullanılır). Emzirme: Uyumlu.",
     "contraindications": "Sefalosporin aşırı duyarlılığı veya penisilinlere/diğer beta-laktamlara karşı anafilaksi öyküsü.",
-    "clinicalPearls": "Oral ön-ilaç formu (sefuroksim aksetil) aç karnına alındığında biyoyararlanımı ~%35 iken, YEMEKTEN HEMEN SONRA tok alındığında ~%52–60'a yükselir! Film tabletler çok acı olduğu ve biyoyararlanımı bozulduğu için ezilmemeli/bölünmemelidir; yutma güçlüğünde süspansiyon seçilmelidir (tablet ile süspansiyon mg-mg biyoeşdeğer değildir)."
+    "clinicalPearls": "Oral ön-ilaç formu (sefuroksim aksetil) aç karnına alındığında biyoyararlanımı ~%35 iken, YEMEKTEN HEMEN SONRA tok alındığında ~%52–60'a yükselir! Film tabletler çok acı olduğu ve biyoyararlanımı bozulduğu için ezilmemeli/bölünmemelidir; yutma güçlüğünde süspansiyon seçilmelidir (tablet ile süspansiyon mg-mg biyoeşdeğer değildir).",
+    "drug_id": "cefuroxime",
+    "generic_name": "Sefuroksim Aksetil",
+    "atc_code": "J01DC02",
+    "formulations": [
+      {
+        "form_name": "Zinnat 125 mg / 5 mL Pediatrik Süspansiyon",
+        "concentration_mg_per_ml": 25.0,
+        "concentration_display": "125 mg / 5 mL (25 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 10,
+        "storage_condition": "Sulandırıldıktan sonra 2-8C buzdolabında 10 gün saklayınız"
+      },
+      {
+        "form_name": "Zinnat 250 mg / 5 mL Pediatrik Forte Süspansiyon",
+        "concentration_mg_per_ml": 50.0,
+        "concentration_display": "250 mg / 5 mL (50 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 10,
+        "storage_condition": "Sulandırıldıktan sonra 2-8C buzdolabında 10 gün saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 500.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 1000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Üst ve Alt Solunum Yolu Enfeksiyonları",
+          "min_age_months": 3.0,
+          "min_weight_kg": 5.0,
+          "dose_per_kg_single": 10.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 30.0,
+          "absolute_max_single_dose_mg": 500.0,
+          "absolute_max_daily_dose_mg": 1000.0,
+          "weight_metric_in_obesity": "IBW"
+        },
+        {
+          "indication": "Akut Otitis Media (AOM)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 5.0,
+          "dose_per_kg_single": 15.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 30.0,
+          "absolute_max_single_dose_mg": 500.0,
+          "absolute_max_daily_dose_mg": 1000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 20.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz (q12h)."
+        },
+        {
+          "egfr_min": 10.0,
+          "egfr_max": 19.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "Doz aralığı 24 saate uzatılır (q24h)."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 9.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "48 saatte bir tek doz uygulanır (q48h)."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Doz ayarlaması gerekmez."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenle kullanılır.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne çok az miktarda geçer; emzirme ile uyumludur.",
+        "relative_infant_dose_percent": 1.0,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Sefalosporin antibiyotiklere anafilaksi"
+      ],
+      "neonatal_specific_notes": "<3 ay bebeklerde güvenlilik ve etkinlik verisi sınırlıdır; emilimini artırmak için yemeklerle birlikte verilmelidir."
+    },
+    "metadata": {
+      "source_documents": [
+        "AAP Red Book Cefuroxime",
+        "TİTCK Zinnat KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "cefdinir",
@@ -538,7 +1204,120 @@
     "hepaticAdjustment": "Tek başına karaciğer yetmezliğinde doz ayarı gerekmez; kombine hepatorenal yetmezlikte maks 2 g/gün.",
     "pregnancyLactation": "Gebelik: Güvenli (doğuma yakın peripartum uygulamada yenidoğanda hiperbilirübinemi açısından dikkat). Emzirme: Uyumlu (düşük miktarda geçer).",
     "contraindications": "YENİDOĞANLARDA (<28 gün; prematürelerde postmenstrüel 41. haftaya kadar) hiperbilirübinemi/kernikterus riski ve IV kalsiyum alan her yaştan yenidoğanda ÖLÜMCÜL KALSİYUM-SEFTRİAKSON PRESİPİTASYONU nedeniyle KESİN KONTRENDİKEDİR! Sefalosporin/ağır penisilin anafilaksisi; lidokain çözücülü IM formun IV verilmesi KESİN KONTRENDİKEDİR.",
-    "clinicalPearls": "Yenidoğan sepsisi/menenjitinde güvenli alternatif SEFOTAKSİM (veya Ampisilin + Gentamisin)'dir. Hiçbir yaş grubunda Ringer Laktat, kalsiyum glukonat veya TPN gibi kalsiyumlu IV sıvılarla aynı Y-hattından veya eşzamanlı karıştırılmaz! Yüksek doz/uzun süreli kullanımda safra kesesinde geri dönüşümlü 'biliyer çamur / psödolitiyazis' ve otoimmün hemolitik anemi yapabilir. Pseudomonas aeruginosa'ya ETKİSİZDİR."
+    "clinicalPearls": "Yenidoğan sepsisi/menenjitinde güvenli alternatif SEFOTAKSİM (veya Ampisilin + Gentamisin)'dir. Hiçbir yaş grubunda Ringer Laktat, kalsiyum glukonat veya TPN gibi kalsiyumlu IV sıvılarla aynı Y-hattından veya eşzamanlı karıştırılmaz! Yüksek doz/uzun süreli kullanımda safra kesesinde geri dönüşümlü 'biliyer çamur / psödolitiyazis' ve otoimmün hemolitik anemi yapabilir. Pseudomonas aeruginosa'ya ETKİSİZDİR.",
+    "drug_id": "ceftriaxone",
+    "generic_name": "Seftriakson",
+    "atc_code": "J01DD04",
+    "formulations": [
+      {
+        "form_name": "Seftriakson 500 mg IM/IV Flakon",
+        "concentration_mg_per_ml": 100.0,
+        "concentration_display": "500 mg / 5 mL (100 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "Seftriakson 1000 mg IM/IV Flakon",
+        "concentration_mg_per_ml": 100.0,
+        "concentration_display": "1000 mg / 10 mL (100 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      }
+    ],
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenle kullanılabilir (Kategori B).",
+        "second_trimester": "Gebelikte güvenlidir.",
+        "third_trimester": "Gebelikte güvenlidir; doğum öncesi kalsiyumlu IV solüsyonlarla temas ettirilmemelidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok düşük oranda geçer; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 1.2,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "<=28 günlük yenidoğanlarda kalsiyum içeren IV solüsyonlarla (Ringer Laktat, TPN) birlikte verilmesi akciğer ve böbreklerde ölümcül kalsiyum-seftriakson kristal presipitasyonuna yol açar! KESİN KONTRENDİKE!"
+      ],
+      "absolute_contraindications": [
+        "<=28 günlük yenidoğanlar",
+        "Kalsiyum içeren IV solüsyonlarla eşzamanlı infüzyon",
+        "Hiperbilirubinemik sarılıklı yenidoğanlar (kernikterus riski)"
+      ],
+      "neonatal_specific_notes": "Bilirubini albüminden ayırarak kernikterus riskini artırır; yenidoğanda sefotaksim tercih edilmelidir.",
+      "critical_drug_interactions": [
+        {
+          "interacting_drug": "Kalsiyum Glukonat / Kalsiyum Klorür / Ringer Laktat",
+          "severity": "MAJOR",
+          "clinical_management": "<=28 günlük yenidoğanda birlikte kullanımı KESİN KONTRENDİKEDİR."
+        }
+      ]
+    },
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          24
+        ],
+        "max_daily_dose_mg": 4000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Ağır Sepsis / Pnömoni (>28 Gün)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 50.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 75.0,
+          "absolute_max_single_dose_mg": 2000.0,
+          "absolute_max_daily_dose_mg": 2000.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Bakteriyel Menenjit (>28 Gün)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 50.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 100.0,
+          "absolute_max_single_dose_mg": 2000.0,
+          "absolute_max_daily_dose_mg": 4000.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 10.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz; karaciğer yetmezliği eşlik etmiyorsa ayarlama gerekmez."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 9.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Günlük maksimum doz 2000 mg ile sınırlandırılmalıdır."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Ağır karaciğer yetmezliği renal yetmezlikle kombine ise günlük doz 2 g ile sınırlandırılmalıdır."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "FDA Ceftriaxone Safety Warning",
+        "TİTCK Seftriakson KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "piperacillin-tazobactam",
@@ -625,7 +1404,103 @@
     "hepaticAdjustment": "Böbrek fonksiyonu normal olan hafif-orta karaciğer yetmezliğinde doz ayarı gerekmeyebilir ancak kolestatik hepatit öyküsünde KONTRENDİKE; ağır hepatorenal yetmezlikte kaçınılır.",
     "pregnancyLactation": "Gebelik: 1. trimesterde spontan abortus ve kardiyovasküler anomali sinyalleri nedeniyle ÖNERİLMEZ (makrolid gerektiğinde Azitromisin tercih edilir!). Emzirme: Düşük miktarda geçer; yenidoğanda infantil hipertrofik pilor stenozu riski açısından dikkat.",
     "contraindications": "SİMVASTATİN veya LOVASTATİN ile eşzamanlı kullanım (ağır rabdomiyoliz!), böbrek/karaciğer yetmezliği olan hastada KOLŞİSİN kullanımı (ölümcül toksisite!), konjenital/edinsel uzun QT veya ventriküler aritmi öyküsü, hipokalemi/hipomagnezemi, ergotamin/pimozid/tikagrelor/ivabradin kullanımı.",
-    "clinicalPearls": "GÜÇLÜ CYP3A4 VE P-GP İNHİBİTÖRÜDÜR (KRİTİK GÜVENLİK UYARISI!): Atorvastatin alan hastada rabdomiyoliz riskini 3–4 kat artırır (antibiyotik süresince statine ara verilmeli veya etkileşimsiz Azitromisin seçilmelidir); kalsiyum kanal blokörleriyle (Amlodipin/Nifedipin/Felodipin) yaşlılarda akut hipotansiyon ve ABH, Varfarin/DOAK'larla kanama, Karbamazepin ile toksisite yapar. Ağızda metalik/acı tat sık görülür."
+    "clinicalPearls": "GÜÇLÜ CYP3A4 VE P-GP İNHİBİTÖRÜDÜR (KRİTİK GÜVENLİK UYARISI!): Atorvastatin alan hastada rabdomiyoliz riskini 3–4 kat artırır (antibiyotik süresince statine ara verilmeli veya etkileşimsiz Azitromisin seçilmelidir); kalsiyum kanal blokörleriyle (Amlodipin/Nifedipin/Felodipin) yaşlılarda akut hipotansiyon ve ABH, Varfarin/DOAK'larla kanama, Karbamazepin ile toksisite yapar. Ağızda metalik/acı tat sık görülür.",
+    "drug_id": "clarithromycin",
+    "generic_name": "Klaritromisin",
+    "atc_code": "J01FA09",
+    "formulations": [
+      {
+        "form_name": "Klacid 125 mg / 5 mL Pediatrik Süspansiyon",
+        "concentration_mg_per_ml": 25.0,
+        "concentration_display": "125 mg / 5 mL (25 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 14,
+        "storage_condition": "Sulandırıldıktan sonra 25C altında oda sıcaklığında 14 gün saklayınız (Buzdolabına KOYMAYINIZ)"
+      },
+      {
+        "form_name": "Klacid 250 mg / 5 mL Pediatrik Forte Süspansiyon",
+        "concentration_mg_per_ml": 50.0,
+        "concentration_display": "250 mg / 5 mL (50 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 14,
+        "storage_condition": "Sulandırıldıktan sonra oda sıcaklığında 14 gün saklayınız (Buzdolabına KOYMAYINIZ)"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 500.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 1000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Solunum Yolu ve Cilt Enfeksiyonları (≥6 Ay)",
+          "min_age_months": 6.0,
+          "min_weight_kg": 6.0,
+          "dose_per_kg_single": 7.5,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 15.0,
+          "absolute_max_single_dose_mg": 500.0,
+          "absolute_max_daily_dose_mg": 1000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 30.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 29.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz %50 azaltılır (günde 1 kez veya yarı doz BID)."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Böbrek fonksiyonu normalse hafif-orta karaciğer yetmezliğinde ayarlama gerekmez; ağır yetmezlikte dikkat edilmelidir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Hayvan çalışmalarında teratojenik risk; gebelikte azitromisin tercih edilmelidir.",
+        "second_trimester": "Alternatif yoksa dikkatle kullanılır.",
+        "third_trimester": "Alternatif yoksa kullanılır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne geçer; emzirmede azitromisin tercih edilir.",
+        "relative_infant_dose_percent": 2.0,
+        "safety_verdict": "USE_WITH_CAUTION"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Güçlü CYP3A4 inhibitörüdür; kolşisin, statinler ve ergotamin ile birlikte kullanımda fatal etkileşim riski."
+      ],
+      "absolute_contraindications": [
+        "Kolşisin ile birlikte böbrek/karaciğer yetmezliğinde kullanım",
+        "QTc uzatan ilaçlarla birlikte kullanım"
+      ],
+      "neonatal_specific_notes": "<6 ay bebeklerde güvenliliği kanıtlanmamıştır (TİTCK ruhsat sınırı ≥6 aydır)."
+    },
+    "metadata": {
+      "source_documents": [
+        "FDA Drug Safety: Clarithromycin CYP3A4 Interactions",
+        "TİTCK Klacid KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "azithromycin",
@@ -655,7 +1530,106 @@
     "hepaticAdjustment": "Ana eliminasyon yolu karaciğer/safradır; ağır karaciğer yetmezliğinde ve kolestatik sarılık öyküsünde KONTRENDİKE / kullanılmamalıdır.",
     "pregnancyLactation": "Gebelik: Güvenli (gebelikte klamidya, atipik pnömoni ve makrolid gerektiren durumlarda İLK TERCİH makroliddir). Emzirme: Uyumlu (yaşamın ilk 2–6 haftasında pilor stenozu bulgularına dikkat).",
     "contraindications": "Makrolid/ketolid aşırı duyarlılığı, önceki azitromisin kullanımına bağlı kolestatik sarılık/karaciğer disfonksiyonu, ağır karaciğer yetmezliği.",
-    "clinicalPearls": "Klaritromisinin aksine CYP3A4 ENZİMİNİ İNHİBE ETMEZ! Statin (Atorvastatin/Simvastatin), KKB, Karbamazepin veya Siklosporin kullanan hastalarda makrolid gerektiğinde güvenli birinci tercihtir. Ancak QTc mesafesini uzatarak Torsades de Pointes tetikleyebilir (Ondansetron, Ketiapin, Haloperidol, Amiodaron, Siprofloksasin veya hipokalemi/hipomagnezemi varlığında bazal EKG önerilir). Uzun doku yarı ömrü (~68 saat) sayesinde 3 günlük kür dokuda 7–10 gün etki sağlar."
+    "clinicalPearls": "Klaritromisinin aksine CYP3A4 ENZİMİNİ İNHİBE ETMEZ! Statin (Atorvastatin/Simvastatin), KKB, Karbamazepin veya Siklosporin kullanan hastalarda makrolid gerektiğinde güvenli birinci tercihtir. Ancak QTc mesafesini uzatarak Torsades de Pointes tetikleyebilir (Ondansetron, Ketiapin, Haloperidol, Amiodaron, Siprofloksasin veya hipokalemi/hipomagnezemi varlığında bazal EKG önerilir). Uzun doku yarı ömrü (~68 saat) sayesinde 3 günlük kür dokuda 7–10 gün etki sağlar.",
+    "drug_id": "azithromycin",
+    "generic_name": "Azitromisin",
+    "atc_code": "J01FA10",
+    "formulations": [
+      {
+        "form_name": "Azitro 200 mg / 5 mL Oral Süspansiyon (Zithromax)",
+        "concentration_mg_per_ml": 40.0,
+        "concentration_display": "200 mg / 5 mL (40 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 10,
+        "storage_condition": "Sulandırıldıktan sonra oda sıcaklığında (25C altında) 10 gün saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 500.0,
+        "standard_interval_hours": [
+          24
+        ],
+        "max_daily_dose_mg": 500.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Toplum Kökenli Atipik Pnömoni / Farenjit (3 Günlük Kür)",
+          "min_age_months": 6.0,
+          "min_weight_kg": 6.0,
+          "dose_per_kg_single": 10.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 10.0,
+          "absolute_max_single_dose_mg": 500.0,
+          "absolute_max_daily_dose_mg": 500.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Atipik Solunum Enfeksiyonu (5 Günlük Kür)",
+          "min_age_months": 6.0,
+          "min_weight_kg": 6.0,
+          "dose_per_kg_single": 10.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 10.0,
+          "absolute_max_single_dose_mg": 500.0,
+          "absolute_max_daily_dose_mg": 500.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 10.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 9.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "eGFR <10 mL/dk ise dikkatle izlenmelidir; doz ayarlaması resmi KÜB de tanımlanmamıştır."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Ağır karaciğer yetmezliğinde safra klerensi azalır; dikkatle kullanılmalıdır."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenle kullanılabilir (Kategori B).",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne geçer; emzirmede güvenli kabul edilir.",
+        "relative_infant_dose_percent": 6.0,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Kardiyak risk: QTc uzaması ve fatal kardiyak aritmi riski (özellikle hipokalemi veya uzun QT öyküsü olanlarda)."
+      ],
+      "absolute_contraindications": [
+        "Makrolid veya ketolid antibiyotiklere aşırı duyarlılık",
+        "Kolestatik sarılık/hepatik yetmezlik öyküsü"
+      ],
+      "neonatal_specific_notes": "<6 haftalık bebeklerde pertussis profilaksisinde infant hipertrofik pilor stenozu (İHPS) riski aileye anlatılmalı ve beslenme sonrası fışkırır tarzda kusma izlenmelidir."
+    },
+    "metadata": {
+      "source_documents": [
+        "CDC Pertussis Post-exposure Prophylaxis",
+        "TİTCK Azitro KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "ciprofloxacin",
@@ -770,7 +1744,109 @@
     "hepaticAdjustment": "Ağır karaciğer yetmezliğinde (Child-Pugh C) klirens %50'den fazla azalır; günlük toplam doz %50 düşürülür (örn. 12 saatte bir 500 mg veya 1x500 mg).",
     "pregnancyLactation": "Gebelik: Semptomatik trikomoniyazis, bakteriyel vajinozis ve ağır anaerobik enfeksiyonlarda kullanılabilir (1. trimesterde tek yüksek doz 2 g yerine bölünmüş doz tercih edilir). Emzirme: Standart bölünmüş dozlarda uyumlu; tek doz 2 g alınırsa 12–24 saat emzirilmemesi önerilebilir.",
     "contraindications": "Nitroimidazol aşırı duyarlılığı, Cockayne sendromu (ölümcül akut karaciğer yetmezliği riski — KESİN KONTRENDİKE!), eşzamanlı alkol veya propilen glikol içeren ilaç kullanımı.",
-    "clinicalPearls": "DİSÜLFİRAM BENZERİ REAKSİYON: Tedavi süresince ve kesildikten sonra en az 48–72 saat kesinlikle ALKOL alınmamalıdır (şiddetli flushing, kusma, taşikardi, hipotansiyon). Varfarin metabolizmasını (CYP2C9) güçlü inhibe ederek INR'yi hızla yükseltir ve kanama yapar! Uzun süreli kullanımda periferik nöropati ve serebellar ataksi/ensefalopati gelişebilir; idrarı koyu kırmızı-kahverengiye boyayabilir."
+    "clinicalPearls": "DİSÜLFİRAM BENZERİ REAKSİYON: Tedavi süresince ve kesildikten sonra en az 48–72 saat kesinlikle ALKOL alınmamalıdır (şiddetli flushing, kusma, taşikardi, hipotansiyon). Varfarin metabolizmasını (CYP2C9) güçlü inhibe ederek INR'yi hızla yükseltir ve kanama yapar! Uzun süreli kullanımda periferik nöropati ve serebellar ataksi/ensefalopati gelişebilir; idrarı koyu kırmızı-kahverengiye boyayabilir.",
+    "drug_id": "metronidazole",
+    "generic_name": "Metronidazol",
+    "atc_code": "J01XD01",
+    "formulations": [
+      {
+        "form_name": "Flagyl 200 mg / 5 mL Oral Süspansiyon",
+        "concentration_mg_per_ml": 40.0,
+        "concentration_display": "200 mg / 5 mL (40 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "Metronidazol 500 mg / 100 mL IV İnfüzyon Şişesi",
+        "concentration_mg_per_ml": 5.0,
+        "concentration_display": "5 mg/mL (500 mg/100 mL)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 500.0,
+        "standard_interval_hours": [
+          8
+        ],
+        "max_daily_dose_mg": 2000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Giardiyazis (Oral)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 5.0,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 15.0,
+          "absolute_max_single_dose_mg": 500.0,
+          "absolute_max_daily_dose_mg": 750.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Pediatrik Anaerop Sepsis / İntraabdominal Enfeksiyon (IV)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 10.0,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 30.0,
+          "absolute_max_single_dose_mg": 500.0,
+          "absolute_max_daily_dose_mg": 1500.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 10.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 9.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz %50 azaltılır veya aralık 12 saate açılır."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Ağır karaciğer yetmezliğinde doz %50 azaltılmalı ve nörotoksisite izlenmelidir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gerekli durumlarda kullanılabilir; trikomoniyaziste 1. trimesterde kaçınılabilir.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte geçer; yüksek doz veya tek doz rejimlerde 12-24 saat emzirmeye ara verilebilir.",
+        "relative_infant_dose_percent": 9.0,
+        "safety_verdict": "USE_WITH_CAUTION"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Metronidazole veya nitroimidazol türevlerine aşırı duyarlılık."
+      ],
+      "neonatal_specific_notes": "Yenidoğan ve prematürelerde eliminasyon yarı ömrü 3 kat uzar (q12-24h aralık uygulanmalıdır)."
+    },
+    "metadata": {
+      "source_documents": [
+        "CDC Parasitic Disease Guidelines",
+        "TİTCK Flagyl KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "fosfomycin",
@@ -885,7 +1961,122 @@
     "hepaticAdjustment": "Karaciğer yetmezliğinde doz ayarlaması gerekmez.",
     "pregnancyLactation": "Gebelik: Hayatı tehdit eden maternal MRSA enfeksiyonlarında ve grup B streptokok intrapartum profilaksisinde (yüksek riskli beta-laktam alerjisi ve klindamisin direncinde) kullanılır; fetal ototoksisite/nefrotoksisite açısından TDM yapılır. Emzirme: GİS'ten emilmediği için uyumlu.",
     "contraindications": "Vankomisin aşırı duyarlılığı (önceki infüzyon hızına bağlı kızarıklık gerçek IgE alerjisi değildir!).",
-    "clinicalPearls": "IV vankomisin C. difficile kolitinde bağırsak lümenine geçmediğinden ETKİSİZDİR; PO vankomisin ise sistemik dolaşıma geçmediğinden sistemik enfeksiyonda ETKİSİZDİR (IV flakon tozu sulandırılıp oral içirilebilir!). Hızlı infüzyon mast hücrelerinden non-immünolojik histamin deşarjıyla 'Vankomisin İnfüzyon Reaksiyonu / Red Man Sendromu' (yüz-boyunda eritem, kaşıntı, hipotansiyon) yapar; en az 60–120 dakikada (≤10–15 mg/dk) infüze edilmelidir! Piperasilin-Tazobaktam veya Aminoglikozidlerle kombinasyonu nefrotoksisiteyi belirgin artırır."
+    "clinicalPearls": "IV vankomisin C. difficile kolitinde bağırsak lümenine geçmediğinden ETKİSİZDİR; PO vankomisin ise sistemik dolaşıma geçmediğinden sistemik enfeksiyonda ETKİSİZDİR (IV flakon tozu sulandırılıp oral içirilebilir!). Hızlı infüzyon mast hücrelerinden non-immünolojik histamin deşarjıyla 'Vankomisin İnfüzyon Reaksiyonu / Red Man Sendromu' (yüz-boyunda eritem, kaşıntı, hipotansiyon) yapar; en az 60–120 dakikada (≤10–15 mg/dk) infüze edilmelidir! Piperasilin-Tazobaktam veya Aminoglikozidlerle kombinasyonu nefrotoksisiteyi belirgin artırır.",
+    "drug_id": "vancomycin",
+    "generic_name": "Vankomisin",
+    "atc_code": "J01XA01",
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Maternal ciddi enfeksiyonda AUC/MIC izlemiyle kullanılır.",
+        "second_trimester": "Terapötik ilaç düzeyi izlemi (TDM) şartıyla kullanılabilir.",
+        "third_trimester": "Fetal nefrotoksisite ve ototoksisite riski nedeniyle çukur düzeyi izlenmelidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Oral biyoyararlanımı düşüktür; infant emilimi ihmal edilebilir düzeydedir.",
+        "relative_infant_dose_percent": 2.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Vankomisine bilinen anafilaktik aşırı duyarlılık"
+      ],
+      "neonatal_specific_notes": "Hızlı infüzyon Kırmızı Adam Sendromu (Red Man Syndrome) ve hipotansiyona yol açar; infüzyon süresi en az 60 dakika olmalıdır.",
+      "critical_drug_interactions": [
+        {
+          "interacting_drug": "Piperasilin-Tazobaktam",
+          "severity": "MODERATE",
+          "clinical_management": "Nefrotoksisite sinerjisi riski; ACORN çalışması ışığında böbrek fonksiyonları ve kreatinin günlük izlenmelidir."
+        }
+      ]
+    },
+    "formulations": [
+      {
+        "form_name": "Vankomisin 500 mg IV Flakon",
+        "concentration_mg_per_ml": 50.0,
+        "concentration_display": "500 mg / 10 mL (50 mg/mL seyreltme)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "Vankomisin 1000 mg IV Flakon",
+        "concentration_mg_per_ml": 50.0,
+        "concentration_display": "1000 mg / 20 mL (50 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 4000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Ağır MRSA Sepsisi / Bakteriyemi",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 15.0,
+          "interval_hours": 6,
+          "max_daily_dose_mg_per_kg": 60.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 2000.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Pediatrik MRSA Menenjit (Yüksek Doz)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 15.0,
+          "interval_hours": 6,
+          "max_daily_dose_mg_per_kg": 60.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 3000.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 50.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz; AUC/MIC takibi yapılır."
+        },
+        {
+          "egfr_min": 20.0,
+          "egfr_max": 49.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "Doz aralığı 24-48 saate açılır; serum çukur konsantrasyonu takip edilir."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 19.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "Tek doz verilir; serum düzeyi <15-20 mcg/mL olmadan yeni doz uygulanmaz."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Doz ayarlaması gerekmez."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "IDSA Vancomycin TDM Guidelines",
+        "TİTCK Vankomisin KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "fluconazole",
@@ -914,7 +2105,116 @@
     "hepaticAdjustment": "Nadir fakat ciddi hepatotoksisite yapabilir; karaciğer yetmezliğinde dikkatle kullanılır ve transaminazlar izlenir.",
     "pregnancyLactation": "Gebelik: Tek doz 150 mg dahi 1. trimesterde spontan abortus risk artışı ile ilişkilendirilmiştir; yüksek doz kronik kullanım (≥400 mg/gün) ağır kraniyofasiyal/iskelet teratojenisitesi (Kategori D/X) yapar! Gebelik vajinal kandidiyazisinde topikal azoller (klotrimazol) tercih edilmelidir. Emzirme: Tek doz 150 mg ve meme ucu kandidiyazisinde uyumlu.",
     "contraindications": "Azol aşırı duyarlılığı; QTc uzatan CYP3A4 substratları (pimozid, kinidin, eritromisin, sisaprid) ile eşzamanlı kullanım.",
-    "clinicalPearls": "Candida krusei flukonazole DOĞAL DİRENÇLİDİR, Candida glabrata'da ise azalmış duyarlılık/direnç sıktır; ayrıca küf mantarlarına (Aspergillus, Mucor) ETKİSİZDİR! Güçlü CYP2C9 ve orta düzey CYP3A4/CYP2C19 inhibitörüdür: Varfarin INR'sini 2–3 kat artırır, Fenitoin, Gliklazid/Glimepirid (ağır hipoglisemi!), Simvastatin/Atorvastatin ve Takrolimus/Siklosporin düzeylerini yükseltir, QTc mesafesini uzatır."
+    "clinicalPearls": "Candida krusei flukonazole DOĞAL DİRENÇLİDİR, Candida glabrata'da ise azalmış duyarlılık/direnç sıktır; ayrıca küf mantarlarına (Aspergillus, Mucor) ETKİSİZDİR! Güçlü CYP2C9 ve orta düzey CYP3A4/CYP2C19 inhibitörüdür: Varfarin INR'sini 2–3 kat artırır, Fenitoin, Gliklazid/Glimepirid (ağır hipoglisemi!), Simvastatin/Atorvastatin ve Takrolimus/Siklosporin düzeylerini yükseltir, QTc mesafesini uzatır.",
+    "drug_id": "fluconazole",
+    "generic_name": "Flukonazol",
+    "atc_code": "J02AC01",
+    "formulations": [
+      {
+        "form_name": "Flukonazol 50 mg / 5 mL Oral Süspansiyon (Triflucan)",
+        "concentration_mg_per_ml": 10.0,
+        "concentration_display": "50 mg / 5 mL (10 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Flukonazol 2 mg / 1 mL (100 mg / 50 mL) IV Flakon",
+        "concentration_mg_per_ml": 2.0,
+        "concentration_display": "2 mg/mL (100 mg/50 mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 200.0,
+        "standard_interval_hours": [
+          24
+        ],
+        "max_daily_dose_mg": 800.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Orofaringeal Kandidiyazis (Pamukçuk)",
+          "min_age_months": 0.5,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 3.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 6.0,
+          "absolute_max_single_dose_mg": 200.0,
+          "absolute_max_daily_dose_mg": 200.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "İnvaziv Kandidiyazis / Sistemik Mantar",
+          "min_age_months": 0.5,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 12.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 12.0,
+          "absolute_max_single_dose_mg": 400.0,
+          "absolute_max_daily_dose_mg": 800.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 50.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Standart doz."
+        },
+        {
+          "egfr_min": 11.0,
+          "egfr_max": 49.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "İlk gün standart yükleme; ardından günlük idame dozu %50 azaltılır."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 10.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Diyaliz hastalarında her seans sonrası tam tek doz verilir."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğer fonksiyon testleri izlenmelidir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "D",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "KONTRENDİKE: Yüksek doz veya uzun süreli kullanımda kraniyofasiyal ve kardiyak malformasyon riski.",
+        "second_trimester": "Zorunlu sistemik enfeksiyon hariç kaçınılmalıdır.",
+        "third_trimester": "Yalnızca yaşamı tehdit eden invaziv kandidiyaziste kullanılır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte geçer; düşük dozlarda emzirme ile uyumludur.",
+        "relative_infant_dose_percent": 8.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Azol antifungallere aşırı duyarlılık",
+        "QTc uzatan ilaçlarla (terfenadin, sisaprid) birlikte kullanım."
+      ],
+      "neonatal_specific_notes": "Yenidoğanlarda GFR düşüklüğü nedeniyle ilk 2 haftada doz aralığı 72 saat, 2-4 haftalık bebeklerde 48 saat olmalıdır."
+    },
+    "metadata": {
+      "source_documents": [
+        "IDSA Candidiasis Guidelines",
+        "TİTCK Triflucan KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "acetylsalicylic-acid",
@@ -1717,7 +3017,104 @@
     "hepaticAdjustment": "Oral/yutulan budesonid karaciğerde %90 ilk geçiş yıkımına (CYP3A4) uğrar; KARACİĞER SİROZUNDA portosistemik şant nedeniyle sistemik biyoyararlanımı 3–8 kat fırladığından oral enterik kapsüller sirozda KONTRENDİKEDİR!",
     "pregnancyLactation": "Gebelik: GÜVENLİ (İnhale kortikosteroidler içinde FDA eski Kategori B olan ve gebelikte 1. tercih kabul edilen altın standart ajandır!). Emzirme: Uyumlu (anne sütüne geçişi ihmal edilebilir düzeydedir).",
     "contraindications": "İnhale form tek başına status astmatikusun birincil bronkodilatör kurtarıcısı değildir; oral enterik form karaciğer sirozu ve lokal bağırsak enfeksiyonlarında kontrendikedir; güçlü CYP3A4 inhibitörleriyle (ritonavir, ketokonazol, itrakonazol, klaritromisin) eşzamanlı kullanımdan kaçınılır.",
-    "clinicalPearls": "PULMİCORT NEBÜL UYGULAMA İNCİSİ: Süspansiyon partikülleri ULTRASONİK nebülizatörlerle parçalanıp akciğere iletilemez; mutlaka jet (kompresörlü) veya uygun mesh nebülizatör kullanılmalıdır! Çocuklarda yüz maskesiyle nebülizasyon sonrası perioral dermatit ve göz irritasyonunu önlemek için yüz suyla yıkanmalı, ağız çalkalanmalıdır."
+    "clinicalPearls": "PULMİCORT NEBÜL UYGULAMA İNCİSİ: Süspansiyon partikülleri ULTRASONİK nebülizatörlerle parçalanıp akciğere iletilemez; mutlaka jet (kompresörlü) veya uygun mesh nebülizatör kullanılmalıdır! Çocuklarda yüz maskesiyle nebülizasyon sonrası perioral dermatit ve göz irritasyonunu önlemek için yüz suyla yıkanmalı, ağız çalkalanmalıdır.",
+    "drug_id": "budesonide",
+    "generic_name": "Budesonid (Nebül / İnhaler)",
+    "atc_code": "R03BA02",
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte en geniş insan güvenlik verisine sahip inhaler steroiddir; güvenlidir.",
+        "second_trimester": "Astım kontrolünde güvenle sürdürülür.",
+        "third_trimester": "Güvenle kullanılır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte ihmal edilebilir oranda geçer; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 0.3,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "formulations": [
+      {
+        "form_name": "Pulmicort 0.25 mg / 2 mL Nebül Süspansiyon",
+        "concentration_mg_per_ml": 0.125,
+        "concentration_display": "0.25 mg / 2 mL",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak 25C altında saklayınız"
+      },
+      {
+        "form_name": "Pulmicort 0.5 mg / 2 mL Nebül Süspansiyon",
+        "concentration_mg_per_ml": 0.25,
+        "concentration_display": "0.5 mg / 2 mL",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak 25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 4.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Akut Krup (Laringotrakeit Acili)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 0.2,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 0.4,
+          "absolute_max_single_dose_mg": 2.0,
+          "absolute_max_daily_dose_mg": 4.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Akut Astım / Bronkospazm Atağı",
+          "min_age_months": 6.0,
+          "min_weight_kg": 5.0,
+          "dose_per_kg_single": 0.1,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 0.2,
+          "absolute_max_single_dose_mg": 1.0,
+          "absolute_max_daily_dose_mg": 2.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "İnhaler formda renal doz ayarlaması gerekmez."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğer ilk geçiş metabolizması yüksektir (%90); ağır karaciğer yetmezliğinde sistemik maruziyet artabilir."
+        }
+      ]
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Budesonide aşırı duyarlılık"
+      ],
+      "neonatal_specific_notes": "Uygulama sonrası yüzde ve ağızda lokal kandidiyazisi ve perioral döküntüyü önlemek için yüz maskesi çıkarılmalı ve ağız suyla silinmelidir."
+    },
+    "metadata": {
+      "source_documents": [
+        "GINA Asthma Guidelines",
+        "AAP Croup Guidelines",
+        "TİTCK Pulmicort KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "ipratropium",
@@ -1749,7 +3146,93 @@
     "hepaticAdjustment": "Karaciğer yetmezliğinde doz ayarlaması gerekmez.",
     "pregnancyLactation": "Gebelik: Sistemik emilimi çok düşük olduğundan akut astım atağında Salbutamol ile birlikte güvenle kullanılabilir. Emzirme: Uyumlu.",
     "contraindications": "Atropin ve türevlerine karşı aşırı duyarlılık; Tiotropium/Umeclidinium/Glikopironyum (LAMA) kullanan KOAH hastasında rutin kronik birlikte kullanımdan (çift antimuskarinik toksisite!) kaçınılır.",
-    "clinicalPearls": "AKUT DAR AÇILI GLOKOM KALKANI: Yüz maskesi tam oturmadığında nebül buharının doğrudan GÖZE kaçması tek taraflı fiks dilate pupil ('farmakolojik anizokori' — kafa içi herniasyon ile karışır!) ve yatkın hastalarda akut açı kapanması glokomu krizi tetikler; mümkünse ağızlık (mouthpiece) kullanılmalı veya gözler korunmalıdır! Benign prostat hiperplazisi (BPH) olan yaşlı erkeklerde akut üriner retansiyonu ağırlaştırabilir. Kuaterner yapısı sayesinde kan-beyin bariyerini geçmez (deliryum yapmaz)."
+    "clinicalPearls": "AKUT DAR AÇILI GLOKOM KALKANI: Yüz maskesi tam oturmadığında nebül buharının doğrudan GÖZE kaçması tek taraflı fiks dilate pupil ('farmakolojik anizokori' — kafa içi herniasyon ile karışır!) ve yatkın hastalarda akut açı kapanması glokomu krizi tetikler; mümkünse ağızlık (mouthpiece) kullanılmalı veya gözler korunmalıdır! Benign prostat hiperplazisi (BPH) olan yaşlı erkeklerde akut üriner retansiyonu ağırlaştırabilir. Kuaterner yapısı sayesinde kan-beyin bariyerini geçmez (deliryum yapmaz).",
+    "drug_id": "ipratropium",
+    "generic_name": "İpratropium Bromür",
+    "atc_code": "R03BB01",
+    "formulations": [
+      {
+        "form_name": "Atrovent 250 mcg / 1 mL Nebül Solüsyon",
+        "concentration_mg_per_ml": 0.25,
+        "concentration_display": "250 mcg / 1 mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Atrovent 500 mcg / 2 mL Nebül Solüsyon",
+        "concentration_mg_per_ml": 0.25,
+        "concentration_display": "500 mcg / 2 mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 0.5,
+        "standard_interval_hours": [
+          6
+        ],
+        "max_daily_dose_mg": 2.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Orta-Ağır Astım Krizinin İlk 1 Saati (Salbutamole Ek)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 0.025,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 0.1,
+          "absolute_max_single_dose_mg": 0.5,
+          "absolute_max_daily_dose_mg": 2.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz ayarlaması gerekmez."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Doz ayarlaması gerekmez."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenle kullanılır.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte ihmal edilebilir düzeyde geçer; emzirme ile uyumludur.",
+        "relative_infant_dose_percent": 0.2,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Atropin türevlerine aşırı duyarlılık",
+        "Dar açılı glokom"
+      ],
+      "neonatal_specific_notes": "Nebülün göze kaçması midriyazise yol açabilir; maske yüze tam oturtulmalıdır."
+    },
+    "metadata": {
+      "source_documents": [
+        "GINA Acute Asthma Management",
+        "TİTCK Atrovent KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "salbutamol",
@@ -1778,7 +3261,110 @@
     "hepaticAdjustment": "Karaciğer yetmezliğinde doz ayarlaması gerekmez.",
     "pregnancyLactation": "Gebelik: GÜVENLİ (akut astım atağında maternal/fetal hipoksiyi önlemek için ilk tercih bronkodilatördür; tokoliz amaçlı yüksek sistemik dozlar ise maternal akciğer ödemi riski nedeniyle artık önerilmez). Emzirme: Uyumlu.",
     "contraindications": "İnhale formun akut bronkospazmda mutlak kontrendikasyonu yoktur (taşiaritmi, ağır HOKM ve tirotoksikozda dikkatli monitörizasyon).",
-    "clinicalPearls": "GINA ALTIN KURALI: Astımda İKS olmaksızın tek başına SABA (Ventolin) monoterapisi hava yolu inflamasyonunu maskeleyerek ölümcül atak riskini artırır ve artık önerilmez! Yüksek doz/sürekli salbutamol nebülizasyonu Na+/K+-ATPaz pompası aktivasyonu ile HİPOKALEMİ (K+ 0.5–1.0 mEq/L düşer!), taşikardi, ince tremor, hiperglisemi ve Tip B (hipoksisiz, beta-adrenerjik glikolitik) LAKTİK ASİDOZ yapar (astımlı hastada laktat yükselince solunum yorulması sanılıp gereksiz entübasyon tuzağına düşülmemelidir!)."
+    "clinicalPearls": "GINA ALTIN KURALI: Astımda İKS olmaksızın tek başına SABA (Ventolin) monoterapisi hava yolu inflamasyonunu maskeleyerek ölümcül atak riskini artırır ve artık önerilmez! Yüksek doz/sürekli salbutamol nebülizasyonu Na+/K+-ATPaz pompası aktivasyonu ile HİPOKALEMİ (K+ 0.5–1.0 mEq/L düşer!), taşikardi, ince tremor, hiperglisemi ve Tip B (hipoksisiz, beta-adrenerjik glikolitik) LAKTİK ASİDOZ yapar (astımlı hastada laktat yükselince solunum yorulması sanılıp gereksiz entübasyon tuzağına düşülmemelidir!).",
+    "drug_id": "salbutamol",
+    "generic_name": "Salbutamol (Albuterol)",
+    "atc_code": "R03AC02",
+    "formulations": [
+      {
+        "form_name": "Ventolin 2.5 mg / 2.5 mL Nebül Çözeltisi",
+        "concentration_mg_per_ml": 1.0,
+        "concentration_display": "2.5 mg / 2.5 mL (1 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Ventolin 5 mg / 2.5 mL Nebül Çözeltisi",
+        "concentration_mg_per_ml": 2.0,
+        "concentration_display": "5 mg / 2.5 mL (2 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Ventolin 100 mcg / Doz İnhaler (Ölçülü Doz İnhaleri)",
+        "concentration_mg_per_ml": 0.1,
+        "concentration_display": "100 mcg / puf",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 2.5,
+        "standard_interval_hours": [
+          4
+        ],
+        "max_daily_dose_mg": 20.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Akut Astım / Bronkospazm Atağı (Nebül)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 0.15,
+          "interval_hours": 4,
+          "max_daily_dose_mg_per_kg": 0.6,
+          "absolute_max_single_dose_mg": 5.0,
+          "absolute_max_daily_dose_mg": 20.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Akut Astım Atağı (MDI + Spacer / Hazne)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 0.05,
+          "interval_hours": 4,
+          "max_daily_dose_mg_per_kg": 0.4,
+          "absolute_max_single_dose_mg": 1.0,
+          "absolute_max_daily_dose_mg": 4.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "İnhaler / nebül formda doz ayarlaması gerekmez."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Doz ayarlaması gerekmez."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Akut astım krizinde maternal hipoksinin fetusa zararı ilacın riskinden kat be kat fazladır; güvenle kullanılır.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Yüksek doz parenteral formu tokolitik etki yapabilir; inhaler form güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne çok az miktarda geçer; emzirme ile uyumludur.",
+        "relative_infant_dose_percent": 0.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Salbutamole aşırı duyarlılık"
+      ],
+      "neonatal_specific_notes": "GINA ve AAP kılavuzları pediatrik oral şurup formunu (tremor, taşikardi, hipokalemi) kesinlikle önermemektedir; aerochamber/hazne ile inhaler veya nebül form altın standarttır."
+    },
+    "metadata": {
+      "source_documents": [
+        "GINA Global Strategy for Asthma Management",
+        "TİTCK Ventolin KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "montelukast",
@@ -2149,7 +3735,113 @@
     "hepaticAdjustment": "Orta ve ağır karaciğer yetmezliğinde (Child-Pugh B ve C) klirens ciddi azalır; GÜNLÜK TOPLAM DOZ MAKSİMUM 8 MG/GÜN İLE SINIRLANDIRILMALIDIR!",
     "pregnancyLactation": "Gebelik: 1. trimesterde yarık damak ve kardiyak septal defekt riskinde küçük bir artış tartışmalı olduğundan hiperemezis gravidarumda İLK BASAMAK DEĞİLDİR; yalnızca Piridoksin+Doksilamin, Dimenhidrinat ve Metoklopramid başarısız olduğunda 2. basamak kurtarıcı (tercihen >10. hafta sonrası) olarak kullanılır. Emzirme: Uyumlu.",
     "contraindications": "APOMORFİN ile eşzamanlı kullanım (derin hipotansiyon ve bilinç kaybı — KESİN KONTRENDİKE!), konjenital uzun QT sendromu.",
-    "clinicalPearls": "Metoklopramidin aksine dopamin (D2) reseptörlerini bloke etmez; bu nedenle AKUT DİSTONİ / EKSTRAPİRAMİDAL REAKSİYON YAPMAZ ve Parkinson hastalarında güvenlidir! En kritik riski doza bağımlı QTc UZAMASI VE TORSADES DE POINTES'tir: Kusmaya bağlı HİPOKALEMİ ve HİPOMAGNEZEMİ ile eşzamanlı QT uzatan ilaçlar (Makrolidler, Kinolonlar, Haloperidol, Amiodaron, SSRI) varlığında dikkatli olunmalıdır. ODT (dil üstü eriyen) tablet dil üzerinden değil, tükürükle yutularak GİS'ten emilir. En sık yan etkisi kabızlık ve baş ağrısıdır."
+    "clinicalPearls": "Metoklopramidin aksine dopamin (D2) reseptörlerini bloke etmez; bu nedenle AKUT DİSTONİ / EKSTRAPİRAMİDAL REAKSİYON YAPMAZ ve Parkinson hastalarında güvenlidir! En kritik riski doza bağımlı QTc UZAMASI VE TORSADES DE POINTES'tir: Kusmaya bağlı HİPOKALEMİ ve HİPOMAGNEZEMİ ile eşzamanlı QT uzatan ilaçlar (Makrolidler, Kinolonlar, Haloperidol, Amiodaron, SSRI) varlığında dikkatli olunmalıdır. ODT (dil üstü eriyen) tablet dil üzerinden değil, tükürükle yutularak GİS'ten emilir. En sık yan etkisi kabızlık ve baş ağrısıdır.",
+    "drug_id": "ondansetron",
+    "generic_name": "Ondansetron",
+    "atc_code": "A04AA01",
+    "formulations": [
+      {
+        "form_name": "Zofran 4 mg / 5 mL Oral Çözelti",
+        "concentration_mg_per_ml": 0.8,
+        "concentration_display": "4 mg / 5 mL (0.8 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Zofran 4 mg / 2 mL IV Ampul",
+        "concentration_mg_per_ml": 2.0,
+        "concentration_display": "4 mg / 2 mL (2 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak saklayınız"
+      },
+      {
+        "form_name": "Zofran 8 mg / 4 mL IV Ampul",
+        "concentration_mg_per_ml": 2.0,
+        "concentration_display": "8 mg / 4 mL (2 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 8.0,
+        "standard_interval_hours": [
+          8
+        ],
+        "max_daily_dose_mg": 24.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Akut Gastroenterit İnatçı Kusma (Oral Protokol)",
+          "min_age_months": 6.0,
+          "min_weight_kg": 8.0,
+          "dose_per_kg_single": 0.15,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 0.45,
+          "absolute_max_single_dose_mg": 8.0,
+          "absolute_max_daily_dose_mg": 24.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Postoperatif Bulantı ve Kusma (PONV / IV)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 0.1,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 0.3,
+          "absolute_max_single_dose_mg": 4.0,
+          "absolute_max_daily_dose_mg": 12.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Böbrek yetmezliğinde doz ayarlaması gerekmez."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Ağır karaciğer yetmezliğinde günlük toplam doz 8 mg ı geçmemelidir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "İlk trimesterde yarık damak riski tartışmalıdır; hiperemezis gravidarumda 2. basamak seçenektir.",
+        "second_trimester": "Güvenle kullanılır.",
+        "third_trimester": "Güvenle kullanılır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne çok az miktarda geçer; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 1.2,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Doz bağımlı QTc aralığı uzaması ve Torsades de Pointes riski; konjenital uzun QT veya hipokalemi durumunda dikkat edilmelidir."
+      ],
+      "absolute_contraindications": [
+        "Apomorfin ile eşzamanlı kullanım (şiddetli hipotansiyon ve bilinç kaybı)",
+        "Konjenital uzun QT sendromu"
+      ],
+      "neonatal_specific_notes": "Akut gastroenteritte oral tek doz kilo bantları: 8-15 kg -> 2 mg; 15.1-30 kg -> 4 mg; >30 kg -> 8 mg. <6 ay veya <8 kg bebeklerde AGE için önerilmez."
+    },
+    "metadata": {
+      "source_documents": [
+        "AAP Pediatric Gastroenteritis Ondansetron Protocol",
+        "TİTCK Zofran KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "metoclopramide",
@@ -2554,7 +4246,111 @@
     "hepaticAdjustment": "Prednizonun aksine aktif formdur (karaciğer aktivasyonuna gerek duymaz); ağır karaciğer yetmezliğinde klirensi yavaşladığından etki/yan etki artabilir.",
     "pregnancyLactation": "Gebelik: Plasental 11-beta-HSD2 enzimi tarafından büyük ölçüde inaktive edildiği için (plasentayı tam geçen Deksametazon/Betametazonun aksine!) MATERNAL HASTALIK TEDAVİSİNDE (astım atağı, lupus vb.) Prednizolon ile birlikte TERCİH EDİLEN steroiddir (1. trimesterde yarık damak açısından en düşük etkin doz seçilir). Emzirme: Uyumlu (>40 mg/gün yüksek dozlarda alımdan 4 saat sonra emzirme önerilir).",
     "contraindications": "Tedavi edilmemiş sistemik mantar enfeksiyonları, immünosüpresif yüksek dozlarda (>16–20 mg/gün, ≥2 hafta) CANLI AŞILAR (KKK, suçiçeği, BCG), idiyopatik trombositopenik purpura (İTP) hastasında IM uygulama; Depo-Medrol (asetat süspansiyonu) İNTRAVENÖZ VE İNTRATEKAL KESİN KONTRENDİKEDİR!",
-    "clinicalPearls": "Yüksek doz (>500 mg) IV pulse metilprednizolon 10 dakikadan hızlı verilirse ÖLÜMCÜL KARDİYAK ARİTMİ, bradikardi ve dolaşım kollapsı yapar (mutlaka ≥30–60 dk infüze edilmelidir)! >2–3 haftadan uzun süren kullanımlarda HPA aksı baskılandığı için ANİDEN KESİLİRSE AKUT ADRENAL KRİZ gelişir; kademeli azaltılmalıdır! NSAİİ ile eşzamanlı kullanımda peptik ülser kanama riski 4–10 kat artar (PPİ eklenir); uzun süreli tedavide hiperglisemi, avasküler femur başı nekrozu, osteoporoz (Ca+D vit + bifosfonat), latent tüberküloz/HBV reaktivasyonu ve PJP profilaksisi değerlendirilmelidir."
+    "clinicalPearls": "Yüksek doz (>500 mg) IV pulse metilprednizolon 10 dakikadan hızlı verilirse ÖLÜMCÜL KARDİYAK ARİTMİ, bradikardi ve dolaşım kollapsı yapar (mutlaka ≥30–60 dk infüze edilmelidir)! >2–3 haftadan uzun süren kullanımlarda HPA aksı baskılandığı için ANİDEN KESİLİRSE AKUT ADRENAL KRİZ gelişir; kademeli azaltılmalıdır! NSAİİ ile eşzamanlı kullanımda peptik ülser kanama riski 4–10 kat artar (PPİ eklenir); uzun süreli tedavide hiperglisemi, avasküler femur başı nekrozu, osteoporoz (Ca+D vit + bifosfonat), latent tüberküloz/HBV reaktivasyonu ve PJP profilaksisi değerlendirilmelidir.",
+    "drug_id": "methylprednisolone",
+    "generic_name": "Metilprednizolon",
+    "atc_code": "H02AB04",
+    "formulations": [
+      {
+        "form_name": "Prednol-L 20 mg IM/IV Flakon",
+        "concentration_mg_per_ml": 20.0,
+        "concentration_display": "20 mg / 1 mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Prednol-L 40 mg IM/IV Flakon",
+        "concentration_mg_per_ml": 20.0,
+        "concentration_display": "40 mg / 2 mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Prednol-L 250 mg IM/IV Flakon",
+        "concentration_mg_per_ml": 62.5,
+        "concentration_display": "250 mg / 4 mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 40.0,
+        "standard_interval_hours": [
+          8
+        ],
+        "max_daily_dose_mg": 1000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Akut Ağır Astım Atağı / Status Astmatikus",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 1.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 2.0,
+          "absolute_max_single_dose_mg": 60.0,
+          "absolute_max_daily_dose_mg": 125.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Pediatrik Anafilaksi (İkinci Basamak Refrakterlik)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 1.5,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 2.0,
+          "absolute_max_single_dose_mg": 60.0,
+          "absolute_max_daily_dose_mg": 125.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz ayarlaması gerekmez."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Doz ayarlaması gerekmez."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Plasentadan %90 oranında inaktif metabolit olarak geçer; gebelikte en güvenli sistemik glukokortikoiddir.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne çok az miktarda geçer; yüksek doz sonrası 2-4 saat emzirmeye ara verilebilir.",
+        "relative_infant_dose_percent": 1.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Sistemik fungal enfeksiyonlar",
+        "Canlı aşı uygulamaları."
+      ],
+      "neonatal_specific_notes": "Yüksek doz parenteral steroidlerde hipertansiyon ve hiperglisemi izlenmelidir."
+    },
+    "metadata": {
+      "source_documents": [
+        "GINA Severe Asthma Management",
+        "TİTCK Prednol-L KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "dexamethasone",
@@ -2581,7 +4377,104 @@
     "hepaticAdjustment": "CYP3A4 ile karaciğerde metabolize olur; ağır karaciğer yetmezliğinde yarı ömrü uzar.",
     "pregnancyLactation": "Gebelik: DİKKAT! Plasentada inaktive OLMAZ ve %100 fetüse geçer! Bu nedenle 24–34. haftalarda erken doğum tehdidinde FETAL AKCİĞER MATURASYONU (6 mg IM x 4 doz, 12 saat arayla; veya Betametazon) için seçilirken, sadece anneyi tedavi etmek gerektiğinde (örn. gebe astımı) fetüsü gereksiz maruz bırakmamak için Deksametazon yerine Metilprednizolon/Prednizolon tercih edilir! Emzirme: Kısa süreli tek dozlarda uyumlu.",
     "contraindications": "Tedavi edilmemiş sistemik mantar enfeksiyonları, serebral sıtma, TRAVMATİK BEYİN HASARI (CRASH çalışmasında kafa travmasında mortaliteyi artırdığı kanıtlanmıştır — KESİN KONTRENDİKE!), yüksek dozda canlı aşılar.",
-    "clinicalPearls": "Uyanık hastaya seyreltilmeden hızlı IV puşe edilirse saniyeler içinde anogenital/perineal bölgede şiddetli YANMA VE BATMA ('dexamethasone perineal pruritus') yapar — mutlaka SF ile sulandırılıp 5–15 dakikada yavaş verilmelidir! Biyolojik yarı ömrü 36–54 saat ve antiinflamatuar gücü hidrokortizondan ~25–30 kat fazladır (0.75 mg Deksametazon = 4 mg Metilprednizolon = 5 mg Prednizolon = 20 mg Hidrokortizon). Sabah kan kortizol ölçümünü direkt baskılar ancak kortizol immünoassay testinde çapraz reaksiyon vermez (1 mg gecelik deksametazon süpresyon testinin mantığı budur)."
+    "clinicalPearls": "Uyanık hastaya seyreltilmeden hızlı IV puşe edilirse saniyeler içinde anogenital/perineal bölgede şiddetli YANMA VE BATMA ('dexamethasone perineal pruritus') yapar — mutlaka SF ile sulandırılıp 5–15 dakikada yavaş verilmelidir! Biyolojik yarı ömrü 36–54 saat ve antiinflamatuar gücü hidrokortizondan ~25–30 kat fazladır (0.75 mg Deksametazon = 4 mg Metilprednizolon = 5 mg Prednizolon = 20 mg Hidrokortizon). Sabah kan kortizol ölçümünü direkt baskılar ancak kortizol immünoassay testinde çapraz reaksiyon vermez (1 mg gecelik deksametazon süpresyon testinin mantığı budur).",
+    "drug_id": "dexamethasone",
+    "generic_name": "Deksametazon",
+    "atc_code": "H02AB02",
+    "formulations": [
+      {
+        "form_name": "Dekort 8 mg / 2 mL Ampul",
+        "concentration_mg_per_ml": 4.0,
+        "concentration_display": "8 mg / 2 mL (4 mg/mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Dekort 0.5 mg / 0.75 mg Tablet",
+        "concentration_mg_per_ml": 0.5,
+        "concentration_display": "0.5 mg tablet",
+        "measuring_device": "none",
+        "storage_condition": "Oda sıcaklığında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 8.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 24.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Akut Krup (Laringotrakeit - Tek Doz Altın Standart)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 0.15,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 0.6,
+          "absolute_max_single_dose_mg": 16.0,
+          "absolute_max_daily_dose_mg": 16.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Pediatrik Bakteriyel Menenjit (İlk Doz Antibiyotikten Önce)",
+          "min_age_months": 2.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 0.15,
+          "interval_hours": 6,
+          "max_daily_dose_mg_per_kg": 0.6,
+          "absolute_max_single_dose_mg": 10.0,
+          "absolute_max_daily_dose_mg": 40.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz ayarlaması gerekmez."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğerde metabolize olur; uzamış yarılanma ömrü görülebilir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Yüksek dozlarda yarık damak riski bildirilmiştir; fetal akciğer matürasyonu hariç dikkatle kullanılır.",
+        "second_trimester": "Fetal akciğer matürasyonu için endikedir (24-34. haftalar arası).",
+        "third_trimester": "Erken doğum riski olan gebelerde preterm fetal akciğer matürasyonu için hayat kurtarıcıdır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne geçer; tek doz uygulamalarda emzirmeye engel teşkil etmez.",
+        "relative_infant_dose_percent": 4.0,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Sistemik fungal enfeksiyon",
+        "Canlı virüs aşıları"
+      ],
+      "neonatal_specific_notes": "Akut krup tedavisinde oral veya IM 0.15 mg/kg tek doz, 0.6 mg/kg kadar etkilidir ve hastane yatışını dramatik azaltır."
+    },
+    "metadata": {
+      "source_documents": [
+        "AAP Croup Clinical Guidelines",
+        "TİTCK Dekort KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "ferric-polymaltose",
@@ -2785,7 +4678,115 @@
     "hepaticAdjustment": "Karaciğer sitokrom P450 sisteminden TAMAMEN BAĞIMSIZDIR! Hafif-orta ve tek başına karaciğer yetmezliğinde doz ayarı GEREKMEZ (ensefalopatili/sirotik hastada en güvenli antiepileptiktir; yalnızca ağır hepatorenal sendromda eGFR'ye göre ayarlanır).",
     "pregnancyLactation": "Gebelik: Lamotrijin ile birlikte GEBELİKTE VE DOĞURGANLIK ÇAĞINDAKİ KADINLARDA EN GÜVENLİ (en düşük teratojenite oranına sahip!) birinci tercih antiepileptiktir! Gebelikte renal klirensi 2 katına çıktığı için serum düzeyi düşüp nöbet geçirebilir; trimestrlik düzey izlemi ve doz artışı gerekir. Emzirme: Uyumlu (bebekte uyku hali/emme izlenir).",
     "contraindications": "Levetirasetam veya diğer pirrolidon türevlerine aşırı duyarlılık.",
-    "clinicalPearls": "SIFIR İLAÇ ETKİLEŞİMİ VE HIZLI IV GÜVENLİĞİ: Fenitoin ve Valproatın aksine Varfarin, DOAK, kemoterapötikler veya oral kontraseptiflerle etkileşmez ve IV yüklemede kardiyak aritmi/hipotansiyon yapmaz! EN ÖNEMLİ KLİNİK YAN ETKİSİ ('Keppra Rage'): Hastaların %10–15'inde belirgin sinirlilik, öfke patlaması, ajitasyon, hostilite, depresyon ve intihar düşüncesi yapabilir (B6 vitamini / piridoksin desteğinin bazı olgularda davranışsal yan etkiyi azalttığı bildirilmiştir; ağır psikiyatrik tabloda Brivarasetam veya Lamotrijin'e geçilir). Asla aniden kesilmez!"
+    "clinicalPearls": "SIFIR İLAÇ ETKİLEŞİMİ VE HIZLI IV GÜVENLİĞİ: Fenitoin ve Valproatın aksine Varfarin, DOAK, kemoterapötikler veya oral kontraseptiflerle etkileşmez ve IV yüklemede kardiyak aritmi/hipotansiyon yapmaz! EN ÖNEMLİ KLİNİK YAN ETKİSİ ('Keppra Rage'): Hastaların %10–15'inde belirgin sinirlilik, öfke patlaması, ajitasyon, hostilite, depresyon ve intihar düşüncesi yapabilir (B6 vitamini / piridoksin desteğinin bazı olgularda davranışsal yan etkiyi azalttığı bildirilmiştir; ağır psikiyatrik tabloda Brivarasetam veya Lamotrijin'e geçilir). Asla aniden kesilmez!",
+    "drug_id": "levetiracetam",
+    "generic_name": "Levetirasetam",
+    "atc_code": "N03AX14",
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Antiepileptikler arasında en düşük majör malformasyon oranına (%2.5) sahiptir; gebelikte ilk tercih antiepileptiktir.",
+        "second_trimester": "Gebelik klerensi 2 katına çıkar; serum düzeyi izlenerek doz artırılmalıdır.",
+        "third_trimester": "Serum düzeyi takibiyle dozu titre ediniz."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte geçer; ancak infant yan etkisi düşüktür.",
+        "relative_infant_dose_percent": 3.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Levetirasetama veya pirolidon türevlerine aşırı duyarlılık."
+      ],
+      "neonatal_specific_notes": "Sedasyon ve solunum depresyonu yapmaz; neonatal nöbetlerde güvenli ikinci basamak ajandır."
+    },
+    "formulations": [
+      {
+        "form_name": "Keppra 100 mg / 1 mL Oral Çözelti",
+        "concentration_mg_per_ml": 100.0,
+        "concentration_display": "100 mg/mL",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Keppra 500 mg / 5 mL IV Konsantre İnfüzyonluk Çözelti",
+        "concentration_mg_per_ml": 100.0,
+        "concentration_display": "100 mg/mL (500 mg/5 mL)",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 3000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Akut Nöbet / Status 2. Basamak (IV Yükleme)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 40.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 60.0,
+          "absolute_max_single_dose_mg": 3000.0,
+          "absolute_max_daily_dose_mg": 3000.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "İdame Antiepileptik Tedavi",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 15.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 60.0,
+          "absolute_max_single_dose_mg": 1500.0,
+          "absolute_max_daily_dose_mg": 3000.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 50.0,
+          "egfr_max": 79.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz %25-30 azaltılır."
+        },
+        {
+          "egfr_min": 30.0,
+          "egfr_max": 49.9,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doz %50 azaltılır (q12h)."
+        },
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 29.9,
+          "action_type": "INTERVAL_EXTENSION",
+          "adjustment_instruction": "Doz %50 azaltılarak 24 saatte bir verilir (q24h)."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Ağır karaciğer yetmezliğinde kreatinin klerensi böbrek yetmezliğini gizleyebilir; doz dikkatle azaltılmalıdır."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "ILAE Guidelines: Levetiracetam in Status",
+        "TİTCK Keppra KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "valproic-acid",
@@ -2842,7 +4843,87 @@
     "hepaticAdjustment": "Karaciğerde (CYP2C9/2C19) doyurulabilir enzimlerle yıkılır; karaciğer yetmezliğinde toksisite hızla gelişir, doz azaltılıp serbest düzey izlenir.",
     "pregnancyLactation": "Gebelik: Yüksek teratojenite ('Fetal Hidantoin Sendromu': yarık dudak/damak, kraniyofasiyal dismorfizm, distal falanks/tırnak hipoplazisi, konjenital kalp defekti) ve yenidoğanda K vitamini bağımlı erken kanama yapar; doğurganlık çağında Levetirasetam/Lamotrijin tercih edilir. Emzirme: Anne sütüne az geçer, uyumlu.",
     "contraindications": "ABSANS VE MİYOKLONİK EPILEPSİLER (Dravet sendromu ve JME dahil — nöbetleri paradoksal olarak ŞİDDETLENDİRİR!), IV form için: Sinüs bradikardisi, sinoatriyal blok, 2.–3. derece AV blok ve Adams-Stokes sendromu; Delavirdin/Rilpivirin kullanımı.",
-    "clinicalPearls": "DÖRT ALTIN ACİL TIP İNCİSİ: (1) IV fenitoin ASLA %5 DEKSTROZ içine konmaz — şişede anında beyaz kristaller halinde ÇÖKER! Yalnızca %0.9 SF kullanılır. (2) İçerdiği propilen glikol ve bazik pH (pH 12!) nedeniyle >50 mg/dk hızlı verilirse AĞIR HİPOTANSİYON, QRS/QT bozulması ve KARDİYOVASKÜLER KOLLAPS yapar; damar dışına kaçarsa ekstremite nekrozu ('Purple Glove Sendromu' — IM de asla yapılmaz!) oluşturur. (3) Sıfırıncı derece (Michaelis-Menten) kinetiği nedeniyle 300 mg'dan 400 mg'a küçük bir doz artışı serum düzeyini 2–3 kat fırlatarak NİSTAGMUS, ATAKSİ, DİZARTRİ ve koma yapar! (4) Güçlü CYP450/P-gp İNDÜKLEYİCİSİDİR (DOAK, Varfarin, KOK, Siklosporin, D vitamini etkisini yok eder). Kronik kullanımda diş eti hiperplazisi, hirşutizm ve osteomalazi yapar."
+    "clinicalPearls": "DÖRT ALTIN ACİL TIP İNCİSİ: (1) IV fenitoin ASLA %5 DEKSTROZ içine konmaz — şişede anında beyaz kristaller halinde ÇÖKER! Yalnızca %0.9 SF kullanılır. (2) İçerdiği propilen glikol ve bazik pH (pH 12!) nedeniyle >50 mg/dk hızlı verilirse AĞIR HİPOTANSİYON, QRS/QT bozulması ve KARDİYOVASKÜLER KOLLAPS yapar; damar dışına kaçarsa ekstremite nekrozu ('Purple Glove Sendromu' — IM de asla yapılmaz!) oluşturur. (3) Sıfırıncı derece (Michaelis-Menten) kinetiği nedeniyle 300 mg'dan 400 mg'a küçük bir doz artışı serum düzeyini 2–3 kat fırlatarak NİSTAGMUS, ATAKSİ, DİZARTRİ ve koma yapar! (4) Güçlü CYP450/P-gp İNDÜKLEYİCİSİDİR (DOAK, Varfarin, KOK, Siklosporin, D vitamini etkisini yok eder). Kronik kullanımda diş eti hiperplazisi, hirşutizm ve osteomalazi yapar.",
+    "drug_id": "phenytoin",
+    "generic_name": "Fenitoin Sodyum",
+    "atc_code": "N03AB02",
+    "safety_warnings": {
+      "black_box_warnings": [
+        "İnfüzyon hızı yetişkinde 50 mg/dk, çocukta 1 mg/kg/dk üzerine çıktığında şiddetli hipotansiyon ve ölümcül kardiyak aritmi riski!"
+      ],
+      "absolute_contraindications": [
+        "Sinüs bradikardisi, SA/AV blok, Stokes-Adams sendromu."
+      ],
+      "neonatal_specific_notes": "Damar dışına kaçışta Mor Eldiven Sendromu (Purple Glove Syndrome) ve doku nekrozu riski; geniş damardan SF ile infüze edilmeli, asla dekstrozla karıştırılmamalıdır!"
+    },
+    "formulations": [
+      {
+        "form_name": "Fenitoin Sodyum 250 mg / 5 mL (50 mg/mL) Ampul (Epanutin)",
+        "concentration_mg_per_ml": 50.0,
+        "concentration_display": "50 mg/mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          24
+        ],
+        "max_daily_dose_mg": 1500.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Status Epileptikus (IV Yükleme)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 20.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 20.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 1500.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Üremide protein bağlama azalır; serbest fenitoin düzeyi takip edilmelidir."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğerde doygunluk (Michaelis-Menten) kinetiği gösterir; doz titrasyonunda küçük artışlar dahi toksisite yapabilir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "D",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Fetal hidantoin sendromu (mikrosefali, kraniyofasiyal anomali, mental retardasyon) riski yüksektir.",
+        "second_trimester": "Zorunlu olmadıkça kaçınılmalıdır.",
+        "third_trimester": "Doğumda neonatal kanama riski; K vitamini profilaksisi gerekir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütüne geçer; emzirmede dikkatli izlem gerekir.",
+        "relative_infant_dose_percent": 2.0,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "metadata": {
+      "source_documents": [
+        "AHA PALS Phenytoin Infusion Protocol",
+        "TİTCK Epanutin KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "carbamazepine",
@@ -2897,7 +4978,112 @@
     "hepaticAdjustment": "CYP3A4 ile karaciğerde metabolize olur; karaciğer yetmezliğinde ve konjestif kalp yetmezliğinde klirens %50 azalır, sedasyon dozu yarıya düşürülür.",
     "pregnancyLactation": "Gebelik: Maternal status epileptikusta anne-fetüs hipoksisini durdurmak için tereddütsüz kullanılır; doğum eyleminde yüksek doz yenidoğanda hipotoni ('Floppy Infant Sendromu'), hipotermi ve apne yapabilir. Emzirme: Tek doz girişimsel sedasyon sonrası 4 saat sonra emzirilebilir (en kısa yarı ömürlü benzodiazepindir!).",
     "contraindications": "Mekanik ventilasyon desteği olmaksızın AĞIR SOLUNUM YETMEZLİĞİ veya akut solunum depresyonu, Myasthenia Gravis (entübe değilse!), şiddetli uyku apnesi sendromu.",
-    "clinicalPearls": "Yeşil reçeteye tabidir. FENTANİL (veya diğer opioidler) ile birlikte girişimsel sedasyonda kullanıldığında sinerjistik APNE VE SOLUNUM ARRESTİ riski katlanır: Yatak başında balon-valf-maske, oksijen, aspiratör ve spesifik benzodiazepin antidotu FLUMAZENİL (Anexate 0.2 mg IV) hazır olmadan asla IV midazolam yapılmamalıdır! (Ancak kronik benzodiazepin bağımlısında veya trisiklik antidepresan zehirlenmesinde Flumazenil nöbet tetikleyeceğinden kontrendikedir!). Çocuklarda ve yaşlılarda bazen uyku yerine 'paradoksal ajitasyon/deliryum' yapabilir."
+    "clinicalPearls": "Yeşil reçeteye tabidir. FENTANİL (veya diğer opioidler) ile birlikte girişimsel sedasyonda kullanıldığında sinerjistik APNE VE SOLUNUM ARRESTİ riski katlanır: Yatak başında balon-valf-maske, oksijen, aspiratör ve spesifik benzodiazepin antidotu FLUMAZENİL (Anexate 0.2 mg IV) hazır olmadan asla IV midazolam yapılmamalıdır! (Ancak kronik benzodiazepin bağımlısında veya trisiklik antidepresan zehirlenmesinde Flumazenil nöbet tetikleyeceğinden kontrendikedir!). Çocuklarda ve yaşlılarda bazen uyku yerine 'paradoksal ajitasyon/deliryum' yapabilir.",
+    "drug_id": "midazolam",
+    "generic_name": "Midazolam",
+    "atc_code": "N05CD08",
+    "reproductive_safety": {
+      "titck_legacy_category": "D",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "İlk trimesterde konjenital anomali riski nedeniyle zorunlu olmadıkça kaçınılmalıdır.",
+        "second_trimester": "Kısa süreli sedasyonda dikkatle kullanılabilir.",
+        "third_trimester": "Doğuma yakın kullanımda yenidoğanda hipotoni, hipotermi ve solunum depresyonu (Floppy infant) yapabilir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok az geçer; kısa etkilidir. Tek doz sedasyondan 4 saat sonra emzirmeye devam edilebilir.",
+        "relative_infant_dose_percent": 1.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Hızlı bolus IV enjeksiyonda solunum arresti ve apne riski; resüsitasyon ekipmanı ve Flumazenil hazır bulundurulmalıdır."
+      ],
+      "absolute_contraindications": [
+        "Ağır solunum yetmezliği, miyasteniya gravis, dar açılı glokom."
+      ],
+      "neonatal_specific_notes": "Yenidoğanda eliminasyon yarı ömrü uzundur; hipotansiyon riski nedeniyle yavaş infüzyonla verilmelidir."
+    },
+    "formulations": [
+      {
+        "form_name": "Midazolam 5 mg / 5 mL (1 mg/mL) Ampul",
+        "concentration_mg_per_ml": 1.0,
+        "concentration_display": "1 mg/mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız (Yeşil Reçete)"
+      },
+      {
+        "form_name": "Midazolam 15 mg / 3 mL (5 mg/mL) Ampul",
+        "concentration_mg_per_ml": 5.0,
+        "concentration_display": "5 mg/mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      },
+      {
+        "form_name": "Midazolam 5 mg / 1 mL Bukkal Solüsyon (Epistatus / Buccolam)",
+        "concentration_mg_per_ml": 5.0,
+        "concentration_display": "5 mg/mL Bukkal",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "Oda sıcaklığında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 5.0,
+        "standard_interval_hours": [
+          1
+        ],
+        "max_daily_dose_mg": 20.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Status Epileptikus (Bukkal / İntranazal)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 0.2,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 0.6,
+          "absolute_max_single_dose_mg": 10.0,
+          "absolute_max_daily_dose_mg": 20.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Status Epileptikus (Yavaş IV / IO)",
+          "min_age_months": 0.5,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 0.1,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 0.4,
+          "absolute_max_single_dose_mg": 5.0,
+          "absolute_max_daily_dose_mg": 20.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Böbrek yetmezliğinde aktif metabolit glukuronid birikebilir; sedasyon izlenmelidir."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğer yetmezliğinde klerens düşer; doz %50 azaltılmalıdır."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "ILAE Status Epilepticus Guidelines",
+        "TİTCK Midazolam KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "diazepam",
@@ -2923,7 +5109,112 @@
     "hepaticAdjustment": "CYP2C19/3A4 ile yıkılır; KARACİĞER SİROZUNDA yarı ömrü 2–5 kat uzar ve hepatik ensefalopati tetikler — ağır karaciğer yetmezliğinde KONTRENDİKEDİR! (Karaciğer yetmezliği olan alkol yoksunluğu hastasında glukuronidasyonla atılan LORAZEPAM tercih edilir!).",
     "pregnancyLactation": "Gebelik: Rutin kronik anksiyetede kullanılmaz; doğuma yakın yüksek doz yenidoğanda 'Floppy Infant Sendromu' (hipotoni, apne, hipotermi, emmeme) yapar. Emzirme: Aktif metabolitlerinin çok uzun yarı ömrü bebekte letarji ve kilo kaybı yaptığından ÖNERİLMEZ.",
     "contraindications": "Myasthenia Gravis, ağır solunum yetmezliği, şiddetli uyku apnesi sendromu, ağır karaciğer yetmezliği, akut dar açılı glokom.",
-    "clinicalPearls": "Yeşil reçeteye tabidir. DİAZEPAM UYGULAMA İNCİLERİ: (1) Suda çözünürlüğü düşüktür ve propilen glikol içerir: %0.9 SF içinde karıştırılırsa bulanıklaşabilir ve deltoide/gluteusa IM yapılırsa emilimi çok düzensiz ve ağrılıdır (IM yol gerektiğinde suda çözünen MİDAZOLAM kullanılmalıdır!). (2) Yüksek lipofilitesi sayesinde beyne 1 dakikada girip nöbeti hemen durdurur, ancak 15–30 dk içinde yağ dokusuna yeniden dağıldığından (redistribüsyon) nöbet nüksedebilir — Status Epileptikusta ardından uzun etkili antiepileptik (Levetirasetam/Valproat/Fenitoin) yüklenmelidir! Opioidlerle birlikte kullanımda fatal solunum depresyonu yapar."
+    "clinicalPearls": "Yeşil reçeteye tabidir. DİAZEPAM UYGULAMA İNCİLERİ: (1) Suda çözünürlüğü düşüktür ve propilen glikol içerir: %0.9 SF içinde karıştırılırsa bulanıklaşabilir ve deltoide/gluteusa IM yapılırsa emilimi çok düzensiz ve ağrılıdır (IM yol gerektiğinde suda çözünen MİDAZOLAM kullanılmalıdır!). (2) Yüksek lipofilitesi sayesinde beyne 1 dakikada girip nöbeti hemen durdurur, ancak 15–30 dk içinde yağ dokusuna yeniden dağıldığından (redistribüsyon) nöbet nüksedebilir — Status Epileptikusta ardından uzun etkili antiepileptik (Levetirasetam/Valproat/Fenitoin) yüklenmelidir! Opioidlerle birlikte kullanımda fatal solunum depresyonu yapar.",
+    "drug_id": "diazepam",
+    "generic_name": "Diazepam",
+    "atc_code": "N05BA01",
+    "reproductive_safety": {
+      "titck_legacy_category": "D",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Yarık damak/dudak riski; zorunlu nöbet kontrolü hariç kaçınılmalıdır.",
+        "second_trimester": "Status epileptikus kontrolünde titre edilerek kullanılır.",
+        "third_trimester": "Floppy infant sendromu ve neonatal yoksunluk riski."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Metaboliti nordiazepam birikebilir; tekrarlayan dozlarda emzirme önerilmez.",
+        "relative_infant_dose_percent": 7.5,
+        "safety_verdict": "USE_WITH_CAUTION"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Opioidlerle birlikte kullanımda fatal solunum depresyonu ve koma riski."
+      ],
+      "absolute_contraindications": [
+        "Ağır solunum yetmezliği, koma, miyasteniya gravis."
+      ],
+      "neonatal_specific_notes": "Sodyum benzoat içeren formülasyonlar yenidoğanda kernikterusu tetikleyebilir."
+    },
+    "formulations": [
+      {
+        "form_name": "Diazepam 10 mg / 2 mL (5 mg/mL) Ampul (Diazem)",
+        "concentration_mg_per_ml": 5.0,
+        "concentration_display": "5 mg/mL",
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız (Yeşil Reçete)"
+      },
+      {
+        "form_name": "Desitin 5 mg Rektal Tüp",
+        "concentration_mg_per_ml": 2.0,
+        "concentration_display": "5 mg / 2.5 mL",
+        "measuring_device": "none",
+        "storage_condition": "Oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "Desitin 10 mg Rektal Tüp",
+        "concentration_mg_per_ml": 4.0,
+        "concentration_display": "10 mg / 2.5 mL",
+        "measuring_device": "none",
+        "storage_condition": "Oda sıcaklığında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 10.0,
+        "standard_interval_hours": [
+          4
+        ],
+        "max_daily_dose_mg": 40.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Febril Konvülsiyon / Akut Nöbet (Rektal Tüp)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 5.0,
+          "dose_per_kg_single": 0.3,
+          "interval_hours": 4,
+          "max_daily_dose_mg_per_kg": 0.6,
+          "absolute_max_single_dose_mg": 10.0,
+          "absolute_max_daily_dose_mg": 20.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Status Epileptikus (Yavaş IV)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 0.2,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 0.4,
+          "absolute_max_single_dose_mg": 10.0,
+          "absolute_max_daily_dose_mg": 20.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Böbrek yetmezliğinde doz ayarlaması gerekmez; sedasyon izlenir."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğerde metabolize olur; ağır yetmezlikte kontrendikedir."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "AAP Status Epilepticus Guidelines",
+        "TİTCK Diazem KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "lorazepam",
@@ -2947,7 +5238,95 @@
     "hepaticAdjustment": "KARACİĞER SİROZU VE YAŞLILARDA ALTIN STANDART BENZODİAZEPİN ('LOT' kuralı: Lorazepam, Oxazepam, Temazepam)! Faz-I CYP450 oksidasyonuna uğramaz, doğrudan Faz-II glukuronidasyonla atılır ve AKTİF METABOLİTİ YOKTUR! Yalnızca ağır hepatik komada tüm sedatifler gibi kontrendikedir.",
     "pregnancyLactation": "Gebelik: Kronik kullanımdan kaçınılır (3. trimesterde neonatal yoksunluk ve hipotoni). Emzirme: Aktif metaboliti olmadığından Diazepam'dan çok daha güvenlidir; kısa süreli düşük dozda bebekte sedasyon izlenerek kullanılabilir.",
     "contraindications": "Myasthenia Gravis, ağır solunum yetmezliği, uyku apnesi sendromu, akut dar açılı glokom, dekompanse hepatik ensefalopati.",
-    "clinicalPearls": "Yeşil reçeteye tabidir. Türkiye'de yaygın bulunan formu 'Ativan Expidet' liyofilize ağızda anında eriyen tablettir (blisteri soyularak kuru elle çıkarılır, su gerektirmeden dil üstünde saniyeler içinde çözünür; ancak emilimi esasen yutulan tükürükle GİS/mukozal yoldandır). Bağımlılık ve tolerans potansiyeli yüksek olduğundan ayaktan anksiyete/uykusuzlukta 2–4 haftadan uzun reçete edilmemeli, kesilirken rebound anksiyete ve çekilme nöbetini önlemek için kademeli azaltılmalıdır! Olanzapin IM ile eşzamanlı parenteral benzodiazepin kullanımından (kardiyorespiratuar depresyon!) kaçınılır."
+    "clinicalPearls": "Yeşil reçeteye tabidir. Türkiye'de yaygın bulunan formu 'Ativan Expidet' liyofilize ağızda anında eriyen tablettir (blisteri soyularak kuru elle çıkarılır, su gerektirmeden dil üstünde saniyeler içinde çözünür; ancak emilimi esasen yutulan tükürükle GİS/mukozal yoldandır). Bağımlılık ve tolerans potansiyeli yüksek olduğundan ayaktan anksiyete/uykusuzlukta 2–4 haftadan uzun reçete edilmemeli, kesilirken rebound anksiyete ve çekilme nöbetini önlemek için kademeli azaltılmalıdır! Olanzapin IM ile eşzamanlı parenteral benzodiazepin kullanımından (kardiyorespiratuar depresyon!) kaçınılır.",
+    "drug_id": "lorazepam",
+    "generic_name": "Lorazepam",
+    "atc_code": "N05BA06",
+    "formulations": [
+      {
+        "form_name": "Lorazepam 2 mg / 1 mL Ampul (Ativan)",
+        "concentration_mg_per_ml": 2.0,
+        "concentration_display": "2 mg/mL",
+        "measuring_device": "none",
+        "storage_condition": "2-8C buzdolabında saklayınız (Yeşil Reçete)"
+      },
+      {
+        "form_name": "Lorazepam 4 mg / 1 mL Ampul",
+        "concentration_mg_per_ml": 4.0,
+        "concentration_display": "4 mg/mL",
+        "measuring_device": "none",
+        "storage_condition": "2-8C buzdolabında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 4.0,
+        "standard_interval_hours": [
+          1
+        ],
+        "max_daily_dose_mg": 8.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Status Epileptikus İlk Basamak IV",
+          "min_age_months": 0.5,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 0.1,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 0.2,
+          "absolute_max_single_dose_mg": 4.0,
+          "absolute_max_daily_dose_mg": 8.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Doğrudan glukuronidasyona uğrar; böbrek yetmezliğinde aktif metabolit oluşturmaz."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Karaciğer yetmezliğinde diazepama göre daha güvenlidir ancak sedasyon izlenmelidir."
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "D",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Konjenital malformasyon riski; acil nöbet hariç kaçınılmalıdır.",
+        "second_trimester": "Acil durumlarda dikkatle titre edilir.",
+        "third_trimester": "Floppy infant sendromu ve neonatal yoksunluk riski."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok az geçer; kısa süreli kullanımda emzirme ile uyumludur.",
+        "relative_infant_dose_percent": 3.0,
+        "safety_verdict": "USE_WITH_CAUTION"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Opioidlerle birlikte kullanımda fatal solunum depresyonu ve koma riski."
+      ],
+      "absolute_contraindications": [
+        "Ağır solunum yetmezliği",
+        "Miyasteniya gravis"
+      ],
+      "neonatal_specific_notes": "Etki süresi 12-24 saattir; status epileptikusta midazolama göre daha uzun nöbet koruması sağlar ancak solunum monitörizasyonu zorunludur."
+    },
+    "metadata": {
+      "source_documents": [
+        "ILAE Guidelines: Lorazepam in Pediatric Status",
+        "TİTCK Ativan KÜB"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   },
   {
     "id": "alprazolam",
@@ -3441,7 +5820,112 @@
     "hepaticAdjustment": "Yaşam kurtarıcı acil endikasyonlarda karaciğer yetmezliğinde doz azaltımı yapılmaz.",
     "pregnancyLactation": "Gebelik: Maternal kardiyak arrest ve ANAFİLAKSİDE anne sağkalımı fetüs sağkalımının tek şartı olduğundan GECİKMEDEN TAM DOZ UYGULANIR! Emzirme: Akut acil kullanımda uyumlu.",
     "contraindications": "ANAFİLAKSİ VE KARDİYAK ARRESTTE MUTLAK KONTRENDİKASYONU YOKTUR! (Lokal anestezik + adrenalin kombinasyonları ise parmak, burun ucu, kulak memesi ve penis gibi uç arter bölgelerinde doku iskemisi riski nedeniyle dikkat/geleneksel kısıtlama taşır).",
-    "clinicalPearls": "ÖLÜMCÜL KONSANTRASYON HATASI KALKANI: Dolaşımı olan (nabzı atan!) bir anafilaksi hastasına 1 mg tam ampul Adrenalin YANLIŞLIKLA İNTRAVENÖZ PUŞE EDİLİRSE akut hipertansif beyin kanaması, Takotsubo kardiyomiyopatisi, koroner spazm ve VENTRİKÜLER FİBRİLASYON (ölüm!) yapar — Anafilakside birincil yol DAİMA UYLUK DIŞ YÜZÜNE İNTRAMÜSKÜLER (0.3–0.5 mg IM)'dir! Türkiye'de 0.25 mg/mL, 0.5 mg/mL ve 1 mg/mL farklı Adrenalin ampulleri bulunduğundan ampul üzerindeki miligram mutlaka okunmalıdır! Beta-blokör kullanan hastada dirençli anafilaksi şoku varsa GLUKAGON (1–5 mg IV) beta-reseptörü bypass eden kurtarıcı antidottur. Nebülize adrenalin verilen krup hastası 'rebound stridor' riskine karşı acil serviste EN AZ 3–4 SAAT izlenmeden taburcu edilmez!"
+    "clinicalPearls": "ÖLÜMCÜL KONSANTRASYON HATASI KALKANI: Dolaşımı olan (nabzı atan!) bir anafilaksi hastasına 1 mg tam ampul Adrenalin YANLIŞLIKLA İNTRAVENÖZ PUŞE EDİLİRSE akut hipertansif beyin kanaması, Takotsubo kardiyomiyopatisi, koroner spazm ve VENTRİKÜLER FİBRİLASYON (ölüm!) yapar — Anafilakside birincil yol DAİMA UYLUK DIŞ YÜZÜNE İNTRAMÜSKÜLER (0.3–0.5 mg IM)'dir! Türkiye'de 0.25 mg/mL, 0.5 mg/mL ve 1 mg/mL farklı Adrenalin ampulleri bulunduğundan ampul üzerindeki miligram mutlaka okunmalıdır! Beta-blokör kullanan hastada dirençli anafilaksi şoku varsa GLUKAGON (1–5 mg IV) beta-reseptörü bypass eden kurtarıcı antidottur. Nebülize adrenalin verilen krup hastası 'rebound stridor' riskine karşı acil serviste EN AZ 3–4 SAAT izlenmeden taburcu edilmez!",
+    "drug_id": "epinephrine",
+    "generic_name": "Adrenalin (Epinefrin)",
+    "atc_code": "C01CA24",
+    "formulations": [
+      {
+        "form_name": "Adrenalin 1 mg / 1 mL Ampul (1:1000)",
+        "concentration_mg_per_ml": 1.0,
+        "concentration_display": "1 mg/mL (1:1000)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak 15-25C oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "Adrenalin 0.5 mg / 1 mL Ampul (1:2000)",
+        "concentration_mg_per_ml": 0.5,
+        "concentration_display": "0.5 mg/mL (1:2000)",
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 0.5,
+        "standard_interval_hours": [
+          1
+        ],
+        "max_daily_dose_mg": 2.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Pediatrik Anafilaksi (İlk Basamak Altın Standart)",
+          "min_age_months": 0.0,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 0.01,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 0.04,
+          "absolute_max_single_dose_mg": 0.5,
+          "absolute_max_daily_dose_mg": 2.0,
+          "weight_metric_in_obesity": "TBW"
+        },
+        {
+          "indication": "Akut Krup Acili (L-Adrenalin Nebül)",
+          "min_age_months": 3.0,
+          "min_weight_kg": 4.0,
+          "dose_per_kg_single": 0.5,
+          "interval_hours": 2,
+          "max_daily_dose_mg_per_kg": 2.0,
+          "absolute_max_single_dose_mg": 5.0,
+          "absolute_max_daily_dose_mg": 10.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gerekli acil durumlarda (anafilaksi) yaşam kurtarıcıdır, tereddütsüz uygulanır.",
+        "second_trimester": "Anafilaksi ve kardiyak resüsitasyonda mutlak endikedir.",
+        "third_trimester": "Uterin perfüzyonu geçici azaltabilir; ancak maternal resüsitasyon fetal yaşamın ön koşuludur."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Oral biyoyararlanımı son derece düşüktür; infant gastrointestinal kanalında hızla parçalanır.",
+        "relative_infant_dose_percent": 0.1,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Anafilaksi ve kardiyak arrest durumunda HİÇBİR MUTLAK KONTRENDİKASYONU YOKTUR.",
+        "Lokal anestezik kombinasyonunda parmak, burun, kulak memesi ve penis ucu gibi son-organlarda nekroz riski"
+      ],
+      "neonatal_specific_notes": "Neonatal resüsitasyonda IV/IO doz 0.01-0.03 mg/kg (0.1-0.3 mL/kg 1:10.000 formdan) uygulanır.",
+      "critical_drug_interactions": [
+        {
+          "interacting_drug": "Beta-Blokerler (Non-selektif: Propranolol)",
+          "severity": "MAJOR",
+          "clinical_management": "Alfa-adrenerjik baskın vazokonstriksiyon ve şiddetli hipertansiyon ile refleks bradikardi gelişebilir; anafilakside alternatif olarak glukagon değerlendiriniz."
+        }
+      ]
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Adrenalin KÜB",
+        "ERC / AHA PALS 2020-2025 Guidelines",
+        "EAACI Anaphylaxis Guidelines"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    },
+    "organ_impairment": {
+      "renal_adjustments": [
+        {
+          "egfr_min": 0.0,
+          "egfr_max": 999.0,
+          "action_type": "DOSE_REDUCTION",
+          "adjustment_instruction": "Acil resüsitasyonda böbrek yetmezliğinde doz ayarlaması gerekmez."
+        }
+      ],
+      "hepatic_adjustments": [
+        {
+          "child_pugh_class": "Class_C",
+          "action_instruction": "Doz ayarlaması gerekmez."
+        }
+      ]
+    }
   },
   {
     "id": "dopamine",
@@ -3576,5 +6060,921 @@
     "pregnancyLactation": "Gebelik: Eklampsi/ağır preeklampsi ve <32 hafta fetal serebral palsi nöroproteksiyonunda ALTIN STANDARTTIR! (Ancak tokoliz amacıyla >5–7 gün kesintisiz yüksek doz verilmesi fetal kemik demineralizasyonu/kırık riski nedeniyle FDA tarafından kısıtlanmıştır). Emzirme: UYUMLU.",
     "contraindications": "MYASTHENİA GRAVİS (nöromüsküler kavşakta asetilkolin salınımını bloke ederek ani diyafram felci / miyastenik solunum krizi yapar — KESİN KONTRENDİKE!), kalp bloğu (2.–3. derece AV blok), miyokard hasarı, hipermagnezemi.",
     "clinicalPearls": "MAGNEZYUM TOKSİSİTESİ YATAK BAŞI TRİADI VE ANTİDOTU: Preeklampside infüzyon alan hastada saatlik 3 parametre bakılır: (1) Patella (derin tendon) refleksi var mı? (Refleks kaybı toksisitenin İLK BELİRTİSİDİR — >7–10 mEq/L!), (2) Solunum hızı ≥12/dk mı? (>10–12 mEq/L'de SOLUNUM DEPRESYONU/APNE gelişir!), (3) İdrar çıkışı ≥25–30 mL/saat mi? (>15–20 mEq/L'de KARDİYAK ARREST!). Toksisite geliştiği anda infüzyon durdurulur ve spesifik fizyolojik ANTİDOT olan %10 KALSİYUM GLUKONAT 10 mL (1 g) 3–5 dakikada yavaş IV verilir! Hızlı IV puşe şiddetli ateş basması (flushing) ve hipotansiyon yapar."
+  },
+  {
+    "id": "cefotaxime",
+    "drug_id": "cefotaxime",
+    "genericTr": "Sefotaksim",
+    "genericEn": "Cefotaxime",
+    "generic_name": "Sefotaksim",
+    "atcCodes": [
+      "J01DD01"
+    ],
+    "atc_code": "J01DD01",
+    "genericKeywords": [
+      "sefotaksim",
+      "cefotaxime",
+      "claforan",
+      "sefotak"
+    ],
+    "brandExamples": [
+      "Claforan 0.5 g / 1 g Flakon",
+      "Sefotak 1 g Flakon"
+    ],
+    "drugClass": "3. Kuşak Sefalosporin Antibakteriyel",
+    "indications": "Yenidoğan sepsisi, neonatal menenjit, pediatrik pnömoni ve bakteremi (Seftriaksonun kontrendike olduğu yenidoğan ve hiperbilirubinemik infantlarda altın standart güvenli sefalosporindir).",
+    "adultDose": "1-2 g IV/IM 8-12 saatte bir (ağır enfeksiyonlarda 2 g q6-8h, maks 12 g/gün).",
+    "pediatricDose": "Yenidoğan 0-7 gün: 50 mg/kg/doz IV 12 saatte bir; >7 gün: 50 mg/kg/doz IV 6-8 saatte bir (menenjitte 200-300 mg/kg/gün 4 doza bölünmüş). Süt çocuğu ve çocuk: 100-200 mg/kg/gün 3-4 doza bölünmüş.",
+    "maxDailyDose": "Pediatrik tavan: 12 g/gün (veya 300 mg/kg/gün).",
+    "renalAdjustment": "eGFR 30-50 mL/dk: Doz aralığını 12 saate açınız. eGFR <10 mL/dk: Standart dozun %50'si 12-24 saatte bir uygulanır.",
+    "hepaticAdjustment": "Doz ayarlaması gerekmez; safrada çökme ve pseudolitiazis yapmaz.",
+    "pregnancyLactation": "PLLR: Kategori B / Uyumlu. T1/T2/T3 gebelikte güvenlidir. LactMed: COMPATIBLE, RID < %1.5.",
+    "contraindications": "Sefalosporin veya penisilin anafilaksi öyküsü.",
+    "clinicalPearls": "Yenidoğanda seftriaksonun aksine kalsiyumla letal presipitasyon oluşturmaz ve serbest bilirubini albüminden koparmaz; yaşamın ilk 28 gününde sefalosporin tercihi mutlaka sefotaksim olmalıdır.",
+    "formulations": [
+      {
+        "form_name": "Sefotaksim 500 mg / 1000 mg IV/IM Enjeksiyonluk Toz",
+        "concentration_mg_per_ml": 100.0,
+        "measuring_device": "none",
+        "reconstitution_stability_days": 1,
+        "storage_condition": "Sulandırıldıktan sonra 24 saat buzdolabında stabildir"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          8,
+          12
+        ],
+        "max_daily_dose_mg": 12000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Neonatal Sepsis ve Menenjit",
+          "min_age_months": 0.0,
+          "min_weight_kg": 1.0,
+          "dose_per_kg_single": 50.0,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 200.0,
+          "absolute_max_single_dose_mg": 2000.0,
+          "absolute_max_daily_dose_mg": 12000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenle kullanılabilir.",
+        "second_trimester": "Gebelikte güvenlidir.",
+        "third_trimester": "Gebelikte güvenlidir; doğumda seftriakson gibi kalsiyum presipitasyonu riski taşımaz."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok düşük oranda geçer; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 1.2,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Sefalosporin grubu antibiyotiklere anafilaksi öyküsü"
+      ],
+      "neonatal_specific_notes": "Seftriaksonun kontrendike olduğu <=28 günlük yenidoğanlarda güvenli alternatiftir."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Claforan KÜB",
+        "AAP Red Book 2024-2027",
+        "BNFc Cefotaxime Monograph"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "ampicillin",
+    "drug_id": "ampicillin",
+    "genericTr": "Ampisilin",
+    "genericEn": "Ampicillin",
+    "generic_name": "Ampisilin",
+    "atcCodes": [
+      "J01CA01"
+    ],
+    "atc_code": "J01CA01",
+    "genericKeywords": [
+      "ampisilin",
+      "ampicillin",
+      "alfasilin",
+      "makposilin"
+    ],
+    "brandExamples": [
+      "Alfasilin 250/500/1000 mg Flakon",
+      "Makposilin 1 g Flakon"
+    ],
+    "drugClass": "Aminopenisilin Antibakteriyel",
+    "indications": "Yenidoğan sepsisi ve neonatal menenjiti (Listeria monocytogenes ve Streptococcus agalactiae / GBS ampirik tedavisi), enterokok bakteremisi.",
+    "adultDose": "1-2 g IV/IM 4-6 saatte bir (maks 12 g/gün).",
+    "pediatricDose": "Yenidoğan <=7 gün: 50-100 mg/kg/doz IV 12 saatte bir; >7 gün: 50-100 mg/kg/doz IV 6-8 saatte bir (menenjit: 200-300 mg/kg/gün 3-4 doza bölünmüş). Süt çocuğu ve çocuk: 100-200 mg/kg/gün 4 doza bölünmüş (menenjitte 300-400 mg/kg/gün).",
+    "maxDailyDose": "Pediatrik menenjit tavanı: 12 g/gün (veya 400 mg/kg/gün).",
+    "renalAdjustment": "eGFR 10-50 mL/dk: Doz aralığını 6-12 saate açınız. eGFR <10 mL/dk: 12-24 saatte bir uygulayınız.",
+    "hepaticAdjustment": "Doz ayarlaması gerekmez.",
+    "pregnancyLactation": "PLLR: Güvenli / Uyumlu. T1/T2/T3 güvenle kullanılabilir. LactMed: COMPATIBLE, RID < %1.",
+    "contraindications": "Penisilin ve beta-laktam anafilaksi öyküsü; enfeksiyöz mononükleozda makülopapüler döküntü riski.",
+    "clinicalPearls": "Yenidoğan sepsisi ve menenjitinde sefotaksim veya gentamisin ile kombine edilerek Listeria monocytogenes açığını kapatan hayati bileşendir.",
+    "formulations": [
+      {
+        "form_name": "Ampisilin Sodyum 500 mg / 1000 mg Flakon",
+        "concentration_mg_per_ml": 100.0,
+        "measuring_device": "none",
+        "storage_condition": "Sulandırıldıktan sonra 1 saat içinde tüketilmelidir"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          6
+        ],
+        "max_daily_dose_mg": 12000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Neonatal Sepsis ve Menenjit (Listeria / GBS)",
+          "min_age_months": 0.0,
+          "min_weight_kg": 1.0,
+          "dose_per_kg_single": 75.0,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 300.0,
+          "absolute_max_single_dose_mg": 2000.0,
+          "absolute_max_daily_dose_mg": 12000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenlidir.",
+        "second_trimester": "Gebelikte güvenlidir.",
+        "third_trimester": "GBS taşıyıcısı gebelerde intrapartum antibiyotik profilaksisinde ilk tercihtir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok az geçer; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 0.8,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Penisilin grubu antibiyotiklere anafilaksi öyküsü"
+      ],
+      "neonatal_specific_notes": "Neonatal Listeria ve GBS sepsisinde altın standart ampirik rejim ortağıdır."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Alfasilin KÜB",
+        "CDC GBS Prophylaxis Guidelines",
+        "AAP Neonatal Sepsis"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "gentamicin",
+    "drug_id": "gentamicin",
+    "genericTr": "Gentamisin",
+    "genericEn": "Gentamicin",
+    "generic_name": "Gentamisin",
+    "atcCodes": [
+      "J01GB03"
+    ],
+    "atc_code": "J01GB03",
+    "genericKeywords": [
+      "gentamisin",
+      "gentamicin",
+      "getamisin",
+      "gensu"
+    ],
+    "brandExamples": [
+      "Gentasol 40/80/120 mg Ampul",
+      "Gensu 80 mg Ampul"
+    ],
+    "drugClass": "Aminoglikozit Antibakteriyel",
+    "indications": "Neonatal Gram-negatif sepsis, neonatal pyelonefrit, bakteriyemi ve enterokok sinerjisi.",
+    "adultDose": "5-7 mg/kg IV günde tek doz (veya 1.5-2 mg/kg q8h).",
+    "pediatricDose": "Yenidoğan <30 hafta: 5 mg/kg IV 48 saatte bir; 30-34 hafta: 4.5 mg/kg IV 36 saatte bir; >=35 hafta term: 4 mg/kg IV 24 saatte bir. Çocuklar: 6-7.5 mg/kg/gün IV tek doz (veya 2-2.5 mg/kg q8h).",
+    "maxDailyDose": "Pediatrik azami: 7.5 mg/kg/gün (TDM tepe/çukur izlemi şarttır).",
+    "renalAdjustment": "eGFR 30-50 mL/dk: Doz aralığını 24-36 saate uzatınız. eGFR <30 mL/dk: Çukur düzeyi (<1 mcg/mL) kontrol edilerek dozlanmalıdır. Nefrotoksik ajanlarla (Vankomisin) kombinasyondan kaçınınız.",
+    "hepaticAdjustment": "Doz ayarlaması gerekmez.",
+    "pregnancyLactation": "PLLR: Kategori D (konjenital 8. kraniyal sinir toksisitesi ve sağırlık riski). Laktasyon: COMPATIBLE (oral emilimi ihmal edilebilir), RID < %2.",
+    "contraindications": "Aminoglikozit aşırı duyarlılığı, miyasteniya gravis (nöromüsküler blokaj riski).",
+    "clinicalPearls": "Dar terapötik indekslidir; çukur düzeyi >2 mcg/mL ise nefrotoksisite ve kalıcı ototoksisite riski katlanır. Uzatılmış aralıklı (extended-interval) tek doz rejim toksisiteyi belirgin azaltır.",
+    "formulations": [
+      {
+        "form_name": "Gentamisin Sülfat 40 mg / 80 mg / 2 mL Ampul",
+        "concentration_mg_per_ml": 40.0,
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 350.0,
+        "standard_interval_hours": [
+          24
+        ],
+        "max_daily_dose_mg": 500.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Neonatal Gram-Negatif Sepsis",
+          "min_age_months": 0.0,
+          "min_weight_kg": 1.0,
+          "dose_per_kg_single": 4.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 5.0,
+          "absolute_max_single_dose_mg": 300.0,
+          "absolute_max_daily_dose_mg": 500.0,
+          "weight_metric_in_obesity": "AdjBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "D",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Konjenital ototoksisite riski; maternal hayati endikasyon hariç kaçınılmalıdır.",
+        "second_trimester": "TDM izlemiyle dar endikasyonda kullanılır.",
+        "third_trimester": "Fetal sağırlık riski; kanda çukur düzeyi izlenmelidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok az geçer ve gastrointestinal emilimi yoktur; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 1.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Nefrotoksisite ve irreversibl bilateral konjenital ototoksisite riski; serum çukur seviyesi izlenmelidir."
+      ],
+      "absolute_contraindications": [
+        "Aminoglikozit aşırı duyarlılığı, miyasteniya gravis."
+      ],
+      "neonatal_specific_notes": "Gestasyonel haftaya göre doz aralığı 24-36-48 saat olarak açılmalıdır."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Gentasol KÜB",
+        "Neofax Gentamicin Monograph",
+        "AAP Neonatal Gram-Negative Sepsis"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "phenobarbital",
+    "drug_id": "phenobarbital",
+    "genericTr": "Fenobarbital",
+    "genericEn": "Phenobarbital",
+    "generic_name": "Fenobarbital",
+    "atcCodes": [
+      "N03AA02"
+    ],
+    "atc_code": "N03AA02",
+    "genericKeywords": [
+      "fenobarbital",
+      "phenobarbital",
+      "luminal"
+    ],
+    "brandExamples": [
+      "Luminal 100 mg Ampul",
+      "Phenobarbital 100/200 mg Flakon"
+    ],
+    "drugClass": "Barbitürat Antikonvülzan / Sedatif",
+    "indications": "Neonatal nöbetlerin birinci basamak altın standart tedavisi, pediatrik status epileptikus, fokal ve jeneralize konvülsiyonlar.",
+    "adultDose": "Status epileptikus: 15-20 mg/kg IV yavaş infüzyon (maks 1000 mg, hız <= 50-100 mg/dk).",
+    "pediatricDose": "Yenidoğan nöbeti yükleme: 20 mg/kg IV tek doz (gerekirse 5-10 mg/kg ek dozla maks 40 mg/kg'a kadar çıkılabilir, infüzyon hızı <= 1 mg/kg/dk). İdame: 3-5 mg/kg/gün IV/oral 12-24 saatte bir bölünmüş. Çocuk status: 15-20 mg/kg IV yükleme.",
+    "maxDailyDose": "Yükleme azami tek doz: 1000 mg. Günlük idame: 5 mg/kg/gün.",
+    "renalAdjustment": "eGFR <10 mL/dk: Doz aralığını 12-16 saate açınız; sedasyon takibi yapınız.",
+    "hepaticAdjustment": "Ağır karaciğer yetmezliğinde eliminasyonu belirgin uzar; hepatik ensefalopati riski nedeniyle kontrendikedir.",
+    "pregnancyLactation": "PLLR: Kategori D (kardiyovasküler malformasyon ve fetal hidantoin-benzeri sendrom). Laktasyon: USE_WITH_CAUTION (RID %10-15; bebekte sedasyon ve emme güçlüğü izlenmelidir).",
+    "contraindications": "Akut intermitan porfiri, ağır solunum yetmezliği, karaciğer yetmezliği.",
+    "clinicalPearls": "Neonatal nöbetlerde 20 mg/kg IV yükleme ilk tercihtir; solunum depresyonu riski nedeniyle balon-valf-maske ve entübasyon seti hazır bulundurulmalı ve hız 1 mg/kg/dk üzerine çıkmamalıdır.",
+    "formulations": [
+      {
+        "form_name": "Fenobarbital Sodyum 100 mg / 2 mL Ampul",
+        "concentration_mg_per_ml": 50.0,
+        "measuring_device": "none",
+        "storage_condition": "25C altında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 1000.0,
+        "standard_interval_hours": [
+          24
+        ],
+        "max_daily_dose_mg": 1000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Neonatal Nöbet İlk Basamak Yükleme",
+          "min_age_months": 0.0,
+          "min_weight_kg": 1.0,
+          "dose_per_kg_single": 20.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 40.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 1000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "D",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Majör konjenital kalp defekti riski; nöbet kontrolü için en düşük dozda sürdürülmeli ve yüksek doz folik asit (5 mg) verilmelidir.",
+        "second_trimester": "Terapötik ilaç düzeyi takibi gerekir.",
+        "third_trimester": "Neonatal kanama riski nedeniyle doğuma yakın K vitamini desteği önerilir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte geçer; bebekte sedasyon ve zayıf emme yapabilir.",
+        "relative_infant_dose_percent": 12.0,
+        "safety_verdict": "USE_WITH_CAUTION",
+        "infant_monitoring": "Emzirilen bebekte uyuşukluk, apne ve kilo alımı izlenmelidir."
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Hızlı IV enjeksiyonda solunum arresti, hipotansiyon ve laringospazm riski; hız maks 1 mg/kg/dk olmalıdır."
+      ],
+      "absolute_contraindications": [
+        "Porfiri, ağır dispne veya solunum obstrüksiyonu."
+      ],
+      "neonatal_specific_notes": "Yenidoğan nöbetlerinde dünyada ve Türkiye'de 1. tercih ilaçtır."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Luminal KÜB",
+        "WHO Guidelines for Neonatal Seizures",
+        "ILAE Pediatric Status Epilepticus"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "acyclovir",
+    "drug_id": "acyclovir",
+    "genericTr": "Asiklovir",
+    "genericEn": "Acyclovir",
+    "generic_name": "Asiklovir",
+    "atcCodes": [
+      "J05AB01"
+    ],
+    "atc_code": "J05AB01",
+    "genericKeywords": [
+      "asiklovir",
+      "acyclovir",
+      "aklovir",
+      "zovirax"
+    ],
+    "brandExamples": [
+      "Aklovir 250 mg Flakon",
+      "Zovirax 250 mg Flakon",
+      "Asiviral 200/400 mg"
+    ],
+    "drugClass": "Guanosin Analog Antiviral",
+    "indications": "Neonatal Herpes Simpleks Virüs (HSV) enfeksiyonu, Herpes ensefaliti, immün yetmezlikte VZV ve şiddetli suçiçeği.",
+    "adultDose": "Herpes ensefaliti: 10 mg/kg IV 8 saatte bir (14-21 gün). Mukokutanöz HSV: 5 mg/kg IV q8h.",
+    "pediatricDose": "Neonatal HSV (0-28 gün): 20 mg/kg IV 8 saatte bir (21 gün boyunca, en az 1 saatlik infüzyonla). Pediatrik ensefalit (3 ay - 12 yaş): 20 mg/kg IV 8 saatte bir (veya 500 mg/m² q8h). Suçiçeği (immün yetmezlik): 10-20 mg/kg IV q8h.",
+    "maxDailyDose": "Tek doz tavanı: 1000 mg IV (günlük maks 3000 mg/gün veya 60 mg/kg/gün).",
+    "renalAdjustment": "eGFR 25-50 mL/dk: Doz aralığını 12 saate açınız. eGFR 10-25 mL/dk: Doz aralığını 24 saate açınız. eGFR <10 mL/dk: Standart dozun %50'si 24 saatte bir.",
+    "hepaticAdjustment": "Doz ayarlaması gerekmez.",
+    "pregnancyLactation": "PLLR: Kategori B / Uyumlu. T1/T2/T3 güvenle kullanılabilir. LactMed: COMPATIBLE, RID < %2.",
+    "contraindications": "Asiklovir veya valasiklovire aşırı duyarlılık.",
+    "clinicalPearls": "Renal tübüllerde kristalize olarak akut tübüler nekroza yol açabilir. Asla hızlı bolus IV verilmemelidir; infüzyon en az 1 saatte tamamlanmalı ve hastanın hidrasyonu idrar çıkışı >1 mL/kg/saat olacak şekilde güvenceye alınmalıdır.",
+    "formulations": [
+      {
+        "form_name": "Asiklovir Sodyum 250 mg IV Liyofilize Toz Flakon",
+        "concentration_mg_per_ml": 25.0,
+        "measuring_device": "none",
+        "storage_condition": "Sulandırıldıktan sonra 12 saat oda sıcaklığında stabildir"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 700.0,
+        "standard_interval_hours": [
+          8
+        ],
+        "max_daily_dose_mg": 3000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Neonatal HSV ve Ensefalit Protokolü",
+          "min_age_months": 0.0,
+          "min_weight_kg": 1.0,
+          "dose_per_kg_single": 20.0,
+          "interval_hours": 8,
+          "max_daily_dose_mg_per_kg": 60.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 3000.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte güvenlidir; HSV enfeksiyonunda tereddütsüz kullanılır.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Genital herpes rekürensinde neonatal bulaşı önlemek için 36. haftadan itibaren profilaksi önerilir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte geçer ancak güvenlidir.",
+        "relative_infant_dose_percent": 1.8,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Asiklovire karşı anafilaktik aşırı duyarlılık"
+      ],
+      "neonatal_specific_notes": "Neonatal HSV şüphesinde BOS PCR sonucu beklenmeden derhal 20 mg/kg IV q8h başlanmalıdır; mortaliteyi belirleyen en kritik faktör erken tedavidir."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Aklovir KÜB",
+        "AAP Red Book: Neonatal HSV",
+        "Infectious Diseases Society of America (IDSA)"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "oseltamivir",
+    "drug_id": "oseltamivir",
+    "genericTr": "Oseltamivir",
+    "genericEn": "Oseltamivir",
+    "generic_name": "Oseltamivir",
+    "atcCodes": [
+      "J05AH02"
+    ],
+    "atc_code": "J05AH02",
+    "genericKeywords": [
+      "oseltamivir",
+      "tamiflu",
+      "enfluvir"
+    ],
+    "brandExamples": [
+      "Tamiflu 75 mg Kapsül / 12 mg/mL Oral Süspansiyon",
+      "Enfluvir 75 mg Kapsül / 12 mg/mL Süspansiyon"
+    ],
+    "drugClass": "Nöraminidaz İnhibitörü Antiviral",
+    "indications": "İnfluenza A ve B tedavisi (ilk 48 saatte başlandığında en etkilidir) ve temas sonrası profilaksi.",
+    "adultDose": "Tedavi: 75 mg oral günde 2 kez (5 gün). Profilaksi: 75 mg oral günde 1 kez (10 gün).",
+    "pediatricDose": "Term Yenidoğan 0-8 ay: 3 mg/kg/doz oral 12 saatte bir; 9-11 ay: 3.5 mg/kg/doz oral 12 saatte bir. >=1 yaş kilo bantları: <=15 kg: 30 mg (2.5 mL) BID; 15.1-23 kg: 45 mg (3.75 mL) BID; 23.1-40 kg: 60 mg (5.0 mL) BID; >40 kg: 75 mg (6.25 mL) BID (5 gün).",
+    "maxDailyDose": "Tek doz tavanı: 75 mg (günlük maks 150 mg).",
+    "renalAdjustment": "eGFR 30-60 mL/dk: 30 mg oral günde 2 kez. eGFR 10-30 mL/dk: 30 mg oral günde tek doz. eGFR <10 mL/dk: Önerilmez.",
+    "hepaticAdjustment": "Hafif-orta karaciğer yetmezliğinde doz ayarlaması gerekmez.",
+    "pregnancyLactation": "PLLR: Gebelikte güvenli kabul edilir; CDC ve TİTCK influenzada tereddütsüz kullanımını önerir. LactMed: COMPATIBLE, RID < %0.5.",
+    "contraindications": "Oseltamivire bilinen anafilaktik aşırı duyarlılık.",
+    "clinicalPearls": "Semptomların ilk 48 saatinde başlanması mortalite ve hastane yatışını belirgin azaltır; ancak ağır/hastaneye yatan pediatrik vakalarda 48 saat sonrasında dahi başlanmalıdır. 12 mg/mL oral süspansiyon için dereceli enjektör şarttır.",
+    "formulations": [
+      {
+        "form_name": "Oseltamivir Fosfat 12 mg / 1 mL Toz Süspansiyon",
+        "concentration_mg_per_ml": 12.0,
+        "concentration_display": "60 mg / 5 mL (12 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "reconstitution_stability_days": 10,
+        "storage_condition": "Sulandırıldıktan sonra buzdolabında (2-8C) 10 gün saklanabilir"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 75.0,
+        "standard_interval_hours": [
+          12
+        ],
+        "max_daily_dose_mg": 150.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "İnfluenza Tedavisi (Kilo Bandı Dozlama)",
+          "min_age_months": 0.0,
+          "min_weight_kg": 2.5,
+          "dose_per_kg_single": 3.0,
+          "interval_hours": 12,
+          "max_daily_dose_mg_per_kg": 6.0,
+          "absolute_max_single_dose_mg": 75.0,
+          "absolute_max_daily_dose_mg": 150.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Gebelikte influenza komplikasyonları (ARDS) yüksektir; CDC ilk trimester dahil tereddütsüz kullanımını önerir.",
+        "second_trimester": "Güvenle kullanılır.",
+        "third_trimester": "Güvenle kullanılır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Süte çok az geçer; emzirmede güvenlidir.",
+        "relative_infant_dose_percent": 0.5,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Oseltamivire aşırı duyarlılık"
+      ],
+      "neonatal_specific_notes": "Prematüre bebeklerde klerens düşüktür; 1-2 mg/kg/doz BID şeklinde titre edilmelidir."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Tamiflu KÜB",
+        "CDC Influenza Antiviral Guidelines",
+        "AAP Pediatric Influenza"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "morphine",
+    "drug_id": "morphine",
+    "genericTr": "Morfin (Sülfat / HCl)",
+    "genericEn": "Morphine",
+    "generic_name": "Morfin",
+    "atcCodes": [
+      "N02AA01"
+    ],
+    "atc_code": "N02AA01",
+    "genericKeywords": [
+      "morfin",
+      "morphine",
+      "morphine sulfate"
+    ],
+    "brandExamples": [
+      "Morphine HCl 10 mg Ampul",
+      "Morfin 0.01 g/mL Ampul"
+    ],
+    "drugClass": "Opioid Analjezik (Saf Mu-Agonist)",
+    "indications": "Ciddi pediatrik travma, yanık, post-operatif şiddetli ağrı, vazooklüzif orak hücre krizi ve dispne palyasyonu.",
+    "adultDose": "2.5-5 mg IV yavaş (gerekirse 3-4 saatte bir titre edilir) veya 5-10 mg SC/IM.",
+    "pediatricDose": "Akut ağrı yükleme: 0.05-0.1 mg/kg IV yavaş (en az 5 dakikada, tek doz maks 2-4 mg). İdame/PCA: 10-20 mcg/kg/saat IV sürekli infüzyon.",
+    "maxDailyDose": "Tek doz tavanı: 10 mg (hekim kontrolünde titre edilir). Solunum depresyonuna karşı Nalokson (0.01-0.1 mg/kg) daima hazır tutulmalıdır.",
+    "renalAdjustment": "eGFR 30-50 mL/dk: Dozun %75'i; eGFR <30 mL/dk: Dozun %50'si verilir veya aralık açılır (M6G ve M3G metabolitleri birikerek toksisite yapar).",
+    "hepaticAdjustment": "Ağır karaciğer yetmezliğinde biyoyararlanımı artar ve klerensi düşer; doz azaltılmalıdır.",
+    "pregnancyLactation": "PLLR: Doğumda yenidoğan solunum depresyonu yapabilir. Laktasyon: USE_WITH_CAUTION (kısa süreli düşük dozda RID < %6; bebekte sedasyon ve apne izlenmelidir).",
+    "contraindications": "Akut solunum depresyonu, kafa travmasında artmış KİBAS (solunum baskılanırsa pCO2 artar ve herniasyon tetiklenir), paralitik ileus.",
+    "clinicalPearls": "Kodein ve tramadolün aksine CYP2D6 metabolizmasından bağımsız olarak glukuronidasyonla (UGT2B7) elimine edilir; bu nedenle ultra-hızlı metabolizör toksisitesi oluşturmaz ve pediatride güvenilir opioid analjeziktir.",
+    "formulations": [
+      {
+        "form_name": "Morfin HCl 10 mg / 1 mL Ampul",
+        "concentration_mg_per_ml": 10.0,
+        "measuring_device": "none",
+        "storage_condition": "Işıktan koruyarak kilitli dolapta saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 5.0,
+        "standard_interval_hours": [
+          4
+        ],
+        "max_daily_dose_mg": 40.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Akut Ciddi Ağrı Titrasyonu",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 0.1,
+          "interval_hours": 4,
+          "max_daily_dose_mg_per_kg": 0.6,
+          "absolute_max_single_dose_mg": 4.0,
+          "absolute_max_daily_dose_mg": 20.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "C",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Kronik kullanımda fetal bağımlılık riski.",
+        "second_trimester": "Akut endikasyonda titre edilerek kullanılabilir.",
+        "third_trimester": "Doğumda yenidoğan solunum depresyonu riski; Nalokson hazır bulundurulmalıdır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Düşük doz kısa süreli kullanımda güvenlidir.",
+        "relative_infant_dose_percent": 5.5,
+        "safety_verdict": "USE_WITH_CAUTION",
+        "infant_monitoring": "Bebekte apne, sedasyon ve kabızlık izlenmelidir."
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [
+        "Solunum depresyonu ve bağımlılık riski; Nalokson hazır bulundurulmalıdır."
+      ],
+      "absolute_contraindications": [
+        "Akut ağır solunum yetmezliği, kafa travmasında artmış KİBAS."
+      ],
+      "neonatal_specific_notes": "Yenidoğanda kan-beyin bariyeri geçirgenliği yüksektir; doz 0.05 mg/kg seviyesinde tutulmalıdır."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Morfin HCl KÜB",
+        "WHO Guidelines on the Pharmacological Treatment of Persisting Pain in Children"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "ketamine",
+    "drug_id": "ketamine",
+    "genericTr": "Ketamin",
+    "genericEn": "Ketamine",
+    "generic_name": "Ketamin",
+    "atcCodes": [
+      "N01AX03"
+    ],
+    "atc_code": "N01AX03",
+    "genericKeywords": [
+      "ketamin",
+      "ketamine",
+      "ketalar"
+    ],
+    "brandExamples": [
+      "Ketalar 50 mg/mL Flakon (10 mL)",
+      "Ketamin 500 mg Flakon"
+    ],
+    "drugClass": "NMDA Reseptör Antagonisti / Disosiyatif Anestezik",
+    "indications": "Pediatrik prosedürel sedasyon ve analjezi (kırık redüksiyonu, dikiş), şiddetli bronkospazmlı astım krizinde acil entübasyon (RSI), refrakter status epileptikus.",
+    "adultDose": "Sedasyon: 1-2 mg/kg IV (veya 4-5 mg/kg IM). Anestezi indüksiyonu: 1.5-2 mg/kg IV.",
+    "pediatricDose": "Prosedürel Sedasyon: 1-1.5 mg/kg IV yavaş (1-2 dakikada verilir; gerekirse 0.5 mg/kg ek doz) veya 3-4 mg/kg IM. Astım RSI Entübasyon: 1-2 mg/kg IV (bronkodilatör etkisi vardır).",
+    "maxDailyDose": "Tek doz sedasyon tavanı: 100 mg IV.",
+    "renalAdjustment": "Doz ayarlaması gerekmez.",
+    "hepaticAdjustment": "Ağır sirozda metabolizması yavaşlayabilir; uyanma süresi uzar.",
+    "pregnancyLactation": "PLLR: Acil prosedürde güvenlidir. Laktasyon: COMPATIBLE (kısa etkilidir, 4-6 saat süt sağılıp atılabilir).",
+    "contraindications": "Şiddetli hipertansiyon, kontrolsüz tirotoksikoz, açık göz yaralanması (GİB artışı). 3 ay altındaki infantlarda laringospazm riski yüksektir.",
+    "clinicalPearls": "Solunum dürtüsünü (faringeal/laringeal refleksleri) baskılamadan analjezi ve amnezi sağlayan eşsiz ajandır; bronş düz kaslarını gevşettiğinden astım atağındaki entübasyonda ilk tercihtir. Tükürük salgısını artırabilir.",
+    "formulations": [
+      {
+        "form_name": "Ketamin Hidroklorür 50 mg / 1 mL Flakon (10 mL)",
+        "concentration_mg_per_ml": 50.0,
+        "measuring_device": "none",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 100.0,
+        "standard_interval_hours": [
+          1
+        ],
+        "max_daily_dose_mg": 500.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Prosedürel Sedasyon ve Analjezi",
+          "min_age_months": 3.0,
+          "min_weight_kg": 5.0,
+          "dose_per_kg_single": 1.0,
+          "interval_hours": 1,
+          "max_daily_dose_mg_per_kg": 4.0,
+          "absolute_max_single_dose_mg": 100.0,
+          "absolute_max_daily_dose_mg": 300.0,
+          "weight_metric_in_obesity": "IBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "B",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Acil anestezi indüksiyonunda güvenle kullanılabilir.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Uterin tonusu artırabilir; acil travma ve astım entübasyonunda güvenle kullanılır."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Yarı ömrü 2-3 saattir; sedasyondan 4-6 saat sonra emzirilebilir.",
+        "relative_infant_dose_percent": 1.0,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Ciddi hipertansiyon, intrakraniyal kitle, penetran göz yaralanması."
+      ],
+      "neonatal_specific_notes": "<3 ay bebeklerde hava yolu refleksleri immatür olduğundan laringospazm riski yüksektir."
+    },
+    "metadata": {
+      "source_documents": [
+        "TİTCK Ketalar KÜB",
+        "ACEP Pediatric Procedural Sedation",
+        "PALS Pediatric RSI"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "ors",
+    "drug_id": "ors",
+    "genericTr": "Oral Rehidratasyon Tuzu (ORS)",
+    "genericEn": "Oral Rehydration Salts (ORS)",
+    "generic_name": "Oral Rehidratasyon Tuzu (ORS)",
+    "atcCodes": [
+      "A07CA"
+    ],
+    "atc_code": "A07CA",
+    "genericKeywords": [
+      "ors",
+      "oral rehidratasyon",
+      "rehidrasyon",
+      "ge-oral"
+    ],
+    "brandExamples": [
+      "Ge-Oral Toz Poşet",
+      "WHO Düşük Ozmolariteli ORS"
+    ],
+    "drugClass": "Elektrolit / Glukoz Oral Rehidrasyon Formülasyonu",
+    "indications": "Akut gastroenterit ve ishale bağlı hafif-orta dehidratasyonun tedavisi ve idamesi (WHO standart protokolü).",
+    "adultDose": "Her sulu dışkıdan sonra 200-400 mL veya susuzluk hissettikçe serbest içilir.",
+    "pediatricDose": "Hafif-Orta Dehidratasyon Tedavisi: 4 saatte toplam 50-100 mL/kg (sık aralıklarla, kaşık/enjektörle yudum yudum). Kusma varsa 10 dk beklenir, 5-10 dakikada bir 5 mL (1 tatlı kaşığı) ile devam edilir. İdame: Her sulu dışkı sonrası <2 yaş: 50-100 mL; >=2 yaş: 100-200 mL.",
+    "maxDailyDose": "Sıvı açığı tamamlanana kadar klinik takiple titre edilir; maksimum doz kısıtı yoktur.",
+    "renalAdjustment": "Anürik böbrek yetmezliğinde hiperkalemi riski nedeniyle kontrendikedir; oligüride serum potasyumu izlenmelidir.",
+    "hepaticAdjustment": "Doz ayarlaması gerekmez.",
+    "pregnancyLactation": "PLLR: Tamamen güvenlidir. Laktasyon: COMPATIBLE.",
+    "contraindications": "Ağır hipovolemik şok (acil IV sıvı gerekir), paralitik ileus, bilinç kapalılığı (aspirasyon riski), inatçı kontrolsüz kusma.",
+    "clinicalPearls": "WHO düşük ozmolariteli (245 mOsm/L: Na 75, K 20, Cl 65, Sitrat 10, Glukoz 75 mmol/L) formülü ozmotik ishali ve kusmayı azaltır. 1 poşet mutlaka tam 1 litre kaynatılıp ılıtılmış suya karıştırılmalıdır; az suya karıştırmak hipernatremiye, çok suya karıştırmak hiponatremiye yol açar!",
+    "formulations": [
+      {
+        "form_name": "Düşük Ozmolariteli ORS Toz Poşet (1 Litrelik)",
+        "concentration_mg_per_ml": 20.5,
+        "measuring_device": "calibrated_cup",
+        "reconstitution_stability_days": 1,
+        "storage_condition": "Sulandırıldıktan sonra 24 saat içinde tüketilmeli veya buzdolabında saklanmalıdır"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 2000.0,
+        "standard_interval_hours": [
+          1
+        ],
+        "max_daily_dose_mg": 10000.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Hafif-Orta Dehidratasyon Rehidrasyonu (4 Saatte)",
+          "min_age_months": 0.0,
+          "min_weight_kg": 2.0,
+          "dose_per_kg_single": 75.0,
+          "interval_hours": 4,
+          "max_daily_dose_mg_per_kg": 200.0,
+          "absolute_max_single_dose_mg": 1000.0,
+          "absolute_max_daily_dose_mg": 4000.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "A",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Hiperemezis gravidarum ve dehidratasyonda tamamen güvenlidir.",
+        "second_trimester": "Tamamen güvenlidir.",
+        "third_trimester": "Tamamen güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Fizyolojik elektrolit dengesidir; emzirmede tamamen güvenlidir.",
+        "relative_infant_dose_percent": 0.0,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Şiddetli dehidratasyon şoku (acil IV izotonik sıvı gerekir), paralitik ileus."
+      ],
+      "neonatal_specific_notes": "Yenidoğanlarda hipernatremiyi önlemek için tam 1 litre temiz su ile hazırlanmalıdır."
+    },
+    "metadata": {
+      "source_documents": [
+        "WHO / UNICEF Clinical Management of Acute Diarrhoea",
+        "AAP Practice Parameter: Acute Gastroenteritis"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
+  },
+  {
+    "id": "zinc_sulfate",
+    "drug_id": "zinc_sulfate",
+    "genericTr": "Çinko Sülfat",
+    "genericEn": "Zinc Sulfate",
+    "generic_name": "Çinko Sülfat",
+    "atcCodes": [
+      "A12CB01"
+    ],
+    "atc_code": "A12CB01",
+    "genericKeywords": [
+      "cinko",
+      "çinko",
+      "zinc",
+      "zinco"
+    ],
+    "brandExamples": [
+      "Zinco 15 mg/5 mL Şurup",
+      "Zinco Damla 15 mg/mL",
+      "Zinco 30 mg Kapsül"
+    ],
+    "drugClass": "Eser Element / Bağırsak Mukozal Ajanı",
+    "indications": "Akut pediatrik gastroenterit (WHO protokolü), çinko eksikliği tedavisi ve profilaksisi.",
+    "adultDose": "Günde 30-50 mg elementer çinko (yemeklerden 1 saat önce veya 2 saat sonra).",
+    "pediatricDose": "Akut Gastroenterit (WHO / UNICEF Protokolü): <6 ay: Günde 10 mg elementer çinko tek doz; >=6 ay: Günde 20 mg elementer çinko tek doz (ishal kesilse dahi 10-14 gün aralıksız sürdürülmelidir).",
+    "maxDailyDose": "Pediatrik AGE protokolünde günlük 20 mg elementer çinko.",
+    "renalAdjustment": "Ağır böbrek yetmezliğinde birikebilir; uzun süreli kullanımda dikkat edilmelidir.",
+    "hepaticAdjustment": "Doz ayarlaması gerekmez.",
+    "pregnancyLactation": "PLLR: Günlük gereksinim dozlarında güvenlidir. Laktasyon: COMPATIBLE.",
+    "contraindications": "Çinkoya bilinen aşırı duyarlılık.",
+    "clinicalPearls": "Akut ishalli çocuklarda 10-14 günlük çinko takviyesi bağırsak enterositlerinin epitelizasyonunu hızlandırır, dışkı sıklığını azaltır ve sonraki 2-3 ay içindeki yeni ishal ataklarını %30 oranında önler (WHO Düzey 1 kanıt). Aç karnına bulantı yaparsa yemekle verilebilir.",
+    "formulations": [
+      {
+        "form_name": "Çinko Sülfat 15 mg / 5 mL Şurup (Zinco)",
+        "concentration_mg_per_ml": 3.0,
+        "concentration_display": "15 mg elementer çinko / 5 mL (3 mg/mL)",
+        "measuring_device": "oral_syringe",
+        "storage_condition": "25C altında oda sıcaklığında saklayınız"
+      },
+      {
+        "form_name": "Çinko Sülfat 15 mg / 1 mL Damla (Zinco Damla)",
+        "concentration_mg_per_ml": 15.0,
+        "concentration_display": "15 mg / mL (1 damla = 0.75 mg Zn)",
+        "measuring_device": "dropper",
+        "storage_condition": "Oda sıcaklığında saklayınız"
+      }
+    ],
+    "dosing": {
+      "adult_dosing": {
+        "standard_single_dose_mg": 30.0,
+        "standard_interval_hours": [
+          24
+        ],
+        "max_daily_dose_mg": 50.0
+      },
+      "pediatric_dosing": [
+        {
+          "indication": "Akut İshal Mukozal İyileşme (WHO 14 Günlük Kür)",
+          "min_age_months": 1.0,
+          "min_weight_kg": 3.0,
+          "dose_per_kg_single": 20.0,
+          "interval_hours": 24,
+          "max_daily_dose_mg_per_kg": 20.0,
+          "absolute_max_single_dose_mg": 20.0,
+          "absolute_max_daily_dose_mg": 20.0,
+          "weight_metric_in_obesity": "TBW"
+        }
+      ]
+    },
+    "reproductive_safety": {
+      "titck_legacy_category": "A",
+      "pregnancy_trimester_risk": {
+        "first_trimester": "Günlük RDA gereksiniminde güvenlidir.",
+        "second_trimester": "Güvenlidir.",
+        "third_trimester": "Güvenlidir."
+      },
+      "lactation": {
+        "lactmed_record_summary": "Anne sütü doğal çinko içerir; takviye dozlarında güvenlidir.",
+        "relative_infant_dose_percent": 1.0,
+        "safety_verdict": "COMPATIBLE"
+      }
+    },
+    "safety_warnings": {
+      "black_box_warnings": [],
+      "absolute_contraindications": [
+        "Çinko tuzlarına karşı aşırı duyarlılık"
+      ],
+      "neonatal_specific_notes": "<6 ay bebeklerde günlük doz 10 mg ile sınırlandırılmalıdır."
+    },
+    "metadata": {
+      "source_documents": [
+        "WHO Guidelines: Clinical Management of Acute Diarrhoea",
+        "UNICEF Zinc Supplementation"
+      ],
+      "version_date": "2026-REV01",
+      "last_reviewed_iso": "2026-10-26"
+    }
   }
 ]

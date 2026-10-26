@@ -6,6 +6,8 @@ import {
   type PrintableDrugSchedule,
   type PrescriptionPrintPatientInfo
 } from '../utils/prescriptionPrinter';
+import { evaluatePrescriptionInteractions } from '../engines/interactionTierEngine';
+
 
 const escapeHtml = (val: unknown): string => {
   if (val === null || val === undefined) return '';
@@ -102,12 +104,92 @@ export function initPrescriptionModalController(): void {
       return;
     }
 
-    containerRxEditorList.innerHTML = activePrescriptionDrugs.map((d, idx) => `
+    const safetyResult = evaluatePrescriptionInteractions(
+      activePrescriptionDrugs.map(d => ({ name: d.name, generic: d.generic })),
+      {
+        ageYears: appState.biometry.ageYears,
+        ageDays: appState.biometry.ageDays,
+        weightKg: appState.biometry.weightKg || undefined,
+        diagnosis: inputPrintDiagnosis?.value || undefined
+      }
+    );
+
+    let safetyBannerHTML = '';
+    if (safetyResult.totalAlertsCount > 0) {
+      safetyBannerHTML = `
+        <div class="space-y-2 mb-3">
+          ${safetyResult.alerts.map(a => {
+            if (a.tier === 1) {
+              return `
+                <div class="p-3 rounded-xl bg-rose-950/70 border-2 border-rose-600 text-rose-200 text-xs space-y-1">
+                  <div class="flex items-center justify-between font-bold text-rose-300">
+                    <span class="flex items-center gap-1.5">${a.badgeLabel}</span>
+                    <span class="text-[10px] font-mono uppercase bg-rose-900/80 px-2 py-0.5 rounded border border-rose-500">${a.ruleId}</span>
+                  </div>
+                  <p class="font-semibold text-white">${escapeHtml(a.alertTitle)}</p>
+                  <p class="text-rose-100/90 leading-relaxed">${escapeHtml(a.message)}</p>
+                  <div class="text-[10px] text-rose-300 font-mono pt-1">
+                    Kılavuz / Kaynak: ${escapeHtml(a.guidelineSource)}
+                  </div>
+                </div>
+              `;
+            } else if (a.tier === 2) {
+              return `
+                <div class="p-3 rounded-xl bg-amber-950/60 border border-amber-600 text-amber-200 text-xs space-y-1">
+                  <div class="flex items-center justify-between font-bold text-amber-300">
+                    <span class="flex items-center gap-1.5">${a.badgeLabel}</span>
+                    <span class="text-[10px] font-mono uppercase bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">${a.ruleId}</span>
+                  </div>
+                  <p class="font-semibold text-white">${escapeHtml(a.alertTitle)}</p>
+                  <p class="text-amber-100/90 leading-relaxed">${escapeHtml(a.message)}</p>
+                </div>
+              `;
+            } else if (a.tier === 3) {
+              return `
+                <div class="p-2.5 rounded-xl bg-yellow-950/40 border border-yellow-700/60 text-yellow-200 text-xs space-y-1">
+                  <div class="flex items-center justify-between font-semibold text-yellow-300">
+                    <span>${a.badgeLabel}</span>
+                    <span class="text-[10px] font-mono">${a.ruleId}</span>
+                  </div>
+                  <p class="text-yellow-100/90">${escapeHtml(a.message)}</p>
+                </div>
+              `;
+            } else {
+              return `
+                <div class="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800 text-cyan-200 text-xs space-y-1">
+                  <div class="flex items-center justify-between font-semibold text-cyan-300">
+                    <span>${a.badgeLabel}</span>
+                    <span class="text-[10px] font-mono text-cyan-400">${a.ruleId}</span>
+                  </div>
+                  <p class="text-cyan-100/90 leading-relaxed">${escapeHtml(a.message)}</p>
+                  <div class="text-[10px] text-cyan-400 font-mono">
+                    Kanıt: ${escapeHtml(a.evidenceLevel)}
+                  </div>
+                </div>
+              `;
+            }
+          }).join('')}
+        </div>
+      `;
+    }
+
+    if (btnTriggerPrint) {
+      if (safetyResult.hasHardStop) {
+        btnTriggerPrint.classList.add('opacity-50');
+        btnTriggerPrint.title = 'Reçetede kesin kontrendikasyon (Hard Stop) bulunmaktadır!';
+      } else {
+        btnTriggerPrint.classList.remove('opacity-50');
+        btnTriggerPrint.title = 'Reçeteyi Yazdır / PDF İndir';
+      }
+    }
+
+    const itemsHTML = activePrescriptionDrugs.map((d, idx) => `
       <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-2.5 transition-all hover:border-slate-700" data-rx-idx="${idx}">
         <div class="flex items-center justify-between gap-2">
           <div class="flex-1 flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center font-mono">${idx + 1}</span>
             <input type="text" class="rx-input-name flex-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white font-bold focus:outline-none focus:border-rose-500" value="${escapeHtml(d.name)}" placeholder="İlaç Adı ve Formu">
+
           </div>
           <div class="flex items-center gap-1.5">
             <select class="rx-select-form bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-300">
@@ -169,7 +251,10 @@ export function initPrescriptionModalController(): void {
       </div>
     `).join('');
 
+    containerRxEditorList.innerHTML = safetyBannerHTML + itemsHTML;
+
     const rowCards = containerRxEditorList.querySelectorAll<HTMLDivElement>('[data-rx-idx]');
+
     rowCards.forEach(card => {
       const idx = parseInt(card.getAttribute('data-rx-idx') || '0', 10);
       const target = activePrescriptionDrugs[idx];

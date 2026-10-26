@@ -35,7 +35,9 @@ export const appState: AppState = {
         vaccines: null,
         syrupDose: null,
         pews: null,
-        pgcs: null
+        pgcs: null,
+        growthVelocity: null,
+        cranialScreening: null
     },
     
     surgery: {

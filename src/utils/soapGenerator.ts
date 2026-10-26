@@ -71,6 +71,21 @@ export function generateSOAP(): string {
     o.push(`- Büyüme & Biyometri: ${bioParts.join(', ')}.`);
   }
 
+  // Pediatrik Büyüme Hızı & Akut Malnütrisyon (WHO 2022/2023)
+  if (appState.pediatrics?.growthVelocity?.isValid) {
+    const gv = appState.pediatrics.growthVelocity;
+    const falteringStr = gv.centileDropAnalysis?.isPathologicalFaltering ? ' [🚨 Patolojik Büyüme Duraklaması]' : '';
+    const malStr = gv.malnutritionAssessment ? ` (${gv.malnutritionAssessment.categoryText})` : '';
+    o.push(`- Büyüme Hızı & Malnütrisyon: ${gv.gramsPerDay} g/gün (Beklenen: ${gv.expectedRange.minGramsPerDay}-${gv.expectedRange.maxGramsPerDay} g/gün, ${gv.velocityStatusText})${falteringStr}${malStr}.`);
+  }
+
+  // Kraniyal İzlem & Hidrosefali / Mikrosefali Tarama Kalkanı
+  if (appState.pediatrics?.cranialScreening?.isValid) {
+    const cs = appState.pediatrics.cranialScreening;
+    const kibasStr = cs.kibasSignsDetected.length > 0 ? ` [KİBAS Bulguları: ${cs.kibasSignsDetected.join(', ')}]` : '';
+    o.push(`- Kraniyal Baş Çevresi İzlemi: ${cs.headCircCm} cm (%${cs.percentile}, Z: ${cs.zScore}) -> ${cs.riskTitle}${kibasStr}.`);
+  }
+
   // Pediatrik Demir / Anemi (TPHD & T.C. Sağlık Bakanlığı + Mentzer Kalkanı)
   if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.status === 'SUCCESS') {
     const ir = appState.pediatrics.iron;
@@ -146,6 +161,10 @@ export function generateSOAP(): string {
   }
 
   // İnfüzyon & GIR
+  if (appState.medicine && appState.medicine.infusion) {
+    const inf = appState.medicine.infusion;
+    o.push(`- IV İnfüzyon Hızı: ${inf.rateMlHr} mL/saat (Konsantrasyon: ${inf.concentrationMgMl} mg/mL, ${inf.concentrationMcgMl} mcg/mL).`);
+  }
   if (appState.medicine && appState.medicine.gir) {
     const g = appState.medicine.gir;
     o.push(`- Glukoz İnfüzyon Hızı (GIR): ${g.gir} mg/kg/dk (${g.interpretation}).`);
@@ -177,10 +196,18 @@ export function generateSOAP(): string {
     o.push(`- Cerrahi (Ranson Akut Pankreatit Skoru): ${rn.score}/11 (0.s: ${rn.admissionScore}, 48.s: ${rn.hour48Score}) -> ${rn.severity} (~%${rn.mortalityPercent} Mortalite).`);
   }
 
-  // Obstetrik
+  // Obstetrik & Jinekoloji
   if (appState.obgyn && appState.obgyn.eddData && appState.obgyn.eddData.edd) {
     const edd = appState.obgyn.eddData;
     o.push(`- Obstetrik: SAT'a göre Gebelik Haftası: ${edd.gestationalAge || '--'}, Tahmini Doğum Tarihi (TDT): ${edd.edd || '--'}.`);
+  }
+  if (appState.obgyn?.bishop?.score !== undefined) {
+    const b = appState.obgyn.bishop;
+    o.push(`- Bishop Doğum İndüksiyon Skoru: ${b.score}/13 (${b.interpretation}).`);
+  }
+  if (appState.obgyn?.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+    const pe = appState.obgyn.preeclampsia;
+    o.push(`- Preeklampsi Değerlendirmesi: ${pe.diagnosis}${pe.alert ? ' (' + pe.alert + ')' : ''}.`);
   }
 
   // Tromboemboli & Kardiyak Acil
@@ -233,10 +260,14 @@ export function generateSOAP(): string {
   if (appState.neonatology) {
     const neo = appState.neonatology;
     if (neo.bhutani && neo.bhutani.isValid) {
-      const gTag = neo.bhutani.guidelineUsed === 'TND_2014' ? 'TND 2014' : 'AAP 2022';
+      const gTag = neo.bhutani.guidelineLabel || (neo.bhutani.guidelineUsed === 'TND_2014' ? 'TND 2014' : 'AAP 2022');
       const mTag = neo.bhutani.measurementType || 'TSB';
       const escPart = neo.bhutani.escalationThreshold ? `, Bakım Eskalasyonu: ${neo.bhutani.escalationThreshold}` : '';
-      o.push(`- Hiperbilirubinemi (${gTag}): Yaş: ${neo.bhutani.ageHours}s, ${mTag}: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}${escPart}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`);
+      let jStr = `- Hiperbilirubinemi (${gTag}): Yaş: ${neo.bhutani.ageHours}s, ${mTag}: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}${escPart}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`;
+      if (neo.bhutani.requiresTsbConfirmation && neo.bhutani.tsbConfirmationReason) {
+        jStr += ` [⚠️ TcB Doğrulama: ${neo.bhutani.tsbConfirmationReason}]`;
+      }
+      o.push(jStr);
     }
     if (neo.apgar) {
       o.push(`- APGAR Skoru (${neo.apgar.minute}. dk): ${neo.apgar.score}/10 (${neo.apgar.status}).`);
@@ -279,6 +310,24 @@ export function generateSOAP(): string {
   }
 
   // --- DEĞERLENDİRME ---
+  if (appState.pediatrics?.growthVelocity?.malnutritionAssessment && appState.pediatrics.growthVelocity.malnutritionAssessment.category !== 'WELL_NOURISHED') {
+    const ma = appState.pediatrics.growthVelocity.malnutritionAssessment;
+    a.push(`- ${ma.categoryText.toUpperCase()}: ${ma.criteriaMet.join('; ')}.`);
+  } else if (appState.pediatrics?.growthVelocity?.centileDropAnalysis?.isPathologicalFaltering) {
+    a.push(`- Büyüme Duraklaması (Faltering Growth): ${appState.pediatrics.growthVelocity.centileDropAnalysis.falteringReason || 'Belirgin persentil kanal düşüşü saptandı'}.`);
+  }
+  if (appState.pediatrics?.cranialScreening && appState.pediatrics.cranialScreening.hydrocephalusRisk !== 'SAFE' && appState.pediatrics.cranialScreening.hydrocephalusRisk !== 'BENIGN_FAMILIAL') {
+    const cs = appState.pediatrics.cranialScreening;
+    a.push(`- KRANİYAL RİSK: ${cs.riskTitle}. ${cs.clinicalRecommendations[0] || ''}`);
+  }
+  if (appState.obgyn?.bishop && appState.obgyn.bishop.score >= 8) {
+    a.push(`- Servikal Olgunlaşma: Yüksek Bishop Skoru (${appState.obgyn.bishop.score}/13) - Doğum indüksiyonu başarı şansı yüksek.`);
+  } else if (appState.obgyn?.bishop && appState.obgyn.bishop.score <= 5) {
+    a.push(`- Olgunlaşmamış Serviks (Bishop Skoru: ${appState.obgyn.bishop.score}/13): İndüksiyon öncesi servikal olgunlaştırma (prostaglandin/balon) gereklidir.`);
+  }
+  if (appState.obgyn?.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+    a.push(`- Obstetrik Risk: ${appState.obgyn.preeclampsia.diagnosis}.`);
+  }
   if (appState.pediatrics && appState.pediatrics.targetHeight && appState.pediatrics.targetHeight.deviationAlert) {
     a.push(`- ${appState.pediatrics.targetHeight.deviationAlert}`);
   }
@@ -497,6 +546,54 @@ export function generateSOAP(): string {
   if (appState.safetyPrescription?.cypStatinInteraction?.hasInteraction) {
     const cs = appState.safetyPrescription.cypStatinInteraction;
     p.push(`${pCount}. CYP3A4 / Statin Eylemi: ${cs.safeAlternatives.antibiotics[0]} veya ${cs.safeAlternatives.statins[0]} tercih edilmeli; tedavi boyunca statine geçici ara verilmelidir.`);
+    pCount++;
+  }
+  if (appState.pediatrics?.growthVelocity?.malnutritionAssessment?.treatmentProtocol) {
+    const tp = appState.pediatrics.growthVelocity.malnutritionAssessment.treatmentProtocol;
+    p.push(`${pCount}. Beslenme & Malnütrisyon Protokolü (${tp.setting === 'INPATIENT' ? 'Yatarak Tedavi' : 'Ayaktan Tedavi'}):`);
+    p.push(`   - Kalori Hedefi: ${tp.caloricTargetKcalKgDay}`);
+    p.push(`   - Diyet: ${tp.dietRecommendation}`);
+    if (tp.contraindications.length > 0) p.push(`   - ⚠️ Kontrendikasyon: ${tp.contraindications.join(' ')}`);
+    p.push(`   - İzlem: ${tp.monitoringAdvice}`);
+    pCount++;
+  }
+  if (appState.pediatrics?.cranialScreening?.isValid && appState.pediatrics.cranialScreening.urgencyLevel !== 'ROUTINE_FOLLOWUP') {
+    const cs = appState.pediatrics.cranialScreening;
+    p.push(`${pCount}. Kraniyal İleri İnceleme Planı (${cs.urgencyLevel === 'EMERGENCY_IMAGING' ? 'ACİL GÖRÜNTÜLEME' : 'PLANLI USG'}): ${cs.clinicalRecommendations.slice(0, 2).join(' ')}`);
+    pCount++;
+  }
+  if (appState.pediatrics?.vaccines && appState.pediatrics.vaccines.length > 0) {
+    p.push(`${pCount}. Planlı Aşı Takvimi: ${appState.pediatrics.vaccines.join(', ')}.`);
+    pCount++;
+  }
+  if (appState.neonatology?.bhutani && appState.neonatology.bhutani.isValid) {
+    const b = appState.neonatology.bhutani;
+    if (b.status === 'EXCHANGE_TRANSFUSION_REQUIRED') {
+      p.push(`${pCount}. Hiperbilirubinemi Acil Eylemi: Acil Kan Değişimi (Exchange Transfusion) hazırlığı yapınız, yoğun fototerapiye başlayınız ve YDYBÜ naklini sağlayınız.`);
+      pCount++;
+    } else if (b.status === 'ESCALATION_OF_CARE') {
+      p.push(`${pCount}. Hiperbilirubinemi Bakım Eskalasyonu: Yoğun fototerapi, IV hidrasyon, TSB 2 saatte bir izlem, IVIG endikasyonunu değerlendiriniz.`);
+      pCount++;
+    } else if (b.status === 'PHOTOTHERAPY_REQUIRED') {
+      p.push(`${pCount}. Hiperbilirubinemi Tedavi Planı: Yoğun fototerapi başlanması (4-6 saat sonra TSB kontrolü) ve hidrasyon/beslenme takibi.`);
+      pCount++;
+    } else if (b.followUpRecommendation) {
+      p.push(`${pCount}. Hiperbilirubinemi İzlem Planı: ${b.followUpRecommendation}`);
+      pCount++;
+    }
+  }
+  if (appState.surgery?.suture) {
+    const su = appState.surgery.suture;
+    p.push(`${pCount}. Sütür Materyali & Alınma Planı: İplik: ${su.material} (${su.size}), Alınma: ${su.removalDays}.`);
+    pCount++;
+  }
+  if (appState.obgyn?.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+    p.push(`${pCount}. Preeklampsi Yönetim Planı: Yakın tansiyon takibi, idrar protein/kreatinin oranı, Magnezyum Sülfat ve acil doğum endikasyonu değerlendiriniz.`);
+    pCount++;
+  }
+  if (appState.medicine?.infusion) {
+    const inf = appState.medicine.infusion;
+    p.push(`${pCount}. IV İnfüzyon Tedavisi: ${inf.rateMlHr} mL/saat infüzyon pompası ile (Konsantrasyon: ${inf.concentrationMgMl} mg/mL).`);
     pCount++;
   }
   if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {

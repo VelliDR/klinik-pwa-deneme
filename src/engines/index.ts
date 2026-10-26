@@ -21,3 +21,7 @@ export * from './surgeryEngine';
 export * from './thrombosisEngine';
 export * from './triageEngine';
 export * from './emergencyProtocols';
+export * from './rxNormMappingEngine';
+export * from './interactionTierEngine';
+export * from './renalDoseEngine';
+export * from './jaundiceEngine';

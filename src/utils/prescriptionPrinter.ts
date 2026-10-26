@@ -29,12 +29,12 @@ export interface PrintableDrugSchedule {
   name: string;
   generic?: string;
   form?: string;          // Tablet, Şurup, Damla, vb.
-  dosage: string;         // '1 Tablet', '1 Ölçek (5 mL)', vb.
+  dosage: string;         // '1 Tablet', '5 mL (Oral Enjektör ile)', vb.
   morning: boolean;
   noon: boolean;
   evening: boolean;
   night: boolean;
-  morningDose?: string;   // '1', '1/2', '2', '1 Ölçek'
+  morningDose?: string;   // '1', '1/2', '2', '5 mL'
   noonDose?: string;
   eveningDose?: string;
   nightDose?: string;
@@ -95,13 +95,13 @@ export function buildDefaultDrugSchedule(
   let nightDose = '-';
   let mealTiming: 'TOK' | 'AC' | 'YEMEKLE' | 'FARKETMEZ' | 'GECE' = 'TOK';
   let duration = '7 Gün';
-  let dosage = form === 'Şurup' ? '1 Ölçek (5 mL)' : `1 ${form}`;
+  let dosage = form === 'Şurup' ? '5.0 mL (Oral Enjektör ile)' : `1 ${form}`;
   let instructions = 'Bol su ile içiniz.';
 
   // 2. Klinik Farmakolojik Sınıflama & Akıllı Eşleştirme
   if (generic.includes('amoxicillin') || brandLower.includes('amoklavin') || brandLower.includes('augmentin') || brandLower.includes('largopen') || brandLower.includes('klamoks')) {
     // Antibiyotik (Günde 2 kez - 12 saatte bir)
-    dosage = form === 'Şurup' ? (patientWeightKg && patientWeightKg < 15 ? '1/2 Ölçek (2.5 mL)' : '1 Ölçek (5.0 mL)') : '1 Tablet';
+    dosage = form === 'Şurup' ? (patientWeightKg && patientWeightKg < 15 ? '2.5 mL (Oral Enjektör ile)' : '5.0 mL (Oral Enjektör ile)') : '1 Tablet';
     duration = '10 Gün (Kutu Bitene Kadar)';
     instructions = 'Yemek başlangıcında veya tok karnına alınız. Şikayetleriniz geçse dahi antibiyotik kutusu bitene kadar aksatmayınız.';
     morning = true; noon = false; evening = true; night = false;
@@ -137,7 +137,7 @@ export function buildDefaultDrugSchedule(
     mealTiming = 'TOK';
   } else if (brandLower.includes('arveles') || brandLower.includes('apranax') || generic.includes('dexketoprofen') || generic.includes('naproxen') || generic.includes('ibuprofen') || brandLower.includes('dolven') || brandLower.includes('majezik')) {
     // NSAİİ (Günde 2 kez - Tok karnına)
-    dosage = form === 'Şurup' ? '1 Ölçek (5 mL)' : '1 Tablet';
+    dosage = form === 'Şurup' ? '5.0 mL (Oral Enjektör ile)' : '1 Tablet';
     duration = '3–5 Gün (Ağrıda)';
     instructions = 'Mutlaka TOK KARNINA alınız. Mide hassasiyeti durumunda mide koruyucu ile birlikte kullanınız.';
     morning = true; noon = false; evening = true; night = false;
@@ -259,7 +259,7 @@ export const PRESCRIPTION_PRESETS: PrescriptionPreset[] = [
         name: 'ANDOREX GARGARA 200 ML',
         generic: 'Klorheksidin + Benzidamin',
         form: 'Gargara',
-        dosage: '1 Ölçek (15 mL)',
+        dosage: '15 mL (Mililitre Taksimatlı Kap ile)',
         morning: true, noon: true, evening: true, night: false,
         morningDose: '1', noonDose: '1', eveningDose: '1', nightDose: '-',
         mealTiming: 'TOK',
@@ -290,7 +290,7 @@ export const PRESCRIPTION_PRESETS: PrescriptionPreset[] = [
         name: 'RENNIE DUO ORAL SUSPANSIYON 100 ML',
         generic: 'Kalsiyum Karbonat + Magnezyum Karbonat',
         form: 'Şurup',
-        dosage: '1–2 Ölçek',
+        dosage: '10 mL (Taksimatlı Kap)',
         morning: true, noon: true, evening: true, night: true,
         morningDose: '1', noonDose: '1', eveningDose: '1', nightDose: '1',
         mealTiming: 'TOK',
@@ -352,7 +352,7 @@ export const PRESCRIPTION_PRESETS: PrescriptionPreset[] = [
         name: 'CALPOL 120 MG/5 ML SUSPANSIYON 150 ML',
         generic: 'Parasetamol',
         form: 'Şurup',
-        dosage: '1–1.5 Ölçek (Kiloya Göre)',
+        dosage: '5.0–7.5 mL (Oral Enjektör ile)',
         morning: true, noon: true, evening: true, night: false,
         morningDose: '1', noonDose: '1', eveningDose: '1', nightDose: '-',
         mealTiming: 'TOK',
@@ -364,7 +364,7 @@ export const PRESCRIPTION_PRESETS: PrescriptionPreset[] = [
         name: 'DOLVEN 100 MG/5 ML PEDIATRIK SURUP 100 ML',
         generic: 'İbuprofen',
         form: 'Şurup',
-        dosage: '1 Ölçek (5 mL)',
+        dosage: '5.0 mL (Oral Enjektör ile)',
         morning: true, noon: false, evening: true, night: false,
         morningDose: '1', noonDose: '-', eveningDose: '1', nightDose: '-',
         mealTiming: 'TOK',

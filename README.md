@@ -1,279 +1,261 @@
-# 🩺 Klinik Karar Destek Asistanı (Klinik PWA v2.0)
+# 🩺 Klinik Karar Destek Asistanı (Klinik PWA)
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.4+-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.0+-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Workbox_Offline_First-008080?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
-[![TİTCK Data](https://img.shields.io/badge/TİTCK-18%2C212_İlaç_%2B_125_Monograf-E11D48)](https://www.titck.gov.tr/)
-[![Clinical Motors](https://img.shields.io/badge/Klinik_Motor-21_Adet-8B5CF6)](https://github.com/VelliDR/klinik-pwa-deneme)
-[![Tests](https://img.shields.io/badge/Tests-100%25_Passing-10B981)](https://github.com/VelliDR/klinik-pwa-deneme)
-[![Privacy](https://img.shields.io/badge/KVKK%2FGDPR-Sıfır_Sunucu_Kaydı-blue)](https://kvkk.gov.tr/)
+[![TİTCK Data](https://img.shields.io/badge/TİTCK-18%2C212_İlaç_%2B_135_Monograf-E11D48)](https://www.titck.gov.tr/)
+[![Clinical Motors](https://img.shields.io/badge/Klinik_Motor-21_Modül-8B5CF6)](https://github.com/VelliDR/klinik-pwa-deneme)
+[![Tests](https://img.shields.io/badge/Test_Suite-26_Bölüm_Doğrulandı-10B981)](https://github.com/VelliDR/klinik-pwa-deneme)
+[![Privacy](https://img.shields.io/badge/Veri_Gizliliği-İstemci_Taraflı_(Client--Side)-blue)](https://kvkk.gov.tr/)
 
-Acil servis, poliklinik, yoğun bakım ve nöbet şartlarında hekimlerin zihinsel yükünü hafifletmek, karmaşık medikal hesaplama hatalarını önlemek, ilaç etkileşimlerini engellemek ve hasta dokümantasyonunu saniyeler içinde tamamlamak için geliştirilmiş **yeni nesil, çevrimdışı öncelikli (offline-first) klinik karar destek asistanı**.
+Klinik Karar Destek Asistanı, acil servis, poliklinik ve yataklı servislerde görev yapan hekimler ve sağlık çalışanları için tasarlanmış, açık kaynaklı ve çevrimdışı öncelikli (offline-first) bir klinik hesaplama ve dokümantasyon aracıdır.
+
+Projenin temel amacı; yoğun klinik çalışma temposunda sık başvurulan kılavuz formüllerini, pediatrik ve erişkin doz hesaplamalarını, olası ilaç etkileşim uyarılarını ve epikriz dokümantasyonunu tek bir arayüzde toplayarak hekimin karar verme sürecine pratik bir yardımcı sunmaktır.
+
+---
+
+> [!IMPORTANT]
+> ### ⚠️ Klinik ve Yasal Sorumluluk Reddi (Disclaimer)
+> Bu uygulama, yalnızca **tıp hekimleri, asistan hekimler, tıp öğrencileri ve yetkili sağlık profesyonellerine yönelik bir klinik karar destek ve eğitim aracıdır**.
+> 
+> Uygulamada yer alan hesaplama sonuçları, dozaj önerileri, etkileşim uyarıları ve skorlama yorumları bir hekimin bağımsız klinik muhakemesi, hasta başı fizik muayenesi ve profesyonel tıbbi değerlendirmesi yerine geçemez. İlaç uygulamaları, sıvı tedavileri ve klinik kararlar her zaman hastanın bireysel özelliklerine, alerji öyküsüne, güncel laboratuvar verilerine ve resmi ürün kılavuzlarına (KÜB/KT) göre sorumlu hekim tarafından doğrulanmalıdır.
 
 ---
 
 ## 📌 İçindekiler
-- [🎯 Temel Amaç ve Felsefe](#-temel-amaç-ve-felsefe)
-- [⚡ Hızlı Başlangıç & Canlı Uygulama](#-hızlı-başlangıç--canlı-uygulama)
-- [🫀 21 Klinik Karar Destek Motoru](#-21-klinik-karar-destek-motoru)
-  - [1. Demografi, Doğum Tarihi & Gestasyon](#1-demografi-doğum-tarihi--gestasyon)
-  - [2. Biyometri, Mosteller BSA & eGFR (KDIGO 2024 / Schwartz)](#2-biyometri-mosteller-bsa--egfr-kdigo-2024--schwartz)
-  - [3. Vital Bulgular & Triyaj Skorları (NEWS2 / PEWS / AAP BP)](#3-vital-bulgular--triyaj-skorları-news2--pews--aap-bp)
-  - [4. Glasgow Koma Skalası (GCS & Pediatrik pGCS)](#4-glasgow-koma-skalası-gcs--pediatrik-pgcs)
-  - [5. Tromboemboli & Kardiyak Acil Skorlamaları](#5-tromboemboli--kardiyak-acil-skorlamaları)
-  - [6. Nefroloji, Toksikoloji & Enfeksiyon](#6-nefroloji-toksikoloji--enfeksiyon)
-  - [7. Yenidoğan (Neonatoloji) & Doğum Saati Analizi](#7-yenidoğan-neonatoloji--doğum-saati-analizi)
-  - [8. Kan Gazı Analizi (ABG / VBG) & Asit-Baz](#8-kan-gazı-analizi-abg--vbg--asit-baz)
+- [🎯 Tasarım İlkeleri](#-tasarım-ilkeleri)
+- [⚡ Hızlı Başlangıç & PWA Kurulumu](#-hızlı-başlangıç--pwa-kurulumu)
+- [🫀 Klinik Karar Destek Motorları (21 Modül)](#-klinik-karar-destek-motorları-21-modül)
+  - [1. Demografi, Doğum Tarihi & Gestasyonel Yaş](#1-demografi-doğum-tarihi--gestasyonel-yaş)
+  - [2. Biyometri, Mosteller BSA & eGFR (KDIGO 2024 / Schwartz / CKD-EPI)](#2-biyometri-mosteller-bsa--egfr-kdigo-2024--schwartz--ckd-epi)
+  - [3. Vital Bulgular & Triyaj Skorları (NEWS2 / PEWS / AAP 2017 BP)](#3-vital-bulgular--triyaj-skorları-news2--pews--aap-2017-bp)
+  - [4. Bilinç & Nöroloji Skorlaması (GCS & Pediatrik pGCS)](#4-bilinç--nöroloji-skorlaması-gcs--pediatrik-pgcs)
+  - [5. Tromboemboli & Kardiyovasküler Skorlar (Wells / PERC / HEART / AF)](#5-tromboemboli--kardiyovasküler-skorlar-wells--perc--heart--af)
+  - [6. Nefroloji, Toksikoloji & Enfeksiyon (FENa / FEUrea / NAC / CURB-65)](#6-nefroloji-toksikoloji--enfeksiyon-fena--feurea--nac--curb-65)
+  - [7. Yenidoğan & Hiperbilirubinemi (AAP 2022 / TND 2014 / Maisels)](#7-yenidoğan--hiperbilirubinemi-aap-2022--tnd-2014--maisels)
+  - [8. Kan Gazı Analizi & Asit-Baz Dengesi (ABG / VBG)](#8-kan-gazı-analizi--asit-baz-dengesi-abg--vbg)
   - [9. İdame Sıvı Tedavisi (Holliday-Segar & TND Yenidoğan)](#9-idame-sıvı-tedavisi-holliday-segar--tnd-yenidoğan)
-  - [10. Sıvı-Elektrolit (Sodyum Açığı & Düzeltilmiş Kalsiyum)](#10-sıvı-elektrolit-sodyum-açığı--düzeltilmiş-kalsiyum)
-  - [11. Kardiyoloji & Gelişmiş EKG (QTc / Aks / Tisdale)](#11-kardiyoloji--gelişmiş-ekg-qtc--aks--tisdale)
-  - [12. Endokrinoloji & Steroid Eşdeğerlik Dönüşümü](#12-endokrinoloji--steroid-eşdeğerlik-dönüşümü)
-  - [13. İnfüzyon Hızı (Perfüzör & Glukoz İnfüzyon Hızı GIR)](#13-infüzyon-hızı-perfüzör--glukoz-infüzyon-hızı-gir)
-  - [14. Pediatrik Demir Eksikliği & Talasemi Kalkanı (TPHD & Sağlık Bakanlığı)](#14-pediatrik-demir-eksikliği--talasemi-kalkanı-tphd--sağlık-bakanlığı)
-  - [15. Pediatrik Şurup & Süspansiyon Dozlama Motoru](#15-pediatrik-şurup--süspansiyon-dozlama-motoru)
-  - [16. Ulusal Aşı Takvimi Sorgulama Motoru](#16-ulusal-aşı-takvimi-sorgulama-motoru)
-  - [17. Centor / McIsaac Akılcı Antibiyotik Motoru](#17-centor--mcisaac-akılcı-antibiyotik-motoru)
-  - [18. Kadın Doğum & Obstetrik Hesaplayıcı (Naegele / Bishop / Preeklampsi)](#18-kadın-doğum--obstetrik-hesaplayıcı-naegele--bishop--preeklampsi)
-  - [19. Cerrahi Skorlar & Yanık Sıvısı (ATLS 10 / Alvarado / Ranson / Sütür)](#19-cerrahi-skorlar--yanık-sıvısı-atls-10--alvarado--ranson--sütür)
-  - [20. Akılcı Reçete, TİTCK & İlaç Güvenlik Kalkanı](#20-akılcı-reçete-titck--ilaç-güvenlik-kalkanı)
-  - [21. Canlı SOAP Hasta Notu & Otomatik Klinik Dokümantasyon](#21-canlı-soap-hasta-notu--otomatik-klinik-dokümantasyon)
-- [📦 TİTCK Çevrimdışı İlaç Kataloğu, 125 Klinik Monograf & KÜB/KT Sistemi](#-titck-çevrimdışı-ilaç-kataloğu-125-klinik-monograf--kübkt-sistemi)
+  - [10. Sıvı-Elektrolit Dengesi (Adrogué-Madias Sodyum & Kalsiyum)](#10-sıvı-elektrolit-dengesi-adrogué-madias-sodyum--kalsiyum)
+  - [11. Kardiyoloji & EKG Analizi (QTc / Aks / Tisdale Risk Skoru)](#11-kardiyoloji--ekg-analizi-qtc--aks--tisdale-risk-skoru)
+  - [12. Endokrinoloji & Glukokortikoid Eşdeğerlik Dönüşümü](#12-endokrinoloji--glukokortikoid-eşdeğerlik-dönüşümü)
+  - [13. İnfüzyon Hızı & Glukoz İnfüzyon Hızı (GIR)](#13-infüzyon-hızı--glukoz-infüzyon-hızı-gir)
+  - [14. Pediatrik Büyüme Hızı & Kraniyal Tarama (NICE / WHO / Neyzi)](#14-pediatrik-büyüme-hızı--kraniyal-tarama-nice--who--neyzi)
+  - [15. Pediatrik Demir Eksikliği & Talasemi Ayrımı (TPHD & Mentzer)](#15-pediatrik-demir-eksikliği--talasemi-ayrımı-tphd--mentzer)
+  - [16. Pediatrik Şurup & Süspansiyon Dozlama Motoru](#16-pediatrik-şurup--süspansiyon-dozlama-motoru)
+  - [17. Ulusal Çocukluk Çağı Aşı Takvimi Sorgulama](#17-ulusal-çocukluk-çağı-aşı-takvimi-sorgulama)
+  - [18. Centor / McIsaac Farenjit Değerlendirmesi](#18-centor--mcisaac-farenjit-değerlendirmesi)
+  - [19. Kadın Doğum & Obstetrik Hesaplayıcı (Naegele / Bishop / Preeklampsi)](#19-kadın-doğum--obstetrik-hesaplayıcı-naegele--bishop--preeklampsi)
+  - [20. Cerrahi Skorlar & Yanık Sıvı Resüsitasyonu (ATLS 10 / Alvarado / Ranson)](#20-cerrahi-skorlar--yanık-sıvı-resüsitasyonu-atls-10--alvarado--ranson)
+  - [21. Akılcı Reçete, İlaç Güvenliği & Etkileşim Denetimi](#21-akılcı-reçete-ilaç-güvenliği--etkileşim-denetimi)
+- [📝 Canlı SOAP Klinik Notu Sentezi](#-canlı-soap-klinik-notu-sentezi)
+- [📦 TİTCK İlaç Kataloğu & 135 Klinik Monograf](#-titck-ilaç-kataloğu--135-klinik-monograf)
 - [🚨 Acil Durum Protokolleri & Canlı Zamanlayıcılar](#-acil-durum-protokolleri--canlı-zamanlayıcılar)
-- [🖨️ Akıllı A4 Reçete & Dozaj Çizelgesi](#️-akıllı-a4-reçete--dozaj-çizelgesi)
-- [✍️ SOAP Akıllı Şablonları & Nokta Kısayolları (Dot Phrases)](#️-soap-akıllı-şablonları--nokta-kısayolları-dot-phrases)
-- [💻 Klinik İş İstasyonu & Ergonomi (Quick Switcher Ctrl+K)](#-klinik-iş-istasyonu--ergonomi-quick-switcher-ctrlk)
-- [🔒 Gizlilik, KVKK ve Güvenlik İlkeleri](#-gizlilik-kvkk-ve-güvenlik-ilkeleri)
-- [🛠️ Geliştirici & Kurulum Rehberi](#️-geliştirici--kurulum-rehberi)
-- [⚠️ Yasal Uyarı & Sorumluluk Reddi](#️-yasal-uyarı--sorumluluk-reddi)
+- [🖨️ A4 Hasta Reçete & Dozaj Çizelgesi](#️-a4-hasta-reçete--dozaj-çizelgesi)
+- [🔒 Gizlilik ve Veri Güvenliği (KVKK / GDPR)](#-gizlilik-ve-veri-güvenliği-kvkk--gdpr)
+- [🛠️ Geliştirici ve Kurulum Rehberi](#️-geliştirici-ve-kurulum-rehberi)
 
 ---
 
-## 🎯 Temel Amaç ve Felsefe
+## 🎯 Tasarım İlkeleri
 
-Yoğun poliklinik ve acil servis şartlarında bir hekimin karşılaştığı en büyük riskler; **zaman baskısı**, **yorgunluk**, **hesaplama hataları** ve **ilaç etkileşimleridir**. Bu proje üç temel ilke üzerine inşa edilmiştir:
-
-1. **Sıfır Hata (Kılavuz Bütünlüğü):** Hesaplanan her formül (AHA/ACC, AAP 2022, ATLS 10, KDIGO 2024, GINA, AES, TND, TPHD, T.C. Sağlık Bakanlığı) güncel tıp literatürü referans alınarak test güdümlü (TDD) kodlanmıştır.
-2. **Sıfır Gecikme (Offline-First):** Hastane bodrum katlarında, internetin çekmediği sarı/kırmızı alanlarda dahi hiçbir sunucuya bağımlı olmadan 18.212 ruhsatlı ilaç, 125 çevrimdışı klinik ilaç monografı ve 21 hesaplama motoru mikrosaniyeler içinde çalışır.
-3. **Maksimum Klinik Ergonomi:** Tek ekranda reaktif hesaplama, klavyeden `Ctrl+K` hızlı motor erişimi ve doğrudan ilaç arama, gece nöbet modu ve tek tıkla resmi A4 hasta reçetesi çıktısı.
-
----
-
-## ⚡ Hızlı Başlangıç & Canlı Uygulama
-
-Uygulama doğrudan tarayıcı üzerinden çalışır ve Progressive Web App (PWA) standardındadır. Tarayıcınızdan *"Ana Ekrana Ekle"* seçeneğini kullanarak masaüstü veya mobil cihazınıza yerel bir uygulama gibi kurabilirsiniz.
-
-🌐 **Canlı Web Uygulaması:** [https://vellidr.github.io/klinik-pwa-deneme/](https://vellidr.github.io/klinik-pwa-deneme/)
+1. **Kılavuz Temelli Modelleme:** Algoritmalar uluslararası ve ulusal tıp kılavuzları (KDIGO 2024, AAP 2022, ATLS-10, AHA/ACC, WHO 2022/2023, TND, TPHD, T.C. Sağlık Bakanlığı) referans alınarak kurgulanmış ve test paketleriyle doğrulanmıştır.
+2. **Çevrimdışı Çalışma (Offline-First):** PWA mimarisi sayesinde uygulama, internet erişiminin bulunmadığı hastane alanlarında da 18.212 ruhsatlı ilaç kaydı, 135 çevrimdışı klinik monograf ve tüm hesaplama motorlarıyla yerel olarak çalışmayı sürdürür.
+3. **Klinik Ergonomi & Reaktivite:** Veri girişleri reaktif olarak hesaplanır; mükerrer girişleri azaltmak adına laboratuvar değerleri (örneğin serum sodyumu veya kreatinin) ilgili alt motorlara otomatik olarak aktarılır.
+4. **Modüler İş İstasyonu Yapısı:** Farklı uzmanlık alanlarına (Pediatri, Acil, Yoğun Bakım, Kadın Doğum vb.) uygun hazır paketler veya hekimin özelleştirebileceği kalıcı kart kombinasyonları sunulur.
 
 ---
 
-## 🫀 21 Klinik Karar Destek Motoru
+## ⚡ Hızlı Başlangıç & PWA Kurulumu
 
-Sistem bünyesinde 21 bağımsız, birbiriyle reaktif iletişim kurabilen klinik motor barındırır:
+Uygulama standart bir web tarayıcısı üzerinden doğrudan çalıştırılabilir. Progressive Web App (PWA) desteği sayesinde masaüstü veya mobil cihazlarda yerel bir yazılım gibi yüklenebilir:
 
-### 1. Demografi, Doğum Tarihi & Gestasyon
-- **Hassas Yaş Hesabı:** Kronolojik gün, ay ve yıl hesabı.
-- **Prematüre Düzeltilmiş Yaş:** Gestasyonel haftaya göre düzeltilmiş yaş hesabı ve persentil uyarlaması.
-- **Yenidoğan Doğum Saati:** İlk 72 saatteki fototerapi ve sarılık kararı için saatlik hassasiyette yaş belirleme.
+- **Canlı Uygulama:** [https://vellidr.github.io/klinik-pwa-deneme/](https://vellidr.github.io/klinik-pwa-deneme/)
+- **Yükleme:** Tarayıcı adres çubuğundaki *"Yükle"* veya tarayıcı menüsündeki *"Ana Ekrana Ekle"* seçeneğini kullanabilirsiniz.
 
-### 2. Biyometri, Mosteller BSA & eGFR (KDIGO 2024 / Schwartz)
-- **Vücut Yüzey Alanı (BSA):** Mosteller formülü ($\text{BSA} = \sqrt{\frac{\text{Boy} \times \text{Kilo}}{3600}}$).
-- **KDIGO 2024 Uyumlu Gelişmiş eGFR Motoru:**
-  - *Pediatrik ($<18$ yaş):* $<1$ yaş bebeklerde prematüre ($k = 0.33$) ve term ($k = 0.45$) Schwartz sabitleri; $1-17$ yaşta **IDMS-izlenebilir Yatakbaşı Schwartz ($k = 0.413$, varsayılan)** veya **Klasik Jaffe** ($k = 0.55$ çocuk/adolesan kız, $k = 0.70$ $\ge 13$ yaş erkek) tahlil seçimi.
-  - *Erişkin ($\ge 18$ yaş):* **KDIGO 2024 önerili 2021 CKD-EPI Kombine Kreatinin + Sistatin C ($\text{eGFR}_{\text{cr-cys}}$)** denklemi, izole Kreatinin veya izole Sistatin C geri dönüş desteği.
-  - *İlaç Dozlama İçin BSA De-İndekslemesi:* Obez veya kaşektik hastalarda dar terapötik indeksli ilaç dozlama güvenliği için mutlak GFR ($\text{eGFR}_{\text{mutlak}} = \text{eGFR} \times \frac{\text{BSA}}{1.73}\text{ mL/dk}$) hesabı.
-- **Otomatik Güvenlik Entegrasyonu:** Düşük eGFR saptandığında İlaç Güvenliği motoruna anında renal doz kısıtlama sinyali gönderir.
+---
 
-### 3. Vital Bulgular & Triyaj Skorları (NEWS2 / PEWS / AAP BP)
-- **Erişkin NEWS2:** Solunum sayısı, $\text{SpO}_2$, nabız, sistolik tansiyon, bilinç (ACVPU) ve ateş üzerinden erken uyarı skoru.
-- **Pediatrik PEWS:** Yaşa göre vital parametrelerden dekompansasyon riski skoru.
+## 🫀 Klinik Karar Destek Motorları (21 Modül)
+
+### 1. Demografi, Doğum Tarihi & Gestasyonel Yaş
+- **Kronolojik Yaş:** Gün, ay ve yıl bazında hassas yaş hesaplaması.
+- **Prematüre Düzeltilmiş Yaş:** $<37$ gestasyonel haftada doğan bebeklerde düzeltilmiş ay ve hafta hesabı; persentil eğrilerine otomatik uyarlama.
+- **Postnatal Saat:** Yenidoğan sarılığı değerlendirmesinde ilk 14 gün (336 saat) için saat bazlı yaş takibi.
+
+### 2. Biyometri, Mosteller BSA & eGFR (KDIGO 2024 / Schwartz / CKD-EPI)
+- **Vücut Yüzey Alanı (BSA):** Mosteller formülü ($\text{BSA} = \sqrt{\frac{\text{Boy (cm)} \times \text{Kilo (kg)}}{3600}}$).
+- **Pediatrik eGFR ($<18$ yaş):** IDMS izlenebilir yatakbaşı Schwartz ($k=0.413$) veya klasik Jaffe tahlil seçimi; $<1$ yaş bebeklerde term ($k=0.45$) ve prematüre ($k=0.33$) sabitleri.
+- **Erişkin eGFR ($\ge 18$ yaş):** KDIGO 2024 önerili 2021 CKD-EPI Kombine Kreatinin + Sistatin C ($\text{eGFR}_{\text{cr-cys}}$), izole Kreatinin veya izole Sistatin C denklemleri.
+- **Dozlama İçin Mutlak GFR:** Obez ve kaşektik hastalarda dar terapötik indeksli ilaçlar için BSA de-indekslemesi ($\text{eGFR}_{\text{mutlak}} = \text{eGFR} \times \frac{\text{BSA}}{1.73}\text{ mL/dk}$).
+
+### 3. Vital Bulgular & Triyaj Skorları (NEWS2 / PEWS / AAP 2017 BP)
+- **NEWS2 (National Early Warning Score 2):** Erişkin hastalarda solunum sayısı, $\text{SpO}_2$, oksijen desteği, sistolik tansiyon, nabız, bilinç düzeyi ve ateş üzerinden klinik dekompansasyon risk analizi.
+- **Pediatrik PEWS:** Yaşa göre fizyolojik parametrelerden pediatrik erken uyarı puanlaması.
 - **AAP 2017 Pediatrik Tansiyon:** Yaş, cinsiyet ve boy persantiline göre normotansif, evre 1 ve evre 2 hipertansiyon evrelemesi.
 
-### 4. Glasgow Koma Skalası (GCS & Pediatrik pGCS)
-- **Erişkin GCS:** Göz, sözel ve motor yanıt puanlaması (3-15).
-- **Pediatrik pGCS (<2 Yaş):** Preverbal çocuklara özel sözel (gülümseme, ağlama) ve motor skorlaması.
+### 4. Bilinç & Nöroloji Skorlaması (GCS & Pediatrik pGCS)
+- **Erişkin GCS:** Göz açma, sözel yanıt ve motor yanıt bileşenleri (3–15 puan).
+- **Pediatrik pGCS ($<2$ yaş):** Konuşma öncesi (preverbal) çocuklara uygun sözel ve motor değerlendirme kriterleri.
 
-### 5. Tromboemboli & Kardiyak Acil Skorlamaları
-- **Wells DVT Skoru:** 10 parametreli derin ven trombozu olasılığı (Düşük / Orta / Yüksek).
-- **Wells PTE Skoru:** Pulmoner emboli 2-kademeli ve 3-kademeli klinik olasılık analizi.
-- **PERC Dışlama Kuralı:** Düşük riskli olgularda gereksiz D-Dimer ve BT Anjiyo tetkikini önleme protokolü.
-- **HEART Skoru:** Acil serviste göğüs ağrısı ile başvuran hastada 6 haftalık majör kardiyak olay (MACE) risk tahmini.
-- **CHA₂DS₂-VASc & HAS-BLED:** Atriyal fibrilasyonda inme riskine karşı antikoagülasyon endikasyonu ve kanama riski dengesi.
+### 5. Tromboemboli & Kardiyovasküler Skorlar (Wells / PERC / HEART / AF)
+- **Wells DVT & Wells PTE:** Derin ven trombozu ve pulmoner emboli klinik olasılık skorlamaları.
+- **PERC Kuralı:** Düşük riskli olgularda gereksiz D-Dimer ve radyolojik tetkik yükünü azaltmaya yönelik dışlama kriterleri.
+- **HEART Skoru:** Acil servise göğüs ağrısıyla başvuran hastalarda 6 haftalık majör kardiyak olay (MACE) risk analizi.
+- **CHA₂DS₂-VASc & HAS-BLED:** Atriyal fibrilasyon hastalarında inme riski ile antikoagülan kullanımına bağlı majör kanama riski dengesi.
 
-### 6. Nefroloji, Toksikoloji & Enfeksiyon
-- **FENa & FEUrea:** Prerenal azotemi vs. Akut Tubuler Nekroz (ATN) ayrımı; diüretik kullanan hastalarda FEUrea devreye girer.
-- **Düzeltilmiş Sodyum (Katz & Hillier):** Ağır hiperglisemide gerçek ve yalancı hiponatremi ayrımı.
-- **Kritik Osmolal Açık:** Toksik alkol (Metanol, Etilen Glikol) intoksikasyonunda antidot protokolü.
-- **Rumack-Matthew Nomogramı:** Saat bazlı Parasetamol toksisitesi; **Pediatrik Sıvı Yüklenmesini Önleyen 3 Kademeli NAC Protokolü** (10 kg bebekte sıvı hacmini 1000 mL'den 100 mL'ye güvenle düşürür).
-- **CURB-65 & CRB-65:** Toplum kökenli pnömoni ciddiyet derecesi ve Sağlık Bakanlığı uyumlu ampirik antibiyotik önerisi.
+### 6. Nefroloji, Toksikoloji & Enfeksiyon (FENa / FEUrea / NAC / CURB-65)
+- **FENa & FEUrea:** Prerenal azotemi ile Akut Tubuler Nekroz (ATN) ayrımı; diüretik kullanan hastalarda FEUrea önceliği.
+- **Düzeltilmiş Sodyum (Katz & Hillier):** Hiperglisemi varlığında ölçülen sodyumun düzeltilmesi ve osmolal açık hesabı.
+- **Rumack-Matthew Nomogramı & NAC:** Parasetamol intoksikasyonunda saat bazlı toksisite değerlendirmesi ve pediatrik sıvı kısıtlamalı 3 kademeli IV NAC protokolü.
+- **CURB-65 & CRB-65:** Toplum kökenli pnömoni ciddiyet derecesi ve ayaktan/yatarak takip önerisi.
 
-### 7. Yenidoğan (Neonatoloji) & Doğum Saati Analizi
-- **İkili Hiperbilirubinemi Kılavuz Seçicisi (`AAP 2022 Güncel` & `TND 2014 / AAP 2004 Klasik`):**
-  - *AAP 2022 Güncel Kılavuzu (Varsayılan):* 35–40+ gebelik haftasına ve nörotoksisite risk faktörlerine özgü saatlik (1–336 saat / 14 gün) fototerapi ve kan değişimi eşikleri, **Bakım Eskalasyonu (`Kan Değişimi Eşiği - 2.0 mg/dL`)** acil protokolü, **TcB (Transkutanöz Bilirubin)** doğrulama kuralı ve taburculuk sonrası izlem zamanlaması (AAP 2022 Figür 7).
-  - *TND 2014 / AAP 2004 Klasik Modu:* Türk Neonatoloji Derneği (2014) risk grupları ile karşılaştırmalı izlem seçeneği ve $<35$ hafta prematüre koruması.
-- **Fizyolojik vs. Patolojik Kilo Kaybı:** Doğum kilosuna göre kayıp yüzdesi (>%10 kritik dehidratasyon alarmı).
-- **TND Yenidoğan Kademeli Sıvı Protokolü:** Yaşam gününe göre (1. gün 60-70 mL/kg, 2. gün 70-80 mL/kg, 3. gün 80-90 mL/kg) idame, fototerapi/eskalasyon ek sıvısı (+15 mL/kg/gün) ve Glukoz İnfüzyon Hızı (GIR: mg/kg/dk) hesabı.
-- **APGAR Skoru:** 1. ve 5. dakika resüsitasyon rehberi.
+### 7. Yenidoğan & Hiperbilirubinemi (AAP 2022 / TND 2014 / Maisels)
+- **AAP 2022 Rehberi (Varsayılan):**
+  - 35–40+ gebelik haftaları ve nörotoksisite risk faktörlerine göre saatlik fototerapi ve kan değişimi eşikleri (doğrusal enterpolasyonlu).
+  - Bakım eskalasyonu acil protokolü (`Kan Değişimi Eşiği - 2.0 mg/dL`).
+  - Bilirubin/Albümin (B/A) oranı kontrolü.
+  - TcB doğrulaması (fototerapi eşiğine $\le 3\text{ mg/dL}$ farkta TSB doğrulama uyarısı).
+  - Fototerapi sonlandırma ve rebound izlem aralıkları (KAS 14-15).
+  - Taburculuk sonrası kontrol zamanlama matrisi (AAP 2022 Tablo 4).
+- **TND 2014 / AAP 2004 Klasik Mod:** Türk Neonatoloji Derneği eğrileriyle karşılaştırmalı değerlendirme seçeneği.
+- **Maisels 2012 Preterm Yaklaşımı:** $<35$ hafta prematüre bebeklerde postmenstrüel yaşa göre fototerapi ve kan değişimi eşikleri.
+- **Fizyolojik/Patolojik Kilo Kaybı:** Doğum ağırlığına göre yüzde kaybı hesabı ($>\%10$ uyarı sinyali).
+- **APGAR Skoru:** 1. ve 5. dakika resüsitasyon değerlendirmesi.
 - **Westley Krup Skoru & CDS Dehidratasyon Skalası.**
 
-### 8. Kan Gazı Analizi (ABG / VBG) & Asit-Baz
-- **Asit-Baz Ayrımı:** pH, $\text{pCO}_2$, $\text{HCO}_3^-$ üzerinden metabolik/solunumsal asidoz/alkaloz analizi.
-- **Winter Formülü:** Solunumsal kompanzasyonun tam olup olmadığını denetler.
-- **Anyon Açığı (Anion Gap):** HAGMA / NAGMA ayrımı ve gizli mikst bozukluklar için Delta-Delta ($\Delta/\Delta$) oranı.
+### 8. Kan Gazı Analizi & Asit-Baz Dengesi (ABG / VBG)
+- pH, $\text{pCO}_2$, $\text{HCO}_3^-$ üzerinden metabolik ve solunumsal primer asit-baz bozukluğu tespiti.
+- **Winter Formülü:** Metabolik asidozda solunumsal kompanzasyonun yeterliliği.
+- **Anyon Açığı (AG) & Delta-Delta ($\Delta/\Delta$):** HAGMA, NAGMA ve eşlik eden mikst bozuklukların incelenmesi.
 
 ### 9. İdame Sıvı Tedavisi (Holliday-Segar & TND Yenidoğan)
-- **Holliday-Segar (4-2-1 Kuralı):** Günlük toplam sıvı ve saatlik infüzyon hızı.
-- **Ateş Kaybı Düzeltmesi:** 37°C üzerindeki her 1°C artış için +%10 ek hidrasyon payı.
-- **TND Kademeli Yenidoğan Sıvısı:** Yenidoğan gününe özel dinamik sıvı önerisi.
+- **Holliday-Segar (4-2-1 Kuralı):** Günlük toplam sıvı hacmi ve saatlik infüzyon hızı.
+- **Ateş Kaybı Ayarlaması:** 37°C üzerindeki her 1°C artış için hidrasyon ekleme seçeneği.
+- **TND Kademeli Yenidoğan Sıvısı:** Yaşam gününe göre dinamik sıvı önerisi.
 
-### 10. Sıvı-Elektrolit (Sodyum Açığı & Düzeltilmiş Kalsiyum)
-- **Adrogué-Madias Sodyum Açığı:** Seçilen sıvı türüne göre (SF, %3 NaCl, İzolite) 1 litrenin Na üzerindeki etkisi, hedef infüzyon hızı ve Ozmotik Demiyelinizasyon Sendromu (ODS) güvenlik kalkanı.
-- **Düzeltilmiş Kalsiyum:** Albümin düşüklüğünde iyonize kalsiyum tahmini.
+### 10. Sıvı-Elektrolit Dengesi (Adrogué-Madias Sodyum & Kalsiyum)
+- **Sodyum Açığı Hesabı:** Seçilen infüzyon sıvısının (SF, %3 NaCl vb.) serum sodyumu üzerindeki tahmini değişimi ve güvenli infüzyon hızı önerisi.
+- **Yaşa Uygun TBW Fraksiyonu:** Yenidoğanda 0.70, infantta 0.65, çocukta 0.60 ve erişkin/geriatride cinsiyete özel toplam vücut sıvısı katsayıları.
+- **Düzeltilmiş Kalsiyum:** Hipoalbüminemi varlığında iyonize kalsiyum tahmini.
 
-### 11. Kardiyoloji & Gelişmiş EKG (QTc / Aks / Tisdale)
-- **Üçlü QTc Formülü:** Bazett, Fridericia ve geniş QRS / Dal blokları (LBBB, RBBB, Pace) için **Bogossian (QTcBog)** formülü.
-- **EKG Kağıdı Küçük Kutucuk (mm) Giriş Modu:** Doğrudan EKG kağıdından sayılan küçük kare (1 mm) sayısı ile çift yönlü anlık ms-kutu senkronizasyonu.
-- **Kağıt Hızı Seçicisi:** Standart **25 mm/sn** (1 kare = 40 ms) ve **50 mm/sn** (1 kare = 20 ms) desteği.
-- **AHA/ACC/HRS Tanjant Rehberi:** T dalgası iniş eğimi teğetinden kesin QT ölçümü; U dalgası ayrımı.
-- **EKG Aksı & Tisdale Risk Skoru:** D1 ve aVF derivasyonlarından net aks derecesi ve Tisdale QT uzama riski.
+### 11. Kardiyoloji & EKG Analizi (QTc / Aks / Tisdale Risk Skoru)
+- **Çoklu QTc Denklemleri:** Bazett, Fridericia ve dal bloklarında (LBBB, RBBB, Pace) Bogossian (QTcBog) formülü.
+- **EKG Kağıt Giriş Desteği:** Küçük kare (1 mm) sayısından doğrudan ms çevrimi; 25 mm/sn ve 50 mm/sn kağıt hızı seçenekleri.
+- **AHA/ACC Teğet Yöntemi Kılavuzu:** T dalgası iniş eğimi teğeti ile kesin QT ölçümü rehberi.
+- **EKG Aksı & Tisdale Skoru:** D1 ve aVF derivasyonlarından frontal düzlem aksı ve QT uzama risk skoru.
 
-### 12. Endokrinoloji & Steroid Eşdeğerlik Dönüşümü
-- **Glukokortikoid Eşdeğerlik Tablosu:** Prednizol, Metilprednizolon, Deksametazon, Hidrokortizon, Deflazakort doz dönüşümleri.
-- **HOMA-IR:** Açlık glukozu ve insülin değerlerinden insülin direnci hesaplaması.
+### 12. Endokrinoloji & Glukokortikoid Eşdeğerlik Dönüşümü
+- Prednizol, Metilprednizolon, Deksametazon, Hidrokortizon ve Deflazakort arası doz dönüşüm tablosu.
+- **HOMA-IR:** Açlık kan şekeri ve açlık insülininden insülin direnci hesabı.
 
-### 13. İnfüzyon Hızı (Perfüzör & Glukoz İnfüzyon Hızı GIR)
-- **İlaç Perfüzör Hesabı:** Konsantrasyon, hasta kilosu ve istenen $\mu\text{g/kg/dk}$ hızından $\text{mL/saat}$ perfüzör hızı hesabı (Dopamin, Noradrenalin, Adrenalin).
-- **Glukoz İnfüzyon Hızı (GIR):** Dekstroz yüzdesi ve infüzyon hızından yenidoğan için kritik $\text{mg/kg/dk}$ hesabı.
+### 13. İnfüzyon Hızı & Glukoz İnfüzyon Hızı (GIR)
+- **İlaç Perfüzörü:** $\mu\text{g/kg/dk}$, $\mu\text{g/dk}$ veya $\text{mg/kg/saat}$ hedef dozlarından $\text{mL/saat}$ pompa hızı hesabı.
+- **Glukoz İnfüzyon Hızı (GIR):** Dekstroz yüzdesi ve infüzyon hızından yenidoğanda $\text{mg/kg/dk}$ glukoz akış hesabı.
 
-### 14. Pediatrik Demir Eksikliği & Talasemi Kalkanı (TPHD & Sağlık Bakanlığı)
-- **TPHD & T.C. Sağlık Bakanlığı ("Demir Gibi Türkiye") Protokolü:** Term bebeklerde 4–12 ay $1\text{ mg/kg/gün}$, prematüre/düşük doğum ağırlıklı bebeklerde 2–12 ay $2\text{ mg/kg/gün}$ profilaksi.
-- **Yaşa Özgü Anemi Eşikleri & Terapötik Dozlama:** Fizyolojik nadir dönemi dahil ($3-6$ ay $<9.5\text{ g/dL}$ term / $<9.0\text{ g/dL}$ preterm; $6-59$ ay $<11.0\text{ g/dL}$; $5-11$ yaş $<11.5\text{ g/dL}$; $12-14$ yaş $<12.0\text{ g/dL}$) $3-6\text{ mg/kg/gün}$ elementer demir ve damla/şurup/ölçek çevirici.
-- **Mentzer İndeksi ($\text{MCV}/\text{RBC}$) & $\beta$-Talasemi Taşıyıcılığı Güvenlik Kalkanı:** Yaşa göre mikrositoz analizi, $\text{Mentzer} < 13$ ve $\text{RDW}$ uyumu ile talasemi taşıyıcılığı uyarısı; ferritin normal/yüksekken ampirik demir yüklemesini durduran koruma kalkanı ve eşlik eden DEA'da yalancı düşük $\text{HbA}_2$ maskelenme uyarısı.
+### 14. Pediatrik Büyüme Hızı & Kraniyal Tarama (NICE / WHO / Neyzi)
+- **Cole & Green Kısıtlı LMS Persentilleri:** WHO Child Growth Standards (0-5 yaş) ve Neyzi 2015 (0-18 yaş) standartları; persentil ve SDS (Z-skoru) hesabı.
+- **10-Kanallı Centile Yapısı & Büyüme Hızı:** NICE/WHO kılavuzları doğrultusunda $\text{cm/yıl}$ büyüme hızı ve kanal düşüşü (growth faltering) tespiti.
+- **WHO 2022/2023 Akut Malnütrisyon:** Boya göre ağırlık Z-skoruna dayalı SAM (Ağır Akut Malnütrisyon) ve MAM (Orta Akut Malnütrisyon) sınıflandırması ve beslenme protokolü uyarıları.
+- **Kraniyal Tarama (0-18 yaş):** Baş çevresi persentil analizi, mikrosefali ve hidrosefali risk tabakalandırması.
 
-### 15. Pediatrik Şurup & Süspansiyon Dozlama Motoru
-- **Kilo Bazlı mg/kg Dozlama:** Parasetamol ($10-15\text{ mg/kg}$), İbuprofen ($5-10\text{ mg/kg}$), Amoksisilin vb.
-- **Ölçek (5 mL) Çevirici:** Ebeveynlerin uygulayabilmesi için miligram dozunu doğrudan ölçek/kaşık birimine çevirir.
-- **Maksimum Doz Güvenlik Sınırı:** Günlük azami doz aşımlarını kırmızı uyarı ile engeller.
+### 15. Pediatrik Demir Eksikliği & Talasemi Ayrımı (TPHD & Mentzer)
+- **TPHD & T.C. Sağlık Bakanlığı Protokolü:** Term ve preterm bebeklerde profilaktik demir takvimi ($1-2\text{ mg/kg/gün}$).
+- **Yaşa Özgü Anemi Eşikleri:** Fizyolojik nadir dönemi dahil yaş gruplarına göre eşikler ve terapötik doz hesabı ($3-6\text{ mg/kg/gün}$).
+- **Mentzer İndeksi ($\text{MCV}/\text{RBC}$):** Mikrositik anemide demir eksikliği ile $\beta$-talasemi taşıyıcılığı ayrımına yardımcı gösterge.
 
-### 16. Ulusal Aşı Takvimi Sorgulama Motoru
-- **T.C. Sağlık Bakanlığı En Güncel Takvim:** Doğumdan 8. sınıfa kadar tüm rutin aşılar.
-- **Özel Aşılar:** Rotavirüs ve Meningokok takvimleri, gecikmiş aşı yakalama şemaları.
+### 16. Pediatrik Şurup & Süspansiyon Dozlama Motoru
+- Kilo bazlı miligram dozlama, konsantrasyon kilitleri ve ölçek (5 mL) / oral şırınga (mL) hacim dönüşümü.
+- **TİTCK & BNFc Çift Eşik Denetimi:** Türkiye ruhsatlı konsantrasyonlar ile BNFc referansları arasında doz doğrulama.
+- **Erişkin Tavan Doz Kısıtlaması (Cap Clamping):** Çocuklarda hesaplanan dozun erişkin maksimum tekil veya günlük dozunu aşmasını önleyen sınırlama.
+- **Pediatrik Obezitede İdeal Vücut Ağırlığı (IBW):** BMI persantili $>95$ olan çocuklarda aşırı dozlamayı önlemek adına boya göre 50. persentil kilo bazlı dozlama önerisi.
 
-### 17. Centor / McIsaac Akılcı Antibiyotik Motoru
-- **GAS Farenjit Olasılığı:** Ateş, eksüda, lenfadenopati, öksürük yokluğu ve yaş kriterleri.
-- **Klinik Öneri:** Antibiyotik endikasyonu, boğaz kültürü / hızlı antijen testi gereksinimi.
+### 17. Ulusal Çocukluk Çağı Aşı Takvimi Sorgulama
+- T.C. Sağlık Bakanlığı aşı takvimine göre yaşa uygun rutin aşılar ve gecikmiş aşı yakalama şemaları.
 
-### 18. Kadın Doğum & Obstetrik Hesaplayıcı (Naegele / Bishop / Preeklampsi)
-- **Naegele Tahmini Doğum Tarihi (TDT):** Son adet tarihinden (SAT) gebelik haftası ve tahmini doğum tarihi.
-- **Bishop Skoru:** Servikal olgunlaşma ve doğum indüksiyonu başarı öngörüsü.
-- **Preeklampsi Risk Değerlendirmesi:** Tansiyon ve proteinüriye göre acil magnezyum sülfat protokolü önerisi.
+### 18. Centor / McIsaac Farenjit Değerlendirmesi
+- Grup A Streptokok farenjiti olasılığı, hızlı antijen testi gereksinimi ve ampirik antibiyotik kararına destek.
 
-### 19. Cerrahi Skorlar & Yanık Sıvısı (ATLS 10 / Alvarado / Ranson / Sütür)
-- **Üçlü Yanık Resüsitasyon Protokolü (ATLS 10. Baskı):** Termal yanıkta **Modifiye Brooke / ATLS-10** ($2\text{ mL/kg/}\%$ erişkin, $<14$ yaş ve bebeklerde $3\text{ mL/kg/}\%$), yüksek voltaj **Elektrik Yanığı ($4\text{ mL/kg/}\%$)** ve **Klasik Parkland ($4\text{ mL/kg/}\%$)** seçicisi; ilk 8 ve sonraki 16 saatlik Ringer Laktat infüzyon hızı, hedef idrar çıkışı ve **$<30\text{ kg}$ çocuklarda hipoglisemiyi önleyen %5 Dekstrozlu Holliday-Segar ek idame sıvısı**.
-- **Alvarado Akut Apandisit Skoru:** Semptom, bulgu ve laboratuvar parametrelerinden ameliyat/gözlem kararı.
-- **İnteraktif Ranson Akut Pankreatit Skoru:** Başvuru (0. saat) ve 48. saat kriterlerinden mortalite yüzdesi ve yoğun bakım triyajı.
-- **Sütür & Dikiş Alma Rehberi:** Anatomik bölgeye göre dikiş materyali, iğne kalınlığı ve dikiş alma günleri.
+### 19. Kadın Doğum & Obstetrik Hesaplayıcı (Naegele / Bishop / Preeklampsi)
+- **Naegele Tahmini Doğum Tarihi (TDT):** Son adet tarihinden gestasyonel hafta ve tahmini doğum tarihi.
+- **Bishop Skoru:** Servikal olgunluk ve doğum indüksiyonu başarı değerlendirmesi.
+- **Preeklampsi Riski:** Kan basıncı ve proteinüri bulgularına göre acil magnezyum sülfat ve antihipertansif protokolü rehberi.
 
-### 20. Akılcı Reçete, TİTCK & İlaç Güvenlik Kalkanı
-Reçetelenen veya sorgulanan ilaçlar arasında arka planda çalışan kesintisiz klinik koruma kalkanı:
-- **Triple Whammy Dedektörü:** ACEi/ARB + Diüretik + NSAİİ ölümcül kombinasyonunu tespit ederek hemodinamik akut böbrek hasarı uyarısı üretir.
-- **Serotonin Sendromu Kalkanı:** MAOI, SSRI/SNRI, Tramadol, Linezolid ve Triptan kombinasyonlarında Hunter kriterleri uyarısı verir.
-- **Ölümcül Hiperkalemi Kalkanı:** Spironolakton + ACEi/ARB + TMP-SMX + NSAİİ kombinasyonlarında kardiyak arrest ve aritmi koruması.
-- **CYP3A4 Statin Rabdomiyoliz Kalkanı:** Simvastatin/Atorvastatin ile Klaritromisin, Eritromisin, Ketokonazol ve Diltiazem etkileşimlerini yakalar.
-- **Akıllı Renal Doz Uyarlaması:** Hastanın o anki eGFR değerine göre nefrotoksik veya doz azaltımı gereken ilaçları kırmızı bayrakla işaretler.
-- **Gebelik & Trimester Güvenliği:** Trimester bazlı FDA/Avustralya kategorileri ve teratojenite uyarıları.
-- **Yenidoğan Kontrendikasyon Kalkanı:** Seftriakson+Kalsiyum ölümcül presipitasyonu, sülfonamid kernikterus riski, florokinolon ve tetrasiklin kıkırdak/diş toksisitesi koruması.
+### 20. Cerrahi Skorlar & Yanık Sıvı Resüsitasyonu (ATLS 10 / Alvarado / Ranson)
+- **Üçlü Yanık Sıvı Protokolü (ATLS 10. Baskı):**
+  - Modifiye Brooke / ATLS-10 ($2\text{ mL/kg/}\%$ erişkin, $3\text{ mL/kg/}\%$ pediatrik).
+  - Yüksek voltajlı Elektrik Yanığı ($4\text{ mL/kg/}\%$).
+  - Klasik Parkland ($4\text{ mL/kg/}\%$).
+  - İlk 8 ve sonraki 16 saatlik sıvı dağılımı; $<30\text{ kg}$ çocuklarda hipoglisemiyi önleyen %5 Dekstrozlu ek idame sıvısı.
+- **Alvarado Skoru:** Akut apandisit klinik olasılığı.
+- **Ranson Skoru:** Akut pankreatit başvuru ve 48. saat mortalite göstergeleri.
+- **Sütür Alma Rehberi:** Anatomik bölgeye göre dikiş materyali ve dikiş alma günleri.
 
-### 21. Canlı SOAP Hasta Notu & Otomatik Klinik Dokümantasyon
-- **Klinik Motorlarla Tam Bütünleşik:** Girilen tüm vitaller, demografi, yapılan hesaplamalar, acil müdahaleler ve reçete edilen ilaçlar otomatik olarak SOAP (Subjektif, Objektif, Değerlendirme, Plan) formatında toplanır.
-- **Tek Tıkla Kopyalama:** HBYS / AHBS sistemlerine yapıştırılmaya hazır epikriz metni üretir.
+### 21. Akılcı Reçete, İlaç Güvenliği & Etkileşim Denetimi
+- **4 Kademeli Etkileşim Hiyerarşisi:**
+  - *Tier 1 (Kontrendike):* Birlikte kullanımı kontrendike kombinasyonlar.
+  - *Tier 2 (Ciddi):* Yakın klinik ve laboratuvar takibi veya doz ayarlaması gerektiren etkileşimler.
+  - *Tier 3 (Orta Düzey):* Potansiyel yan etki veya etkinlik değişikliği izlemi.
+  - *Tier 4 (Minör / İzlem):* Genel klinik izlem.
+- **ACORN Çalışması Güncellemesi:** Vankomisin + Piperasilin/Tazobaktam kombinasyonunda nefrotoksisite riskinin güncel kanıtlar ışığında değerlendirilmesi.
+- **Özel Risk Kombinasyonları:**
+  - *Triple Whammy:* ACEi/ARB + Diüretik + NSAİİ ile hemodinamik akut böbrek hasarı riski.
+  - *Serotonin Sendromu:* Çoklu serotonerjik ajanlarda Hunter kriterleri izlem uyarısı.
+  - *Hiperkalemi Riski:* Spironolakton, ACEi/ARB, TMP-SMX ve NSAİİ kombinasyonları.
+  - *Statin - CYP3A4 Etkileşimi:* Simvastatin/Atorvastatin ile güçlü CYP3A4 inhibitörleri (Klaritromisin vb.) riski.
+- **Böbrek Fonksiyonuna Göre Doz Uyarlaması:** Hastanın o anki eGFR veya Cockcroft-Gault CrCl değerine göre renal kısıtlamalar.
+- **Gebelik & Emzirme Güvenliği:** Trimester bazlı FDA/Avustralya kategorileri ve teratojenite uyarıları.
+- **Yenidoğan Kontrendikasyonları:** Seftriakson + Kalsiyum presipitasyonu, sülfonamidlerde kernikterus riski gibi yaşa özel güvenlik kuralları.
 
 ---
 
-## 📦 TİTCK Çevrimdışı İlaç Kataloğu, 125 Klinik Monograf & KÜB/KT Sistemi
+## 📝 Canlı SOAP Klinik Notu Sentezi
 
-Uygulamanın ilaç arama motoru, **Türkiye İlaç ve Tıbbi Cihaz Kurumu (TİTCK)** güncel veritabanı temel alınarak geliştirilmiştir:
+Tüm aktif motorların girdi ve çıktıları, hekimin hasta kaydını kolaylaştırmak amacıyla dinamik olarak yapılandırılmış bir **SOAP (Subjektif, Objektif, Değerlendirme, Plan)** notuna dönüştürülür:
 
-- **18.212 Ruhsatlı İlaç (Optimize Tekil Veri Mimarisi):** Aktif ve pasif tüm ruhsatlı ilaçlar, barkodlar, ATC kodları ve ruhsat sahibi firmalar yerel bellekte indekslenir.
-- **📋 125 Çevrimdışı Klinik İlaç Monograf Kartı & Ağ Farkındalıklı KÜB/KT Köprüsü:**
-  - Türkiye'de en sık reçete edilen ve acil kritik 125 etken madde için %100 çevrimdışı erişkin/pediatrik doz, maksimum günlük sınır, renal/hepatik uyarlama, gebelik/emzirme güvenliği ve kontrendikasyon kartları.
-  - İnternet bağlantısı yokken (`navigator.onLine === false`) harici PDF veya portal linklerine tıklandığında tarayıcı ağ hatası ekranına düşmek yerine otomatik olarak yerel çevrimdışı klinik özet modalı açılır.
-- **🎯 4 Farklı Arama Modu:**
-  1. **✨ Tümü:** İlaç adı, etken madde, barkod, ATC ve firma üzerinde akıllı fonetik arama.
-  2. **💊 İlaç Adı:** Yalnızca ticari marka adlarına göre odaklı arama (örn. *Parol, Augmentin, Arveles*).
-  3. **🔬 Etken Madde:** Yalnızca jenerik molekül adına göre arama (örn. *Parasetamol, Amoksisilin*).
-  4. **🏷️ Barkod / ATC:** 13 haneli barkod numarası veya ATC kodu ile $O(1)$ sürede anında arama.
-- **📄 Resmi Prospektüs (KT) & KÜB PDF Erişimi:**
-  - TİTCK sisteminde doğrudan PDF linki tanımlı 780+ ilaç için tek tıkla resmi **Kullanma Talimatı (KT)** ve **Kısa Ürün Bilgisi (KÜB)** açma.
-  - Doğrudan linki bulunmayan müstahzarlar için otomatik **Google PDF Arama** ve resmi **TİTCK KÜB/KT Portalı** sorgulama köprüsü.
-- **⚡ Yüksek Performanslı İndeksleme:** Inverted Prefix Index, Two-Pointer kesişim algoritması ve LRU sorgu önbelleği ile aramalar $<5\text{ ms}$ içinde sonuç verir.
-- **🔄 Akıllı Eşdeğer (Muadil) Arama:** Aynı ATC kodu ve etken maddeye sahip eşdeğer ilaçları tek tıkla listeleme.
+- **[S] Subjektif:** Şikayet, anamnez ve girilen semptomlar.
+- **[O] Objektif:** Vital bulgular, biyometrik ölçümler, laboratuvar değerleri, persentiller ve hesaplanan skorlar.
+- **[A] Değerlendirme:** Skorlara ve kılavuz eşiklerine dayalı olası klinik riskler ve ön tanılar.
+- **[P] Plan & Tedavi:** İlaç dozajları, infüzyon hızları, aşı takibi, resüsitasyon sıvıları ve taburculuk/kontrol zamanlamaları.
+- **HBYS / AHBS Uyumluluğu:** Tek tıkla panoya kopyalanarak hastane bilgi yönetim sistemlerine aktarılabilir.
+
+---
+
+## 📦 TİTCK İlaç Kataloğu & 135 Klinik Monograf
+
+- **18.212 Ruhsatlı İlaç:** Türkiye İlaç ve Tıbbi Cihaz Kurumu veritabanı temelinde barkod, ticari isim, etkin madde ve ATC kodları yerel olarak indekslenmiştir.
+- **135 Çevrimdışı Klinik Monograf Kartı:** En sık reçete edilen moleküller ve 25 kritik pediatrik ilaç için dozaj, maksimum günlük limit, kontrendikasyon, renal uyarlama ve gebelik güvenliği bilgileri çevrimdışı sunulur.
+- **Çevrimdışı RxNorm CUI & ATC Kavram Eşleme:** Dış ağ servislerine bağımlılığı ortadan kaldıran yerel kavram eşleme altyapısı.
+- **Ağ Farkındalıklı KÜB/KT Köprüsü:** İnternet erişimi olduğunda resmi KÜB/KT belgelerine bağlantı sağlarken, çevrimdışı durumda yerel monograf kartını açar.
 
 ---
 
 ## 🚨 Acil Durum Protokolleri & Canlı Zamanlayıcılar
 
-Acil servis kırmızı alan ve resüsitasyon yönetimi için sıfır kaymalı (`Date.now()` duvar saati tabanlı) ve `sessionStorage` kurtarmalı iki kritik interaktif protokol:
-
-1. **⚡ Anafilaksi Yönetimi & 5-Dakikalık Canlı Adrenalin Sayacı:**
-   - Hastanın kilosuna göre IM Adrenalin (1:1000), IV Sıvı Bolusu (20 mL/kg), Antihistaminik (Feniramin) ve Kortikosteroid (Prednol) dozları otomatik hesaplanır.
-   - **Sıfır Kaymalı Canlı Geri Sayım Sayacı:** Adrenalin uygulandığı an 5 dakikalık geri sayım başlar; sekme arka plana alınsa, telefon ekranı kilitlense veya sayfa yenilense dahi gerçek zaman damgası (`targetEndTimestampMs`) üzerinden saniyesi saniyesine senkronize kalır.
-2. **🧠 Status Epileptikus AES Kılavuzu & Kronometre:**
-   - Amerikan Epilepsi Derneği (AES) evreleme rehberi:
-     - *0–5 dk (Stabilizasyon & Kan Şekeri)*
-     - *5–20 dk (1. Basamak - Kilo bazlı Midazolam / Diazepam)*
-     - *20–40 dk (2. Basamak - Levetirasetam, Fenitoin, Valproat)*
-     - *>40 dk (3. Basamak - Refrakter Status)*
-   - Canlı durdurulabilir/sıfırlanabilir ve oturum korumalı nöbet kronometresi.
-   - **Tek Tıkla SOAP'a Aktarma:** Uygulanan tüm acil ilaçlar ve zaman damgası doğrudan hasta notuna eklenir.
+- **Anafilaksi Yönetimi & 5 Dakikalık Adrenalin Sayacı:** Hastanın ağırlığına göre IM Adrenalin, IV hidrasyon ve ek ilaç dozları hesaplanır; adrenalin uygulandığı anda başlayan geri sayım sayacı sayfa yenilense veya arka plana alınsa dahi gerçek zaman damgasıyla (`Date.now()`) senkronize kalır.
+- **Status Epileptikus (AES Rehberi):** Amerikan Epilepsi Derneği evrelerine göre (0-5 dk, 5-20 dk, 20-40 dk, >40 dk) ilaç önerileri ve canlı nöbet kronometresi.
+- **SOAP Aktarımı:** Acil protokollerde uygulanan ilaçlar ve zaman damgaları tek tıkla hasta notuna eklenebilir.
 
 ---
 
-## 🖨️ Akıllı A4 Reçete & Dozaj Çizelgesi
+## 🖨️ A4 Hasta Reçete & Dozaj Çizelgesi
 
-Hekimin yazdığı ilaçları hastanın anlayacağı dilde resmi, yazdırılabilir A4 hasta kullanım çizelgesine dönüştürür:
-- **Akıllı Form ve Dozaj Algılama:** İlacın adına ve formuna göre otomatik zamanlama kuralları uygular:
-  - *PPI (Mide Koruyucu):* Sabah kahvaltıdan 30 dk önce **AÇ**.
-  - *Statin:* Akşam yatarken **GECE** (kas ağrısı uyarısıyla).
-  - *12-Saat Antibiyotikler (BID):* Sabah-Akşam **TOK** (kutu bitene kadar / 7-10 gün).
-  - *Nazal Dekonjestanlar:* Sabah-Akşam puf (**Maksimum 5 gün** rebound rinit uyarısıyla).
-  - *Pediatrik Şuruplar:* Kilo bazlı mL / ölçek dozu.
-- **Çift Sekmeli Düzenleyici (Dual-Tab):** Hekim modal içinden doz miktarlarını (`1/2`, `1`, `5 mL`), kullanım sürelerini ve özel notları anlık düzenleyebilir; "+ İlaç Ekle" ile serbest ilaç ekleyebilir.
-- **Klinik Güvenlik & Resmi Başlık:** Ön Tanı / ICD-10, E-Reçete Takip No, Alerji Uyarı Bandı ve Hekim Kaşe & İmza alanı.
-- **Hazır Poliklinik Paketleri:** Akut Tonsillit, Akut Gastrit, Kas-İskelet Ağrısı, Pediatrik Ateş reçete şablonları.
+Hekimin reçetelediği ilaçları, hastanın ve hasta yakınının anlayabileceği sade bir dille yazdırılabilir A4 kullanım çizelgesine dönüştürür:
+- Sabah, öğle, akşam, gece zamanlamaları ve aç/tok kullanım uyarıları (örn. PPI için aç karnına, statin için gece kullanımı).
+- Reçete başlığı, tanı/ICD-10, alerji uyarısı ve hekim imza alanı.
+- Hazır poliklinik şablonları (Akut Tonsillit, Gastrit vb.).
 
 ---
 
-## ✍️ SOAP Akıllı Şablonları & Nokta Kısayolları (Dot Phrases)
+## 🔒 Gizlilik ve Veri Güvenliği (KVKK / GDPR)
 
-Hekimlerin epikriz ve poliklinik notu yazma süresini 10 kat hızlandırır:
-- **Tıklanabilir Hap Butonları:** `.uri` (ÜSYE), `.tonsillit`, `.gastro` (Gastroenterit), `.basagrisi` (Migren/Gerilim), `.idrar` (Sistit), `.bel` (Lumbago), `.gogus` (Atipik Göğüs Ağrısı), `.anemi`.
-- **Otomatik Metin Genişletme (Text Expansion):** Not alanına `.uri` yazıp boşluğa basıldığında şablon anında tam anamnez, fizik muayene ve tedavi planına dönüşür.
-- **Bütünleşik SOAP Motoru:** Biyometri, vital bulgular, eGFR, triyaj ve kardiyak hesaplamalar tek bir "Kopyala" butonuyla hazır klinik metne dökülür.
-
----
-
-## 💻 Klinik İş İstasyonu & Ergonomi (Quick Switcher Ctrl+K)
-
-- **⌨️ Ctrl+K / Cmd+K Hızlı Motor & İlaç Değiştirici:**
-  - Klavyeden sayfayı kaydırmadan herhangi bir motora (*"Parkland", "Bhutani", "Wells", "Tanjant"*) anında atlama.
-  - Quick Switcher içine **Parol, Aspirin, Augmentin, Arveles** gibi ilaç isimleri yazıldığında doğrudan Akılcı Reçete motoruna atlar ve aramayı otomatik başlatır.
-- **🌙 Gece / Gündüz Teması (Dark & Light Mode):** Gece nöbetlerinde gözü yormayan derin koyu tema ve gündüz poliklinik ışığına uygun aydınlık tema.
-- **📦 Klinik Paketler (Workstation Packages):** 9 hazır branş paketi (Pediatri, Acil Travma, Kardiyo, Yoğun Bakım vb.) ve hekimin kendi çalışma ortamını kaydedebileceği kalıcı özel paketler.
-- **🔗 Özyinelemeli Bağımlılık Çözücü:** İdame sıvı seçildiğinde arka plandaki Kilo-Boy, Yaş ve Elektrolit motorlarını otomatik olarak görünür kılar.
+- **%100 İstemci Taraflı İşleme:** Hastaya ait hiçbir isim, kimlik numarası, doğum tarihi veya laboratuvar verisi dış sunuculara gönderilmez.
+- **Sıfır Telemetri / Sıfır İzleyici:** Uygulama içerisinde analitik araçları, reklam kütüphaneleri veya üçüncü taraf çerezler yer almaz.
+- **Yerel Depolama:** Özelleştirilmiş iş istasyonu paketleri yalnızca kullanıcının tarayıcısında (`localStorage`) saklanır.
 
 ---
 
-## 🔒 Gizlilik, KVKK ve Güvenlik İlkeleri
+## 🛠️ Geliştirici ve Kurulum Rehberi
 
-- **%100 Yerel İşleme:** Hiçbir hasta adı, doğum tarihi, laboratuvar sonucu veya vital bulgu dış sunuculara iletilmez.
-- **Sıfır İzleyici / Sıfır Telemetri:** Google Analytics, çerez izleyiciler veya üçüncü parti reklam yazılımları kesinlikle barındırılmaz.
-- **Tam KVKK / GDPR Uyumluluğu:** Uygulama tamamen tarayıcının güvenli kum havuzunda (client-side sandbox) çalışır.
-
----
-
-## 🛠️ Geliştirici & Kurulum Rehberi
-
-Proje modern Node.js, TypeScript ve Vite ekosistemi üzerine kuruludur:
+Proje Node.js, TypeScript ve Vite altyapısı ile inşa edilmiştir:
 
 ```bash
 # 1. Depoyu klonlayın
@@ -283,37 +265,28 @@ cd klinik-pwa-deneme
 # 2. Bağımlılıkları yükleyin
 npm install
 
-# 3. Geliştirme sunucusunu başlatın
+# 3. Yerel geliştirme sunucusunu başlatın
 npm run dev
 
-# 4. Kapsamlı test paketini çalıştırın (21 motor + TİTCK + DOM testleri)
+# 4. Kapsamlı doğrulama test paketini çalıştırın
 npm test
 
-# 5. TypeScript derleme ve tip kontrolü
+# 5. TypeScript tip denetimini yürütün
 npm run typecheck
 
 # 6. Üretim (Production) PWA paketini derleyin
 npm run build
 ```
 
-### 🧪 Test & Modüler Kontrolcü Mimarisi
-Uygulama arayüzü `src/controllers/` altındaki modüler denetleyicilere (`ecgUiController`, `emergencyUiController`, `prescriptionModalController`, `monographModalController`) ayrıştırılmış olup testler `tests/` dizininde katı doğrulamalarla yürütülür:
-- `test_engines.js`: 21 klinik motorun kılavuz doğruluk testleri ve tüm DOM kimliklerinin eksiksiz varlık kontrolü.
-- `test_ts_engines.ts`: TypeScript motorlarının sınır değer, KDIGO 2024, AAP 2022 / TND 2014, TPHD/Mentzer, ATLS-10/Ranson ve acil zamanlayıcı testleri.
-- `test_drug_search.js`: 18.212 ilaçlık TİTCK kataloğu, 125 çevrimdışı klinik ilaç monografı eşleştirmesi, çok modlu arama ve muadil algoritması doğrulaması.
-- `test_workstation_packages.js`: 21 klinik motorun özyinelemeli bağımlılık zincirleri ve paket yönetimi.
-- `test_workstation_shortcuts.js` & `test_ts_app.ts`: İş istasyonu kısayolları, reaktif döngü ve modüler UI denetleyicileri.
-- `test_pwa_offline.ts`: Service Worker, Workbox, 125 çevrimdışı monograf paketi ve çevrimdışı önbellek dayanıklılığı.
+### 🧪 Test Mimarisi
+Testler `tests/` dizini altında modüler olarak yürütülür:
+- `test_engines.js` & `test_ts_engines.ts`: 21 klinik motor, sınır değerler, kılavuz doğrulukları ve 26 doğrulama bölümü.
+- `test_drug_search.js`: TİTCK ilaç kataloğu, monograflar ve çoklu arama algoritmaları.
+- `test_workstation_packages.js`: İş istasyonu motorları ve geçişli bağımlılık zincirleri.
+- `test_ts_app.ts`: Reaktif hesaplama döngüsü, global lab fallback'leri, kardiyo/obstetrik senkronizasyonu ve canlı SOAP sentezi.
+- `test_pwa_offline.ts`: Service Worker, Workbox önbelleği ve çevrimdışı varlık bütünlüğü.
 
 ---
 
-## ⚠️ Yasal Uyarı & Sorumluluk Reddi
-
-Bu yazılım yalnızca **tıp hekimleri, asistan hekimler, tıp öğrencileri ve yetkili sağlık profesyonellerine yönelik bir klinik karar destek ve eğitim aracıdır**. 
-
-Hesaplanan hiçbir dozaj, sıvı hacmi veya skorlama sonucu bir hekimin bağımsız klinik muhakemesi, hasta başı fizik muayenesi ve profesyonel tıbbi kanaati yerine geçemez. İlaç uygulamaları ve tedaviler her zaman hastanın bireysel durumuna, alerji öyküsüne ve güncel prospektüs/kılavuz bilgilerine göre hekim tarafından teyit edilmelidir.
-
----
-
-**Geliştirici:** Dr. Velli & Klinik Karar Destek Ekibi  
+**Geliştirici:** Dr. Velli & Katkıda Bulunanlar  
 **Lisans:** MIT License — Açık Kaynak Klinik Yazılım Girişimi

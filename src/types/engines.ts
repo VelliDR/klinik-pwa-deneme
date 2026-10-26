@@ -33,6 +33,9 @@ export type {
 export type {
   MaintenanceFluidResult,
   SodiumCorrectionResult,
+  NeonatalWeightCategory,
+  PhototherapyDeviceType,
+  NeonatalWeightLossAnalysis,
   NeonatalFluidInput,
   NeonatalFluidResult
 } from '../engines/fluidEngine';
@@ -43,6 +46,42 @@ export type {
   EgfrOptions,
   DetailedEgfrResult
 } from '../engines/biometricsEngine';
+
+// 4c. Renal Doz De-indeksleme & Klerens Standardizasyonu (KDIGO 2024 / Mosteller / EHRA 2021)
+export type {
+  BsaFormula,
+  RenalClearanceMetric,
+  RenalDrugCategory,
+  PatientRenalParameters,
+  BsaCalculationResult,
+  BodyWeightAnalysis,
+  CockcroftGaultResult,
+  RenalDrugGuidance,
+  ComprehensiveRenalEvaluation
+} from '../engines/renalDoseEngine';
+
+// 4d. Yenidoğan Hiperbilirubinemisi & Eskalasyon (AAP 2022 / Kemper et al. / TND 2023 / Maisels 2012)
+export type {
+  Aap2022HourlyKnot,
+  GestationalAgeInput,
+  Aap2022NeurotoxicityRiskFactors,
+  Aap2022AbeSymptoms,
+  Aap2022RateOfRiseAnalysis,
+  Aap2022EscalationProtocol,
+  Aap2022JaundiceParams,
+  Aap2022Thresholds,
+  Aap2022JaundiceResult,
+  PretermMaiselsBand,
+  PretermTndNiceFormula,
+  PretermJaundiceParams,
+  PretermJaundiceResult,
+  Aap2022DischargeEvaluation,
+  Aap2022ReboundEvaluation,
+  TcBValidityEvaluation,
+  DischargeMatrixParams,
+  PhototherapyReboundParams,
+  TcBValidityParams
+} from '../engines/jaundiceEngine';
 
 // 5. Cerrahi
 export type {
@@ -88,10 +127,15 @@ export type {
 // 9b. Pediatri, Persentil, Demir & Tromboemboli
 export type {
   PediatricDoseResult,
+  CommercialSyrupProfile,
+  PediatricDoseOptions,
+  IdealBodyWeightInput,
+  IdealBodyWeightResult,
   PediatricBPResult,
   CentorInput,
   CentorResult
 } from '../engines/pediatricEngine';
+export { PEDIATRIC_SYRUPS, calculateIdealBodyWeight } from '../engines/pediatricEngine';
 
 export type {
   PercentilesInput,
@@ -99,7 +143,12 @@ export type {
   TargetHeightInput,
   TargetHeightResult,
   CorrectedAgeInput,
-  CorrectedAgeResult
+  CorrectedAgeResult,
+  GrowthVelocityInput,
+  GrowthVelocityResult,
+  CentileChannel,
+  CranialScreeningInput,
+  CranialScreeningResult
 } from '../engines/percentileEngine';
 
 export type {
@@ -340,6 +389,7 @@ export interface BhutaniResult {
   exchangeThreshold?: number;
   deltaFromPhototherapy?: number;
   requiresTsbConfirmation?: boolean;
+  tsbConfirmationReason?: string;
   followUpRecommendation?: string;
   status?: string;
   alertClass?: string;
@@ -471,22 +521,35 @@ export interface RenalDoseWarning {
   message: string;
   thresholdEgfr: number;
   currentEgfr: number;
+  metricUsed?: 'INDEXED_EGFR' | 'ABSOLUTE_EGFR' | 'COCKCROFT_GAULT_CRCL' | string;
+  effectiveClearanceValue?: number;
+  clearanceUnit?: string;
+  tdmRecommended?: boolean;
 }
 
 export interface RenalDoseCheckParams {
   egfr?: number;
   drugs?: DrugInputItem[];
+  heightCm?: number | null;
+  weightKg?: number | null;
+  ageYears?: number | null;
+  gender?: 'male' | 'female' | string | null;
+  serumCreatinineMgDl?: number | null;
+  bsa?: number | null;
 }
 
 export interface RenalDoseCheckResult {
   isValid: boolean;
   message?: string;
   egfr?: number;
+  deindexedAbsoluteGfr?: number | null;
+  cockcroftGaultCrCl?: number | null;
   totalChecked?: number;
   alertsCount?: number;
   hasContraindication?: boolean;
   alertClass?: string;
   warnings?: RenalDoseWarning[];
+  comprehensiveEvaluation?: import('../engines/renalDoseEngine').ComprehensiveRenalEvaluation | null;
 }
 
 export interface TripleWhammyResult {
@@ -608,3 +671,64 @@ export type {
   AnaphylaxisDoses,
   StatusEpilepticusDoses
 } from '../engines/emergencyProtocols';
+
+// 19. Çevrimdışı RxNorm CUI & ATC İlaç Eşleştirme Motoru (NLM RxNav Deprecation Replacement)
+export type {
+  RxNormConceptDefinition,
+  ConceptMatchConfidence,
+  ResolvedRxConcept,
+  OfflineOntologyStats
+} from '../engines/rxNormMappingEngine';
+export {
+  OFFLINE_RXNORM_CONCEPTS,
+  normalizeRxText,
+  isRxNavApiDeprecated,
+  getOfflineOntologyStats,
+  getRxNormConceptByCui,
+  getRxNormConceptByAtc,
+  getRxNormConceptByKey,
+  resolveToRxNormConcept,
+  resolveBatchRxNormConcepts
+} from '../engines/rxNormMappingEngine';
+
+// 20. 4 Kademeli Etkileşim Hiyerarşisi (Tier 1-4) & ACORN VPT Downgrade Motoru
+export type {
+  AlertTierLevel,
+  InteractionAlertCode,
+  PatientSafetyContext,
+  DrugInvolvedRef,
+  InteractionAlert,
+  InteractionEvaluationResult
+} from '../engines/interactionTierEngine';
+export {
+  evaluatePrescriptionInteractions,
+  isAcornVptRegimen
+} from '../engines/interactionTierEngine';
+
+// 21. AAP 2022 Yenidoğan Hiperbilirubinemi & Eskalasyon Karar Destek Motoru (Adım 13-15)
+export {
+  AAP2022_HOURLY_MILESTONES,
+  AAP2022_PT_NO_RISK_EXACT,
+  AAP2022_PT_WITH_RISK_EXACT,
+  AAP2022_EX_NO_RISK_EXACT,
+  AAP2022_EX_WITH_RISK_EXACT,
+  truncateGestationalWeeks,
+  interpolateHourlyCurve,
+  calculateAap2022Thresholds,
+  getAap2022FollowUpRecommendation,
+  evaluateBilirubinAlbuminRatio,
+  getPretermGuidance,
+  calculateBilirubinRateOfRise,
+  evaluateAbeSymptoms,
+  generateAap2022EscalationProtocol,
+  evaluateAap2022Jaundice,
+  MAISELS_2012_PRETERM_BANDS,
+  calculatePretermTndNiceThreshold,
+  evaluatePretermJaundice,
+  evaluateAap2022DischargeMatrix,
+  evaluatePhototherapyReboundRisk,
+  evaluateTcBValidity
+} from '../engines/jaundiceEngine';
+
+
+

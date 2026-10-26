@@ -449,6 +449,23 @@
                         </div>
 
                         <div id="container-percentiles" class="hidden space-y-1.5 pt-1">
+                            <div class="grid grid-cols-2 gap-1.5 pb-1 border-b border-slate-800">
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Büyüme Standardı</label>
+                                    <select id="select-growth-standard" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[10px] text-slate-300 font-mono">
+                                        <option value="neyzi_2015" selected>Neyzi 2015 (Ulusal)</option>
+                                        <option value="who_2022">DSÖ 2022 (WHO MGRS)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Boy Pozisyonu</label>
+                                    <select id="select-growth-position" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[10px] text-slate-300 font-mono">
+                                        <option value="auto" selected>Otomatik (Protokol)</option>
+                                        <option value="standing">Ayakta (Stadiometre)</option>
+                                        <option value="recumbent">Yatarak (İnfantometre)</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="flex justify-between text-[11px] font-mono">
                                 <span class="text-slate-400">Boy Persentili:</span>
                                 <span id="output-p-height" class="font-bold text-sky-400">--</span>
@@ -460,6 +477,16 @@
                             <div id="row-head-circ" class="hidden flex justify-between text-[11px] font-mono">
                                 <span class="text-slate-400">Baş Çevresi:</span>
                                 <span id="output-p-head" class="font-bold text-sky-400">--</span>
+                            </div>
+                            <div id="row-cranial-alert" class="hidden p-1.5 rounded text-[10px] leading-tight space-y-0.5">
+                                <div id="output-cranial-alert-title" class="font-bold"></div>
+                                <div id="output-cranial-alert-body" class="text-[9px] opacity-90"></div>
+                            </div>
+                            <div id="row-position-alert" class="hidden p-1.5 rounded bg-blue-950/60 border border-blue-800/60 text-[10px] text-blue-300 leading-tight">
+                                <span id="output-position-alert"></span>
+                            </div>
+                            <div id="row-discordance-alert" class="hidden p-1.5 rounded bg-amber-950/70 border border-amber-700/70 text-[10px] text-amber-300 leading-tight">
+                                <span id="output-discordance-alert"></span>
                             </div>
                         </div>
                     </div>
@@ -480,6 +507,93 @@
                             </div>
                         </div>
                         <div id="output-target-height" class="hidden mt-2 p-2 bg-slate-950/80 rounded border border-slate-800 text-[10px] font-mono space-y-1"></div>
+                    </details>
+
+                    <!-- Erken Süt Çocukluğu (<6 Ay) Büyüme Hızı & Akut Malnütrisyon Taraması -->
+                    <details id="details-growth-velocity" class="text-[10px] bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60 group/gv">
+                        <summary class="cursor-pointer select-none text-slate-300 font-semibold flex justify-between items-center">
+                            <span class="flex items-center gap-1.5">
+                                <span>⚖️</span>
+                                <span>Büyüme Hızı &amp; Akut Malnütrisyon (&lt;6 Ay / Süt Çocuğu)</span>
+                            </span>
+                            <span class="text-slate-400 group-open/gv:rotate-180 transition-transform text-[9px]">▼</span>
+                        </summary>
+                        <div class="mt-2 pt-2 border-t border-slate-800 space-y-2">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Önceki Ağırlık (kg)</label>
+                                    <input type="number" step="0.01" id="input-gv-prev-weight" placeholder="Örn: 3.85" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Ölçüm Aralığı (Gün)</label>
+                                    <input type="number" id="input-gv-days" placeholder="Örn: 14" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="numeric">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Kol Çevresi - MUAC (mm)</label>
+                                    <input type="number" id="input-gv-muac" placeholder="Örn: 115" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="numeric">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                <label class="flex items-center gap-1.5 cursor-pointer text-[10px] text-slate-300">
+                                    <input type="checkbox" id="check-gv-edema" class="rounded bg-slate-950 border-slate-700 text-rose-500 focus:ring-0">
+                                    <span>Bilateral Gode Bırakan Ödem</span>
+                                </label>
+                                <label class="flex items-center gap-1.5 cursor-pointer text-[10px] text-slate-300">
+                                    <input type="checkbox" id="check-gv-complications" class="rounded bg-slate-950 border-slate-700 text-rose-500 focus:ring-0">
+                                    <span>Tıbbi Komplikasyon / İştahsızlık</span>
+                                </label>
+                            </div>
+                            <div id="output-growth-velocity" class="hidden p-2 bg-slate-950/80 rounded border border-slate-800 text-[10px] font-mono space-y-1.5"></div>
+                        </div>
+                    </details>
+
+                    <!-- Kraniyal İzlem & Hidrosefali / Mikrosefali Tarama Kalkanı -->
+                    <details id="details-cranial-screening" class="text-[10px] bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/60 group/cs">
+                        <summary class="cursor-pointer select-none text-slate-300 font-semibold flex justify-between items-center">
+                            <span class="flex items-center gap-1.5">
+                                <span>🧠</span>
+                                <span>Kraniyal İzlem &amp; Hidrosefali / Mikrosefali Kalkanı</span>
+                            </span>
+                            <span class="text-slate-400 group-open/cs:rotate-180 transition-transform text-[9px]">▼</span>
+                        </summary>
+                        <div class="mt-2 pt-2 border-t border-slate-800 space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Önceki Baş Çevresi (cm)</label>
+                                    <input type="number" step="0.1" id="input-cs-prev-hc" placeholder="Örn: 42.5" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="decimal">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Ölçüm Aralığı (Gün)</label>
+                                    <input type="number" id="input-cs-days" placeholder="Örn: 30" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-xs font-mono" inputmode="numeric">
+                                </div>
+                            </div>
+                            <div class="space-y-1 pt-1">
+                                <span class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">KİBAS &amp; Klinik Belirtiler</span>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[10px] text-slate-300">
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" id="check-cs-fontanelle" class="rounded bg-slate-950 border-slate-700 text-rose-500 focus:ring-0">
+                                        <span>Bombeli / Gergin Ön Fontanel</span>
+                                    </label>
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" id="check-cs-sunset" class="rounded bg-slate-950 border-slate-700 text-rose-500 focus:ring-0">
+                                        <span>Batan Güneş Gözü Belirtisi</span>
+                                    </label>
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" id="check-cs-vomiting" class="rounded bg-slate-950 border-slate-700 text-rose-500 focus:ring-0">
+                                        <span>Fışkırır Tarzda Kusma / Letarji</span>
+                                    </label>
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" id="check-cs-sutures" class="rounded bg-slate-950 border-slate-700 text-rose-500 focus:ring-0">
+                                        <span>Kranial Sütürlerde Ayrılma (Diyastaz)</span>
+                                    </label>
+                                    <label class="flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" id="check-cs-parental" class="rounded bg-slate-950 border-slate-700 text-emerald-500 focus:ring-0">
+                                        <span>Ailesel Makrosefali Öyküsü (Anne/Baba &gt;97p)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="output-cranial-screening" class="hidden p-2 bg-slate-950/80 rounded border border-slate-800 text-[10px] font-mono space-y-1.5"></div>
+                        </div>
                     </details>
                 </div>
             </details>
@@ -1237,21 +1351,66 @@
 
             <details id="card-pediatri-surup" data-category="pediatri" class="bg-slate-800 rounded-xl border border-slate-700 group transition-all" open>
                 <summary class="p-4 cursor-pointer select-none flex justify-between items-center text-xs font-semibold text-rose-400 uppercase list-none [&::-webkit-details-marker]:hidden">
-                    <span>Pediatrik Şurup & Aşı</span>
+                    <span>Pediatrik Sıvı Dozaj & Aşı</span>
                     <span class="text-slate-400 group-open:rotate-180 transition-transform text-[10px]">▼</span>
                 </summary>
                 <div class="p-4 pt-0 space-y-3 border-t border-slate-700/40 mt-1">
-                    <label class="text-[10px] text-slate-400 block pt-2 mb-1">Doz Motoru (İlaç Seçin)</label>
+                    <label class="text-[10px] text-slate-400 block pt-2 mb-1">Doz & Konsantrasyon Motoru (ISMP Metrik Standart)</label>
                     <select id="select-ped-syrup" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-[10px] text-slate-300">
-                        <option value="">-- Seçiniz --</option>
-                        <option value="paracetamol">Parasetamol (Calpol 120/5)</option>
-                        <option value="ibuprofen">İbuprofen (Dolven 100/5)</option>
-                        <option value="amoklavin_400">Amoksisilin-Klavulanat (400/57)</option>
-                        <option value="cefuroxime_250">Sefuroksim (Zinnat 250/5)</option>
-                        <option value="clarithromycin_125">Klaritromisin (Klacid 125/5)</option>
-                        <option value="cetirizine_5">Setirizin (Zyrtec 5/5)</option>
-                        <option value="laroxyl_25">Hidroksizin (Atarax 10/5)</option>
+                        <option value="">-- Ticari Preparat & Konsantrasyon Seçiniz --</option>
+                        <optgroup label="Parasetamol">
+                            <option value="paracetamol_120">Parasetamol 120 mg / 5 mL (Calpol / Parol)</option>
+                            <option value="paracetamol_250">Parasetamol 250 mg / 5 mL (Calpol 6 Plus / Parol Plus)</option>
+                            <option value="paracetamol_no_conc">Parasetamol (Konsantrasyon Seçilmedi 🔒)</option>
+                        </optgroup>
+                        <optgroup label="İbuprofen">
+                            <option value="ibuprofen_100">İbuprofen 100 mg / 5 mL (Dolven / Pedifen / Supafen)</option>
+                        </optgroup>
+                        <optgroup label="Amoksisilin-Klavulanat">
+                            <option value="amoklavin_200">Amoksisilin-Klavulanat BID 200/28.5 (40 mg/mL)</option>
+                            <option value="amoklavin_400">Amoksisilin-Klavulanat BID 400/57 (80 mg/mL)</option>
+                            <option value="amoklavin_600">Amoksisilin-Klavulanat ES 600/42.9 (120 mg/mL - 14:1 ES)</option>
+                        </optgroup>
+                        <optgroup label="Sefalosporinler & Makrolidler">
+                            <option value="cefuroxime_125">Sefuroksim 125 mg / 5 mL (Zinnat 125)</option>
+                            <option value="cefuroxime_250">Sefuroksim 250 mg / 5 mL (Zinnat 250)</option>
+                            <option value="cefixime_100">Sefiksim 100 mg / 5 mL (Suprax 100/5)</option>
+                            <option value="azithromycin_200">Azitromisin 200 mg / 5 mL (Zitromax 200/5)</option>
+                            <option value="clarithromycin_125">Klaritromisin 125 mg / 5 mL (Klacid 125)</option>
+                            <option value="clarithromycin_250">Klaritromisin 250 mg / 5 mL (Klacid Forte 250)</option>
+                        </optgroup>
+                        <optgroup label="Diğer Pediatrik Sıvı İlaçlar">
+                            <option value="tmp_smx_200_40">TMP-SMX 40/200 mg / 5 mL (Bactrim)</option>
+                            <option value="ondansetron_4">Ondansetron 4 mg / 5 mL (Zofran)</option>
+                            <option value="cetirizine_5">Setirizin 5 mg / 5 mL (Zyrtec / Allerset)</option>
+                            <option value="hydroxyzine_10">Hidroksizin 10 mg / 5 mL (Atarax)</option>
+                            <option value="loratadine_5">Loratadin 5 mg / 5 mL (Claritine)</option>
+                            <option value="prednisolone_5">Prednizolon 5 mg / 5 mL (Prednol)</option>
+                            <option value="iron_fe3_syrup">Demir III Polimaltoz 50 mg / 5 mL (Ferrum Hausmann)</option>
+                            <option value="salbutamol_syrup">Salbutamol 2 mg / 5 mL (Ventolin Şurup)</option>
+                            <option value="codeine_syrup">Kodein 5 mg / 5 mL (Kodein Şurup 🛑 &lt;12 Yaş)</option>
+                            <option value="tramadol_drop">Tramadol 100 mg / mL (Contramal Damla 🛑 &lt;12 Yaş)</option>
+                        </optgroup>
                     </select>
+                    <div class="space-y-1.5 pt-1 border-t border-slate-700/30">
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center gap-1.5 cursor-pointer text-[10px] text-slate-300">
+                                <input type="checkbox" id="chk-ped-use-ibw" class="accent-rose-500 bg-slate-900 border-slate-700 rounded">
+                                <span>Obezitede İdeal Vücut Ağırlığı (IBW) ile hesapla</span>
+                            </label>
+                            <span id="badge-ped-obese-status" class="hidden text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800 text-rose-300 font-bold">BMI &gt; 95.p</span>
+                        </div>
+                        <div class="flex items-center justify-between flex-wrap gap-1">
+                            <label class="flex items-center gap-1.5 cursor-pointer text-[10px] text-amber-300">
+                                <input type="checkbox" id="chk-ped-allow-titck" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
+                                <span>İbuprofen TİTCK &lt;6 ay / &lt;7 kg Hekim Onayı</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer text-[10px] text-sky-300">
+                                <input type="checkbox" id="chk-ped-aom-high" class="accent-sky-500 bg-slate-900 border-slate-700 rounded">
+                                <span>Yüksek Doz AOM (80-90 mg/kg)</span>
+                            </label>
+                        </div>
+                    </div>
                     <div id="output-ped-syrup" class="hidden text-[10px] p-2 bg-slate-900/60 border border-slate-700/50 rounded-lg space-y-1 font-mono text-cyan-400 mt-2"></div>
                     
                     <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Aşı Takvimi</span>
@@ -1351,6 +1510,68 @@
                         <input type="checkbox" id="chk-bhutani-risk-factors" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
                         <span>Nörotoksisite Risk Faktörü Var (Alb &lt; 3.0, İzoimmün Hemoliz/DAT+, G6PD, Sepsis, İnstabilite)</span>
                     </label>
+
+                    <!-- İleri Klinik Güvenlik & Risk Tabakalandırma (AAP 2022 KAS 7, 17, 18, 19) -->
+                    <details class="bg-slate-900/60 rounded-lg border border-slate-700/60 p-2 text-[10px] space-y-2">
+                        <summary class="cursor-pointer font-semibold text-sky-400 select-none flex justify-between items-center">
+                            <span>🔬 İleri Parametreler (Albümin, B/A Oranı, Artış Hızı & ABE)</span>
+                            <span class="text-[9px] text-slate-400">Genişlet / Daralt ▼</span>
+                        </summary>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                            <div>
+                                <label class="text-[9px] text-slate-400 block mb-0.5">Serum Albümin (g/dL)</label>
+                                <input type="number" step="0.1" id="input-bhutani-albumin" placeholder="3.2" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal">
+                            </div>
+                            <div>
+                                <label class="text-[9px] text-slate-400 block mb-0.5">Direkt Bili (mg/dL)</label>
+                                <input type="number" step="0.1" id="input-bhutani-direct" placeholder="0.4" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal">
+                            </div>
+                            <div>
+                                <label class="text-[9px] text-slate-400 block mb-0.5">Önceki TSB (mg/dL)</label>
+                                <input type="number" step="0.1" id="input-bhutani-prev-tsb" placeholder="8.5" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal">
+                            </div>
+                            <div>
+                                <label class="text-[9px] text-slate-400 block mb-0.5">Önceki Yaş (Saat)</label>
+                                <input type="number" id="input-bhutani-prev-hours" placeholder="36" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 border-t border-slate-800">
+                            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="chk-bhutani-dat" class="accent-sky-500 bg-slate-900 border-slate-700 rounded">
+                                <span>İzoimmün Hemoliz (DAT+ / Rh / ABO)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="chk-bhutani-g6pd" class="accent-sky-500 bg-slate-900 border-slate-700 rounded">
+                                <span>G6PD Eksikliği / Hemolitik Enzimopati</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer">
+                                <input type="checkbox" id="chk-bhutani-sepsis" class="accent-sky-500 bg-slate-900 border-slate-700 rounded">
+                                <span>Sepsis / Ağır Sistemik Enfeksiyon</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 text-rose-300 font-semibold cursor-pointer">
+                                <input type="checkbox" id="chk-bhutani-abe" class="accent-rose-500 bg-slate-900 border-slate-700 rounded">
+                                <span>ABE Bulguları (Retrokollis / Opistotonus)</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1.5 border-t border-slate-800">
+                            <label class="flex items-center gap-1.5 text-teal-300 cursor-pointer">
+                                <input type="checkbox" id="chk-bhutani-discharge" class="accent-teal-500 bg-slate-900 border-slate-700 rounded">
+                                <span>Taburculuk Planı (AAP Tablo 4 Δ Modeli)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 text-amber-300 cursor-pointer">
+                                <input type="checkbox" id="chk-bhutani-prior-pt" class="accent-amber-500 bg-slate-900 border-slate-700 rounded">
+                                <span>Son 24s Fototerapi Aldı (TcB Kontrendike)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 text-purple-300 cursor-pointer">
+                                <input type="checkbox" id="chk-bhutani-rebound" class="accent-purple-500 bg-slate-900 border-slate-700 rounded">
+                                <span>Fototerapi Kesme & Rebound Değerlendirmesi</span>
+                            </label>
+                            <div>
+                                <label class="text-[9px] text-slate-400 block mb-0.5">FT Başlama Postnatal Saati</label>
+                                <input type="number" id="input-bhutani-pt-start" placeholder="örn: 24" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-[10px] font-mono" inputmode="decimal">
+                            </div>
+                        </div>
+                    </details>
                     <div id="output-bhutani-result" class="hidden text-[10px] p-2 rounded-lg border font-mono space-y-1"></div>
 
                     <!-- APGAR Skoru -->

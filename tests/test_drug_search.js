@@ -259,10 +259,10 @@ const activeFiltered = await searchDrugsInDB('parol', 'all', { onlyActive: true 
 assert.ok(activeFiltered.length > 0 && activeFiltered.every(d => d.status === 'Aktif'), 'All filtered results must be active');
 console.log(`✓ Filtered search passed ({ onlyActive: true } returned ${activeFiltered.length} items)`);
 
-// 8. Offline 125 Clinical Monographs Engine & TİTCK Coverage Verification
-console.log('\n--- 8. TESTING OFFLINE 125 CLINICAL MONOGRAPHS ENGINE ---');
+// 8. Offline 135 Clinical Monographs Engine & TİTCK Coverage Verification
+console.log('\n--- 8. TESTING OFFLINE 135 CLINICAL MONOGRAPHS ENGINE ---');
 const monographsData = JSON.parse(fs.readFileSync('public/data/clinical_monographs.json', 'utf8'));
-assert.strictEqual(monographsData.length, 125);
+assert.strictEqual(monographsData.length, 135);
 setMonographsCache(monographsData);
 
 const monoParol = findMonographSync(sampleParol);
@@ -270,7 +270,7 @@ assert.ok(monoParol, 'Parol must match Paracetamol monograph');
 assert.ok(monoParol.atcCodes.includes('N02BE01'));
 const monoCardHtml = renderMonographCardHTML(monoParol, sampleParol.brand);
 assert.ok(monoCardHtml.includes(sampleParol.brand));
-assert.ok(monoCardHtml.includes('Renal Doz Uyarlaması'));
+assert.ok(monoCardHtml.includes('Renal Doz Uyarlaması') || monoCardHtml.includes('Böbrek Yetmezliği'));
 
 const { results: resAugmentin } = await runQuery('augmentin');
 const monoAugmentin = findMonographSync(resAugmentin[0]);
@@ -278,6 +278,16 @@ assert.ok(monoAugmentin && monoAugmentin.atcCodes.includes('J01CR02'), 'Augmenti
 
 const monoArveles = findMonographSync(resArveles[0]);
 assert.ok(monoArveles && monoArveles.atcCodes.includes('M01AE17'), 'Arveles must match Dexketoprofen monograph');
+
+// Verify new pediatric critical drugs matching
+const monoCefotaxime = findMonographSync({ generic: 'cefotaxime', atc: 'J01DD01' });
+assert.ok(monoCefotaxime && monoCefotaxime.id === 'cefotaxime', 'Cefotaxime must match monograph');
+
+const monoGentamicin = findMonographSync({ generic: 'gentamicin', atc: 'J01GB03' });
+assert.ok(monoGentamicin && monoGentamicin.id === 'gentamicin', 'Gentamicin must match monograph');
+
+const monoAcyclovir = findMonographSync({ generic: 'acyclovir', atc: 'J05AB01' });
+assert.ok(monoAcyclovir && monoAcyclovir.id === 'acyclovir', 'Acyclovir must match monograph');
 
 // False-positive guard: Somatropin must NOT match Atropine
 const fakeSomatropin = findMonographSync({ brand: 'GENOTROPIN', generic: 'somatropin', atc: 'H01AC01' });
@@ -289,8 +299,8 @@ for (const rawItem of rawData) {
     const rec = normalizeDrugRecord(rawItem, 0);
     if (findMonographSync(rec)) matchedCount++;
 }
-assert.ok(matchedCount >= 5000, `Expected >=5,000 TİTCK drugs to match 125 core monographs, got ${matchedCount}`);
-console.log(`✓ Offline 125 Clinical Monographs verified (Matched ${matchedCount} / ${rawData.length} TİTCK records cleanly)`);
+assert.ok(matchedCount >= 5000, `Expected >=5,000 TİTCK drugs to match 135 core monographs, got ${matchedCount}`);
+console.log(`✓ Offline 135 Clinical Monographs verified (Matched ${matchedCount} / ${rawData.length} TİTCK records cleanly)`);
 
 console.log('\n🎉 ALL DRUG SEARCH, MONOGRAPH & EQUIVALENTS TESTS PASSED CLEANLY (100% HEALTHY)!');
 

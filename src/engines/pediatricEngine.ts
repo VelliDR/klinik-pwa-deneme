@@ -1,119 +1,768 @@
-// Pediatric Engine: Şurup dozu, Aşı takvimi, AAP Tansiyon, Centor/McIsaac
+// Pediatric Engine: Şurup dozu, Aşı takvimi, AAP Tansiyon, Centor/McIsaac, Adult Cap & IBW
+import { getGrowthNorms, calculateRestrictedLMSZScore } from './percentileEngine';
+
+export interface IdealBodyWeightInput {
+    ageMonths: number;
+    gender?: 'male' | 'female' | string;
+    heightCm: number;
+    weightKg: number;
+}
+
+export interface IdealBodyWeightResult {
+    ibwKg: number;
+    adjBwKg: number;
+    bmi: number;
+    bmi50: number;
+    bmiZScore: number;
+    isObese: boolean;
+    isOverweight: boolean;
+}
+
+/**
+ * Çocukluk Çağı Obezitesinde İdeal Vücut Ağırlığı (IBW) ve Düzeltilmiş Ağırlık (AdjBW)
+ * Dosya 2 (PPAG Kılavuzu) Formülü:
+ * IBW = BMI_50 * (Boy in m)^2
+ * AdjBW = IBW + 0.4 * (TBW - IBW)
+ */
+export function calculateIdealBodyWeight({
+    ageMonths,
+    gender = 'male',
+    heightCm,
+    weightKg
+}: IdealBodyWeightInput): IdealBodyWeightResult | null {
+    if (!heightCm || heightCm <= 0 || !weightKg || weightKg <= 0 || ageMonths === null || ageMonths === undefined || isNaN(ageMonths)) {
+        return null;
+    }
+
+    const heightM = heightCm / 100;
+    const bmi = Math.round((weightKg / (heightM * heightM)) * 10) / 10;
+    const norms = getGrowthNorms(ageMonths, gender, 'neyzi_2015');
+    const bmi50 = Math.round(norms.bmi.m * 10) / 10;
+
+    // IBW = BMI_50 * (Boy in m)^2
+    const ibwKg = Math.round(bmi50 * (heightM * heightM) * 10) / 10;
+    
+    // AdjBW = IBW + 0.4 * (TBW - IBW)
+    const adjBwKg = Math.round((ibwKg + 0.4 * Math.max(0, weightKg - ibwKg)) * 10) / 10;
+
+    // LMS Z-skoru hesaplaması
+    const bmiZScoreRaw = calculateRestrictedLMSZScore(bmi, norms.bmi.l, norms.bmi.m, norms.bmi.s);
+    const bmiZScore = bmiZScoreRaw !== null ? Math.round(bmiZScoreRaw * 100) / 100 : 0;
+    
+    // ≥ 95. persentil (Z ≥ +1.645 SD) Obez, 85-95. persentil (Z ≥ +1.036 SD) Fazla Kilolu
+    const isObese = bmiZScore >= 1.645;
+    const isOverweight = bmiZScore >= 1.036 && bmiZScore < 1.645;
+
+    return {
+        ibwKg,
+        adjBwKg,
+        bmi,
+        bmi50,
+        bmiZScore,
+        isObese,
+        isOverweight
+    };
+}
 
 export interface PediatricDoseResult {
     name: string;
     targetDoseMg: number;
-    volumeMl: number;
-    olcekText: string;
+    volumeMl: number | null;
+    metricDoseText: string;
+    syringeWarning: string;
     freq: string;
+    isLocked?: boolean;
+    lockReason?: string;
+    concentrationText?: string;
+    olcekText?: string; // Strictly metric backward-compatible string without "ölçek" / "kaşık"
+    // Adım 6: Adult Cap & Obezite Kalkanı
+    isCapped?: boolean;
+    uncappedDoseMg?: number;
+    maxDoseCeiling?: number;
+    maxDailyDoseMg?: number;
+    capNotice?: string;
+    isObeseAlert?: boolean;
+    tbwKg?: number;
+    ibwKg?: number;
+    adjBwKg?: number;
+    ibwDoseMg?: number;
+    ibwVolumeMl?: number | null;
+    obesityWarning?: string;
+    usedWeightType?: 'TBW' | 'IBW';
+    // Adım 7: Kontrendikasyon Hard Stopları, İkili Eşik & Amoksisilin Oran Kilidi
+    isBlocked?: boolean;
+    blockReason?: string;
+    hasDualStandardAlert?: boolean;
+    dualStandardWarning?: string;
+    ratio?: '7:1' | '14:1';
+    ratioNotice?: string;
+    negativeGuidelineWarning?: string;
+    offLabelNotice?: string;
+    confusionWarning?: string;
+    reconstitutionStability?: string;
+    indicationBandNote?: string;
+    ageWarning?: string;
+}
+
+export interface CommercialSyrupProfile {
+    name: string;
+    doseMgPerKg: number;
+    maxDose: number;            // Mutlak erişkin tek doz tavanı (mg)
+    maxDailyDose?: number;      // Mutlak erişkin günlük azami tavan (mg)
+    concentration: number;      // mg per mL (if 0 or <= 0, concentration lock is triggered)
+    freq: string;
+    concentrationText?: string;
+    isHydrophilic?: boolean;    // Obez çocuklarda IBW gerektiren hidrofilik ajanlar (örn. Parasetamol)
+    ratio?: '7:1' | '14:1';
+    reconstitutionStability?: string;
+    confusionWarning?: string;
+    negativeGuidelineWarning?: string;
+    offLabelNotice?: string;
+}
+
+export const PEDIATRIC_SYRUPS: Record<string, CommercialSyrupProfile> = {
+    // Parasetamol
+    'paracetamol_120': {
+        name: 'Parasetamol (120 mg / 5 mL - Calpol / Parol)',
+        doseMgPerKg: 15,
+        maxDose: 1000,
+        maxDailyDose: 4000,
+        concentration: 120 / 5, // 24 mg/mL
+        freq: '4-6 saatte bir (Maks 4 doz/gün, en az 4 saat ara)',
+        concentrationText: '120 mg / 5 mL (24 mg/mL)',
+        isHydrophilic: true
+    },
+    'paracetamol_250': {
+        name: 'Parasetamol (250 mg / 5 mL - Calpol 6 Plus / Parol Plus)',
+        doseMgPerKg: 15,
+        maxDose: 1000,
+        maxDailyDose: 4000,
+        concentration: 250 / 5, // 50 mg/mL
+        freq: '4-6 saatte bir (Maks 4 doz/gün, en az 4 saat ara)',
+        concentrationText: '250 mg / 5 mL (50 mg/mL)',
+        isHydrophilic: true
+    },
+    'paracetamol_no_conc': {
+        name: 'Parasetamol (Konsantrasyon Belirtilmedi 🔒)',
+        doseMgPerKg: 15,
+        maxDose: 1000,
+        maxDailyDose: 4000,
+        concentration: 0,
+        freq: '4-6 saatte bir (Maks 4 doz/gün)',
+        concentrationText: undefined,
+        isHydrophilic: true
+    },
+
+    // İbuprofen
+    'ibuprofen_100': {
+        name: 'İbuprofen (100 mg / 5 mL - Dolven / Pedifen / Supafen)',
+        doseMgPerKg: 10,
+        maxDose: 400,
+        maxDailyDose: 1200,
+        concentration: 100 / 5, // 20 mg/mL
+        freq: '6-8 saatte bir (Tok karnına, maks 30-40 mg/kg/gün)',
+        concentrationText: '100 mg / 5 mL (20 mg/mL)',
+        isHydrophilic: false
+    },
+
+    // Amoksisilin-Klavulanat
+    'amoklavin_200': {
+        name: 'Amoksisilin-Klavulanat (BID 200/28.5 mg / 5 mL - 7:1)',
+        doseMgPerKg: 20, // 40 mg/kg/gün amoksisilin bazında / 2 doz
+        maxDose: 1000,
+        maxDailyDose: 2000,
+        concentration: 200 / 5, // 40 mg/mL amoksisilin
+        freq: '12 saatte bir (Hafif-orta enfeksiyon, tok karnına)',
+        concentrationText: '200/28.5 mg / 5 mL (40 mg/mL Amoksisilin - 7:1)',
+        isHydrophilic: false,
+        ratio: '7:1',
+        reconstitutionStability: '🧊 Saklama Koşulu: Sulandırıldıktan sonra buzdolabında (2-8°C) saklanmalı, dondurulmamalı ve 7-10 gün içinde tüketilmelidir.'
+    },
+    'amoklavin_400': {
+        name: 'Amoksisilin-Klavulanat (BID 400/57 mg / 5 mL - 7:1)',
+        doseMgPerKg: 20, // 40 mg/kg/gün amoksisilin bazında / 2 doz
+        maxDose: 1000,
+        maxDailyDose: 2000,
+        concentration: 400 / 5, // 80 mg/mL amoksisilin
+        freq: '12 saatte bir (Standart enfeksiyon, tok karnına)',
+        concentrationText: '400/57 mg / 5 mL (80 mg/mL Amoksisilin - 7:1)',
+        isHydrophilic: false,
+        ratio: '7:1',
+        reconstitutionStability: '🧊 Saklama Koşulu: Sulandırıldıktan sonra buzdolabında (2-8°C) saklanmalı, dondurulmamalı ve 7-10 gün içinde tüketilmelidir.'
+    },
+    'amoklavin_600': {
+        name: 'Amoksisilin-Klavulanat ES (600/42.9 mg / 5 mL - 14:1)',
+        doseMgPerKg: 45, // 90 mg/kg/gün amoksisilin bazında / 2 doz (Yüksek Doz AOM)
+        maxDose: 2000,
+        maxDailyDose: 4000,
+        concentration: 600 / 5, // 120 mg/mL amoksisilin
+        freq: '12 saatte bir (Yüksek Doz AOM / Dirençli Pnömokok - 14:1 ES)',
+        concentrationText: '600/42.9 mg / 5 mL (120 mg/mL Amoksisilin - 14:1 ES)',
+        isHydrophilic: false,
+        ratio: '14:1',
+        reconstitutionStability: '🧊 Saklama Koşulu: Sulandırıldıktan sonra buzdolabında (2-8°C) saklanmalı, dondurulmamalı ve 10 gün içinde tüketilmelidir.'
+    },
+
+    // Sefalosporinler & Makrolidler
+    'cefuroxime_125': {
+        name: 'Sefuroksim Aksetil (125 mg / 5 mL - Zinnat 125)',
+        doseMgPerKg: 15, // 30 mg/kg/gün / 2 doz
+        maxDose: 500,
+        maxDailyDose: 1000,
+        concentration: 125 / 5, // 25 mg/mL
+        freq: '12 saatte bir (Yemekle birlikte)',
+        concentrationText: '125 mg / 5 mL (25 mg/mL)',
+        isHydrophilic: false,
+        reconstitutionStability: '🧊 Saklama Koşulu: Sulandırıldıktan sonra buzdolabında (2-8°C) saklanmalı, 10 gün stabildir.'
+    },
+    'cefuroxime_250': {
+        name: 'Sefuroksim Aksetil (250 mg / 5 mL - Zinnat 250)',
+        doseMgPerKg: 15,
+        maxDose: 500,
+        maxDailyDose: 1000,
+        concentration: 250 / 5, // 50 mg/mL
+        freq: '12 saatte bir (Yemekle birlikte)',
+        concentrationText: '250 mg / 5 mL (50 mg/mL)',
+        isHydrophilic: false,
+        reconstitutionStability: '🧊 Saklama Koşulu: Sulandırıldıktan sonra buzdolabında (2-8°C) saklanmalı, 10 gün stabildir.'
+    },
+    'cefixime_100': {
+        name: 'Sefiksim (100 mg / 5 mL - Suprax / Zimaks)',
+        doseMgPerKg: 8,
+        maxDose: 400,
+        maxDailyDose: 400,
+        concentration: 100 / 5, // 20 mg/mL
+        freq: 'Günde tek doz (veya 12 saatte bir 4 mg/kg)',
+        concentrationText: '100 mg / 5 mL (20 mg/mL)',
+        isHydrophilic: false,
+        reconstitutionStability: '🧊 Saklama Koşulu: Sulandırıldıktan sonra oda sıcaklığında veya buzdolabında (2-8°C) 14 gün stabildir.'
+    },
+    'azithromycin_200': {
+        name: 'Azitromisin (200 mg / 5 mL - Zitromax)',
+        doseMgPerKg: 10,
+        maxDose: 500,
+        maxDailyDose: 500,
+        concentration: 200 / 5, // 40 mg/mL
+        freq: 'Günde 1 kez (3 gün süresince, aç karnına)',
+        concentrationText: '200 mg / 5 mL (40 mg/mL)',
+        isHydrophilic: false,
+        reconstitutionStability: '🌡️ Saklama Koşulu: Sulandırıldıktan sonra oda sıcaklığında (15-25°C) saklanmalı, 5 gün stabildir.'
+    },
+    'clarithromycin_125': {
+        name: 'Klaritromisin (125 mg / 5 mL - Klacid 125)',
+        doseMgPerKg: 7.5, // 15 mg/kg/gün / 2 doz
+        maxDose: 500,
+        maxDailyDose: 1000,
+        concentration: 125 / 5, // 25 mg/mL
+        freq: '12 saatte bir',
+        concentrationText: '125 mg / 5 mL (25 mg/mL)',
+        isHydrophilic: false,
+        reconstitutionStability: '🌡️ Saklama Koşulu: Sulandırıldıktan sonra ODA SICAKLIĞINDA (15-30°C) saklanmalıdır; buzdolabına konulursa acı tat kristalleşir! (14 gün stabildir).'
+    },
+    'clarithromycin_250': {
+        name: 'Klaritromisin (250 mg / 5 mL - Klacid Forte 250)',
+        doseMgPerKg: 7.5,
+        maxDose: 500,
+        maxDailyDose: 1000,
+        concentration: 250 / 5, // 50 mg/mL
+        freq: '12 saatte bir',
+        concentrationText: '250 mg / 5 mL (50 mg/mL)',
+        isHydrophilic: false,
+        reconstitutionStability: '🌡️ Saklama Koşulu: Sulandırıldıktan sonra ODA SICAKLIĞINDA (15-30°C) saklanmalıdır; buzdolabına konulursa acı tat kristalleşir! (14 gün stabildir).'
+    },
+
+    // Diğer Pediatrik Sıvı İlaçlar
+    'tmp_smx_200_40': {
+        name: 'Trimetoprim-Sulfametoksazol (40/200 mg / 5 mL - Bactrim)',
+        doseMgPerKg: 4, // TMP bazında (8 mg/kg/gün TMP 2'ye bölünmüş)
+        maxDose: 160,
+        maxDailyDose: 320,
+        concentration: 40 / 5, // 8 mg TMP/mL
+        freq: '12 saatte bir (TMP içeriğine göre hesaplanmıştır)',
+        concentrationText: '40 mg TMP + 200 mg SMX / 5 mL (8 mg TMP/mL)',
+        isHydrophilic: false
+    },
+    'ondansetron_4': {
+        name: 'Ondansetron (4 mg / 5 mL - Zofran)',
+        doseMgPerKg: 0.15,
+        maxDose: 8,
+        maxDailyDose: 16,
+        concentration: 4 / 5, // 0.8 mg/mL
+        freq: 'Akut gastroenteritte tek oral doz (veya 8 saatte bir)',
+        concentrationText: '4 mg / 5 mL (0.8 mg/mL)',
+        isHydrophilic: false,
+        offLabelNotice: 'ℹ️ TİTCK KÜB & Kılavuz Karşılaştırması: KÜB\'de akut gastroenterit ruhsatı yoktur (kemoterapi ve post-op onaylıdır); ancak AAP, NICE ve Canadian Paediatric Society hafif-orta dehidratasyonlu viral AGE kusmasında tek doz oral ondansetronu Düzey 1 kanıtla önermektedir.'
+    },
+    'hydroxyzine_10': {
+        name: 'Hidroksizin (10 mg / 5 mL - Atarax)',
+        doseMgPerKg: 0.5,
+        maxDose: 25,
+        maxDailyDose: 100,
+        concentration: 10 / 5, // 2 mg/mL
+        freq: 'Gece yatarken (veya 6-8 saatte bir)',
+        concentrationText: '10 mg / 5 mL (2 mg/mL)',
+        isHydrophilic: false
+    },
+    'cetirizine_5': {
+        name: 'Setirizin (5 mg / 5 mL - Zyrtec / Allerset)',
+        doseMgPerKg: 0.25,
+        maxDose: 10,
+        maxDailyDose: 10,
+        concentration: 5 / 5, // 1 mg/mL
+        freq: 'Günde 1 kez (veya 12 saatte bir bölünmüş)',
+        concentrationText: '5 mg / 5 mL (1 mg/mL)',
+        isHydrophilic: false
+    },
+    'loratadine_5': {
+        name: 'Loratadin (5 mg / 5 mL - Claritine)',
+        doseMgPerKg: 0.25,
+        maxDose: 10,
+        maxDailyDose: 10,
+        concentration: 5 / 5, // 1 mg/mL
+        freq: 'Günde 1 kez tek doz',
+        concentrationText: '5 mg / 5 mL (1 mg/mL)',
+        isHydrophilic: false
+    },
+    'prednisolone_5': {
+        name: 'Prednizolon (5 mg / 5 mL - Prednol)',
+        doseMgPerKg: 1,
+        maxDose: 40,
+        maxDailyDose: 60,
+        concentration: 5 / 5, // 1 mg/mL
+        freq: 'Günde 1-2 kez (3-5 gün kısa kür)',
+        concentrationText: '5 mg / 5 mL (1 mg/mL)',
+        isHydrophilic: false
+    },
+    'iron_fe3_syrup': {
+        name: 'Demir III Polimaltoz (50 mg / 5 mL - Ferrum Hausmann Şurup)',
+        doseMgPerKg: 3,
+        maxDose: 100,
+        maxDailyDose: 200,
+        concentration: 50 / 5, // 10 mg/mL elementer demir
+        freq: 'Günde 1-2 doza bölünmüş (Yemekle veya yemekten sonra)',
+        concentrationText: '50 mg / 5 mL (10 mg/mL Elementer Fe)',
+        isHydrophilic: false,
+        confusionWarning: '⚠️ Damla ve Şurup Ayrımı: Ferrum Hausmann Şurup (50 mg/5 mL = 10 mg/mL) ile Ferrum Damla (50 mg/mL, 1 damla = 2.5 mg Fe) formülasyonlarını karıştırmayınız!'
+    },
+    'salbutamol_syrup': {
+        name: 'Salbutamol (2 mg / 5 mL - Ventolin Şurup)',
+        doseMgPerKg: 0.1,
+        maxDose: 4,
+        maxDailyDose: 12,
+        concentration: 2 / 5, // 0.4 mg/mL
+        freq: '6-8 saatte bir (Oral şurup formu)',
+        concentrationText: '2 mg / 5 mL (0.4 mg/mL)',
+        isHydrophilic: false,
+        negativeGuidelineWarning: '⚠️ GINA / AAP Negatif Kılavuz Uyarısı: Oral beta-2 agonist şurup formu astım alevlenmesinde ÖNERİLMEZ; taşikardi ve kas titremesi riski yüksektir, inhaler form altın standarttır.'
+    },
+    'codeine_syrup': {
+        name: 'Kodein Şurup (5 mg / 5 mL - 🛑 <12 Yaş Kontrendike)',
+        doseMgPerKg: 0.5,
+        maxDose: 30,
+        maxDailyDose: 120,
+        concentration: 5 / 5, // 1 mg/mL
+        freq: '6 saatte bir (Semptomatik, q6h)',
+        concentrationText: '5 mg / 5 mL (1 mg/mL)',
+        isHydrophilic: false
+    },
+    'tramadol_drop': {
+        name: 'Tramadol Damla (100 mg / mL - Contramal 🛑 <12 Yaş Kontrendike)',
+        doseMgPerKg: 1,
+        maxDose: 50,
+        maxDailyDose: 400,
+        concentration: 100, // 100 mg/mL (1 damla = 2.5 mg)
+        freq: '6-8 saatte bir (q6-8h)',
+        concentrationText: '100 mg / mL (2.5 mg/damla - 40 damla/mL)',
+        isHydrophilic: false,
+        confusionWarning: '⚠️ Damla Formülasyonu: 1 mL = 40 damla = 100 mg (1 damla = 2.5 mg tramadol). Şurup hacmi ile karıştırmayınız!'
+    }
+};
+
+// Aliases for full backward compatibility
+PEDIATRIC_SYRUPS['paracetamol'] = PEDIATRIC_SYRUPS['paracetamol_120'];
+PEDIATRIC_SYRUPS['ibuprofen'] = PEDIATRIC_SYRUPS['ibuprofen_100'];
+PEDIATRIC_SYRUPS['laroxyl_25'] = PEDIATRIC_SYRUPS['hydroxyzine_10'];
+PEDIATRIC_SYRUPS['codeine'] = PEDIATRIC_SYRUPS['codeine_syrup'];
+PEDIATRIC_SYRUPS['tramadol'] = PEDIATRIC_SYRUPS['tramadol_drop'];
+PEDIATRIC_SYRUPS['salbutamol'] = PEDIATRIC_SYRUPS['salbutamol_syrup'];
+
+export interface PediatricDoseOptions {
+    ageMonths?: number | null;
+    ageDays?: number | null;
+    ageYears?: number | null;
+    heightCm?: number | null;
+    gender?: 'male' | 'female' | string;
+    useIbw?: boolean;
+    allowOffLabelTitck?: boolean;
+    indication?: 'general' | 'gastroenteritis' | 'aom_high_dose' | 'pain_fever' | string;
 }
 
 export function calculatePediatricDose(
-    weightKg: number | null | undefined, 
-    drugKey: string
+    weightKgOrInput: number | ({ weightKg: number; drugKey: string } & PediatricDoseOptions) | null | undefined, 
+    drugKeyArg?: string,
+    optionsArg?: PediatricDoseOptions
 ): PediatricDoseResult | null {
-    if (!weightKg || weightKg <= 0) return null;
+    let weightKg: number | null | undefined;
+    let drugKey: string;
+    let options: PediatricDoseOptions = {};
 
-    // Doz profilleri (mg/kg/doz) ve konsantrasyonlar
-    const drugs: Record<string, {
-        name: string;
-        doseMgPerKg: number;
-        maxDose: number;
-        concentration: number;
-        freq: string;
-    }> = {
-        'paracetamol': {
-            name: 'Parasetamol',
-            doseMgPerKg: 15,
-            maxDose: 1000,
-            concentration: 120 / 5, // 120mg / 5ml (Calpol)
-            freq: '4-6 saatte bir'
-        },
-        'ibuprofen': {
-            name: 'İbuprofen',
-            doseMgPerKg: 10,
-            maxDose: 400,
-            concentration: 100 / 5, // 100mg / 5ml (Dolven)
-            freq: '6-8 saatte bir'
-        },
-        'amoklavin_400': {
-            name: 'Amoksisilin-Klavulanat (400/57)',
-            doseMgPerKg: 20, // 40mg/kg/gün (2'ye bölünmüş doz => 20 mg/kg/doz)
-            maxDose: 1000,
-            concentration: 400 / 5,
-            freq: '12 saatte bir'
-        },
-        'cefuroxime_250': {
-            name: 'Sefuroksim (250mg)',
-            doseMgPerKg: 15, // 30mg/kg/gün => 15 mg/kg/doz
-            maxDose: 500,
-            concentration: 250 / 5,
-            freq: '12 saatte bir'
-        },
-        'clarithromycin_125': {
-            name: 'Klaritromisin (125mg)',
-            doseMgPerKg: 7.5, // 15mg/kg/gün => 7.5 mg/kg/doz
-            maxDose: 500,
-            concentration: 125 / 5,
-            freq: '12 saatte bir'
-        },
-        'laroxyl_25': {
-            name: 'Hidroksizin (Atarax 10mg/5ml)',
-            doseMgPerKg: 0.5,
-            maxDose: 25,
-            concentration: 10 / 5, // 10mg / 5ml = 2 mg/ml
-            freq: 'Gece yatarken (veya 6-8 saatte bir)'
-        },
-        'hydroxyzine_10': {
-            name: 'Hidroksizin (Atarax 10mg/5ml)',
-            doseMgPerKg: 0.5,
-            maxDose: 25,
-            concentration: 10 / 5,
-            freq: 'Gece yatarken (veya 6-8 saatte bir)'
-        },
-        'cetirizine_5': {
-            name: 'Setirizin (5mg/5ml - Zyrtec/Allerset)',
-            doseMgPerKg: 0.25,
-            maxDose: 10,
-            concentration: 5 / 5,
-            freq: 'Günde 1 kez'
-        }
-    };
+    if (typeof weightKgOrInput === 'object' && weightKgOrInput !== null) {
+        weightKg = weightKgOrInput.weightKg;
+        drugKey = weightKgOrInput.drugKey;
+        options = weightKgOrInput;
+    } else {
+        weightKg = weightKgOrInput;
+        drugKey = drugKeyArg || '';
+        options = optionsArg || {};
+    }
 
-    const drug = drugs[drugKey];
+    if (!weightKg || weightKg <= 0 || !drugKey) return null;
+
+    const drug = PEDIATRIC_SYRUPS[drugKey];
     if (!drug) return null;
 
-    const targetDoseMg = Math.min(weightKg * drug.doseMgPerKg, drug.maxDose || Infinity);
-    const volumeMl = targetDoseMg / drug.concentration;
-    
-    // Ölçek hesabı (1 ölçek = 5 ml)
-    const olcek = volumeMl / 5;
-    let olcekText = '';
-    
-    if (volumeMl < 2.5) {
-        olcekText = 'Doğru ölçüm için oral enjektör kullanınız.';
-    } else if (olcek >= 1) {
-        const tam = Math.floor(olcek);
-        const kalan = olcek - tam;
-        olcekText = `${tam} tam`;
-        if (kalan > 0.1 && kalan <= 0.3) olcekText += ' + 1/4 ölçek';
-        else if (kalan > 0.3 && kalan <= 0.6) olcekText += ' + 1/2 ölçek';
-        else if (kalan > 0.6 && kalan <= 0.8) olcekText += ' + 3/4 ölçek';
-        else if (kalan > 0.8) olcekText = `${tam + 1} tam ölçek`;
-        else olcekText += ' ölçek';
+    // Yaş normalizasyonu (ay ve gün cinsinden)
+    let effectiveAgeMonths: number | null = null;
+    if (options.ageMonths !== undefined && options.ageMonths !== null && !isNaN(options.ageMonths)) {
+        effectiveAgeMonths = options.ageMonths;
+    } else if (options.ageDays !== undefined && options.ageDays !== null && !isNaN(options.ageDays)) {
+        effectiveAgeMonths = options.ageDays / 30.4375;
+    } else if (options.ageYears !== undefined && options.ageYears !== null && !isNaN(options.ageYears)) {
+        effectiveAgeMonths = options.ageYears * 12;
+    }
+
+    let effectiveAgeDays: number | null = null;
+    if (options.ageDays !== undefined && options.ageDays !== null && !isNaN(options.ageDays)) {
+        effectiveAgeDays = options.ageDays;
+    } else if (effectiveAgeMonths !== null) {
+        effectiveAgeDays = Math.round(effectiveAgeMonths * 30.4375);
+    }
+
+    // A. KODEİN & TRAMADOL KONTRENDİKASYON HARD STOP (<12 Yaş / CYP2D6 Polimorfizmi)
+    if (drugKey === 'codeine_syrup' || drugKey === 'tramadol_drop' || drugKey.startsWith('codeine') || drugKey.startsWith('tramadol')) {
+        if (effectiveAgeMonths !== null && effectiveAgeMonths < 144) {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - REÇETE BLOKE EDİLDİ 🛑',
+                syringeWarning: '🛑 KESİN KONTRENDİKASYON: 12 yaş altındaki çocuklarda kullanımı yasaktır.',
+                freq: 'KONTRENDİKE',
+                isLocked: true,
+                isBlocked: true,
+                blockReason: '🛑 KESİN KONTRENDİKASYON (FDA Black Box / EMA PRAC): CYP2D6 ultra-hızlı metabolizör toksisitesi nedeniyle <12 yaş çocuklarda ve emziren annelerde ölümcül morfin intoksikasyonu ve solunum arresti riski! Reçete BLOKE edilmiştir.',
+                olcekText: 'KONTRENDİKE (BLOKE)',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        }
+    }
+
+    // B. TRİMETOPRİM-SULFAMETOKSAZOL (BACTRIM) NEONATAL KONTRENDİKASYON HARD STOP (<42 Gün / 6 Hafta)
+    if (drugKey === 'tmp_smx_200_40' || drugKey.startsWith('tmp_smx')) {
+        const isUnder42Days = (options.ageDays !== undefined && options.ageDays !== null)
+            ? options.ageDays < 42
+            : (effectiveAgeMonths !== null && effectiveAgeMonths < 1.38);
+        if (isUnder42Days) {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - REÇETE BLOKE EDİLDİ 🛑',
+                syringeWarning: '🛑 KESİN KONTRENDİKASYON: Yaşamın ilk 6 haftasında (postnatal 42 gün) kontrendikedir.',
+                freq: 'KONTRENDİKE',
+                isLocked: true,
+                isBlocked: true,
+                blockReason: '🛑 KESİN KONTRENDİKASYON (TİTCK / AAP): Yaşamın ilk 6 haftasında (postnatal 42 gün) sülfametoksazol serbest bilirubini albüminden kopararak ölümcül Kernikterus riski yaratır. Kesinlikle kontrendikedir!',
+                olcekText: 'KONTRENDİKE (BLOKE)',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        }
+    }
+
+    // C. İBUPROFEN İKİLİ EŞİK (TİTCK vs BNFc/EMA/AAP) VE MUTLAK ALT SINIR DENETİMİ
+    let hasDualStandardAlert = false;
+    let dualStandardWarning: string | undefined;
+
+    if (drugKey === 'ibuprofen' || drugKey === 'ibuprofen_100') {
+        const isUnder3Months = (options.ageDays !== undefined && options.ageDays !== null)
+            ? options.ageDays < 90
+            : (effectiveAgeMonths !== null && effectiveAgeMonths < 3);
+        const isUnder5Kg = weightKg < 5.0;
+
+        // Mutlak Alt Sınır: <3 ay veya <5 kg -> Dünyadaki hiçbir kılavuz izin vermez
+        if (isUnder3Months || isUnder5Kg) {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - REÇETE BLOKE EDİLDİ 🛑',
+                syringeWarning: '🛑 KESİN KONTRENDİKASYON: <3 ay veya <5 kg infantlarda kontrendikedir.',
+                freq: 'KONTRENDİKE',
+                isLocked: true,
+                isBlocked: true,
+                blockReason: '🛑 KESİN KONTRENDİKASYON: İbuprofen <3 ay veya <5 kg infantlarda farmakokinetik ve renal immatürite nedeniyle kontrendikedir.',
+                olcekText: 'KONTRENDİKE (BLOKE)',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        }
+
+        const isUnder6Months = (options.ageDays !== undefined && options.ageDays !== null)
+            ? options.ageDays < 180
+            : (effectiveAgeMonths !== null && effectiveAgeMonths < 6);
+        const isUnder7Kg = weightKg < 7.0;
+
+        // TİTCK Eşiği: <6 ay veya <7 kg -> TİTCK onaylı KÜB'de önerilmez
+        if (isUnder6Months || isUnder7Kg) {
+            if (!options.allowOffLabelTitck) {
+                return {
+                    name: drug.name,
+                    targetDoseMg: 0,
+                    volumeMl: null,
+                    metricDoseText: '0 mg (0 mL) - TİTCK RUHSAT KİLİDİ ⚠️',
+                    syringeWarning: '⚠️ TİTCK KÜB Uyarısı: <6 ay veya <7 kg çocuklarda hekim bilinçli onayı olmadan kullanılamaz.',
+                    freq: 'HEKİM ONAYI GEREKLİ',
+                    isLocked: true,
+                    isBlocked: true,
+                    hasDualStandardAlert: true,
+                    blockReason: isUnder7Kg
+                        ? '⚠️ TİTCK KÜB Ruhsat Sınırı Uyarısı: Vücut ağırlığı 7 kg altındadır. TİTCK KÜB uyarınca 7 kg altındaki çocuklarda renal papiller nekroz riski nedeniyle kullanımı önerilmemektedir. Hekim onayı olmadan mL dozu hesaplanamaz. (Uluslararası kılavuzlar ≥3 ay ve ≥5 kg için izin verir).'
+                        : '⚠️ TİTCK KÜB Ruhsat Sınırı Uyarısı: Hasta 6 aydan küçüktür. TİTCK KÜB uyarınca 6 aydan küçük bebeklerde renal papiller nekroz riski nedeniyle kullanımı önerilmemektedir. Hekim onayı olmadan mL dozu hesaplanamaz. (Uluslararası kılavuzlar ≥3 ay ve ≥5 kg için izin verir).',
+                    dualStandardWarning: '⚠️ TİTCK Ruhsat Sınırı Uyarısı (<6 ay veya <7 kg): Hasta 6 aydan küçük veya 7 kg altındadır. TİTCK onaylı KÜB uyarınca bu yaş/kilo grubunda renal papiller nekroz riski nedeniyle önerilmemektedir. Uluslararası kılavuzlar (BNFc, EMA, AAP: ≥3 ay ve ≥5 kg) dehidratasyon yokluğunda ve hekim onayıyla izin verir.',
+                    olcekText: 'HEKİM ONAYI BEKLENİYOR',
+                    isCapped: false,
+                    tbwKg: weightKg
+                };
+            } else {
+                hasDualStandardAlert = true;
+                dualStandardWarning = '⚠️ TİTCK Ruhsat Sınırı Uyarısı (<6 ay veya <7 kg): Hasta 6 aydan küçük veya 7 kg altındadır. TİTCK onaylı KÜB uyarınca bu yaş/kilo grubunda renal papiller nekroz riski nedeniyle önerilmemektedir. Uluslararası kılavuzlar (BNFc, EMA, AAP: ≥3 ay ve ≥5 kg) dehidratasyon yokluğunda ve hekim inisiyatifinde izin verir.';
+            }
+        }
+    }
+
+    // D. AMOKSİSİLİN-KLAVULANAT 7:1 vs 14:1 (ES) ORAN KİLİDİ (TC-009, TC-010)
+    let ratioNotice: string | undefined;
+    if (drug.ratio === '7:1') {
+        if (options.indication === 'aom_high_dose') {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - ORAN KİLİDİ 🚫',
+                syringeWarning: '🚫 7:1 Formülasyon ile yüksek doz AOM uygulanamaz.',
+                freq: '14:1 ES GEREKLİ',
+                isLocked: true,
+                isBlocked: true,
+                ratio: '7:1',
+                blockReason: '🚫 Klavulanat Toksisitesi ve Şiddetli Diyare Riski: 90 mg/kg amoksisilin hedefine 7:1 formülasyon ile çıkılırsa klavulanik asit dozu toksik sınıra (12.8 mg/kg) ulaşır. Lütfen 14:1 (ES 600/42.9) formunu seçiniz veya standart doza (40-45 mg/kg) dönünüz.',
+                ratioNotice: '🚫 Klavulanat Toksisitesi ve Şiddetli Diyare Riski: 80-90 mg/kg/gün amoksisilin dozu 7:1 formülasyonla verildiğinde günlük klavulanat dozu 12.8 mg/kg\'a ulaşır. Yüksek doz AOM rejimlerinde mutlaka 14:1 (ES 600/42.9 mg) formülasyonu tercih edilmelidir!',
+                olcekText: '14:1 ES SEÇİNİZ',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        } else {
+            ratioNotice = '🚫 Klavulanat Toksisitesi Uyarısı: 80-90 mg/kg/gün amoksisilin dozu 7:1 formülasyonla verildiğinde günlük klavulanat dozu 12.8 mg/kg\'a ulaşır. Yüksek doz AOM rejimlerinde mutlaka 14:1 (ES 600/42.9 mg) formülasyonu tercih edilmelidir!';
+        }
+    } else if (drug.ratio === '14:1') {
+        ratioNotice = '✅ 14:1 ES Formülasyonu: Yüksek doz amoksisilin (90 mg/kg/gün) rejimlerinde klavulanat yükünü (6.4 mg/kg/gün) toksik eşik altında tutarak dirençli S. pneumoniae tedavisinde güvenle kullanılır.';
+    }
+
+    // E. ONDANSETRON KİLO BANDI VE GASTROENTERİT GÜVENLİK DENETİMİ (TC-012, TC-013)
+    let ondansetronDoseMg: number | null = null;
+    let indicationBandNote: string | undefined;
+
+    if (drugKey === 'ondansetron_4' || drugKey.startsWith('ondansetron')) {
+        const isUnder6m = effectiveAgeMonths !== null && effectiveAgeMonths < 6;
+        const isUnder8kg = weightKg < 8.0;
+
+        if (isUnder6m || isUnder8kg) {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - KONTRENDİKE / UYARI 🛑',
+                syringeWarning: '🛑 AAP/CPS: <6 ay veya <8 kg infantlarda viral gastroenteritte kontrendikedir.',
+                freq: 'KONTRENDİKE',
+                isLocked: true,
+                isBlocked: true,
+                blockReason: '🛑 KONTRENDİKASYON / UYARI (AAP / CPS): <6 ay veya <8 kg infantlarda viral akut gastroenterit kusmasında antiemetik kullanımı mortalite ve hipoksi riskini artırır; oral rehidrasyon (ORS) esastır.',
+                offLabelNotice: drug.offLabelNotice,
+                olcekText: 'KONTRENDİKE (BLOKE)',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        }
+
+        // Kılavuz kilo bandı: 8–15 kg: 2 mg (2.5 mL), 15.1–30 kg: 4 mg (5.0 mL), >30 kg: 8 mg (10.0 mL)
+        if (options.indication === 'gastroenteritis' || (options.indication === undefined && weightKg <= 30.0)) {
+            if (weightKg <= 15.0) {
+                ondansetronDoseMg = 2;
+            } else if (weightKg <= 30.0) {
+                ondansetronDoseMg = 4;
+            } else {
+                ondansetronDoseMg = 8;
+            }
+            indicationBandNote = 'Akut Gastroenterit Kilo Bandı: 8-15 kg arası tek doz 2 mg (2.5 mL); 15.1-30 kg arası tek doz 4 mg (5.0 mL); >30 kg tek doz 8 mg (10.0 mL).';
+        }
+    }
+
+    // F. DİĞER YAŞ VE GÜVENLİK SINIRLARI (Azitromisin, Klaritromisin, Sefiksim, Sefuroksim)
+    let ageWarning: string | undefined;
+    if (effectiveAgeMonths !== null) {
+        if ((drugKey === 'azithromycin_200' || drugKey.startsWith('azithromycin')) && effectiveAgeMonths < 6) {
+            ageWarning = '⚠️ Yaş Sınırı Uyarısı (<6 ay): Erken infant döneminde makrolid maruziyeti İnfantil Hipertrofik Pilor Stenozu (IHPS) riski taşır.';
+        } else if ((drugKey === 'clarithromycin_125' || drugKey === 'clarithromycin_250' || drugKey.startsWith('clarithromycin')) && effectiveAgeMonths < 6) {
+            ageWarning = '⚠️ Yaş Sınırı Uyarısı (<6 ay): Erken infant döneminde klaritromisin maruziyeti İnfantil Hipertrofik Pilor Stenozu (IHPS) ve QT uzaması riski taşır.';
+        } else if ((drugKey === 'cefixime_100' || drugKey.startsWith('cefixime')) && effectiveAgeMonths < 6) {
+            ageWarning = '⚠️ Yaş Sınırı Uyarısı (<6 ay): 6 ay altında farmakokinetik güvenlilik verisi yetersizdir.';
+        } else if ((drugKey === 'cefuroxime_125' || drugKey === 'cefuroxime_250' || drugKey.startsWith('cefuroxime')) && effectiveAgeMonths < 3) {
+            ageWarning = '⚠️ Yaş Sınırı Uyarısı (<3 ay): 3 ay altında intestinal absorpsiyon tutarsızdır.';
+        }
+    }
+
+    // 1. Obezite ve İdeal Vücut Ağırlığı (IBW) Kontrolü (PPAG Guidelines)
+    let ibwInfo: IdealBodyWeightResult | null = null;
+    if (options.ageMonths !== undefined && options.ageMonths !== null && options.heightCm && options.heightCm > 0) {
+        ibwInfo = calculateIdealBodyWeight({
+            ageMonths: options.ageMonths,
+            gender: options.gender || 'male',
+            heightCm: options.heightCm,
+            weightKg
+        });
+    }
+
+    const isObese = ibwInfo ? ibwInfo.isObese : false;
+    let activeWeightKg = weightKg;
+    let usedWeightType: 'TBW' | 'IBW' = 'TBW';
+
+    if (isObese && options.useIbw && ibwInfo) {
+        activeWeightKg = ibwInfo.ibwKg;
+        usedWeightType = 'IBW';
+    }
+
+    // 2. Kilo Bazlı Doz ve Yetişkin Tavan Doz Budaması (Adult Cap Clamping Engine)
+    const rawDoseMg = ondansetronDoseMg !== null 
+        ? ondansetronDoseMg 
+        : Math.round(activeWeightKg * drug.doseMgPerKg * 10) / 10;
+        
+    const isCapped = drug.maxDose ? rawDoseMg > drug.maxDose : false;
+    const targetDoseMg = isCapped ? drug.maxDose : rawDoseMg;
+
+    let capNotice: string | undefined;
+    if (isCapped) {
+        capNotice = `🛡️ Yetişkin Tavan Doz Kilidi Aktif: Kilo bazlı hesaplanan ${rawDoseMg} mg dozu, azami yetişkin tek doz tavanı olan ${drug.maxDose} mg ile sınırlandırıldı. (Günlük azami tavan: ${drug.maxDailyDose || drug.maxDose * 4} mg).`;
+    }
+
+    // 3. Obezite Uyarısı ve IBW Karşılaştırma Dozu
+    let isObeseAlert = false;
+    let ibwDoseMg: number | undefined;
+    let ibwVolumeMl: number | null | undefined;
+    let obesityWarning: string | undefined;
+
+    if (isObese && ibwInfo) {
+        isObeseAlert = true;
+        const rawIbwDose = ondansetronDoseMg !== null 
+            ? ondansetronDoseMg 
+            : Math.round(ibwInfo.ibwKg * drug.doseMgPerKg * 10) / 10;
+        ibwDoseMg = drug.maxDose ? Math.min(rawIbwDose, drug.maxDose) : rawIbwDose;
+        ibwVolumeMl = drug.concentration ? Math.round((ibwDoseMg / drug.concentration) * 10) / 10 : null;
+
+        if (drug.isHydrophilic) {
+            obesityWarning = `⚠️ Pediatrik Obezite Uyarısı (BMI > 95.p): Toplam vücut ağırlığı (${weightKg} kg) üzerinden hidrofilik parasetamol dozlaması hepatotoksisite ve toksik NAPQI birikimi riski taşır. İdeal Vücut Ağırlığı (IBW: ${ibwInfo.ibwKg} kg) üzerinden hesaplanan güvenli doz: ${ibwDoseMg} mg (${ibwVolumeMl !== null ? ibwVolumeMl + ' mL' : 'Hacim kilitli'}) önerilir.`;
+        } else {
+            obesityWarning = `ℹ️ Pediatrik Obezite Bildirimi (BMI > 95.p): Hasta obez persentildedir. Hesaplanan doz o endikasyondaki erişkin tavanı (${drug.maxDose} mg) ile sınırlandırılmıştır. İsteğe bağlı IBW dozu: ${ibwDoseMg} mg.`;
+        }
+    }
+
+    // 4. Şişe Konsantrasyon Güvenlik Kilidi
+    if (!drug.concentration || drug.concentration <= 0) {
+        return {
+            name: drug.name,
+            targetDoseMg,
+            volumeMl: null,
+            metricDoseText: `${targetDoseMg} mg (Hacim kilitli 🔒)${usedWeightType === 'IBW' ? ' [IBW Bazlı]' : ''}`,
+            syringeWarning: 'Ticari preparat konsantrasyonu (mg/5 mL veya mg/mL) seçilmeden hacim (mL) hesabı yapılamaz.',
+            freq: drug.freq,
+            isLocked: true,
+            isBlocked: false,
+            lockReason: '🔒 Hacim (mL) hesaplaması için lütfen ticari şişe konsantrasyonunu seçiniz.',
+            concentrationText: drug.concentrationText,
+            olcekText: 'Konsantrasyon seçilmedi (kilitli)',
+            isCapped,
+            uncappedDoseMg: isCapped ? rawDoseMg : undefined,
+            maxDoseCeiling: drug.maxDose,
+            maxDailyDoseMg: drug.maxDailyDose,
+            capNotice,
+            isObeseAlert,
+            tbwKg: weightKg,
+            ibwKg: ibwInfo?.ibwKg,
+            adjBwKg: ibwInfo?.adjBwKg,
+            ibwDoseMg,
+            ibwVolumeMl,
+            obesityWarning,
+            usedWeightType,
+            hasDualStandardAlert,
+            dualStandardWarning,
+            ratio: drug.ratio,
+            ratioNotice,
+            negativeGuidelineWarning: drug.negativeGuidelineWarning,
+            offLabelNotice: drug.offLabelNotice,
+            confusionWarning: drug.confusionWarning,
+            reconstitutionStability: drug.reconstitutionStability,
+            indicationBandNote,
+            ageWarning
+        };
+    }
+
+    // 5. Hacim (mL) Hesabı ve 0.1 mL Enjektör Çizgisi Yuvarlaması (ISMP Standart)
+    const rawVolume = targetDoseMg / drug.concentration;
+    const volumeMl = Math.round(rawVolume * 10) / 10;
+    const metricDoseText = `${targetDoseMg} mg (${volumeMl} mL)${usedWeightType === 'IBW' ? ' [IBW Bazlı Doz]' : ''}`;
+
+    // <10 mL Dozlarda Oral Enjektör Güvenlik Kilidi
+    let syringeWarning = '';
+    if (volumeMl < 10) {
+        syringeWarning = '⚠️ <10 mL Doz: Hatalı dozajı önlemek için ev tipi kaşık/ölçek kullanmayınız. Dozajı dereceli oral dozaj enjektörü ile uygulayınız.';
     } else {
-        if (olcek <= 0.3) olcekText = '1/4 ölçek';
-        else if (olcek > 0.3 && olcek <= 0.6) olcekText = '1/2 ölçek';
-        else if (olcek > 0.6 && olcek <= 0.8) olcekText = '3/4 ölçek';
-        else olcekText = '1 tam ölçek';
+        syringeWarning = 'ℹ️ Ölçüm Tavsiyesi: Dereceli oral şırınga veya mililitre (mL) taksimatlı tıbbi ölçü kabı ile uygulayınız.';
     }
 
     return {
         name: drug.name,
-        targetDoseMg: Math.round(targetDoseMg * 10) / 10,
-        volumeMl: parseFloat(volumeMl.toFixed(1)),
-        olcekText,
-        freq: drug.freq
+        targetDoseMg,
+        volumeMl,
+        metricDoseText,
+        syringeWarning,
+        freq: drug.freq,
+        isLocked: false,
+        isBlocked: false,
+        concentrationText: drug.concentrationText,
+        olcekText: `${volumeMl} mL (Oral Enjektör)`,
+        isCapped,
+        uncappedDoseMg: isCapped ? rawDoseMg : undefined,
+        maxDoseCeiling: drug.maxDose,
+        maxDailyDoseMg: drug.maxDailyDose,
+        capNotice,
+        isObeseAlert,
+        tbwKg: weightKg,
+        ibwKg: ibwInfo?.ibwKg,
+        adjBwKg: ibwInfo?.adjBwKg,
+        ibwDoseMg,
+        ibwVolumeMl,
+        obesityWarning,
+        usedWeightType,
+        hasDualStandardAlert,
+        dualStandardWarning,
+        ratio: drug.ratio,
+        ratioNotice,
+        negativeGuidelineWarning: drug.negativeGuidelineWarning,
+        offLabelNotice: drug.offLabelNotice,
+        confusionWarning: drug.confusionWarning,
+        reconstitutionStability: drug.reconstitutionStability,
+        indicationBandNote,
+        ageWarning
     };
 }
 
