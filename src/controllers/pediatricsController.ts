@@ -87,7 +87,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                     diffParts.push(`Ferritin: ${diff.ferritin} ng/mL`);
                 }
                 if (diffParts.length > 0) {
-                    ironHtml += `<div class="text-[9px] text-slate-300 font-mono mb-1">${diffParts.join(' | ')}</div>`;
+                    ironHtml += `<div class="text-xs text-slate-300 tabular-nums mb-1">${diffParts.join(' | ')}</div>`;
                 }
                 if (diff.warningTitle || diff.warningText) {
                     const diffBg = diff.badgeColor === 'rose'
@@ -170,10 +170,10 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                 syrupRes.classList.remove('hidden');
                 if (syrupDose.isBlocked) {
                     syrupRes.innerHTML = `
-                        <div class="space-y-1.5 font-mono text-[10px]">
+                        <div class="space-y-1.5 tabular-nums text-xs">
                             <div class="flex items-center justify-between pb-1 border-b border-rose-800">
                                 <span class="font-bold text-rose-300">${syrupDose.name}</span>
-                                <span class="text-[9px] font-bold text-rose-400 bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-800">🛑 BLOKE EDİLDİ</span>
+                                <span class="text-xs font-bold text-rose-400 bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-800">🛑 BLOKE EDİLDİ</span>
                             </div>
                             <div class="p-2 rounded bg-rose-950/80 border border-rose-700 text-rose-200 text-xs font-bold space-y-1">
                                 <div class="flex items-start gap-1.5">
@@ -182,23 +182,23 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                                 </div>
                             </div>
                             ${syrupDose.dualStandardWarning ? `
-                                <div class="p-1.5 rounded bg-amber-950/50 border border-amber-600/80 text-amber-200 text-[10px]">
+                                <div class="p-1.5 rounded bg-amber-950/50 border border-amber-600/80 text-amber-200 text-xs">
                                     ${syrupDose.dualStandardWarning}
                                 </div>
                             ` : ''}
                             ${syrupDose.ratioNotice ? `
-                                <div class="p-1.5 rounded bg-amber-950/40 border border-amber-700 text-amber-300 text-[10px]">
+                                <div class="p-1.5 rounded bg-amber-950/40 border border-amber-700 text-amber-300 text-xs">
                                     ${syrupDose.ratioNotice}
                                 </div>
                             ` : ''}
-                            <div class="p-1.5 rounded border border-rose-900 bg-rose-950/40 text-rose-300 text-[9px]">
+                            <div class="p-1.5 rounded border border-rose-900 bg-rose-950/40 text-rose-300 text-xs">
                                 ${syrupDose.syringeWarning}
                             </div>
                         </div>
                     `;
                 } else {
                     syrupRes.innerHTML = `
-                        <div class="space-y-1.5 font-mono text-[10px]">
+                        <div class="space-y-1.5 tabular-nums text-xs">
                             <div class="flex items-center justify-between pb-1 border-b border-slate-700/50">
                                 <span class="font-bold text-slate-200">${syrupDose.name}</span>
                                 <span class="text-[9px] text-slate-400">${syrupDose.freq}</span>
@@ -340,9 +340,9 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
         });
         if (appState.pediatrics.bp && pedBpContainer) {
             pedBpContainer.classList.remove('hidden');
-            pedBpContainer.className = `col-span-2 p-2 rounded-lg border text-[10px] font-mono space-y-0.5 ${appState.pediatrics.bp.alertClass}`;
+            pedBpContainer.className = `col-span-2 p-2 rounded-lg border text-xs tabular-nums space-y-0.5 ${appState.pediatrics.bp.alertClass}`;
             pedBpContainer.innerHTML = `<div class="font-bold">AAP 2017 Tansiyon: ${appState.pediatrics.bp.stage}</div>
-                ${appState.pediatrics.bp.thresholds ? `<div class="text-[9px] text-slate-300 opacity-90">${appState.pediatrics.bp.thresholds}</div>` : ''}`;
+                ${appState.pediatrics.bp.thresholds ? `<div class="text-xs text-slate-300 opacity-90">${appState.pediatrics.bp.thresholds}</div>` : ''}`;
         } else if (pedBpContainer) {
             pedBpContainer.classList.add('hidden');
         }
@@ -358,7 +358,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
             riskContainer.classList.remove('hidden');
             riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${pewsRes.score >= 3 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-emerald-950/40 border-emerald-600/50'}`;
             badgeRiskType.textContent = 'PEWS';
-            badgeRiskType.className = `text-xs font-bold font-mono ${pewsRes.score >= 3 ? 'text-rose-400' : 'text-emerald-400'}`;
+            badgeRiskType.className = `text-xs font-bold tabular-nums ${pewsRes.score >= 3 ? 'text-rose-400' : 'text-emerald-400'}`;
             textRiskScore.textContent = `Skor: ${pewsRes.score}`;
             flagContainer.innerHTML = pewsRes.recommendation;
         }
@@ -370,7 +370,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
             riskContainer.classList.remove('hidden');
             riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${news2Res.score >= 5 ? 'bg-rose-950/40 border-rose-600/50' : 'bg-slate-800 border-slate-700/50'}`;
             badgeRiskType.textContent = 'NEWS2';
-            badgeRiskType.className = `text-xs font-bold font-mono ${news2Res.score >= 5 ? 'text-rose-400' : 'text-slate-300'}`;
+            badgeRiskType.className = `text-xs font-bold tabular-nums ${news2Res.score >= 5 ? 'text-rose-400' : 'text-slate-300'}`;
             textRiskScore.textContent = `Skor: ${news2Res.score}`;
             flagContainer.innerHTML = `${news2Res.risk} — ${news2Res.recommendation}`;
         }

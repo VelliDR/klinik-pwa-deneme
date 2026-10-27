@@ -191,7 +191,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         const g = appState.medicine.gir;
         if (g) {
             girContainer.classList.remove('hidden');
-            girContainer.className = `p-2 rounded-lg border text-[10px] font-mono space-y-1.5 bg-slate-900/60 border-slate-700/60`;
+            girContainer.className = `p-2 rounded-lg border text-xs tabular-nums space-y-1.5 bg-slate-900/60 border-slate-700/60`;
             let gHtml = `<div class="flex justify-between items-center">
                 <span class="text-slate-400">GIR:</span>
                 <span class="text-xs font-bold ${g.alertClass}">${g.gir} mg/kg/dk</span>
@@ -346,11 +346,11 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
 
         if (c.status === 'BLOCKED' || c.status === 'INVALID_INPUT' || c.status === 'OUT_OF_RANGE') {
             qtcHtml = `<div class="text-rose-400 font-semibold">${c.interpretation}</div>`;
-            qtRes.className = 'p-2 rounded-lg space-y-1 font-mono mt-2 border bg-rose-950/40 border-rose-600/50';
+            qtRes.className = 'p-2 rounded-lg space-y-1 tabular-nums mt-2 border bg-rose-950/40 border-rose-600/50';
             qtRes.innerHTML = qtcHtml;
         } else if (c.status === 'INCOMPLETE') {
             qtcHtml = `<div class="text-slate-400 text-xs">${c.interpretation}</div>`;
-            qtRes.className = 'p-2 rounded-lg space-y-1 font-mono mt-2 border bg-slate-900/60 border-slate-700/50';
+            qtRes.className = 'p-2 rounded-lg space-y-1 tabular-nums mt-2 border bg-slate-900/60 border-slate-700/50';
             qtRes.innerHTML = qtcHtml;
         } else {
             qtcHtml += `<div class="text-slate-300"><strong>Nabız / RR:</strong> ${c.hr} bpm <span class="text-slate-400">(${c.rrMs} ms)</span></div>`;
@@ -387,7 +387,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
 
             qtRes.innerHTML = qtcHtml;
             const isDanger = c.colorCode === 'danger' || c.colorCode === 'orange';
-            qtRes.className = `p-2 rounded-lg space-y-1 font-mono mt-2 border ${isDanger ? 'bg-rose-950/40 border-rose-600/50' : c.colorCode === 'warning' ? 'bg-amber-950/40 border-amber-600/50' : 'bg-slate-900/60 border-slate-700/50'}`;
+            qtRes.className = `p-2 rounded-lg space-y-1 tabular-nums mt-2 border ${isDanger ? 'bg-rose-950/40 border-rose-600/50' : c.colorCode === 'warning' ? 'bg-amber-950/40 border-amber-600/50' : 'bg-slate-900/60 border-slate-700/50'}`;
         }
     } else {
         if (qtRes) qtRes.classList.add('hidden');
@@ -453,7 +453,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         const hm = appState.medicine.homaIR;
         if (hm) {
             homaRes.classList.remove('hidden');
-            homaRes.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${hm.alertClass}`;
+            homaRes.className = `p-2 rounded-lg border tabular-nums space-y-1 text-xs ${hm.alertClass}`;
             homaRes.innerHTML = `
                 <div class="flex justify-between items-center font-bold">
                     <span>HOMA-IR: ${hm.homaIR}</span>
@@ -608,7 +608,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                     <span>Katz Düzeltilmiş Na: ${corrRes.correctedSodiumKatz} mEq/L</span>
                     <span class="text-slate-400 text-[10px]">Ölçülen: ${corrRes.measuredSodium}</span>
                 </div>
-                <div class="text-[9px] text-cyan-300 font-mono">${corrRes.formulaNotes || ''}</div>
+                <div class="text-xs text-cyan-300 tabular-nums">${corrRes.formulaNotes || ''}</div>
                 <div class="text-[10px] text-slate-300 mt-1">${corrRes.interpretation}</div>
                 ${osmRes ? `
                     <div class="pt-1.5 border-t border-slate-700/60 mt-1.5 space-y-1">
@@ -651,7 +651,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         if (apapRes && apapOut) {
             apapOut.classList.remove('hidden');
             const alertBg = apapRes.isToxic ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-emerald-950/40 border-emerald-600/50 text-emerald-200';
-            apapOut.className = `p-2.5 rounded-lg border font-mono space-y-1.5 text-[10px] ${alertBg}`;
+            apapOut.className = `p-2.5 rounded-lg border tabular-nums space-y-1.5 text-xs ${alertBg}`;
             let nacHtml = '';
             if (apapRes.nacProtocol) {
                 const nac = apapRes.nacProtocol;

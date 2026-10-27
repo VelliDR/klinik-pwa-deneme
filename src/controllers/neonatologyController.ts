@@ -105,11 +105,11 @@ export function updateNeonatologyCard(ageData: PatientAgeResult): void {
                     <div class="text-[10px] font-semibold">${escapeHtml(aapRes.interpretation)}</div>
                 `;
 
-                if (aapRes.tcBValidity && !aapRes.tcBValidity.isValidForTreatmentDecision) {
+                if (aapRes.tcBValidity && (!aapRes.tcBValidity.isValidForTreatmentDecision || aapRes.requiresTsbConfirmation)) {
                     extra += `
                         <div class="text-[9px] bg-amber-950/40 border border-amber-700/60 p-1.5 rounded mt-1 space-y-0.5 text-amber-200">
                             <div class="font-bold text-amber-300">⚠️ TcB DOĞRULAMA KALKANI (AAP 2022 KAS 6)</div>
-                            <div>• ${escapeHtml(aapRes.tcBValidity.warning || '')}</div>
+                            <div>• ${escapeHtml(aapRes.tcBValidity.warning || aapRes.tsbConfirmationReason || 'Fototerapi eşiğine ≤3 mg/dL yakınlıkta veya ≥15 mg/dL ölçümlerde tedavi kararı TcB ile verilemez, derhal TSB ile doğrulanmalıdır.')}</div>
                         </div>
                     `;
                 }
@@ -191,6 +191,60 @@ export function updateNeonatologyCard(ageData: PatientAgeResult): void {
                     `;
                 }
 
+                // İkincil / Karşılaştırmalı Referans Katmanı (TND 2014 / Klasik Bhutani)
+                const tndRes = calculateBhutaniJaundice({
+                    ageHours: bAgeH,
+                    totalBilirubin: bTsb,
+                    gestationalWeeks: bGw,
+                    hasRiskFactors: bRisk,
+                    guideline: 'TND_2014',
+                    measurementType: bMethod
+                });
+
+                if (tndRes && tndRes.isValid && tndRes.phototherapyThreshold !== undefined) {
+                    const tndPt = tndRes.phototherapyThreshold;
+                    const tndEx = tndRes.exchangeThreshold;
+                    const tndDelta = tndRes.deltaFromPhototherapy ?? Number((tndPt - bTsb).toFixed(1));
+                    const ptDiff = Number((aapRes.thresholds.phototherapy - tndPt).toFixed(1));
+                    const diffText = ptDiff > 0 
+                        ? `+${ptDiff} mg/dL (AAP eşiği daha yüksek)` 
+                        : ptDiff < 0 
+                            ? `${ptDiff} mg/dL (AAP eşiği daha düşük)` 
+                            : 'Eşit (0.0 mg/dL)';
+                    const diffColor = ptDiff > 0 ? 'text-emerald-400' : ptDiff < 0 ? 'text-amber-400' : 'text-slate-300';
+                    const tndDeltaSign = tndDelta > 0 ? '-' : '+';
+
+                    extra += `
+                        <div class="mt-2.5 pt-2 border-t border-slate-700/60 space-y-1.5">
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="font-bold text-slate-300 flex items-center gap-1">
+                                    <span>📊</span> İkili Kılavuz Karşılaştırması: TND 2014 / AAP 2004 (İkincil Referans)
+                                </span>
+                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Karşılaştırmalı Katman</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-2 rounded bg-slate-950/70 border border-slate-800 text-[10px]">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block">TND 2014 Fototerapi</span>
+                                    <span class="font-bold text-amber-400">${tndPt.toFixed(1)} mg/dL</span>
+                                    <span class="text-[8px] text-slate-400 block">(Fark Δ: ${tndDeltaSign}${Math.abs(tndDelta).toFixed(1)} mg/dL)</span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block">TND 2014 Kan Değişimi</span>
+                                    <span class="font-bold text-rose-400">${tndEx ? `${tndEx.toFixed(1)} mg/dL` : '--'}</span>
+                                </div>
+                                <div class="col-span-2 sm:col-span-1">
+                                    <span class="text-[9px] text-slate-400 block">Eşik Farkı (AAP vs TND)</span>
+                                    <span class="font-bold ${diffColor}">${diffText}</span>
+                                </div>
+                            </div>
+                            <div class="text-[9px] text-slate-400 space-y-0.5">
+                                <div>• <strong>Klinik Kılavuz Önceliği:</strong> AAP 2022 güncel kanıta dayalı birincil karar desteğidir. TND 2014 değerleri ulusal klasik nomogram referansı olarak sunulmaktadır.</div>
+                                ${ptDiff > 0 ? `<div>• AAP 2022 fototerapi eşiğini ${ptDiff} mg/dL yükselterek hafif olgularda aşırı yatış ve fototerapiyi güvenle sınırlandırır.</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 renderClinicalCardResult(bhutaniOut, {
                     title: `${aapRes.ageHours}. Saat: ${bMethod} ${aapRes.totalBilirubin} mg/dL (${aapRes.hasNeurotoxicityRisk ? 'Riskli Eğri' : 'Risksiz Eğri'})`,
                     riskText: aapRes.status,
@@ -211,12 +265,78 @@ export function updateNeonatologyCard(ageData: PatientAgeResult): void {
             appState.neonatology.bhutani = bRes;
             if (bhutaniOut) {
                 const escStr = bRes.escalationThreshold !== undefined ? ` | Bakım Eskalasyonu: ${bRes.escalationThreshold} mg/dL` : '';
-                const extra = `
+                let extra = `
                     <div class="text-[9px] text-cyan-300 font-semibold">${escapeHtml(bRes.guidelineLabel || '')}</div>
                     ${bRes.phototherapyThreshold ? `<div class="text-[10px]">Fototerapi Eşiği: ${bRes.phototherapyThreshold} mg/dL${escStr} | Kan Değişimi: ${bRes.exchangeThreshold} mg/dL</div>` : ''}
                     <div class="text-[10px] font-semibold">${bRes.interpretation || ''}</div>
                     ${bRes.followUpRecommendation ? `<div class="text-[9px] text-amber-300 pt-0.5 border-t border-slate-700/50">📅 İzlem: ${escapeHtml(bRes.followUpRecommendation)}</div>` : ''}
                 `;
+
+                if (bRes.requiresTsbConfirmation) {
+                    extra += `
+                        <div class="text-[9px] bg-amber-950/40 border border-amber-700/60 p-1.5 rounded mt-1 space-y-0.5 text-amber-200">
+                            <div class="font-bold text-amber-300">⚠️ TcB DOĞRULAMA KALKANI (KAS 6)</div>
+                            <div>• Transkütan ölçüm fototerapi eşiğine ≤3 mg/dL yakınlıkta veya ≥15 mg/dL olduğunda derhal venöz/kapiller TSB ile doğrulanmalıdır.</div>
+                        </div>
+                    `;
+                }
+
+                // İkincil / Karşılaştırmalı Referans Katmanı (AAP 2022)
+                const aapRes = evaluateAap2022Jaundice({
+                    ageHours: bAgeH,
+                    totalBilirubin: bTsb,
+                    gestationalWeeks: bGw,
+                    measurementType: bMethod,
+                    hasNeurotoxicityRisk: bRisk,
+                    albuminGPerDl: bAlbumin,
+                    directBilirubinMgDl: bDirect,
+                    previousTsbMgDl: bPrevTsb,
+                    previousAgeHours: bPrevHours,
+                    isDischargePlanning: bDischarge,
+                    priorPhototherapyWithin24h: bPriorPt,
+                    isPhototherapyDiscontinuationEvaluation: bRebound,
+                    phototherapyStartAgeHours: bPtStartAge,
+                    riskFactors: {
+                        hypoalbuminemia: bAlbumin !== null && bAlbumin < 3.0,
+                        isoimmuneHemolysis: bDat,
+                        g6pdDeficiency: bG6pd,
+                        sepsis: bSepsis
+                    }
+                });
+
+                if (aapRes && aapRes.isValid) {
+                    const ptDiff = Number(((bRes.phototherapyThreshold || 0) - aapRes.thresholds.phototherapy).toFixed(1));
+                    const aapDeltaSign = aapRes.deltaFromPhototherapy > 0 ? '-' : '+';
+                    extra += `
+                        <div class="mt-2.5 pt-2 border-t border-slate-700/60 space-y-1.5">
+                            <div class="flex items-center justify-between text-[10px]">
+                                <span class="font-bold text-sky-300 flex items-center gap-1">
+                                    <span>🔬</span> Güncel Kılavuz Referansı (AAP 2022)
+                                </span>
+                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-sky-950/60 text-sky-400 border border-sky-800/60">Birincil Önerilen Kılavuz</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-2 rounded bg-slate-950/70 border border-slate-800 text-[10px]">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block">AAP 2022 Fototerapi</span>
+                                    <span class="font-bold text-sky-400">${aapRes.thresholds.phototherapy.toFixed(1)} mg/dL</span>
+                                    <span class="text-[8px] text-slate-400 block">(Fark Δ: ${aapDeltaSign}${Math.abs(aapRes.deltaFromPhototherapy).toFixed(1)} mg/dL)</span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block">AAP 2022 Kan Değişimi</span>
+                                    <span class="font-bold text-rose-400">${aapRes.thresholds.exchange.toFixed(1)} mg/dL</span>
+                                </div>
+                                <div class="col-span-2 sm:col-span-1">
+                                    <span class="text-[9px] text-slate-400 block">Eşik Farkı (TND vs AAP)</span>
+                                    <span class="font-bold text-slate-200">${ptDiff > 0 ? `+${ptDiff}` : ptDiff} mg/dL</span>
+                                </div>
+                            </div>
+                            <div class="text-[9px] text-slate-400">
+                                • AAP 2022 güncel klinik karar destek kılavuzu olarak önerilmektedir.
+                            </div>
+                        </div>
+                    `;
+                }
+
                 renderClinicalCardResult(bhutaniOut, {
                     title: `${bRes.ageHours}. Saat: ${bMethod} ${bRes.totalBilirubin} mg/dL`,
                     riskText: bRes.riskGroupLabel || '',

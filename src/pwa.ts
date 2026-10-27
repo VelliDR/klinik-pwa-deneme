@@ -11,13 +11,15 @@ export function setupPWA(): void {
     function updateNetworkStatus(): void {
         if (!badge) return;
         if (navigator.onLine) {
-            badge.className = 'text-[10px] font-mono bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
-            badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span class="hidden sm:inline">Çevrimiçi •</span> PWA Hazır';
-            badge.title = 'Çevrimiçi bağlantı aktif — Çevrimdışı kullanım için tüm veriler önbellekte hazır';
+            badge.className = 'w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0 shadow-sm';
+            badge.innerHTML = '';
+            badge.title = 'Çevrimiçi • Çevrimdışı Kullanıma Hazır (PWA)';
+            badge.setAttribute('aria-label', 'PWA Çevrimdışı Hazır');
         } else {
-            badge.className = 'text-[10px] font-mono bg-amber-950/80 text-amber-300 border border-amber-800/60 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
-            badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Çevrimdışı Mod (Tam Fonksiyonel)';
-            badge.title = 'İnternet bağlantısı yok - Tüm motorlar ve ilaç kataloğu yerel önbellekten çalışıyor';
+            badge.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block shrink-0 shadow-sm';
+            badge.innerHTML = '';
+            badge.title = 'Çevrimdışı Mod (Tam Fonksiyonel)';
+            badge.setAttribute('aria-label', 'PWA Çevrimdışı Mod');
         }
     }
 

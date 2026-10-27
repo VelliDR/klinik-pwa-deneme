@@ -198,27 +198,113 @@ function ensureVisibilityResyncListener(): void {
   window.addEventListener('focus', resyncAll);
 }
 
-function getWeightAndIsAdult(): { weightKg: number; isAdult: boolean } {
-  const weight = appState.biometry.weightKg || 70;
+export interface EmergencyWeightContext {
+  weightKg: number;
+  isAdult: boolean;
+  isWeightMissing: boolean;
+  isEstimated: boolean;
+  isPediatricShieldActive: boolean;
+  mode: 'entered' | 'estimated-adult' | 'estimated-pediatric' | 'missing';
+}
+
+let emergencyWeightMode: 'auto' | 'estimated-adult' | 'estimated-pediatric' = 'auto';
+
+export function setEmergencyWeightMode(mode: 'auto' | 'estimated-adult' | 'estimated-pediatric'): void {
+  emergencyWeightMode = mode;
+}
+
+export function getEmergencyWeightMode(): 'auto' | 'estimated-adult' | 'estimated-pediatric' {
+  return emergencyWeightMode;
+}
+
+export function resetEmergencyWeightMode(): void {
+  emergencyWeightMode = 'auto';
+}
+
+export function getWeightAndIsAdult(): EmergencyWeightContext {
+  const enteredWeight = appState.biometry.weightKg;
+  const hasEnteredWeight = typeof enteredWeight === 'number' && !isNaN(enteredWeight) && enteredWeight > 0;
+  
   const hasExplicitAge = appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined;
   const hasPediatricMonthsOrDays = (appState.biometry.ageMonths !== null && appState.biometry.ageMonths < 216) ||
     (appState.biometry.ageDays !== null && appState.biometry.ageDays < 6570);
-  const isAdult = !appState.biometry.isNeonate && !hasPediatricMonthsOrDays && (
-    hasExplicitAge
-      ? (appState.biometry.ageYears as number) >= 18
-      : weight >= 40
-  );
-  return { weightKg: weight, isAdult };
+  const isNeonate = !!appState.biometry.isNeonate;
+  
+  const isExplicitPediatric = isNeonate || hasPediatricMonthsOrDays || (hasExplicitAge && (appState.biometry.ageYears as number) < 18);
+  const isExplicitAdult = hasExplicitAge && (appState.biometry.ageYears as number) >= 18;
+
+  if (hasEnteredWeight) {
+    const isAdult = isExplicitPediatric ? false : isExplicitAdult ? true : (enteredWeight as number) >= 40;
+    return {
+      weightKg: enteredWeight as number,
+      isAdult,
+      isWeightMissing: false,
+      isEstimated: false,
+      isPediatricShieldActive: false,
+      mode: 'entered'
+    };
+  }
+
+  // Kilo girilmemişse:
+  // Pediatrik Güvenlik Kalkanı: Hasta pediatrik (<18 yaş) ise, asla 70 kg erişkin varsayılanına izin verilmez!
+  if (emergencyWeightMode === 'estimated-adult') {
+    if (isExplicitPediatric) {
+      // Pediatrik Güvenlik Kalkanı devrede: Erişkin seçilse bile pediatrik tahmini kiloya yönlendir
+      const pediaEst = (hasExplicitAge && appState.biometry.ageYears && appState.biometry.ageYears < 18)
+        ? Math.max(3, Math.min(60, Math.round(((appState.biometry.ageYears as number) + 4) * 2)))
+        : 15;
+      return {
+        weightKg: pediaEst,
+        isAdult: false,
+        isWeightMissing: false,
+        isEstimated: true,
+        isPediatricShieldActive: true,
+        mode: 'estimated-pediatric'
+      };
+    }
+    return {
+      weightKg: 70,
+      isAdult: true,
+      isWeightMissing: false,
+      isEstimated: true,
+      isPediatricShieldActive: false,
+      mode: 'estimated-adult'
+    };
+  }
+
+  if (emergencyWeightMode === 'estimated-pediatric') {
+    const pediaEst = (hasExplicitAge && appState.biometry.ageYears && appState.biometry.ageYears < 18)
+      ? Math.max(3, Math.min(60, Math.round(((appState.biometry.ageYears as number) + 4) * 2)))
+      : 15;
+    return {
+      weightKg: pediaEst,
+      isAdult: false,
+      isWeightMissing: false,
+      isEstimated: true,
+      isPediatricShieldActive: false,
+      mode: 'estimated-pediatric'
+    };
+  }
+
+  // emergencyWeightMode === 'auto' (Kilo girilmedi, mutlak dozlar kilitli)
+  return {
+    weightKg: 0,
+    isAdult: isExplicitPediatric ? false : isExplicitAdult ? true : false,
+    isWeightMissing: true,
+    isEstimated: false,
+    isPediatricShieldActive: isExplicitPediatric,
+    mode: 'missing'
+  };
 }
 
 export function getCurrentAnaphylaxisDoses(): AnaphylaxisDoses {
-  const { weightKg, isAdult } = getWeightAndIsAdult();
-  return calculateAnaphylaxisDoses(weightKg, isAdult);
+  const ctx = getWeightAndIsAdult();
+  return calculateAnaphylaxisDoses(ctx.weightKg, ctx.isAdult, ctx.isEstimated);
 }
 
 export function getCurrentStatusDoses(): StatusEpilepticusDoses {
-  const { weightKg, isAdult } = getWeightAndIsAdult();
-  return calculateStatusEpilepticusDoses(weightKg, isAdult);
+  const ctx = getWeightAndIsAdult();
+  return calculateStatusEpilepticusDoses(ctx.weightKg, ctx.isAdult, ctx.isEstimated);
 }
 
 // ----------------------------------------------------------------------------

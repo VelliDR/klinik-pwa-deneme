@@ -7,14 +7,34 @@
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* Monospace ve düşey sayısal hizalama standardı */
-.tabular-nums { font-variant-numeric: tabular-nums; }
+.tabular-nums,
+#patient-context-banner,
+#header-patient-info,
+[id^="output-"],
+[id^="badge-"],
+.timer-display {
+    font-variant-numeric: tabular-nums;
+}
 
-/* Dokunma hedefleri ve mobil form ergonomisi */
-input[type="number"], select {
-    min-height: 38px;
+/* iOS Safari Zoom Koruması ve Dokunma Hedefleri (En az 16px font-size) */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    font-size: 16px !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select {
+    min-height: 42px;
+}
+@media (min-width: 641px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select {
+        min-height: 38px;
+    }
 }
 @media (max-width: 640px) {
-    input[type="number"], select, button {
+    button {
         min-height: 42px;
     }
 }
@@ -82,6 +102,12 @@ html.light-theme #patient-context-banner .text-slate-200 {
 html.light-theme #category-pills {
     background-color: #ffffff !important;
     border-color: #e2e8f0 !important;
+}
+
+html.light-theme .cat-pill.active {
+    background-color: rgba(14, 165, 233, 0.15) !important;
+    color: #0284c7 !important;
+    border-color: rgba(14, 165, 233, 0.4) !important;
 }
 
 html.light-theme .cat-pill:not(.active) {

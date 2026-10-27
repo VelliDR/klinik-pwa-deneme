@@ -1,6 +1,25 @@
 import { appState } from '../state';
 import { expandDotPhrases } from './soapTemplates';
 
+/**
+ * HBYS / AHBS (Hastane & Aile Hekimliği Bilgi Yönetim Sistemleri) uyumluluğu için
+ * metindeki tüm Unicode emojileri temizleyerek standart metin etiketlerine ([KRİTİK UYARI], [DİKKAT], [KİLİTLİ] vb.)
+ * dönüştürür.
+ */
+export function sanitizeForHbys(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/🛑/g, '[KRİTİK UYARI]')
+    .replace(/🚨/g, '[KRİTİK UYARI]')
+    .replace(/⚠️|⚠/g, '[DİKKAT]')
+    .replace(/🔒/g, '[KİLİTLİ]')
+    .replace(/⚡/g, '[ACİL]')
+    .replace(/✓|✔/g, '[UYGUN]')
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+    .replace(/[\u{2600}-\u{27BF}]/gu, '')
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, '');
+}
+
 export function generateSOAP(): string {
   const s: string[] = []; // Subjektif
   const o: string[] = []; // Objektif
@@ -74,7 +93,7 @@ export function generateSOAP(): string {
   // Pediatrik Büyüme Hızı & Akut Malnütrisyon (WHO 2022/2023)
   if (appState.pediatrics?.growthVelocity?.isValid) {
     const gv = appState.pediatrics.growthVelocity;
-    const falteringStr = gv.centileDropAnalysis?.isPathologicalFaltering ? ' [🚨 Patolojik Büyüme Duraklaması]' : '';
+    const falteringStr = gv.centileDropAnalysis?.isPathologicalFaltering ? ' [KRİTİK UYARI: Patolojik Büyüme Duraklaması]' : '';
     const malStr = gv.malnutritionAssessment ? ` (${gv.malnutritionAssessment.categoryText})` : '';
     o.push(`- Büyüme Hızı & Malnütrisyon: ${gv.gramsPerDay} g/gün (Beklenen: ${gv.expectedRange.minGramsPerDay}-${gv.expectedRange.maxGramsPerDay} g/gün, ${gv.velocityStatusText})${falteringStr}${malStr}.`);
   }
@@ -246,10 +265,10 @@ export function generateSOAP(): string {
       o.push(`- Düzeltilmiş Sodyum: Katz: ${nt.correctedSodium.correctedSodiumKatz} mEq/L, Hillier: ${nt.correctedSodium.correctedSodiumHillier} mEq/L (Ölçülen: ${nt.correctedSodium.measuredSodium}, Glukoz: ${nt.correctedSodium.glucose} mg/dL). ${nt.correctedSodium.interpretation}`);
     }
     if (nt.osmolalGap && nt.osmolalGap.isValid) {
-      o.push(`- Osmolal Açık: ${nt.osmolalGap.osmolalGap} mOsm/kg (Ölçülen: ${nt.osmolalGap.measuredOsm}, Hesaplanan: ${nt.osmolalGap.calculatedOsm}) -> ${nt.osmolalGap.isCriticalGap ? '🚨 KRİTİK YÜKSEK (Toksik Alkol Zehirlenmesi)' : (nt.osmolalGap.isHighGap ? '⚠️ YÜKSEK' : '✓ Normal')}.`);
+      o.push(`- Osmolal Açık: ${nt.osmolalGap.osmolalGap} mOsm/kg (Ölçülen: ${nt.osmolalGap.measuredOsm}, Hesaplanan: ${nt.osmolalGap.calculatedOsm}) -> ${nt.osmolalGap.isCriticalGap ? '[KRİTİK UYARI] YÜKSEK (Toksik Alkol Zehirlenmesi)' : (nt.osmolalGap.isHighGap ? '[DİKKAT] YÜKSEK' : '[UYGUN] Normal')}.`);
     }
     if (nt.paracetamol && nt.paracetamol.isValid) {
-      o.push(`- Parasetamol Düzeyi (Rumack-Matthew): ${nt.paracetamol.levelMcgMl} µg/mL (${nt.paracetamol.hoursPostIngestion}. saat, Eşik: ${nt.paracetamol.threshold} µg/mL${nt.paracetamol.isHighRisk ? ' - Yüksek Risk Nomogramı' : ''}) -> ${nt.paracetamol.isToxic ? '🚨 TOKSİK DÜZEY' : '✓ Tedavi Çizgisi Altında'}.`);
+      o.push(`- Parasetamol Düzeyi (Rumack-Matthew): ${nt.paracetamol.levelMcgMl} µg/mL (${nt.paracetamol.hoursPostIngestion}. saat, Eşik: ${nt.paracetamol.threshold} µg/mL${nt.paracetamol.isHighRisk ? ' - Yüksek Risk Nomogramı' : ''}) -> ${nt.paracetamol.isToxic ? '[KRİTİK UYARI] TOKSİK DÜZEY' : '[UYGUN] Tedavi Çizgisi Altında'}.`);
     }
     if (nt.curb65 && nt.curb65.isValid) {
       o.push(`- CURB-65 / CRB-65 Pnömoni Skoru: CURB-65: ${nt.curb65.score}/5, CRB-65: ${nt.curb65.crbScore}/4 (${nt.curb65.mortalityGroup} - 30-Günlük Mortalite: %${nt.curb65.mortalityPercent}).`);
@@ -265,7 +284,7 @@ export function generateSOAP(): string {
       const escPart = neo.bhutani.escalationThreshold ? `, Bakım Eskalasyonu: ${neo.bhutani.escalationThreshold}` : '';
       let jStr = `- Hiperbilirubinemi (${gTag}): Yaş: ${neo.bhutani.ageHours}s, ${mTag}: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}${escPart}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`;
       if (neo.bhutani.requiresTsbConfirmation && neo.bhutani.tsbConfirmationReason) {
-        jStr += ` [⚠️ TcB Doğrulama: ${neo.bhutani.tsbConfirmationReason}]`;
+        jStr += ` [DİKKAT: TcB Doğrulama: ${neo.bhutani.tsbConfirmationReason}]`;
       }
       o.push(jStr);
     }
@@ -287,7 +306,7 @@ export function generateSOAP(): string {
   if (appState.safetyPrescription) {
     const sp = appState.safetyPrescription;
     if (sp.tripleWhammy && sp.tripleWhammy.isTripleWhammy) {
-      o.push(`- 🚨 İlaç Güvenliği: Triple Whammy AKI Riski Tespit Edildi (RAS Blokörü + Diüretik + NSAİİ).`);
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği: Triple Whammy AKI Riski Tespit Edildi (RAS Blokörü + Diüretik + NSAİİ).`);
     }
     if (sp.renalAdjustments && (sp.renalAdjustments.alertsCount ?? 0) > 0) {
       o.push(`- Renal Dozaj Uyarısı (${sp.renalAdjustments.egfr} mL/dk): ${sp.renalAdjustments.alertsCount} ilaçta doz kısıtlaması/kontrendikasyon mevcut.`);
@@ -296,16 +315,16 @@ export function generateSOAP(): string {
       o.push(`- Gebelik Güvenlik Uyarısı: ${sp.pregnancySafety.alertsCount} ilaçta fetal risk saptandı.`);
     }
     if (sp.neonatalDrugSafety && sp.neonatalDrugSafety.alertsCount > 0) {
-      o.push(`- 🚨 Yenidoğan İlaç Güvenliği: ${sp.neonatalDrugSafety.alertsCount} ilaçta kontrendikasyon/toksisite uyarısı mevcut (${sp.neonatalDrugSafety.alerts.map((a) => a.drugName).join(', ')}).`);
+      o.push(`- [KRİTİK UYARI] Yenidoğan İlaç Güvenliği: ${sp.neonatalDrugSafety.alertsCount} ilaçta kontrendikasyon/toksisite uyarısı mevcut (${sp.neonatalDrugSafety.alerts.map((a) => a.drugName).join(', ')}).`);
     }
     if (sp.serotoninSyndrome && sp.serotoninSyndrome.isHighRisk) {
-      o.push(`- 🚨 İlaç Güvenliği (Serotonin Toksisitesi): ${sp.serotoninSyndrome.title}. Tespit edilen: ${Object.values(sp.serotoninSyndrome.detectedDrugs).flat().join(', ')}.`);
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği (Serotonin Toksisitesi): ${sp.serotoninSyndrome.title}. Tespit edilen: ${Object.values(sp.serotoninSyndrome.detectedDrugs).flat().join(', ')}.`);
     }
     if (sp.hyperkalemiaRisk && sp.hyperkalemiaRisk.isAtRisk) {
-      o.push(`- 🚨 İlaç Güvenliği (Hiperkalemi Kalkanı): ${sp.hyperkalemiaRisk.title}. Risk faktörleri: ${sp.hyperkalemiaRisk.riskFactorsIdentified.join(', ')}.`);
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği (Hiperkalemi Kalkanı): ${sp.hyperkalemiaRisk.title}. Risk faktörleri: ${sp.hyperkalemiaRisk.riskFactorsIdentified.join(', ')}.`);
     }
     if (sp.cypStatinInteraction && sp.cypStatinInteraction.hasInteraction) {
-      o.push(`- 🚨 İlaç Güvenliği (CYP3A4 / Statin): ${sp.cypStatinInteraction.title}.`);
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği (CYP3A4 / Statin): ${sp.cypStatinInteraction.title}.`);
     }
   }
 
@@ -397,7 +416,7 @@ export function generateSOAP(): string {
       a.push(`- Akut Parasetamol Hepatotoksisitesi: Serum düzeyi Rumack-Matthew tedavi çizgisinin üzerindedir (Karaciğer yetmezliği riski!).`);
     }
     if (nt.osmolalGap && nt.osmolalGap.isCriticalGap) {
-      a.push(`- 🚨 KRİTİK OSMOLAL AÇIK (${nt.osmolalGap.osmolalGap} mOsm/kg > 20): Toksik Alkol Zehirlenmesi (Metanol / Etilen Glikol / Propilen Glikol) kuşkusu!`);
+      a.push(`- [KRİTİK UYARI] KRİTİK OSMOLAL AÇIK (${nt.osmolalGap.osmolalGap} mOsm/kg > 20): Toksik Alkol Zehirlenmesi (Metanol / Etilen Glikol / Propilen Glikol) kuşkusu!`);
     } else if (nt.osmolalGap && nt.osmolalGap.isHighGap) {
       a.push(`- Yüksek Osmolal Açık (${nt.osmolalGap.osmolalGap} mOsm/kg): Toksik alkol veya anyon açığı asidozu dışlanmalıdır.`);
     }
@@ -412,7 +431,7 @@ export function generateSOAP(): string {
     if (neo.bhutani && neo.bhutani.status === 'EXCHANGE_TRANSFUSION_REQUIRED') {
       a.push(`- KRİTİK HİPERBİLİRUBİNEMİ: Acil Kan Değişimi (Exchange Transfusion) ve yoğun fototerapi endikasyonu!`);
     } else if (neo.bhutani && neo.bhutani.status === 'ESCALATION_OF_CARE') {
-      a.push(`- 🚨 BAKIM ESKALASYONU (AAP 2022): Kan değişimi eşiğine ≤2.0 mg/dL! Acil yoğun fototerapi, IV hidrasyon, IVIG değerlendirmesi ve YDYBÜ nakil hazırlığı gereklidir.`);
+      a.push(`- [KRİTİK UYARI] BAKIM ESKALASYONU (AAP 2022): Kan değişimi eşiğine ≤2.0 mg/dL! Acil yoğun fototerapi, IV hidrasyon, IVIG değerlendirmesi ve YDYBÜ nakil hazırlığı gereklidir.`);
     } else if (neo.bhutani && neo.bhutani.status === 'PHOTOTHERAPY_REQUIRED') {
       const gTag = neo.bhutani.guidelineUsed === 'TND_2014' ? 'TND 2014' : 'AAP 2022';
       a.push(`- Yenidoğan Patolojik Sarılığı: ${gTag} fototerapi eşiği aşıldı, fototerapi başlanması gereklidir.`);
@@ -553,7 +572,7 @@ export function generateSOAP(): string {
     p.push(`${pCount}. Beslenme & Malnütrisyon Protokolü (${tp.setting === 'INPATIENT' ? 'Yatarak Tedavi' : 'Ayaktan Tedavi'}):`);
     p.push(`   - Kalori Hedefi: ${tp.caloricTargetKcalKgDay}`);
     p.push(`   - Diyet: ${tp.dietRecommendation}`);
-    if (tp.contraindications.length > 0) p.push(`   - ⚠️ Kontrendikasyon: ${tp.contraindications.join(' ')}`);
+    if (tp.contraindications.length > 0) p.push(`   - [DİKKAT] Kontrendikasyon: ${tp.contraindications.join(' ')}`);
     p.push(`   - İzlem: ${tp.monitoringAdvice}`);
     pCount++;
   }
@@ -617,5 +636,5 @@ export function generateSOAP(): string {
   soapText += `[A] DEĞERLENDİRME:\n${a.length > 0 ? a.join('\n') : 'Özel değerlendirme yok.'}\n\n`;
   soapText += `[P] PLAN & TEDAVİ:\n${p.length > 0 ? p.join('\n') : 'Özel plan girilmemiş.'}`;
 
-  return soapText;
+  return sanitizeForHbys(soapText);
 }

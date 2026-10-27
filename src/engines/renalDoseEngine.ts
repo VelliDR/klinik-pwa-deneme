@@ -329,14 +329,14 @@ export function identifyRenalDrugCategory(drugInput: DrugInputItem | string): {
   rationale: string;
 } {
   const resolved = resolveToRxNormConcept(drugInput);
-  const key = resolved ? resolved.canonicalKey : (typeof drugInput === 'string' ? drugInput.toLowerCase() : String((drugInput as any)?.name || ''));
+  const key = (resolved ? resolved.canonicalKey : (typeof drugInput === 'string' ? drugInput.toLowerCase() : String((drugInput as any)?.name || ''))).toLowerCase();
 
   // 1. DOAC'lar (EHRA 2021: Cockcroft-Gault CrCl zorunlu)
   if (
-    key === 'apixaban' ||
-    key === 'rivaroxaban' ||
-    key === 'dabigatran' ||
-    key === 'edoxaban' ||
+    key === 'apixaban' || key.includes('eliquis') ||
+    key === 'rivaroxaban' || key.includes('xarelto') ||
+    key === 'dabigatran' || key.includes('pradaxa') ||
+    key === 'edoxaban' || key.includes('lixiana') ||
     resolved?.drugClasses.includes('doac') ||
     resolved?.drugClasses.includes('cockcroft_gault_mandatory')
   ) {
@@ -351,12 +351,13 @@ export function identifyRenalDrugCategory(drugInput: DrugInputItem | string): {
 
   // 2. Dar Terapötik İndeksli İlaçlar (Mutlak GFR / CrCl ve TDM zorunlu)
   if (
-    key === 'vancomycin' ||
-    key === 'gentamicin' ||
-    key === 'amikacin' ||
-    key === 'tobramycin' ||
-    key === 'digoxin' ||
-    key === 'lithium' ||
+    key === 'vancomycin' || key.includes('vanco') ||
+    key === 'gentamicin' || key.includes('genta') || key.includes('gensu') ||
+    key === 'amikacin' || key.includes('amiket') ||
+    key === 'tobramycin' || key.includes('tobrex') ||
+    key === 'digoxin' || key.includes('digoksin') ||
+    key === 'lithium' || key.includes('lityum') ||
+    key === 'methotrexate' || key.includes('metotreksat') || key.includes('trexan') ||
     resolved?.drugClasses.includes('narrow_therapeutic_index')
   ) {
     return {

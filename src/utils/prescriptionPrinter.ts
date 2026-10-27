@@ -526,3 +526,51 @@ export function generatePrescriptionHTML(
     </div>
   `;
 }
+
+/**
+ * HBYS / AHBS sistemlerine doğrudan yapıştırılabilen,
+ * emojilerden arındırılmış temiz metin formatında reçete ve dozaj çıktısı.
+ */
+export function generatePrescriptionPlainText(
+  patient: PrescriptionPrintPatientInfo,
+  schedules: PrintableDrugSchedule[]
+): string {
+  const dateStr = patient.dateStr || new Date().toLocaleDateString('tr-TR');
+  const rxNum = patient.rxNumber || `RX-${new Date().getFullYear()}`;
+  const lines: string[] = [
+    '======================================================',
+    'HASTA İLAÇ KULLANIM ÇİZELGESİ & DOZAJ PLANI (HBYS/AHBS)',
+    '======================================================',
+    `Tarih: ${dateStr} | E-Reçete No: ${rxNum}`,
+    `Hasta: ${patient.patientName || '--'} | Yaş/Cins: ${patient.age || '--'} / ${patient.gender || '--'} | Kilo: ${patient.weightKg ? patient.weightKg + ' kg' : '--'}`,
+    `Ön Tanı: ${patient.diagnosis || 'Klinik Muayene & Tedavi'}`,
+    `İlaç Alerjisi: ${patient.allergyNotes || 'Bilinen İlaç Alerjisi Yok'}`,
+    '------------------------------------------------------',
+    'REÇETELENEN İLAÇLAR VE KULLANIM ŞEMASI:',
+    '------------------------------------------------------'
+  ];
+
+  if (schedules.length === 0) {
+    lines.push('Kayıtlı reçete ilacı bulunmamaktadır.');
+  } else {
+    schedules.forEach((item, idx) => {
+      const morn = item.morningDose && item.morningDose !== '-' ? item.morningDose : (item.morning ? '1' : '0');
+      const noon = item.noonDose && item.noonDose !== '-' ? item.noonDose : (item.noon ? '1' : '0');
+      const eve = item.eveningDose && item.eveningDose !== '-' ? item.eveningDose : (item.evening ? '1' : '0');
+      const night = item.nightDose && item.nightDose !== '-' ? item.nightDose : (item.night ? '1' : '0');
+      const timingStr = `${morn}-${noon}-${eve}-${night} (${item.mealTiming || 'TOK'})`;
+
+      lines.push(`${idx + 1}. ${item.name}${item.generic ? ' (' + item.generic + ')' : ''}`);
+      lines.push(`   - Tek Doz: ${item.dosage} | Kullanım: ${timingStr} | Süre: ${item.duration || 'Biten Kadar'}`);
+      if (item.instructions) {
+        lines.push(`   - Talimat: ${item.instructions}`);
+      }
+    });
+  }
+
+  lines.push('------------------------------------------------------');
+  lines.push(`Hekim: ${patient.doctorName || 'Dr. Hekim Kaşe & İmza'}`);
+  lines.push('======================================================');
+
+  return lines.join('\n');
+}

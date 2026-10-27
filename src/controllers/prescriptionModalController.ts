@@ -2,10 +2,12 @@ import { appState } from '../state';
 import {
   buildDefaultDrugSchedule,
   generatePrescriptionHTML,
+  generatePrescriptionPlainText,
   PRESCRIPTION_PRESETS,
   type PrintableDrugSchedule,
   type PrescriptionPrintPatientInfo
 } from '../utils/prescriptionPrinter';
+import { sanitizeForHbys } from '../utils/soapGenerator';
 import { evaluatePrescriptionInteractions } from '../engines/interactionTierEngine';
 
 
@@ -209,28 +211,28 @@ export function initPrescriptionModalController(): void {
 
         <div class="grid grid-cols-2 sm:grid-cols-7 gap-1.5 text-xs">
           <div>
-            <label class="text-[9px] text-slate-400 block mb-0.5">Tek Doz:</label>
-            <input type="text" class="rx-input-dosage w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-slate-200 font-mono" value="${escapeHtml(d.dosage)}" placeholder="1 Tablet">
+            <label class="text-xs text-slate-300 block mb-0.5">Tek Doz:</label>
+            <input type="text" class="rx-input-dosage w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-base text-slate-200" value="${escapeHtml(d.dosage)}" placeholder="1 Tablet">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-amber-300 block mb-0.5">Sabah</label>
-            <input type="text" class="rx-input-morning w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.morningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.morningDose || (d.morning ? '1' : '-'))}" placeholder="-">
+            <label class="text-xs text-amber-300 block mb-0.5">Sabah</label>
+            <input type="text" class="rx-input-morning w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-base text-center tabular-nums ${d.morningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-400'}" value="${escapeHtml(d.morningDose || (d.morning ? '1' : '-'))}" placeholder="-">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-amber-300 block mb-0.5">Öğle</label>
-            <input type="text" class="rx-input-noon w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.noonDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.noonDose || (d.noon ? '1' : '-'))}" placeholder="-">
+            <label class="text-xs text-amber-300 block mb-0.5">Öğle</label>
+            <input type="text" class="rx-input-noon w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-base text-center tabular-nums ${d.noonDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-400'}" value="${escapeHtml(d.noonDose || (d.noon ? '1' : '-'))}" placeholder="-">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-amber-300 block mb-0.5">Akşam</label>
-            <input type="text" class="rx-input-evening w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.eveningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.eveningDose || (d.evening ? '1' : '-'))}" placeholder="-">
+            <label class="text-xs text-amber-300 block mb-0.5">Akşam</label>
+            <input type="text" class="rx-input-evening w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-base text-center tabular-nums ${d.eveningDose !== '-' ? 'text-amber-300 font-bold' : 'text-slate-400'}" value="${escapeHtml(d.eveningDose || (d.evening ? '1' : '-'))}" placeholder="-">
           </div>
           <div class="text-center">
-            <label class="text-[9px] text-indigo-300 block mb-0.5">Gece</label>
-            <input type="text" class="rx-input-night w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-[11px] text-center font-mono ${d.nightDose !== '-' ? 'text-indigo-300 font-bold' : 'text-slate-500'}" value="${escapeHtml(d.nightDose || (d.night ? '1' : '-'))}" placeholder="-">
+            <label class="text-xs text-indigo-300 block mb-0.5">Gece</label>
+            <input type="text" class="rx-input-night w-full bg-slate-900 border border-slate-700 rounded px-1 py-1 text-base text-center tabular-nums ${d.nightDose !== '-' ? 'text-indigo-300 font-bold' : 'text-slate-400'}" value="${escapeHtml(d.nightDose || (d.night ? '1' : '-'))}" placeholder="-">
           </div>
           <div>
-            <label class="text-[9px] text-slate-400 block mb-0.5">Öğün Durumu:</label>
-            <select class="rx-select-meal w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-[10px] text-slate-200">
+            <label class="text-xs text-slate-300 block mb-0.5">Öğün Durumu:</label>
+            <select class="rx-select-meal w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-base text-slate-200">
               <option value="TOK" ${d.mealTiming === 'TOK' ? 'selected' : ''}>TOK</option>
               <option value="AC" ${d.mealTiming === 'AC' ? 'selected' : ''}>AÇ</option>
               <option value="YEMEKLE" ${d.mealTiming === 'YEMEKLE' ? 'selected' : ''}>YEMEKLE</option>
@@ -391,6 +393,33 @@ export function initPrescriptionModalController(): void {
   if (inputPrintDiagnosis) inputPrintDiagnosis.addEventListener('input', refreshPrescriptionPreview);
   if (inputPrintRxNumber) inputPrintRxNumber.addEventListener('input', refreshPrescriptionPreview);
   if (inputPrintAllergy) inputPrintAllergy.addEventListener('input', refreshPrescriptionPreview);
+
+  const btnCopyRxText = getEl('btn-copy-rx-text');
+  const copyRxFeedback = getEl('copy-rx-feedback');
+  if (btnCopyRxText) {
+    btnCopyRxText.addEventListener('click', () => {
+      const patientInfo: PrescriptionPrintPatientInfo = {
+        patientName: inputPatientName?.value || 'Sayın Hasta',
+        age: appState.biometry.ageFormatted || getEl('banner-age')?.textContent || '--',
+        gender: appState.biometry.gender === 'male' ? 'Erkek' : (appState.biometry.gender === 'female' ? 'Kadın' : '--'),
+        weightKg: appState.biometry.weightKg || undefined,
+        dateStr: inputPrintDate?.value || new Date().toLocaleDateString('tr-TR'),
+        doctorName: inputDoctorName?.value || 'Dr. Hekim Kaşe & İmza',
+        diagnosis: inputPrintDiagnosis?.value || 'Klinik Muayene & Tedavi',
+        rxNumber: inputPrintRxNumber?.value || `RX-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
+        allergyNotes: inputPrintAllergy?.value || 'Bilinen İlaç Alerjisi Yok'
+      };
+      const plainText = sanitizeForHbys(generatePrescriptionPlainText(patientInfo, activePrescriptionDrugs));
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(plainText).then(() => {
+          if (copyRxFeedback) {
+            copyRxFeedback.classList.remove('hidden');
+            setTimeout(() => copyRxFeedback.classList.add('hidden'), 2000);
+          }
+        });
+      }
+    });
+  }
 
   if (btnTriggerPrint) {
     btnTriggerPrint.addEventListener('click', () => {

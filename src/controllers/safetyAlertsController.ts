@@ -63,11 +63,11 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         if (whammyRes.isTripleWhammy || whammyRes.isDoubleRisk) {
             if (outWhammy) {
                 outWhammy.classList.remove('hidden');
-                outWhammy.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${whammyRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outWhammy.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${whammyRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                 outWhammy.innerHTML = `
                     <div class="font-bold text-xs">${whammyRes.title}</div>
-                    <div class="text-[10px] leading-relaxed">${whammyRes.mechanism || ''}</div>
-                    <div class="text-[10px]">${(whammyRes.recommendations || []).join(' ')}</div>
+                    <div class="text-xs leading-relaxed">${whammyRes.mechanism || ''}</div>
+                    <div class="text-xs">${(whammyRes.recommendations || []).join(' ')}</div>
                 `;
             }
         } else if (outWhammy) {
@@ -80,12 +80,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         if (seroRes.isHighRisk) {
             if (outSerotonin) {
                 outSerotonin.classList.remove('hidden');
-                outSerotonin.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${seroRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outSerotonin.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${seroRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                 outSerotonin.innerHTML = `
                     <div class="font-bold text-xs">${seroRes.title}</div>
-                    <div class="text-[10px] leading-relaxed">${seroRes.mechanism || ''}</div>
-                    <div class="text-[9px] text-slate-300 italic">${seroRes.hunterCriteriaInfo || ''}</div>
-                    <div class="text-[10px]">• <strong>Öneriler:</strong> ${(seroRes.recommendations || []).join(' ')}</div>
+                    <div class="text-xs leading-relaxed">${seroRes.mechanism || ''}</div>
+                    <div class="text-xs text-slate-300 italic">${seroRes.hunterCriteriaInfo || ''}</div>
+                    <div class="text-xs">• <strong>Öneriler:</strong> ${(seroRes.recommendations || []).join(' ')}</div>
                 `;
             }
         } else if (outSerotonin) {
@@ -103,12 +103,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         if (hyperKRes.isAtRisk) {
             if (outHyperkalemia) {
                 outHyperkalemia.classList.remove('hidden');
-                outHyperkalemia.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${hyperKRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outHyperkalemia.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${hyperKRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                 outHyperkalemia.innerHTML = `
                     <div class="font-bold text-xs">${hyperKRes.title}</div>
-                    <div class="text-[10px] leading-relaxed">${hyperKRes.mechanism || ''}</div>
-                    ${hyperKRes.riskFactorsIdentified.length > 0 ? `<div class="text-[9px] text-amber-300 font-semibold">• Tespit Edilen Riskler: ${hyperKRes.riskFactorsIdentified.join(' | ')}</div>` : ''}
-                    <div class="text-[10px]">• <strong>Klinik Eylem:</strong> ${(hyperKRes.recommendations || []).join(' ')}</div>
+                    <div class="text-xs leading-relaxed">${hyperKRes.mechanism || ''}</div>
+                    ${hyperKRes.riskFactorsIdentified.length > 0 ? `<div class="text-xs text-amber-300 font-semibold">• Tespit Edilen Riskler: ${hyperKRes.riskFactorsIdentified.join(' | ')}</div>` : ''}
+                    <div class="text-xs">• <strong>Klinik Eylem:</strong> ${(hyperKRes.recommendations || []).join(' ')}</div>
                 `;
             }
         } else if (outHyperkalemia) {
@@ -121,12 +121,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         if (cypStatinRes.hasInteraction) {
             if (outCypStatin) {
                 outCypStatin.classList.remove('hidden');
-                outCypStatin.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${cypStatinRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                outCypStatin.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${cypStatinRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                 outCypStatin.innerHTML = `
                     <div class="font-bold text-xs">${cypStatinRes.title}</div>
-                    <div class="text-[10px] leading-relaxed">${cypStatinRes.mechanism || ''}</div>
-                    <div class="text-[10px] text-emerald-300">• <strong>Güvenli Alternatif:</strong> ${[...cypStatinRes.safeAlternatives.antibiotics, ...cypStatinRes.safeAlternatives.statins].join(' | ')}</div>
-                    <div class="text-[10px]">• <strong>Öneriler:</strong> ${(cypStatinRes.recommendations || []).join(' ')}</div>
+                    <div class="text-xs leading-relaxed">${cypStatinRes.mechanism || ''}</div>
+                    <div class="text-xs text-emerald-300">• <strong>Güvenli Alternatif:</strong> ${[...cypStatinRes.safeAlternatives.antibiotics, ...cypStatinRes.safeAlternatives.statins].join(' | ')}</div>
+                    <div class="text-xs">• <strong>Öneriler:</strong> ${(cypStatinRes.recommendations || []).join(' ')}</div>
                 `;
             }
         } else if (outCypStatin) {
@@ -135,15 +135,38 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
 
         // 5. Renal Doz Kesintileri (eGFR)
         if (safetyEgfr) {
-            const renalRes = checkRenalDoseAdjustments({ egfr: safetyEgfr, drugs: selectedDrugs });
+            const scrVal = getNum('input-creatinine');
+            const renalRes = checkRenalDoseAdjustments({
+                egfr: safetyEgfr,
+                ageYears: appState.biometry.ageYears,
+                gender: appState.biometry.gender,
+                heightCm: appState.biometry.heightCm,
+                weightKg: appState.biometry.weightKg,
+                serumCreatinineMgDl: scrVal,
+                drugs: selectedDrugs
+            });
             appState.safetyPrescription.renalAdjustments = renalRes;
             if (renalRes && (renalRes.alertsCount ?? 0) > 0) {
                 if (outRenal) {
                     outRenal.classList.remove('hidden');
-                    outRenal.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${renalRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                    outRenal.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${renalRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                    
+                    let headerTitle = `⚠️ Renal Dozaj Uyarısı (eGFR: ${escapeHtml(renalRes.egfr)} mL/dk)`;
+                    if (renalRes.comprehensiveEvaluation?.isObesityDiscordant && typeof renalRes.cockcroftGaultCrCl === 'number') {
+                        headerTitle = `🚨 Renal Dozaj & DOAC Obezite Uyuşmazlığı (eGFR: ${escapeHtml(renalRes.egfr)} vs CrCl: ${escapeHtml(renalRes.cockcroftGaultCrCl)} mL/dk)`;
+                    } else if (typeof renalRes.deindexedAbsoluteGfr === 'number' && Math.abs(renalRes.deindexedAbsoluteGfr - (renalRes.egfr || 0)) >= 5) {
+                        headerTitle = `⚠️ Renal Dozaj (eGFR: ${escapeHtml(renalRes.egfr)} | Mutlak GFR: ${escapeHtml(renalRes.deindexedAbsoluteGfr)} mL/dk)`;
+                    }
+
+                    const alertsHtml = (renalRes.comprehensiveEvaluation?.clinicalAlerts || [])
+                        .filter((a: any) => a.severity === 'CRITICAL')
+                        .map((a: any) => `<div class="p-1.5 rounded bg-red-900/40 border border-red-700/60 text-red-200 font-sans font-bold text-xs">${escapeHtml(a.title)}: ${escapeHtml(a.message)}</div>`)
+                        .join('');
+
                     outRenal.innerHTML = `
-                        <div class="font-bold text-xs">⚠️ Renal Dozaj Uyarısı (eGFR: ${escapeHtml(renalRes.egfr)} mL/dk)</div>
-                        ${(renalRes.warnings || []).map((w: any) => `<div class="text-[10px] leading-relaxed">• <strong>${escapeHtml(w.drug)}</strong>: ${escapeHtml(w.message)}</div>`).join('')}
+                        <div class="font-bold text-xs">${headerTitle}</div>
+                        ${alertsHtml}
+                        ${(renalRes.warnings || []).map((w: any) => `<div class="text-xs leading-relaxed">• <strong>${escapeHtml(w.drug)}</strong>: ${escapeHtml(w.message)}</div>`).join('')}
                     `;
                 }
             } else if (outRenal) {
@@ -161,10 +184,10 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             if (pregRes.alertsCount > 0) {
                 if (outPreg) {
                     outPreg.classList.remove('hidden');
-                    outPreg.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${pregRes.hasSevereFetalRisk ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                    outPreg.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${pregRes.hasSevereFetalRisk ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                     outPreg.innerHTML = `
                         <div class="font-bold text-xs">🤰 Gebelik ve Fetotoksisite Uyarısı (${escapeHtml(safetyTrim)}. Trimester)</div>
-                        ${pregRes.alerts.map((a: any) => `<div class="text-[10px] leading-relaxed">• <strong>${escapeHtml(a.drugName)} (Kategori ${escapeHtml(a.category)})</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
+                        ${pregRes.alerts.map((a: any) => `<div class="text-xs leading-relaxed">• <strong>${escapeHtml(a.drugName)} (Kategori ${escapeHtml(a.category)})</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
                     `;
                 }
             } else if (outPreg) {
@@ -183,10 +206,10 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             if (neoDrugRes.alertsCount > 0) {
                 if (outNeoDrug) {
                     outNeoDrug.classList.remove('hidden');
-                    outNeoDrug.className = `p-2.5 rounded-lg border font-mono space-y-1 text-[10px] ${neoDrugRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
+                    outNeoDrug.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${neoDrugRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                     outNeoDrug.innerHTML = `
                         <div class="font-bold text-xs">🍼 Yenidoğan İlaç Güvenlik Kalkanı</div>
-                        ${neoDrugRes.alerts.map((a: any) => `<div class="text-[10px] leading-relaxed">• <strong>${escapeHtml(a.drugName)}</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
+                        ${neoDrugRes.alerts.map((a: any) => `<div class="text-xs leading-relaxed">• <strong>${escapeHtml(a.drugName)}</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
                     `;
                 }
             } else if (outNeoDrug) {
@@ -218,13 +241,13 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                 (appState.safetyPrescription.cypStatinInteraction?.hasInteraction ? 1 : 0);
             if (hasDanger) {
                 badgeSafety.textContent = '🚨 Kritik Uyarı';
-                badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700 font-bold';
+                badgeSafety.className = 'text-xs tabular-nums px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700 font-bold';
             } else if (totalWarns > 0) {
                 badgeSafety.textContent = `⚠️ ${totalWarns} Uyarı`;
-                badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700 font-semibold';
+                badgeSafety.className = 'text-xs tabular-nums px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700 font-semibold';
             } else {
                 badgeSafety.textContent = '✓ Güvenli';
-                badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-semibold';
+                badgeSafety.className = 'text-xs tabular-nums px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-semibold';
             }
         }
     } else {
@@ -245,7 +268,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         if (outNeoDrug) outNeoDrug.classList.add('hidden');
         if (badgeSafety) {
             badgeSafety.textContent = 'Aktif';
-            badgeSafety.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700';
+            badgeSafety.className = 'text-xs tabular-nums px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700';
         }
     }
 }
@@ -429,11 +452,11 @@ export async function executeDrugSearch(q: string): Promise<void> {
                             </div>
                             <div class="text-[11px] text-slate-300 font-medium mt-0.5">
                                 <span class="${genericHighlightClass}">${safeGeneric}</span>
-                                ${r.atcCode ? `<span class="text-slate-500 font-mono text-[10px]"> | ATC: ${safeAtc}</span>` : ''}
-                                ${r.barcode ? `<span class="text-slate-500 font-mono text-[10px]"> | Barkod: ${safeBarcode}</span>` : ''}
-                                ${r.esdegerGroup ? `<span class="text-cyan-400 font-mono text-[10px]"> | Eşdeğer: ${safeEg}</span>` : ''}
-                                ${r.sgkDiscount ? `<span class="text-emerald-400 font-mono text-[10px]"> | Kamu İskonto: ${safeDiscount}</span>` : ''}
-                                ${r.sgkKamuNo ? `<span class="text-slate-400 font-mono text-[10px]"> | Kamu No: ${safeKamuNo}</span>` : ''}
+                                ${r.atcCode ? `<span class="text-slate-400 tabular-nums text-xs"> | ATC: ${safeAtc}</span>` : ''}
+                                ${r.barcode ? `<span class="text-slate-400 tabular-nums text-xs"> | Barkod: ${safeBarcode}</span>` : ''}
+                                ${r.esdegerGroup ? `<span class="text-cyan-400 tabular-nums text-xs"> | Eşdeğer: ${safeEg}</span>` : ''}
+                                ${r.sgkDiscount ? `<span class="text-emerald-400 tabular-nums text-xs"> | Kamu İskonto: ${safeDiscount}</span>` : ''}
+                                ${r.sgkKamuNo ? `<span class="text-slate-400 tabular-nums text-xs"> | Kamu No: ${safeKamuNo}</span>` : ''}
                             </div>
                             ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">${safeCompany}</div>` : ''}
                         </div>

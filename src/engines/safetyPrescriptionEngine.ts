@@ -221,6 +221,57 @@ export const RENAL_DRUG_DATABASE: RenalDrugEntry[] = [
       { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'CrCl / GFR < 30 mL/dak: Doz %50 azaltılmalı (0.0625 mg günaşırı veya günde 1 kez); serum digoksin düzeyi sıkı izlenmelidir.' },
       { maxEgfr: 50, status: 'DOSE_REDUCTION', message: 'CrCl / GFR 30-50 mL/dak: Doz %25-33 azaltılmalıdır (0.125 mg/gün).' }
     ]
+  },
+  {
+    generic: 'ibuprofen',
+    aliases: ['ibufen', 'dolven', 'pedifen', 'aradon', 'brufen', 'ibu-baby', 'advil', 'nurofen', 'suprafen', 'profeno'],
+    atcPrefix: 'M01AE01',
+    name: 'İbuprofen (Ibuprofen)',
+    rules: [
+      { maxEgfr: 29, status: 'CONTRAINDICATED', message: 'KONTRENDİKE! eGFR < 30 mL/dk: Akut böbrek hasarı, sıvı retansiyonu ve renal prostaglandin inhibisyonu nedeniyle kontrendikedir.' },
+      { maxEgfr: 59, status: 'WARNING', message: 'eGFR 30-59 mL/dk: Dehidratasyon düzeltilmeden verilmemeli, en düşük doz ve en kısa süre tercih edilmelidir.' }
+    ]
+  },
+  {
+    generic: 'methotrexate',
+    aliases: ['metotreksat', 'trexan', 'methotrexate-ebewe', 'emthexate'],
+    atcPrefix: 'L01BA01',
+    name: 'Metotreksat (Methotrexate)',
+    rules: [
+      { maxEgfr: 29, status: 'CONTRAINDICATED', message: 'KONTRENDİKE! CrCl / Mutlak GFR < 30 mL/dak: %80-90 renal atılım; şiddetli kemik iliği baskılanması ve nefrotoksisite riski nedeniyle kontrendikedir.' },
+      { maxEgfr: 59, status: 'DOSE_REDUCTION', message: 'CrCl / Mutlak GFR 30-59 mL/dak: Haftalık doz %50 azaltılmalı, yakın hemogram ve renal fonksiyon izlenmelidir.' }
+    ]
+  },
+  {
+    generic: 'sitagliptin',
+    aliases: ['januvia', 'glactiv', 'sitaglip', 'janumet'],
+    atcPrefix: 'A10BH01',
+    name: 'Sitagliptin',
+    rules: [
+      { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'eGFR < 30 mL/dk: Doz günde tek doz 25 mg olarak sınırlandırılmalıdır (Standart 100 mg yerine %75 azaltım).' },
+      { maxEgfr: 44, status: 'DOSE_REDUCTION', message: 'eGFR 30-44 mL/dk: Doz günde tek doz 50 mg olarak sınırlandırılmalıdır (Standart 100 mg yerine %50 azaltım).' }
+    ]
+  },
+  {
+    generic: 'acyclovir',
+    aliases: ['asiklovir', 'aklovir', 'asiviral', 'herpavir', 'virosil', 'zovirax'],
+    atcPrefix: 'J01EA01',
+    name: 'Asiklovir (Acyclovir)',
+    rules: [
+      { maxEgfr: 10, status: 'DOSE_REDUCTION', message: 'eGFR < 10 mL/dk: Doz %50 azaltılmalı ve doz aralığı 24 saate açılmalıdır (Kristalüri ve nörotoksisite riski).' },
+      { maxEgfr: 25, status: 'DOSE_REDUCTION', message: 'eGFR 10-25 mL/dk: Doz aralığı 24 saate çıkarılmalıdır.' },
+      { maxEgfr: 50, status: 'DOSE_REDUCTION', message: 'eGFR 26-50 mL/dk: Doz aralığı 12 saate çıkarılmalıdır.' }
+    ]
+  },
+  {
+    generic: 'gentamicin',
+    aliases: ['gentamisin', 'getamisin', 'gensu', 'gencina'],
+    atcPrefix: 'J01GB03',
+    name: 'Gentamisin (Gentamicin)',
+    rules: [
+      { maxEgfr: 29, status: 'DOSE_REDUCTION', message: 'Mutlak GFR < 30 mL/dak: Doz aralığı uzatılmalı ve çukur (trough) serum düzeyi (<1 mcg/mL) kontrol edilerek dozlanmalıdır; TDM ve nefrotoksisite izlemi şarttır.' },
+      { maxEgfr: 50, status: 'DOSE_REDUCTION', message: 'Mutlak GFR 30-50 mL/dak: Doz aralığı 24-36 saate uzatılmalı, vadi düzeyi izlenmelidir.' }
+    ]
   }
 ];
 
@@ -439,7 +490,7 @@ export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): Re
     });
 
     if (matchedEntry) {
-      const drugCategoryInfo = identifyRenalDrugCategory(drugInput);
+      const drugCategoryInfo = identifyRenalDrugCategory(matchedEntry.generic);
       let effectiveClearance = egfr;
       let metricUsed: 'INDEXED_EGFR' | 'ABSOLUTE_EGFR' | 'COCKCROFT_GAULT_CRCL' = 'INDEXED_EGFR';
       let clearanceUnit: string = 'mL/dak/1.73 m²';

@@ -1,6 +1,8 @@
 import {
   getCurrentAnaphylaxisDoses,
   getCurrentStatusDoses,
+  getWeightAndIsAdult,
+  setEmergencyWeightMode,
   startAnaphylaxisCountdown,
   resetAnaphylaxisTimer,
   getAnaphylaxisTimerState,
@@ -31,6 +33,11 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
   const modalEmergency = getEl('modal-emergency-protocols');
   const btnCloseEmergency = getEl('btn-close-emergency-modal');
   const badgeEmergencyWeight = getEl('emergency-weight-badge');
+  const bannerEmergencyWarning = getEl('emergency-weight-warning-banner');
+  const textEmergencyWarning = getEl('emergency-weight-warning-text');
+  const btnEmergencyApplyAdult = getEl('btn-emergency-apply-adult-weight');
+  const btnEmergencyApplyPediatric = getEl('btn-emergency-apply-pediatric-weight');
+  const btnEmergencyResetWeight = getEl('btn-emergency-reset-weight-mode');
   const tabBtnAnaphylaxis = getEl('tab-btn-anaphylaxis');
   const tabBtnStatus = getEl('tab-btn-status');
   const panelAnaphylaxis = getEl('panel-emergency-anaphylaxis');
@@ -70,31 +77,93 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
   const btnStatusToSoap = getEl('btn-status-to-soap');
 
   function refreshEmergencyDosesDisplay(): void {
+    const weightCtx = getWeightAndIsAdult();
     const adrDoses = getCurrentAnaphylaxisDoses();
     const statDoses = getCurrentStatusDoses();
 
-    if (badgeEmergencyWeight) {
-      badgeEmergencyWeight.textContent = `Kilo: ${adrDoses.weightKg} kg (${adrDoses.isAdult ? 'Erişkin' : 'Pediatrik'})`;
+    // 1. Ağırlık Rozeti ve Kilo Uyarı Şeridi Yönetimi
+    if (weightCtx.isWeightMissing) {
+      if (badgeEmergencyWeight) {
+        badgeEmergencyWeight.textContent = 'Kilo: GİRİLMEDİ (KİLİTLİ 🔒)';
+        badgeEmergencyWeight.className = 'text-xs bg-amber-950 text-amber-300 border border-amber-700 px-2 py-0.5 rounded-full tabular-nums font-bold';
+      }
+      if (bannerEmergencyWarning) bannerEmergencyWarning.classList.remove('hidden');
+      if (btnEmergencyResetWeight) btnEmergencyResetWeight.classList.add('hidden');
+      if (textEmergencyWarning) {
+        textEmergencyWarning.textContent = weightCtx.isPediatricShieldActive
+          ? '🛑 PEDİATRİK GÜVENLİK KALKANI: Yaş pediatrik (<18) — 70 kg erişkin varsayılanı engellendi! Kilo girilmeli veya Pediatrik Tahmini Kilo uygulanmalıdır.'
+          : '⚠️ KİLO GİRİLMEDİ — Mutlak dozlar kilitlendi. Yalnızca mg/kg doz formülleri gösterilmektedir.';
+      }
+    } else if (weightCtx.isEstimated) {
+      if (badgeEmergencyWeight) {
+        badgeEmergencyWeight.textContent = `Kilo: ${adrDoses.weightKg} kg (Tahmini ${adrDoses.isAdult ? 'Erişkin' : 'Pediatrik'})`;
+        badgeEmergencyWeight.className = 'text-xs bg-amber-950 text-amber-300 border border-amber-600 px-2 py-0.5 rounded-full tabular-nums font-bold animate-pulse';
+      }
+      if (bannerEmergencyWarning) bannerEmergencyWarning.classList.remove('hidden');
+      if (btnEmergencyResetWeight) btnEmergencyResetWeight.classList.remove('hidden');
+      if (textEmergencyWarning) {
+        textEmergencyWarning.textContent = weightCtx.isPediatricShieldActive
+          ? `⚠️ KİLO GİRİLMEDİ — PEDİATRİK GÜVENLİK KALKANI: <18 Yaş hastada 70 kg erişkin varsayılanı engellendi, tahmini pediatrik kilo (${adrDoses.weightKg} kg) uygulandı.`
+          : `⚠️ KİLO GİRİLMEDİ — DOZLAR VARSAYILAN KİLOYA GÖRE TAHMİNİDİR (${adrDoses.weightKg} kg ${adrDoses.isAdult ? 'Erişkin' : 'Pediatrik'})`;
+      }
+    } else {
+      if (badgeEmergencyWeight) {
+        badgeEmergencyWeight.textContent = `Kilo: ${adrDoses.weightKg} kg (${adrDoses.isAdult ? 'Erişkin' : 'Pediatrik'})`;
+        badgeEmergencyWeight.className = 'text-xs bg-rose-950 text-rose-300 border border-rose-800 px-2 py-0.5 rounded-full tabular-nums font-normal';
+      }
+      if (bannerEmergencyWarning) bannerEmergencyWarning.classList.add('hidden');
     }
 
+    // 2. Anafilaksi Dozları
     if (textAdrDose) {
-      textAdrDose.textContent = `${adrDoses.adrenaline.volumeMl.toFixed(2)} mL (${adrDoses.adrenaline.doseMg.toFixed(2)} mg)`;
+      textAdrDose.textContent = adrDoses.isLocked
+        ? '0.01 mg/kg İM (Kilitli 🔒)'
+        : `${adrDoses.adrenaline.volumeMl.toFixed(2)} mL (${adrDoses.adrenaline.doseMg.toFixed(2)} mg)${adrDoses.isEstimated ? ' [Tahmini]' : ''}`;
     }
-    if (textFluidDose) textFluidDose.textContent = `${adrDoses.fluidBolus.volumeMl} mL SF`;
+    if (textFluidDose) {
+      textFluidDose.textContent = adrDoses.isLocked
+        ? '20 mL/kg SF (Kilitli 🔒)'
+        : `${adrDoses.fluidBolus.volumeMl} mL SF${adrDoses.isEstimated ? ' [Tahmini]' : ''}`;
+    }
     if (textSalbutamolDose) textSalbutamolDose.textContent = adrDoses.bronchospasm.dose;
-    if (textPheniramineDose) textPheniramineDose.textContent = `${adrDoses.antihistaminic.doseMg} mg`;
-    if (textPrednolDose) textPrednolDose.textContent = `${adrDoses.corticosteroid.doseMg} mg`;
+    if (textPheniramineDose) {
+      textPheniramineDose.textContent = adrDoses.isLocked
+        ? '1 mg/kg (Maks 50 mg)'
+        : `${adrDoses.antihistaminic.doseMg} mg${adrDoses.isEstimated ? ' [Tahmini]' : ''}`;
+    }
+    if (textPrednolDose) {
+      textPrednolDose.textContent = adrDoses.isLocked
+        ? '1-2 mg/kg (Maks 80 mg)'
+        : `${adrDoses.corticosteroid.doseMg} mg${adrDoses.isEstimated ? ' [Tahmini]' : ''}`;
+    }
 
+    // 3. Status Epilepticus Dozları
     if (textGlucoseDose) textGlucoseDose.textContent = statDoses.phase1Stabilization.glucoseDextrose.doseText;
     if (textMidazolamDose) {
-      textMidazolamDose.textContent = `${statDoses.phase2EarlyStatus.midazolam.doseMg} mg İM (${(statDoses.phase2EarlyStatus.midazolam.doseMg / 5).toFixed(2)} mL)`;
+      textMidazolamDose.textContent = statDoses.isLocked
+        ? '0.2 mg/kg İM (Kilitli 🔒)'
+        : `${statDoses.phase2EarlyStatus.midazolam.doseMg} mg İM (${(statDoses.phase2EarlyStatus.midazolam.doseMg / 5).toFixed(2)} mL)${statDoses.isEstimated ? ' [Tahmini]' : ''}`;
     }
     if (textDiazepamDose) {
-      textDiazepamDose.textContent = `${statDoses.phase2EarlyStatus.diazepam.doseMg} mg IV (${(statDoses.phase2EarlyStatus.diazepam.doseMg / 5).toFixed(2)} mL)`;
+      textDiazepamDose.textContent = statDoses.isLocked
+        ? '0.2–0.3 mg/kg IV (Kilitli 🔒)'
+        : `${statDoses.phase2EarlyStatus.diazepam.doseMg} mg IV (${(statDoses.phase2EarlyStatus.diazepam.doseMg / 5).toFixed(2)} mL)${statDoses.isEstimated ? ' [Tahmini]' : ''}`;
     }
-    if (textKeppraDose) textKeppraDose.textContent = `${statDoses.phase3EstablishedStatus.levetiracetam.doseMg} mg IV (10-15 dk)`;
-    if (textPhenytoinDose) textPhenytoinDose.textContent = `${statDoses.phase3EstablishedStatus.phenytoin.doseMg} mg IV (Hız ≤50 mg/dk)`;
-    if (textValproateDose) textValproateDose.textContent = `${statDoses.phase3EstablishedStatus.valproate.doseMg} mg IV (10 dk)`;
+    if (textKeppraDose) {
+      textKeppraDose.textContent = statDoses.isLocked
+        ? '60 mg/kg IV (Kilitli 🔒)'
+        : `${statDoses.phase3EstablishedStatus.levetiracetam.doseMg} mg IV (10-15 dk)${statDoses.isEstimated ? ' [Tahmini]' : ''}`;
+    }
+    if (textPhenytoinDose) {
+      textPhenytoinDose.textContent = statDoses.isLocked
+        ? '20 mg/kg IV (Kilitli 🔒)'
+        : `${statDoses.phase3EstablishedStatus.phenytoin.doseMg} mg IV (Hız ≤50 mg/dk)${statDoses.isEstimated ? ' [Tahmini]' : ''}`;
+    }
+    if (textValproateDose) {
+      textValproateDose.textContent = statDoses.isLocked
+        ? '40 mg/kg IV (Kilitli 🔒)'
+        : `${statDoses.phase3EstablishedStatus.valproate.doseMg} mg IV (10 dk)${statDoses.isEstimated ? ' [Tahmini]' : ''}`;
+    }
   }
 
   function switchEmergencyTab(targetTab: 'anaphylaxis' | 'status'): void {
@@ -136,7 +205,7 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
     if (alertAdrExpired) alertAdrExpired.classList.remove('hidden');
     if (badgeAdrTimerStatus) {
       badgeAdrTimerStatus.textContent = '⚠️ 5 dk Doldu - 2. Doz!';
-      badgeAdrTimerStatus.className = 'text-[10px] font-mono text-red-300 bg-red-950 px-2 py-0.5 rounded border border-red-800 animate-pulse';
+      badgeAdrTimerStatus.className = 'text-xs tabular-nums text-red-300 bg-red-950 px-2 py-0.5 rounded border border-red-800 animate-pulse';
     }
   };
 
@@ -170,7 +239,7 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
       handleAnaphylaxisExpire();
     } else if (adrState.isRunning && badgeAdrTimerStatus) {
       badgeAdrTimerStatus.textContent = `Sayım Sürüyor (${adrState.dosesGiven}. Doz)`;
-      badgeAdrTimerStatus.className = 'text-[10px] font-mono text-rose-300 bg-rose-950 px-2 py-0.5 rounded border border-rose-800';
+      badgeAdrTimerStatus.className = 'text-xs tabular-nums text-rose-300 bg-rose-950 px-2 py-0.5 rounded border border-rose-800';
     }
   }
 
@@ -209,6 +278,30 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
   if (tabBtnAnaphylaxis) tabBtnAnaphylaxis.addEventListener('click', () => switchEmergencyTab('anaphylaxis'));
   if (tabBtnStatus) tabBtnStatus.addEventListener('click', () => switchEmergencyTab('status'));
 
+  if (btnEmergencyApplyAdult) {
+    btnEmergencyApplyAdult.addEventListener('click', () => {
+      setEmergencyWeightMode('estimated-adult');
+      refreshEmergencyDosesDisplay();
+      hooks.onUpdateLiveSOAP();
+    });
+  }
+
+  if (btnEmergencyApplyPediatric) {
+    btnEmergencyApplyPediatric.addEventListener('click', () => {
+      setEmergencyWeightMode('estimated-pediatric');
+      refreshEmergencyDosesDisplay();
+      hooks.onUpdateLiveSOAP();
+    });
+  }
+
+  if (btnEmergencyResetWeight) {
+    btnEmergencyResetWeight.addEventListener('click', () => {
+      setEmergencyWeightMode('auto');
+      refreshEmergencyDosesDisplay();
+      hooks.onUpdateLiveSOAP();
+    });
+  }
+
   if (btnAdrStart) {
     btnAdrStart.addEventListener('click', () => {
       startAnaphylaxisCountdown(handleAnaphylaxisTick, handleAnaphylaxisExpire);
@@ -217,7 +310,7 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
       if (alertAdrExpired) alertAdrExpired.classList.add('hidden');
       if (badgeAdrTimerStatus) {
         badgeAdrTimerStatus.textContent = 'Sayım Sürüyor (1. Doz)';
-        badgeAdrTimerStatus.className = 'text-[10px] font-mono text-rose-300 bg-rose-950 px-2 py-0.5 rounded border border-rose-800';
+        badgeAdrTimerStatus.className = 'text-xs tabular-nums text-rose-300 bg-rose-950 px-2 py-0.5 rounded border border-rose-800';
       }
       hooks.onUpdateLiveSOAP();
     });
@@ -230,7 +323,7 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
       if (badgeAdrTimerStatus) {
         const state = getAnaphylaxisTimerState();
         badgeAdrTimerStatus.textContent = `Sayım Sürüyor (${state.dosesGiven}. Doz)`;
-        badgeAdrTimerStatus.className = 'text-[10px] font-mono text-rose-300 bg-rose-950 px-2 py-0.5 rounded border border-rose-800';
+        badgeAdrTimerStatus.className = 'text-xs tabular-nums text-rose-300 bg-rose-950 px-2 py-0.5 rounded border border-rose-800';
       }
       hooks.onUpdateLiveSOAP();
     });
@@ -246,7 +339,7 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
       if (alertAdrExpired) alertAdrExpired.classList.add('hidden');
       if (badgeAdrTimerStatus) {
         badgeAdrTimerStatus.textContent = 'Beklemede';
-        badgeAdrTimerStatus.className = 'text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800';
+        badgeAdrTimerStatus.className = 'text-xs tabular-nums text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800';
       }
       hooks.onUpdateLiveSOAP();
     });

@@ -185,13 +185,13 @@ export function renderEquivalentsListHTML(
 
         <div class="flex flex-wrap items-center gap-1 text-[10px]">
           ${badges}
-          ${safeDiscount ? `<span class="bg-slate-800 text-emerald-300 border border-slate-700 px-1.5 py-0.5 rounded font-mono">Kamu İskonto: ${safeDiscount}</span>` : ''}
-          ${safeKamuNo ? `<span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded font-mono">Kamu No: ${safeKamuNo}</span>` : ''}
-          ${safeEg ? `<span class="bg-slate-800 text-cyan-300 border border-slate-700 px-1.5 py-0.5 rounded font-mono">Grup: ${safeEg}</span>` : ''}
+          ${safeDiscount ? `<span class="bg-slate-800 text-emerald-300 border border-slate-700 px-1.5 py-0.5 rounded tabular-nums">Kamu İskonto: ${safeDiscount}</span>` : ''}
+          ${safeKamuNo ? `<span class="bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded tabular-nums">Kamu No: ${safeKamuNo}</span>` : ''}
+          ${safeEg ? `<span class="bg-slate-800 text-cyan-300 border border-slate-700 px-1.5 py-0.5 rounded tabular-nums">Grup: ${safeEg}</span>` : ''}
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800 text-[10px]">
-          <span class="text-slate-400 font-mono text-[9px]">${escapeHtmlSafe(drug.matchReason || '')}</span>
+          <span class="text-slate-400 text-xs">${escapeHtmlSafe(drug.matchReason || '')}</span>
           <div class="flex items-center gap-2">
             ${ktUrl ? `<a href="${escapeHtmlSafe(ktUrl)}" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline">Prospektüs (KT)</a>` : ''}
             ${kubUrl ? `<a href="${escapeHtmlSafe(kubUrl)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline">KÜB</a>` : ''}

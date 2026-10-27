@@ -5,9 +5,9 @@
 // ============================================================================
 import { appState } from '../state';
 import { escapeHtml, getEl, getVal } from '../utils/domUtils';
-import { generateSOAP } from '../utils/soapGenerator';
+import { generateSOAP, sanitizeForHbys } from '../utils/soapGenerator';
 import { expandDotPhrases, appendTemplateToText } from '../utils/soapTemplates';
-import { resetAnaphylaxisTimer, resetStatusStopwatch } from '../utils/emergencyManager';
+import { resetAnaphylaxisTimer, resetStatusStopwatch, resetEmergencyWeightMode } from '../utils/emergencyManager';
 import { initEmergencyUiController } from './emergencyUiController';
 import { initTheme, toggleTheme } from '../utils/themeManager';
 import { QuickSwitcherItem, QUICK_SWITCHER_ITEMS, searchQuickSwitcher, jumpToMotor } from '../utils/quickSwitcher';
@@ -445,10 +445,10 @@ export function initWorkstationPackages(): void {
             containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
                 const bId = btn.getAttribute('data-pack-id');
                 if (bId && bId === currentActivePackId) {
-                    btn.classList.add('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/50');
+                    btn.classList.add('bg-sky-500/20', 'text-sky-300', 'border-sky-500/40', 'shadow-sm');
                     btn.classList.remove('bg-slate-800', 'text-slate-200');
                 } else {
-                    btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/50');
+                    btn.classList.remove('bg-sky-500/20', 'text-sky-300', 'border-sky-500/40', 'shadow-sm');
                     btn.classList.add('bg-slate-800', 'text-slate-200');
                 }
             });
@@ -458,7 +458,7 @@ export function initWorkstationPackages(): void {
         if (badgeActive) {
             const cleanTitle = title.replace(/^[^\w\sğüşöçıİĞÜŞÖÇ]+/, '').trim();
             badgeActive.textContent = `${cleanTitle} (${motors.length} Motor Aktif)`;
-            badgeActive.className = 'text-[10px] px-2.5 py-0.5 rounded-full font-mono font-medium bg-rose-950/80 text-rose-300 border border-rose-800/60';
+            badgeActive.className = 'text-[10px] px-2.5 py-0.5 rounded-full tabular-nums font-medium bg-sky-950/80 text-sky-300 border border-sky-800/60';
         }
 
         // Aktif Paket Bilgi Şeridini Doldur
@@ -505,14 +505,14 @@ export function initWorkstationPackages(): void {
 
         if (containerButtons) {
             containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
-                btn.classList.remove('bg-rose-600', 'text-white', 'border-rose-500', 'shadow-md', 'shadow-rose-950/50');
+                btn.classList.remove('bg-sky-500/20', 'text-sky-300', 'border-sky-500/40', 'shadow-sm', 'bg-rose-600', 'text-white', 'border-rose-500');
                 btn.classList.add('bg-slate-800', 'text-slate-200');
             });
         }
 
         if (badgeActive) {
             badgeActive.textContent = 'Tüm Motorlar Açık (21/21)';
-            badgeActive.className = 'text-[10px] px-2 py-0.5 rounded-full font-mono font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60';
+            badgeActive.className = 'text-[10px] px-2 py-0.5 rounded-full tabular-nums font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60';
         }
 
         if (containerInfo) {
@@ -523,11 +523,11 @@ export function initWorkstationPackages(): void {
         const pills = document.querySelectorAll('.cat-pill');
         pills.forEach(p => {
             if (p.getAttribute('data-cat') === 'all') {
-                p.classList.add('active', 'bg-rose-600', 'text-white');
-                p.classList.remove('bg-slate-800', 'text-slate-300');
+                p.classList.add('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30');
+                p.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700/80', 'bg-rose-600', 'text-white');
             } else {
-                p.classList.remove('active', 'bg-rose-600', 'text-white');
-                p.classList.add('bg-slate-800', 'text-slate-300');
+                p.classList.remove('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30', 'bg-rose-600', 'text-white');
+                p.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700/80');
             }
         });
     }
@@ -796,11 +796,11 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
     pills.forEach(pill => {
         pill.addEventListener('click', () => {
             pills.forEach(p => {
-                p.classList.remove('active', 'bg-rose-600', 'text-white');
-                p.classList.add('bg-slate-800', 'text-slate-300');
+                p.classList.remove('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30', 'bg-rose-600', 'text-white');
+                p.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700/80');
             });
-            pill.classList.remove('bg-slate-800', 'text-slate-300');
-            pill.classList.add('active', 'bg-rose-600', 'text-white');
+            pill.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700/80');
+            pill.classList.add('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30');
 
             const cat = pill.getAttribute('data-cat');
             const cards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace > details');
@@ -858,6 +858,7 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
             if (confirm('Tüm hasta verileri ve hesaplamalar sıfırlansın mı?')) {
                 resetAnaphylaxisTimer();
                 resetStatusStopwatch();
+                resetEmergencyWeightMode();
                 window.location.reload();
             }
         });
@@ -899,6 +900,71 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
     if (backdrop) backdrop.addEventListener('click', closeSoapSheet);
     if (handle) handle.addEventListener('click', closeSoapSheet);
 
+    // Slim Bottom Action Bar wiring
+    const btnBottomSearch = getEl('btn-bottom-search');
+    if (btnBottomSearch) {
+        btnBottomSearch.addEventListener('click', () => {
+            const btnQuick = getEl<HTMLButtonElement>('btn-quick-switch');
+            if (btnQuick) btnQuick.click();
+        });
+    }
+
+    const btnBottomRx = getEl('btn-bottom-rx');
+    if (btnBottomRx) {
+        btnBottomRx.addEventListener('click', () => {
+            const btnRx = getEl<HTMLButtonElement>('btn-print-rx');
+            if (btnRx) btnRx.click();
+        });
+    }
+
+    const btnBottomReset = getEl('btn-bottom-reset');
+    if (btnBottomReset) {
+        btnBottomReset.addEventListener('click', () => {
+            const btnReset = getEl<HTMLButtonElement>('btn-reset-patient');
+            if (btnReset) btnReset.click();
+        });
+    }
+
+    // Mobil Sanal Klavye Açıldığında Sabit Alt Barı Gizleme / Ekranı Genişletme Kuralı
+    const bottomBarEl = getEl('mobile-floating-bar');
+    if (bottomBarEl && typeof document !== 'undefined') {
+        const isInputElement = (el: EventTarget | null): boolean => {
+            if (!el || !(el instanceof HTMLElement)) return false;
+            const tag = el.tagName;
+            return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+        };
+
+        document.addEventListener('focusin', (e) => {
+            if (isInputElement(e.target)) {
+                bottomBarEl.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
+            }
+        });
+
+        document.addEventListener('focusout', (e) => {
+            if (isInputElement(e.target)) {
+                setTimeout(() => {
+                    const active = document.activeElement;
+                    if (!isInputElement(active)) {
+                        bottomBarEl.classList.remove('translate-y-full', 'opacity-0', 'pointer-events-none');
+                    }
+                }, 100);
+            }
+        });
+
+        if (typeof window !== 'undefined' && window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                if (window.visualViewport) {
+                    const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
+                    if (isKeyboardOpen) {
+                        bottomBarEl.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
+                    } else if (!isInputElement(document.activeElement)) {
+                        bottomBarEl.classList.remove('translate-y-full', 'opacity-0', 'pointer-events-none');
+                    }
+                }
+            });
+        }
+    }
+
     if (typeof window !== 'undefined') {
         window.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Escape' && modalSheet && !modalSheet.classList.contains('hidden')) {
@@ -912,7 +978,7 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
             const modalText = getEl<HTMLTextAreaElement>('text-soap-modal');
             const textToCopy = modalText ? modalText.value : (getEl<HTMLTextAreaElement>('text-soap-output')?.value || '');
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(textToCopy).then(() => {
+                navigator.clipboard.writeText(sanitizeForHbys(textToCopy)).then(() => {
                     if (modalFeedback) {
                         modalFeedback.classList.remove('hidden');
                         setTimeout(() => modalFeedback.classList.add('hidden'), 2000);
@@ -932,7 +998,7 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
         btnCopyDesktop.addEventListener('click', () => {
             const text = getVal('text-soap-output');
             if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
+                navigator.clipboard.writeText(sanitizeForHbys(text)).then(() => {
                     const fb = getEl('copy-feedback');
                     if (fb) {
                         fb.classList.remove('hidden');

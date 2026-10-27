@@ -90,12 +90,18 @@ import {
   formatStatusEpilepticusSoapNote
 } from '../src/engines/emergencyProtocols';
 import { expandDotPhrases, appendTemplateToText, SOAP_TEMPLATES } from '../src/utils/soapTemplates';
+import { appState } from '../src/state';
 import {
   formatTimeMMSS,
   startAnaphylaxisCountdown,
   getAnaphylaxisTimerState,
   resetAnaphylaxisTimer,
-  computeStatusPhase
+  computeStatusPhase,
+  getCurrentAnaphylaxisDoses,
+  getCurrentStatusDoses,
+  getWeightAndIsAdult,
+  setEmergencyWeightMode,
+  resetEmergencyWeightMode
 } from '../src/utils/emergencyManager';
 import fs from 'fs';
 import {
@@ -551,6 +557,77 @@ assert.strictEqual(adultStatus.phase3EstablishedStatus.valproate.doseMg, 3000); 
 const statusSoap = formatStatusEpilepticusSoapNote(adultStatus, 12);
 assert.ok(statusSoap.includes('STATUS EPİLEPTİCUS ACİL PROTOKOLÜ'));
 assert.ok(statusSoap.includes('12 dk'));
+
+// --- FAZ 1 DOĞRULAMA TESTLERİ (70 kg Varsayılanının Kaldırılması & Pediatrik Güvenlik Kalkanı) ---
+// Senaryo 1: Kilo Boş + Yaş Boş (Sessiz 70 kg engellendi, formüle kilitlendi)
+const lockedAnaph = calculateAnaphylaxisDoses(0, false);
+assert.strictEqual(lockedAnaph.isLocked, true);
+assert.strictEqual(lockedAnaph.isWeightMissing, true);
+assert.strictEqual(lockedAnaph.adrenaline.doseMg, 0);
+assert.strictEqual(lockedAnaph.adrenaline.volumeMl, 0);
+assert.ok(lockedAnaph.adrenaline.instruction.includes('KİLO GİRİNİZ'));
+
+const lockedStatus = calculateStatusEpilepticusDoses(0, false);
+assert.strictEqual(lockedStatus.isLocked, true);
+assert.strictEqual(lockedStatus.isWeightMissing, true);
+assert.strictEqual(lockedStatus.phase2EarlyStatus.midazolam.doseMg, 0);
+assert.ok(lockedStatus.phase2EarlyStatus.midazolam.instruction.includes('KİLO GİRİNİZ'));
+assert.ok(lockedStatus.phase3EstablishedStatus.levetiracetam.instruction.includes('KİLO GİRİNİZ'));
+
+// EmergencyManager Senaryo 1 Doğrulaması (Kilo Boş + Yaş Boş)
+const origWeight = appState.biometry.weightKg;
+const origAge = appState.biometry.ageYears;
+try {
+  appState.biometry.weightKg = null;
+  appState.biometry.ageYears = null;
+  resetEmergencyWeightMode();
+  const ctxEmpty = getWeightAndIsAdult();
+  assert.strictEqual(ctxEmpty.isWeightMissing, true);
+  assert.strictEqual(ctxEmpty.weightKg, 0);
+  assert.strictEqual(getCurrentAnaphylaxisDoses().isLocked, true);
+  assert.strictEqual(getCurrentStatusDoses().isLocked, true);
+
+  // Senaryo 2: Kilo Boş + Yaş Pediatrik (<18) (Pediatrik Güvenlik Kalkanı)
+  appState.biometry.weightKg = null;
+  appState.biometry.ageYears = 5;
+  const ctxPedia = getWeightAndIsAdult();
+  assert.strictEqual(ctxPedia.isAdult, false);
+  assert.strictEqual(ctxPedia.isPediatricShieldActive, true);
+  assert.strictEqual(getCurrentAnaphylaxisDoses().isLocked, true);
+
+  // Kullanıcı/hekim "Varsayılan Erişkin (70 kg)" seçse bile Pediatrik Güvenlik Kalkanı 70 kg'a düşmeyi ENGELLER:
+  setEmergencyWeightMode('estimated-adult');
+  const ctxShielded = getWeightAndIsAdult();
+  assert.strictEqual(ctxShielded.isAdult, false, 'Pediatrik hastada erişkin modu kesinlikle kilitlenmelidir');
+  assert.strictEqual(ctxShielded.isPediatricShieldActive, true);
+  assert.ok(ctxShielded.weightKg < 70, 'Pediatrik hastaya 70 kg erişkin dozu verilmemelidir');
+  assert.strictEqual(ctxShielded.weightKg, 18); // (5 + 4) * 2 = 18 kg tahmini pediatrik kilo
+  const dosesShielded = getCurrentStatusDoses();
+  assert.ok(dosesShielded.phase2EarlyStatus.midazolam.doseMg < 10, 'Midazolam 10 mg erişkin dozuna çıkamaz');
+  assert.ok(dosesShielded.phase3EstablishedStatus.levetiracetam.doseMg < 4200, 'Keppra 4200 mg erişkin dozuna çıkamaz');
+  assert.strictEqual(dosesShielded.phase3EstablishedStatus.levetiracetam.doseMg, 1080); // 18 * 60 = 1080 mg
+
+  // Senaryo 3: Kilo Girilmiş Durum (Normal Hesaplama)
+  appState.biometry.weightKg = 25;
+  appState.biometry.ageYears = 7;
+  resetEmergencyWeightMode();
+  const ctxEntered = getWeightAndIsAdult();
+  assert.strictEqual(ctxEntered.isWeightMissing, false);
+  assert.strictEqual(ctxEntered.isEstimated, false);
+  assert.strictEqual(ctxEntered.weightKg, 25);
+  assert.strictEqual(ctxEntered.isAdult, false);
+  const enteredAnaph = getCurrentAnaphylaxisDoses();
+  assert.strictEqual(enteredAnaph.isLocked, false);
+  assert.strictEqual(enteredAnaph.adrenaline.doseMg, 0.25);
+  const enteredStatus = getCurrentStatusDoses();
+  assert.strictEqual(enteredStatus.isLocked, false);
+  assert.strictEqual(enteredStatus.phase2EarlyStatus.midazolam.doseMg, 5.0);
+  assert.strictEqual(enteredStatus.phase3EstablishedStatus.levetiracetam.doseMg, 1500);
+} finally {
+  appState.biometry.weightKg = origWeight;
+  appState.biometry.ageYears = origAge;
+  resetEmergencyWeightMode();
+}
 
 // 3. Dot Phrases Expansion Tests
 assert.strictEqual(SOAP_TEMPLATES.length, 10);
@@ -2461,6 +2538,55 @@ assert.ok(apixGuide);
 assert.strictEqual(apixGuide.ruleId, 'RENAL_DOAC_APIX_001');
 assert.strictEqual(apixGuide.recommendedDose, '5 mg BID');
 assert.strictEqual(apixGuide.clearanceValue, 48.3);
+
+// 22.12 TC-RD-012: 135 Klinik Monograf Kartı ile Renal Kısıtlama Tutarlılığı (İbuprofen)
+const ibupRenal = checkRenalDoseAdjustments({
+  egfr: 22,
+  drugs: ['Dolven 100mg/5ml']
+});
+assert.strictEqual(ibupRenal.alertsCount, 1);
+assert.strictEqual(ibupRenal.hasContraindication, true);
+assert.strictEqual(ibupRenal.warnings![0].status, 'CONTRAINDICATED');
+assert.ok(ibupRenal.warnings![0].message.includes('Akut böbrek hasarı'));
+
+// 22.13 TC-RD-013: Metotreksat Dar Terapötik İndeks & De-indeksleme Doğrulaması
+const mtxRenal = checkRenalDoseAdjustments({
+  egfr: 45,
+  heightCm: 155,
+  weightKg: 40, // Kaşektik: BSA = 1.31 m², Mutlak GFR = (45 * 1.31)/1.73 = 34.1 mL/dk
+  drugs: ['Trexan 2.5mg']
+});
+assert.strictEqual(mtxRenal.alertsCount, 1);
+assert.strictEqual(mtxRenal.warnings![0].status, 'DOSE_REDUCTION');
+assert.strictEqual(mtxRenal.warnings![0].metricUsed, 'ABSOLUTE_EGFR');
+assert.strictEqual(mtxRenal.warnings![0].tdmRecommended, true);
+
+// 22.14 TC-RD-014: Sitagliptin Monograf Tutarlılığı (eGFR <30 -> 25 mg)
+const sitaRenal = checkRenalDoseAdjustments({
+  egfr: 28,
+  drugs: ['Januvia 100mg']
+});
+assert.strictEqual(sitaRenal.alertsCount, 1);
+assert.strictEqual(sitaRenal.warnings![0].status, 'DOSE_REDUCTION');
+assert.ok(sitaRenal.warnings![0].message.includes('25 mg'));
+
+// 22.15 TC-RD-015: Asiklovir Monograf Tutarlılığı (eGFR <10 -> 24 saatte bir %50 doz)
+const acycRenal = checkRenalDoseAdjustments({
+  egfr: 8,
+  drugs: ['Zovirax 400mg']
+});
+assert.strictEqual(acycRenal.alertsCount, 1);
+assert.strictEqual(acycRenal.warnings![0].status, 'DOSE_REDUCTION');
+assert.ok(acycRenal.warnings![0].message.includes('24 saat'));
+
+// 22.16 TC-RD-016: Gentamisin Dar Terapötik İndeks & TDM
+const gentaRenal = checkRenalDoseAdjustments({
+  egfr: 25,
+  drugs: ['Gensu 80mg']
+});
+assert.strictEqual(gentaRenal.alertsCount, 1);
+assert.strictEqual(gentaRenal.warnings![0].tdmRecommended, true);
+assert.ok(gentaRenal.warnings![0].message.includes('TDM'));
 
 console.log('✓ Renal Dose Mosteller BSA De-indexing & Cockcroft-Gault Engine verified (100% parity with Dosya 3)');
 

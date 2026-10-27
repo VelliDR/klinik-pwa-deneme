@@ -275,7 +275,7 @@ export function renderClinicalCardResult(el: HTMLElement | null, options: Clinic
 
     const recs = Array.isArray(recommendations) ? recommendations.join(' ') : (recommendations || '');
 
-    el.className = `p-2 rounded-lg border font-mono space-y-1 text-[10px] ${bgStyle}`;
+    el.className = `p-2 rounded-lg border tabular-nums space-y-1 text-xs ${bgStyle}`;
     el.innerHTML = `
         <div class="flex justify-between items-center font-bold">
             <span>${title}</span>
@@ -427,7 +427,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
                 : (wl.alertClass === 'warning'
                     ? 'bg-amber-950/50 border-amber-600/70 text-amber-200'
                     : 'bg-emerald-950/40 border-emerald-700/50 text-emerald-300');
-            weightLossEl.className = `text-[10px] font-mono p-2 rounded-lg border space-y-0.5 ${alertBg}`;
+            weightLossEl.className = `text-xs tabular-nums p-2 rounded-lg border space-y-0.5 ${alertBg}`;
             weightLossEl.innerHTML = `
                 <div class="flex items-center justify-between font-bold">
                     <span>⚖️ ${wl.interpretation}</span>
@@ -703,7 +703,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             csHtml += `<div class="mt-1.5 p-1.5 rounded border ${badgeColor} space-y-1">
                 <div class="font-bold text-[10px] flex justify-between items-center">
                     <span>${escapeHtml(cs.riskTitle)}</span>
-                    <span class="text-[8px] uppercase px-1 py-0.5 rounded bg-slate-900 border border-slate-700 font-mono">
+                    <span class="text-[9px] uppercase px-1 py-0.5 rounded bg-slate-900 border border-slate-700 tabular-nums">
                         ${cs.urgencyLevel === 'EMERGENCY_IMAGING' ? 'ACİL GÖRÜNTÜLEME' : (cs.urgencyLevel === 'PLANNED_USG' ? 'PLANLI USG' : 'RUTİN İZLEM')}
                     </span>
                 </div>
