@@ -94,6 +94,8 @@ export interface PediatricDoseResult {
     blockReason?: string;
     hasDualStandardAlert?: boolean;
     dualStandardWarning?: string;
+    hasSoftStopWarning?: boolean;
+    softStopReason?: string;
     ratio?: '7:1' | '14:1';
     ratioNotice?: string;
     negativeGuidelineWarning?: string;
@@ -394,6 +396,7 @@ export interface PediatricDoseOptions {
     gender?: 'male' | 'female' | string;
     useIbw?: boolean;
     allowOffLabelTitck?: boolean;
+    allowSoftStop?: boolean;
     indication?: 'general' | 'gastroenteritis' | 'aom_high_dose' | 'pain_fever' | string;
 }
 
@@ -458,26 +461,60 @@ export function calculatePediatricDose(
         }
     }
 
-    // B. TRİMETOPRİM-SULFAMETOKSAZOL (BACTRIM) NEONATAL KONTRENDİKASYON HARD STOP (<42 Gün / 6 Hafta)
+    // B. TRİMETOPRİM-SULFAMETOKSAZOL (BACTRIM) İKİ KATMANLI NEONATAL GÜVENLİK MOTORU
+    // Katman 1: <42 Gün (<6 Hafta) -> TİTCK KÜB Mutlak Kontrendikasyon (HARD_STOP)
+    // Katman 2: 42 - 60 Gün arası -> AAP Red Book Kesintiye Uğratıcı Onay (SOFT_STOP)
+    let hasSoftStopWarning = false;
+    let softStopReason: string | undefined;
+
     if (drugKey === 'tmp_smx_200_40' || drugKey.startsWith('tmp_smx')) {
         const isUnder42Days = (options.ageDays !== undefined && options.ageDays !== null)
             ? options.ageDays < 42
-            : (effectiveAgeMonths !== null && effectiveAgeMonths < 1.38);
+            : (effectiveAgeMonths !== null && effectiveAgeMonths < (42 / 30.4375));
+        
         if (isUnder42Days) {
             return {
                 name: drug.name,
                 targetDoseMg: 0,
                 volumeMl: null,
                 metricDoseText: '0 mg (0 mL) - REÇETE BLOKE EDİLDİ 🛑',
-                syringeWarning: '🛑 KESİN KONTRENDİKASYON: Yaşamın ilk 6 haftasında (postnatal 42 gün) kontrendikedir.',
+                syringeWarning: '🛑 KESİN KONTRENDİKASYON (HARD_STOP): Yaşamın ilk 6 haftasında (postnatal <42 gün) kontrendikedir.',
                 freq: 'KONTRENDİKE',
                 isLocked: true,
                 isBlocked: true,
-                blockReason: '🛑 KESİN KONTRENDİKASYON (TİTCK / AAP): Yaşamın ilk 6 haftasında (postnatal 42 gün) sülfametoksazol serbest bilirubini albüminden kopararak ölümcül Kernikterus riski yaratır. Kesinlikle kontrendikedir!',
+                blockReason: '🛑 KESİN KONTRENDİKASYON (TİTCK KÜB - HARD_STOP): Yaşamın ilk 6 haftasında (postnatal <42 gün) sülfametoksazol serbest bilirubini albüminden kopararak ölümcül Kernikterus riski yaratır. Kesinlikle kontrendikedir! Hesaplama tamamen kilitlenmiştir.',
                 olcekText: 'KONTRENDİKE (BLOKE)',
                 isCapped: false,
                 tbwKg: weightKg
             };
+        }
+
+        const isBetween42And60Days = (options.ageDays !== undefined && options.ageDays !== null)
+            ? (options.ageDays >= 42 && options.ageDays <= 60)
+            : (effectiveAgeMonths !== null && effectiveAgeMonths >= (42 / 30.4375) && effectiveAgeMonths <= (60 / 30.4375));
+
+        if (isBetween42And60Days) {
+            if (!options.allowSoftStop && !options.allowOffLabelTitck) {
+                return {
+                    name: drug.name,
+                    targetDoseMg: 0,
+                    volumeMl: null,
+                    metricDoseText: '0 mg (0 mL) - HEKİM ONAYI BEKLENİYOR ⚠️',
+                    syringeWarning: '⚠️ KESİNTİYE UĞRATICI UYARI (SOFT_STOP): 42-60 gün arası kernikterus riski nedeniyle hekim onayı gereklidir.',
+                    freq: 'BEKLEMEDE',
+                    isLocked: true,
+                    isBlocked: true,
+                    hasSoftStopWarning: true,
+                    softStopReason: '⚠️ HEKİM ONAYI BEKLENİYOR (AAP Red Book - SOFT_STOP): Postnatal 42-60 gün arası bebeklerde kernikterus riski nedeniyle hekim tarafından sarılık ve prematürite olmadığı teyit edilmelidir. Onay verilmeden doz hesaplanamaz.',
+                    blockReason: '⚠️ HEKİM ONAYI BEKLENİYOR (AAP Red Book - SOFT_STOP): 42-60 gün arası kernikterus riski (Hekim sarılık/prematürite olmadığını onaylarsa hesaplanır).',
+                    olcekText: 'ONAY BEKLENİYOR (SOFT_STOP)',
+                    isCapped: false,
+                    tbwKg: weightKg
+                };
+            } else {
+                hasSoftStopWarning = true;
+                softStopReason = '⚠️ KESİNTİYE UĞRATICI ONAY GEÇİLDİ (SOFT_STOP_OVERRIDDEN): Hekim sarılık ve prematürite olmadığını teyit etti. Doz 4 mg/kg TMP (12 saatte bir) olarak hesaplandı.';
+            }
         }
     }
 
@@ -705,6 +742,8 @@ export function calculatePediatricDose(
             usedWeightType,
             hasDualStandardAlert,
             dualStandardWarning,
+            hasSoftStopWarning,
+            softStopReason,
             ratio: drug.ratio,
             ratioNotice,
             negativeGuidelineWarning: drug.negativeGuidelineWarning,
@@ -755,6 +794,8 @@ export function calculatePediatricDose(
         usedWeightType,
         hasDualStandardAlert,
         dualStandardWarning,
+        hasSoftStopWarning,
+        softStopReason,
         ratio: drug.ratio,
         ratioNotice,
         negativeGuidelineWarning: drug.negativeGuidelineWarning,

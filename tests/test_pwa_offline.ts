@@ -50,9 +50,9 @@ assert.ok(pregCount >= 1000, `Must have >= 1,000 pregnancy category drugs (Found
 console.log(`✓ Public TİTCK medicines.json dataset verified (18,212 records, SGK: ${sgkCount}, E-Kod: ${egCount}, Soğuk Zincir: ${coldCount}, PDF: ${pdfCount}, Gebelik: ${pregCount})`);
 
 const monographs = JSON.parse(fs.readFileSync('public/data/clinical_monographs.json', 'utf8'));
-assert.strictEqual(monographs.length, 135, 'Offline clinical monographs dataset must have exactly 135 items');
+assert.strictEqual(monographs.length, 136, 'Offline clinical monographs dataset must have exactly 136 items');
 const uniqueMonographIds = new Set(monographs.map((m: any) => m.id));
-assert.strictEqual(uniqueMonographIds.size, 135, 'All 135 monograph IDs must be unique');
+assert.strictEqual(uniqueMonographIds.size, 136, 'All 136 monograph IDs must be unique');
 const requiredMonoFields = [
     'id', 'genericTr', 'genericEn', 'atcCodes', 'genericKeywords', 'brandExamples',
     'drugClass', 'indications', 'adultDose', 'pediatricDose', 'maxDailyDose',

@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "ClinicalMonographCard",
-  "description": "Pediatrik Dozlama ve Klinik Karar Destek Sistemleri İçin Yapılandırılmış Çevrimdışı İlaç Monograf Şeması",
   "type": "object",
   "required": [
     "drug_id",
@@ -15,27 +14,14 @@
     "metadata"
   ],
   "properties": {
-    "drug_id": {
-      "type": "string",
-      "description": "Benzersiz ilaç kimliği (örn. amoxicillin_clavulanate_es, epinephrine)"
-    },
-    "generic_name": {
-      "type": "string",
-      "description": "Resmi Türkçe ve uluslararası jenerik etken madde adı"
-    },
-    "atc_code": {
-      "type": "string",
-      "description": "DSÖ Anatomik Terapötik Kimyasal (ATC) sınıflandırma kodu"
-    },
+    "drug_id": { "type": "string" },
+    "generic_name": { "type": "string" },
+    "atc_code": { "type": "string" },
     "formulations": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": [
-          "form_name",
-          "concentration_mg_per_ml",
-          "measuring_device"
-        ],
+        "required": ["form_name", "concentration_mg_per_ml", "measuring_device"],
         "properties": {
           "form_name": { "type": "string" },
           "concentration_mg_per_ml": { "type": "number" },
@@ -57,10 +43,8 @@
           "type": "object",
           "properties": {
             "standard_single_dose_mg": { "type": "number" },
-            "standard_interval_hours": {
-              "type": "array",
-              "items": { "type": "integer" }
-            },
+            "standard_interval_hours": { "type": "array", "items": { "type": "integer" } },
+            "max_single_dose_mg": { "type": "number" },
             "max_daily_dose_mg": { "type": "number" }
           }
         },
@@ -108,7 +92,7 @@
               "egfr_max": { "type": "number" },
               "action_type": {
                 "type": "string",
-                "enum": ["DOSE_REDUCTION", "INTERVAL_EXTENSION", "CONTRAINDICATED"]
+                "enum": ["NO_ADJUSTMENT", "DOSE_REDUCTION", "INTERVAL_EXTENSION", "CONTRAINDICATED"]
               },
               "adjustment_instruction": { "type": "string" }
             }
@@ -157,14 +141,8 @@
     "safety_warnings": {
       "type": "object",
       "properties": {
-        "black_box_warnings": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "absolute_contraindications": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
+        "black_box_warnings": { "type": "array", "items": { "type": "string" } },
+        "absolute_contraindications": { "type": "array", "items": { "type": "string" } },
         "neonatal_specific_notes": { "type": "string" },
         "critical_drug_interactions": {
           "type": "array",
@@ -172,10 +150,7 @@
             "type": "object",
             "properties": {
               "interacting_drug": { "type": "string" },
-              "severity": {
-                "type": "string",
-                "enum": ["MAJOR", "MODERATE"]
-              },
+              "severity": { "type": "string", "enum": ["CONTRAINDICATED", "MAJOR", "MODERATE"] },
               "clinical_management": { "type": "string" }
             }
           }
@@ -186,10 +161,7 @@
       "type": "object",
       "required": ["source_documents", "version_date", "last_reviewed_iso"],
       "properties": {
-        "source_documents": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
+        "source_documents": { "type": "array", "items": { "type": "string" } },
         "version_date": { "type": "string" },
         "last_reviewed_iso": { "type": "string" }
       }

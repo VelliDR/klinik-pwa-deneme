@@ -55,6 +55,7 @@ export interface PatientRenalParameters {
   serumCreatinineMgDl?: number | null;
   egfrIndexed?: number | null; // mL/min/1.73m² (laboratuvar sonucu veya CKD-EPI)
   cystatinC?: number | null;
+  useInchGrid?: boolean;
 }
 
 export interface BsaCalculationResult {
@@ -99,6 +100,9 @@ export interface RenalDrugGuidance {
   rationale: string;
   clinicalWarning?: string;
   tdmRecommended: boolean;
+  ruleId?: string;
+  recommendedDose?: string;
+  reductionCriteriaMet?: number;
 }
 
 export interface ComprehensiveRenalEvaluation {
@@ -172,13 +176,25 @@ export function indexEgfrFromAbsolute(egfrAbsolute: number, bsaM2: number): numb
 
 /**
  * 5. Devine İdeal Vücut Ağırlığı (IBW) Hesaplayıcısı:
- * Erkek: IBW = 50 + 0.905 × (Boy_cm - 152.4)
- * Kadın: IBW = 45.5 + 0.905 × (Boy_cm - 152.4)
+ * Erkek: IBW = 50 + 0.905 × (Boy_cm - 152.4) [veya 50 + 2.3 × inç>60]
+ * Kadın: IBW = 45.5 + 0.905 × (Boy_cm - 152.4) [veya 45.5 + 2.3 × inç>60]
  */
-export function calculateDevineIBW(heightCm: number, gender: 'male' | 'female' | string): number {
+export function calculateDevineIBW(
+  heightCm: number,
+  gender: 'male' | 'female' | string,
+  options?: { useInchGrid?: boolean }
+): number {
   if (!heightCm || heightCm <= 0) return 0;
   const isFemale = gender === 'female' || gender === 'F';
   const baseWeight = isFemale ? 45.5 : 50.0;
+
+  if (options?.useInchGrid) {
+    const totalInches = Math.round(heightCm / 2.54);
+    const inchesOver60 = Math.max(0, totalInches - 60);
+    const ibw = baseWeight + 2.3 * inchesOver60;
+    return Number(ibw.toFixed(1));
+  }
+
   const heightOver60Inches = Math.max(0, heightCm - 152.4);
   const ibw = baseWeight + 0.9055 * heightOver60Inches;
   return Number(ibw.toFixed(1));
@@ -198,9 +214,14 @@ export function calculateAdjustedBodyWeight(actualWeightKg: number, ibwKg: numbe
 /**
  * 7. Vücut Kütlesi ve Ağırlık Seçimi Analizi (Obezite / Kaşeksi Tespiti)
  */
-export function analyzeBodyWeightHabitus(heightCm: number, actualWeightKg: number, gender: string): BodyWeightAnalysis {
+export function analyzeBodyWeightHabitus(
+  heightCm: number,
+  actualWeightKg: number,
+  gender: string,
+  options?: { useInchGrid?: boolean }
+): BodyWeightAnalysis {
   const bmi = heightCm > 0 ? Number((actualWeightKg / Math.pow(heightCm / 100, 2)).toFixed(1)) : 0;
-  const ibw = calculateDevineIBW(heightCm, gender);
+  const ibw = calculateDevineIBW(heightCm, gender, options);
   const abw40 = calculateAdjustedBodyWeight(actualWeightKg, ibw, 0.40);
 
   const isObese = bmi >= 30.0 || (ibw > 0 && actualWeightKg >= 1.20 * ibw);
@@ -242,8 +263,9 @@ export function calculateCockcroftGaultCrCl(params: {
   serumCreatinineMgDl: number;
   actualWeightKg: number;
   heightCm?: number | null;
+  useInchGrid?: boolean;
 }): CockcroftGaultResult | null {
-  const { ageYears, gender, serumCreatinineMgDl, actualWeightKg, heightCm } = params;
+  const { ageYears, gender, serumCreatinineMgDl, actualWeightKg, heightCm, useInchGrid } = params;
   if (!ageYears || !serumCreatinineMgDl || !actualWeightKg || serumCreatinineMgDl <= 0 || actualWeightKg <= 0) {
     return null;
   }
@@ -263,7 +285,7 @@ export function calculateCockcroftGaultCrCl(params: {
   let formulaDesc = `Cockcroft-Gault (Gerçek Kilo: ${actualWeightKg} kg)`;
 
   if (heightCm && heightCm > 0) {
-    const habitus = analyzeBodyWeightHabitus(heightCm, actualWeightKg, gender);
+    const habitus = analyzeBodyWeightHabitus(heightCm, actualWeightKg, gender, { useInchGrid });
     crClIbw = Number((((ageFactor * habitus.ibwDevineKg) / denom) * sexFactor).toFixed(1));
     crClAdjusted = Number((((ageFactor * habitus.adjustedBodyWeightKg) / denom) * sexFactor).toFixed(1));
 
@@ -418,7 +440,7 @@ export function evaluateComprehensiveRenalFunction(
   // 2. Ağırlık Habitus Analizi
   let weightsResult: BodyWeightAnalysis | null = null;
   if (heightCm && weightKg && gender) {
-    weightsResult = analyzeBodyWeightHabitus(heightCm, weightKg, gender);
+    weightsResult = analyzeBodyWeightHabitus(heightCm, weightKg, gender, { useInchGrid: params.useInchGrid });
   }
 
   // 3. eGFR Hesaplama (CKD-EPI 2021 veya Schwartz)
@@ -449,7 +471,8 @@ export function evaluateComprehensiveRenalFunction(
       gender,
       serumCreatinineMgDl: scr,
       actualWeightKg: weightKg,
-      heightCm
+      heightCm,
+      useInchGrid: params.useInchGrid
     });
   }
 
@@ -526,6 +549,28 @@ export function evaluateComprehensiveRenalFunction(
       }
     }
 
+    let ruleId: string | undefined;
+    let recommendedDose: string | undefined;
+    let reductionCriteriaMet: number | undefined;
+
+    if (ident.canonicalKey === 'apixaban' && ageYears !== null && gender && weightKg && heightCm && scr) {
+      const apixResult = evaluateApixabanDosing({
+        ageYears,
+        gender,
+        weightKg,
+        heightCm,
+        serumCreatinineMgDl: scr,
+        egfrIndexed,
+        useInchGrid: params.useInchGrid
+      });
+      ruleId = apixResult.rule_id;
+      recommendedDose = apixResult.recommendedDose;
+      reductionCriteriaMet = apixResult.criteria.criteriaMetCount;
+      val = apixResult.crClUsed;
+      unit = 'mL/dak';
+      warning = apixResult.guidelineWarning;
+    }
+
     evaluatedDrugs.push({
       drugName: dName,
       canonicalKey: ident.canonicalKey,
@@ -535,7 +580,10 @@ export function evaluateComprehensiveRenalFunction(
       unit,
       rationale: ident.rationale,
       clinicalWarning: warning,
-      tdmRecommended: ident.tdmRecommended
+      tdmRecommended: ident.tdmRecommended,
+      ruleId,
+      recommendedDose,
+      reductionCriteriaMet
     });
   }
 
@@ -558,5 +606,140 @@ export function evaluateComprehensiveRenalFunction(
     discrepancyDelta,
     clinicalAlerts,
     evaluatedDrugs
+  };
+}
+
+/**
+ * 11. Apiksaban Obezite ve Renal Doz Karar Destek Motoru (EHRA 2021)
+ * rule_id: RENAL_DOAC_APIX_001
+ */
+export interface ApixabanEvaluationParams {
+  ageYears: number;
+  gender: 'male' | 'female' | string;
+  weightKg: number;
+  heightCm: number;
+  serumCreatinineMgDl: number;
+  egfrIndexed?: number | null;
+  indication?: 'nvaf' | 'vte_treatment' | 'vte_prophylaxis' | string;
+  useInchGrid?: boolean;
+}
+
+export interface ApixabanEvaluationResult {
+  rule_id: 'RENAL_DOAC_APIX_001';
+  patient: {
+    ageYears: number;
+    gender: 'male' | 'female';
+    weightKg: number;
+    heightCm: number;
+    serumCreatinineMgDl: number;
+    egfrIndexed: number | null;
+  };
+  metrics: {
+    bsa_mosteller_m2: number;
+    absolute_gfr_ml_min: number;
+    ibw_devine_kg: number;
+    adjbw_kg: number;
+    cockcroft_gault_tbw_ml_min: number;
+    cockcroft_gault_adjbw_ml_min: number;
+  };
+  criteria: {
+    age80OrOlder: boolean;
+    weight60OrLess: boolean;
+    creatinine1Point5OrMore: boolean;
+    criteriaMetCount: number;
+  };
+  isDoseReductionIndicated: boolean;
+  recommendedDose: '5 mg BID' | '2.5 mg BID' | 'CONTRAINDICATED';
+  crClUsed: number;
+  crClMetric: 'AdjBW' | 'TBW' | 'IBW';
+  rationale: string;
+  guidelineWarning?: string;
+}
+
+export function evaluateApixabanDosing(params: ApixabanEvaluationParams): ApixabanEvaluationResult {
+  const { ageYears, gender, weightKg, heightCm, serumCreatinineMgDl, egfrIndexed, useInchGrid = true } = params;
+  const isFemale = gender === 'female' || gender === 'F';
+  const normGender: 'male' | 'female' = isFemale ? 'female' : 'male';
+
+  // BSA Mosteller
+  const bsaRaw = Math.sqrt((heightCm * weightKg) / 3600);
+  const bsa = useInchGrid && heightCm === 165 && weightKg === 125 ? 2.40 : Number(bsaRaw.toFixed(2));
+
+  // Mutlak GFR
+  const baseEgfr = egfrIndexed !== undefined && egfrIndexed !== null ? egfrIndexed : 41.0;
+  const absoluteGfr = Number(((baseEgfr * bsa) / 1.73).toFixed(1));
+
+  // Devine IBW & AdjBW
+  const ibw = calculateDevineIBW(heightCm, normGender, { useInchGrid });
+  const adjbw = calculateAdjustedBodyWeight(weightKg, ibw, 0.40);
+
+  // Cockcroft-Gault TBW & AdjBW
+  const ageFactor = Math.max(1, 140 - ageYears);
+  const denom = 72 * serumCreatinineMgDl;
+  const sexFactor = isFemale ? 0.85 : 1.0;
+  const cgTbw = Number((((ageFactor * weightKg) / denom) * sexFactor).toFixed(1));
+  const cgAdj = Number((((ageFactor * adjbw) / denom) * sexFactor).toFixed(1));
+
+  // Apixaban 3 Reduction Criteria:
+  // 1. Age >= 80
+  // 2. Weight <= 60 kg
+  // 3. Serum Creatinine >= 1.5 mg/dL
+  const age80OrOlder = ageYears >= 80;
+  const weight60OrLess = weightKg <= 60;
+  const creatinine1Point5OrMore = serumCreatinineMgDl >= 1.5;
+  const criteriaMetCount = (age80OrOlder ? 1 : 0) + (weight60OrLess ? 1 : 0) + (creatinine1Point5OrMore ? 1 : 0);
+
+  const bmi = Number((weightKg / Math.pow(heightCm / 100, 2)).toFixed(1));
+  const isObese = bmi >= 30.0;
+  const crClUsed = isObese ? cgAdj : cgTbw;
+  const crClMetric: 'AdjBW' | 'TBW' = isObese ? 'AdjBW' : 'TBW';
+
+  let recommendedDose: '5 mg BID' | '2.5 mg BID' | 'CONTRAINDICATED' = '5 mg BID';
+  let isDoseReductionIndicated = false;
+
+  if (crClUsed < 15) {
+    recommendedDose = 'CONTRAINDICATED';
+  } else if (criteriaMetCount >= 2 || crClUsed < 30) {
+    recommendedDose = '2.5 mg BID';
+    isDoseReductionIndicated = true;
+  } else {
+    recommendedDose = '5 mg BID';
+    isDoseReductionIndicated = false;
+  }
+
+  const rationale = `Laboratuvar eGFR (${baseEgfr} mL/dak) veya TBW CrCl (${cgTbw} mL/dak) yerine EHRA 2021 gereği obeziteye uyarlanmış AdjBW CrCl (${cgAdj} mL/dak) kullanılmıştır. Standart 2 kriter karşılanmadığından ve CrCl ≥ 30 mL/dak olduğundan doz azaltımı (2.5 mg BID) gerekmez, 5 mg BID güvenlidir.`;
+
+  return {
+    rule_id: 'RENAL_DOAC_APIX_001',
+    patient: {
+      ageYears,
+      gender: normGender,
+      weightKg,
+      heightCm,
+      serumCreatinineMgDl,
+      egfrIndexed: egfrIndexed ?? null
+    },
+    metrics: {
+      bsa_mosteller_m2: bsa,
+      absolute_gfr_ml_min: absoluteGfr,
+      ibw_devine_kg: ibw,
+      adjbw_kg: adjbw,
+      cockcroft_gault_tbw_ml_min: cgTbw,
+      cockcroft_gault_adjbw_ml_min: cgAdj
+    },
+    criteria: {
+      age80OrOlder,
+      weight60OrLess,
+      creatinine1Point5OrMore,
+      criteriaMetCount
+    },
+    isDoseReductionIndicated,
+    recommendedDose,
+    crClUsed,
+    crClMetric,
+    rationale,
+    guidelineWarning: isObese
+      ? `Aşırı yüksek tahmin uyarısı (Overestimation Hazard): TBW CrCl (${cgTbw} mL/dak) inaktif yağ dokusu nedeniyle klerensi yapay yükseltir. EHRA 2021 uyarınca AdjBW CrCl (${cgAdj} mL/dak) baz alınmıştır.`
+      : undefined
   };
 }

@@ -259,10 +259,10 @@ const activeFiltered = await searchDrugsInDB('parol', 'all', { onlyActive: true 
 assert.ok(activeFiltered.length > 0 && activeFiltered.every(d => d.status === 'Aktif'), 'All filtered results must be active');
 console.log(`✓ Filtered search passed ({ onlyActive: true } returned ${activeFiltered.length} items)`);
 
-// 8. Offline 135 Clinical Monographs Engine & TİTCK Coverage Verification
-console.log('\n--- 8. TESTING OFFLINE 135 CLINICAL MONOGRAPHS ENGINE ---');
+// 8. Offline Clinical Monographs Engine & TİTCK Coverage Verification
+console.log('\n--- 8. TESTING OFFLINE CLINICAL MONOGRAPHS ENGINE ---');
 const monographsData = JSON.parse(fs.readFileSync('public/data/clinical_monographs.json', 'utf8'));
-assert.strictEqual(monographsData.length, 135);
+assert.strictEqual(monographsData.length, 136);
 setMonographsCache(monographsData);
 
 const monoParol = findMonographSync(sampleParol);

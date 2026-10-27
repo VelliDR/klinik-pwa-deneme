@@ -131,7 +131,8 @@ import {
   analyzeBodyWeightHabitus,
   calculateCockcroftGaultCrCl,
   identifyRenalDrugCategory,
-  evaluateComprehensiveRenalFunction
+  evaluateComprehensiveRenalFunction,
+  evaluateApixabanDosing
 } from '../src/engines/renalDoseEngine';
 import {
   AAP2022_HOURLY_MILESTONES,
@@ -1424,18 +1425,40 @@ assert.ok(tcIbAbsFloorAge);
 assert.strictEqual(tcIbAbsFloorAge.isBlocked, true);
 assert.ok(tcIbAbsFloorAge.blockReason && tcIbAbsFloorAge.blockReason.includes('KESİN KONTRENDİKASYON'));
 
-// 17.6 TC-005 & TC-006: TMP-SMX Neonatal Yaş Sınırı ve Kernikterus Hard Stopu (<42 gün)
-const tc005 = calculatePediatricDose(4.8, 'tmp_smx_200_40', { ageDays: 41 });
-assert.ok(tc005);
-assert.strictEqual(tc005.isBlocked, true);
-assert.strictEqual(tc005.targetDoseMg, 0);
-assert.ok(tc005.blockReason && tc005.blockReason.includes('Kernikterus'));
+// 17.6 PED-TC-005-006-UNIFIED: TMP-SMX İki Katmanlı Neonatal Güvenlik Motoru (41 gün vs 50 gün vs 61 gün)
+// Bebek A: Postnatal 41 gün, 4.2 kg (TİTCK KÜB < 6 hafta -> HARD_STOP)
+const babyA = calculatePediatricDose(4.2, 'tmp_smx_200_40', { ageDays: 41 });
+assert.ok(babyA);
+assert.strictEqual(babyA.isBlocked, true);
+assert.strictEqual(babyA.isLocked, true);
+assert.strictEqual(babyA.targetDoseMg, 0);
+assert.ok(babyA.blockReason && babyA.blockReason.includes('HARD_STOP'));
 
-const tc006 = calculatePediatricDose(5.0, 'tmp_smx_200_40', { ageDays: 42 });
-assert.ok(tc006);
-assert.strictEqual(tc006.isBlocked, false);
-assert.strictEqual(tc006.targetDoseMg, 20); // 5.0 * 4 = 20 mg TMP
-assert.strictEqual(tc006.volumeMl, 2.5);     // 20 / 8 = 2.5 mL BID
+// Bebek B: Postnatal 50 gün, 4.8 kg (Sarılık/Prematürite onaysız -> SOFT_STOP)
+const babyB = calculatePediatricDose(4.8, 'tmp_smx_200_40', { ageDays: 50 });
+assert.ok(babyB);
+assert.strictEqual(babyB.isBlocked, true);
+assert.strictEqual(babyB.isLocked, true);
+assert.strictEqual(babyB.hasSoftStopWarning, true);
+assert.strictEqual(babyB.targetDoseMg, 0);
+assert.ok(babyB.softStopReason && babyB.softStopReason.includes('SOFT_STOP'));
+
+// Bebek B-Onaylı: Postnatal 50 gün, 4.8 kg (Hekim 'Sarılık yok, matür bebek' onayı verdi)
+const babyBApproved = calculatePediatricDose(4.8, 'tmp_smx_200_40', { ageDays: 50, allowSoftStop: true });
+assert.ok(babyBApproved);
+assert.strictEqual(babyBApproved.isBlocked, false);
+assert.strictEqual(babyBApproved.hasSoftStopWarning, true);
+assert.strictEqual(babyBApproved.targetDoseMg, 19.2); // 4.8 * 4 = 19.2 mg TMP
+assert.strictEqual(babyBApproved.volumeMl, 2.4);     // 19.2 / 8 = 2.4 mL BID
+assert.ok(babyBApproved.softStopReason && babyBApproved.softStopReason.includes('SOFT_STOP_OVERRIDDEN'));
+
+// Bebek C: Postnatal 61 gün, 5.2 kg (Güvenli geçiş / normal hesaplama -> PASS)
+const babyC = calculatePediatricDose(5.2, 'tmp_smx_200_40', { ageDays: 61 });
+assert.ok(babyC);
+assert.strictEqual(babyC.isBlocked, false);
+assert.strictEqual(babyC.hasSoftStopWarning, false);
+assert.strictEqual(babyC.targetDoseMg, 20.8); // 5.2 * 4 = 20.8 mg TMP
+assert.strictEqual(babyC.volumeMl, 2.6);     // 20.8 / 8 = 2.6 mL BID
 
 // 17.7 TC-009 & TC-010: Amoksisilin-Klavulanat 7:1 vs 14:1 (ES) Oran Kilidi
 // TC-009: 16 kg, 2 yaş, Augmentin ES (600/42.9)
@@ -1524,7 +1547,8 @@ console.log('✓ TİTCK vs BNFc Dual Thresholds, Ratio Locks, Hard Stops & Monog
 // --- 18. VERIFYING CLINICAL MONOGRAPH CARDS & 25 CRITICAL PEDIATRIC DRUGS (ADIM 8) ---
 console.log('\n--- 18. VERIFYING CLINICAL MONOGRAPH CARDS & 25 CRITICAL PEDIATRIC DRUGS (ADIM 8) ---');
 const monoDataRaw = JSON.parse(fs.readFileSync('public/data/clinical_monographs.json', 'utf8')) as ClinicalMonograph[];
-assert.strictEqual(monoDataRaw.length, 135, 'Dataset must contain 135 complete monographs');
+assert.strictEqual(monoDataRaw.length, 136, 'Dataset must contain 136 complete monographs');
+assert.ok(monoDataRaw.some(m => m.drug_id === 'amoxicillin_clavulanate_es'), 'amoxicillin_clavulanate_es must exist');
 setMonographsCache(monoDataRaw);
 
 // 18.1 Verify 25 Critical Pediatric Drugs Presence & Complete Structure
@@ -2304,6 +2328,57 @@ assert.strictEqual(renalCheckLegacy.isValid, true);
 assert.strictEqual(renalCheckLegacy.hasContraindication, true);
 assert.strictEqual(renalCheckLegacy.alertsCount, 2);
 assert.strictEqual(renalCheckLegacy.warnings![0].metricUsed, 'INDEXED_EGFR');
+
+// 22.11 DDI-TC-004-FIXED: Obez Hastada Apiksaban Doz Uyarlaması ve CrCl / GFR İkilemi
+// Hasta: 72 yaş, Kadın, 125 kg, 165 cm, Serum Kreatinin: 1.4 mg/dL, Standart eGFR: 41 mL/dak/1.73 m²
+// İlaç: Apiksaban 5 mg tablet
+const apixabanEval = evaluateApixabanDosing({
+  ageYears: 72,
+  gender: 'female',
+  weightKg: 125,
+  heightCm: 165,
+  serumCreatinineMgDl: 1.4,
+  egfrIndexed: 41,
+  useInchGrid: true
+});
+
+assert.strictEqual(apixabanEval.rule_id, 'RENAL_DOAC_APIX_001');
+assert.strictEqual(apixabanEval.metrics.bsa_mosteller_m2, 2.40);
+assert.strictEqual(apixabanEval.metrics.absolute_gfr_ml_min, 56.9);
+assert.strictEqual(apixabanEval.metrics.ibw_devine_kg, 57.0);
+assert.strictEqual(apixabanEval.metrics.adjbw_kg, 84.2);
+assert.strictEqual(apixabanEval.metrics.cockcroft_gault_tbw_ml_min, 71.7);
+assert.strictEqual(apixabanEval.metrics.cockcroft_gault_adjbw_ml_min, 48.3);
+
+// Apiksaban Doz Azaltım Kriterleri (Yaş ≥80, Kilo ≤60 kg, Kreatinin ≥1.5 mg/dL): 0 kriter met (< 2 kriter)
+assert.strictEqual(apixabanEval.criteria.age80OrOlder, false);
+assert.strictEqual(apixabanEval.criteria.weight60OrLess, false);
+assert.strictEqual(apixabanEval.criteria.creatinine1Point5OrMore, false);
+assert.strictEqual(apixabanEval.criteria.criteriaMetCount, 0);
+
+// CrCl (AdjBW 48.3 mL/dak) ≥ 30 mL/dak olduğu için standart doz uygundur (5 mg BID)
+assert.strictEqual(apixabanEval.isDoseReductionIndicated, false);
+assert.strictEqual(apixabanEval.recommendedDose, '5 mg BID');
+assert.strictEqual(apixabanEval.crClUsed, 48.3);
+assert.strictEqual(apixabanEval.crClMetric, 'AdjBW');
+assert.ok(apixabanEval.rationale.includes('EHRA 2021'));
+assert.ok(apixabanEval.rationale.includes('5 mg BID güvenlidir'));
+
+// Also verify comprehensive evaluation integration
+const compApix = evaluateComprehensiveRenalFunction({
+  ageYears: 72,
+  gender: 'female',
+  heightCm: 165,
+  weightKg: 125,
+  serumCreatinineMgDl: 1.4,
+  egfrIndexed: 41,
+  useInchGrid: true
+}, ['Eliquis 5mg']);
+const apixGuide = compApix.evaluatedDrugs.find(d => d.canonicalKey === 'apixaban');
+assert.ok(apixGuide);
+assert.strictEqual(apixGuide.ruleId, 'RENAL_DOAC_APIX_001');
+assert.strictEqual(apixGuide.recommendedDose, '5 mg BID');
+assert.strictEqual(apixGuide.clearanceValue, 48.3);
 
 console.log('✓ Renal Dose Mosteller BSA De-indexing & Cockcroft-Gault Engine verified (100% parity with Dosya 3)');
 
