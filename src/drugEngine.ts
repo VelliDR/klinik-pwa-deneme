@@ -278,18 +278,18 @@ export function getDrugBadgesHTML(drug: DrugForBadges): string {
     badges.push('<span class="bg-amber-950/80 text-amber-300 border border-amber-700/70 px-1.5 py-0.5 rounded text-[10px]" title="SGK Kapsam Dışı (Hastaya Cepten Maliyet Uyarısı)">SGK Kapsam Dışı</span>');
   }
 
-  // 3. Gebelik Güvenlik Kategorisi Rozeti
+  // 3. Gebelik Güvenlik Kategorisi Rozeti (FDA PLLR & TİTCK KÜB)
   const preg = String(drug.pregnancyCategory || drug.pr || '').trim().toUpperCase();
   if (preg === 'A') {
-    badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi A: Kontrollü insan çalışmalarında fetal risk kanıtı yok">Gebelik: A</span>');
+    badges.push('<span class="bg-teal-950 text-teal-300 border border-teal-700 px-1.5 py-0.5 rounded text-[10px]" title="FDA PLLR: Düşük Fetal Risk / Kontrollü klinik verilerde risk kanıtı yok (TİTCK KÜB: A)">Gebelik: A (PLLR: Uyumlu)</span>');
   } else if (preg === 'B') {
-    badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi B: Hayvan çalışmalarında risk yok veya insan çalışmalarında kanıtlanmamış">Gebelik: B</span>');
+    badges.push('<span class="bg-blue-950 text-blue-300 border border-blue-700 px-1.5 py-0.5 rounded text-[10px]" title="FDA PLLR: Fetal Risk Düşük / Hayvan çalışmalarında risk yok (TİTCK KÜB: B)">Gebelik: B (PLLR: Düşük Risk)</span>');
   } else if (preg === 'C') {
-    badges.push('<span class="bg-yellow-950 text-yellow-300 border border-yellow-700 px-1.5 py-0.5 rounded text-[10px]" title="Gebelik Kategorisi C: Yalnızca potansiyel yarar riskten fazlaysa kullanılmalıdır">Gebelik: C</span>');
+    badges.push('<span class="bg-yellow-950 text-yellow-300 border border-yellow-700 px-1.5 py-0.5 rounded text-[10px]" title="FDA PLLR: Risk Dışlanamaz / Yalnızca potansiyel yarar riskten fazlaysa kullanılmalıdır (TİTCK KÜB: C)">Gebelik: C (PLLR: Dikkat)</span>');
   } else if (preg === 'D') {
-    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="Gebelik Kategorisi D: Fetal risk kanıtı mevcuttur (Hayati durumlarda değerlendirilir)">Gebelik: D (Riskli)</span>');
+    badges.push('<span class="bg-orange-950 text-orange-300 border border-orange-700 px-1.5 py-0.5 rounded text-[10px] font-medium" title="FDA PLLR: Kanıtlanmış Fetal Risk (TİTCK KÜB: D)">Gebelik: D (PLLR: Yüksek Risk)</span>');
   } else if (preg === 'X') {
-    badges.push('<span class="bg-rose-950 text-rose-200 border border-rose-600 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Gebelik Kategorisi X: KESİNLİKLE KONTRENDİKE (Fetal Anomali / Teratojenik Risk!)">Gebelik: X (Kontrendike)</span>');
+    badges.push('<span class="bg-rose-950 text-rose-200 border border-rose-600 px-1.5 py-0.5 rounded text-[10px] font-bold" title="FDA PLLR: Kesin Fetal Zarar / Majör Teratojen / KESİNLİKLE KONTRENDİKE (TİTCK KÜB: X)">Gebelik: X (Kontrendike) [PLLR]</span>');
   }
 
   // 4. Soğuk Zincir Rozeti (2-8°C)

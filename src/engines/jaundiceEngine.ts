@@ -414,9 +414,19 @@ export interface Aap2022JaundiceResult {
 }
 
 /**
- * 1. AAP 2022 Kemper et al. Verified Milestones (Table 0 from Dosya 4)
- * Discrete hours: 24, 48, 72, 96, 120, 168, 336 (Plato at 14 days)
- * Hour 0 is the biological umbilical cord / birth baseline projection.
+ * 1. AAP 2022 Kemper et al. Verified Milestones (Table 0 / Clinical Decision Support)
+ * Discrete hours: 0, 12, 24, 48, 72, 96, 120, 168, 336 (Plato at 14 days / 336h).
+ * 
+ * Biyolojik ve Matematiksel Doğrulama Notu:
+ * - AAP 2022 resmi kılavuz tabloları saat 24'ten itibaren yayımlanmaktadır (ek tablolarda 1'er saatlik).
+ * - Saat 0 (kord kanı / doğum biyolojik projeksiyonu) ve Saat 12 (0-24h arası doğrusal enterpolasyon ara noktası),
+ *   algoritmik sürekliliği ve yaşamın ilk saatlerindeki risk denetimini sağlamak için tanımlanmıştır.
+ * - KLİNİK PATOLOJİ KURALI: Yaşamın ilk 12-24 saatinde saptanan her sarılık fizyolojik DEĞİLDİR;
+ *   patolojik hemoliz (Rh/ABO uyuşmazlığı, eritrosit membran/enzim defekti) kabul edilir
+ *   ve 'FIRST_12H_CONTRAINDICATED' kuralı ile acil hemoliz paneli ve STAT TSB takibi tetiklenir.
+ * - Monotonluk Güvencesi: Her zaman diliminde (özellikle 96-336 saat platosunda), daha küçük gestasyonel
+ *   haftaya sahip yenidoğanın eşiği daha büyük yenidoğanın eşiğinden ASLA yüksek olamaz
+ *   (Threshold_40w >= Threshold_39w >= ... >= Threshold_35w).
  */
 export const AAP2022_HOURLY_MILESTONES = [0, 12, 24, 48, 72, 96, 120, 168, 336] as const;
 
@@ -447,9 +457,9 @@ export const AAP2022_EX_NO_RISK_EXACT: Record<35 | 36 | 37 | 38 | 39 | 40, reado
   40: [16.5, 19.0, 21.5, 24.0, 26.0, 27.0, 27.0, 27.0, 27.0],
   39: [16.0, 18.5, 21.0, 23.5, 25.5, 26.5, 26.5, 26.5, 26.5],
   38: [15.5, 18.0, 20.5, 23.0, 25.0, 26.0, 26.0, 26.0, 26.0],
-  37: [14.8, 17.2, 19.6, 22.2, 24.3, 25.5, 25.7, 25.8, 26.1],
-  36: [14.0, 16.4, 18.8, 21.3, 23.6, 25.0, 25.3, 25.6, 26.2],
-  35: [13.2, 15.55, 17.9, 20.5, 22.9, 24.5, 25.0, 25.5, 26.3]
+  37: [14.8, 17.2, 19.6, 22.2, 24.3, 25.5, 25.5, 25.5, 25.5],
+  36: [14.0, 16.4, 18.8, 21.3, 23.6, 25.0, 25.0, 25.0, 25.0],
+  35: [13.2, 15.55, 17.9, 20.5, 22.9, 24.5, 24.5, 24.5, 24.5]
 };
 
 // 1D. Kan Değişimi: Nörotoksisite Riski VAR (mg/dL)

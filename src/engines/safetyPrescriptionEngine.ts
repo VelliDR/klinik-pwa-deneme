@@ -263,35 +263,35 @@ const TRIPLE_WHAMMY_CLASSES = {
  */
 const PREGNANCY_RISK_DATABASE = [
   {
-    category: 'X',
+    category: 'PLLR: Kontrendike (X)',
     name: 'İzotretinoin (Roaccutane / Zoretanin)',
     atcPrefixes: ['D10BA01'],
     keywords: ['isotretinoin', 'izotretinoin', 'roaccutane', 'zoretanin', 'aknetrent'],
-    warning: 'KESİN KONTRENDİKE (Kategori X). Majör kraniofasiyal, kardiyovasküler ve timik malformasyon riski çok yüksektir. Gebelikten en az 1 ay önce kesilmelidir.'
+    warning: 'KESİN KONTRENDİKE (FDA PLLR: Majör Teratojen; TİTCK: Kategori X). Majör kraniofasiyal, kardiyovasküler ve timik malformasyon riski çok yüksektir. Gebelikten en az 1 ay önce kesilmelidir.'
   },
   {
-    category: 'X',
+    category: 'PLLR: Kontrendike (X)',
     name: 'Metotreksat (Methotrexate)',
     atcPrefixes: ['L01BA01', 'L04AX03'],
     keywords: ['methotrexate', 'metotreksat', 'emthexate', 'trexan'],
-    warning: 'KESİN KONTRENDİKE (Kategori X). Güçlü teratojen ve abortifasyan. Kraniyofasiyal defektler ve fetal ölüm riski.'
+    warning: 'KESİN KONTRENDİKE (FDA PLLR: Fetal Ölüm / Teratojenite; TİTCK: Kategori X). Güçlü teratojen ve abortifasyan. Kraniyofasiyal defektler ve fetal ölüm riski.'
   },
   {
-    category: 'X',
+    category: 'PLLR: Kontrendike (X)',
     name: 'Statinler (Atorvastatin, Rosuvastatin)',
     atcPrefixes: ['C10AA'],
     keywords: ['atorvastatin', 'rosuvastatin', 'simvastatin', 'lovastatin', 'pitavastatin', 'pravastatin', 'fluvastatin', 'lipitor', 'crestor', 'tarden', 'kolestor', 'zocor', 'lipovas'],
-    warning: 'KONTRENDİKE. Kolesterol sentezi fetal organogenez için elzemdir. Gebelikte ve emzirme döneminde kullanılmamalıdır.'
+    warning: 'KONTRENDİKE (FDA PLLR: Fetal Kolesterol Sentezi İnhibisyonu; TİTCK: Kategori X). Kolesterol sentezi fetal organogenez için elzemdir. Gebelikte ve emzirme döneminde kullanılmamalıdır.'
   },
   {
-    category: 'D/X',
+    category: 'PLLR: Kontrendike / Yüksek Risk (D/X)',
     name: 'Varfarin (Warfarin / Coumadin)',
     atcPrefixes: ['B01AA03'],
     keywords: ['warfarin', 'varfarin', 'coumadin'],
-    warning: 'KONTRENDİKE (Fetal Varfarin Sendromu, kondrodisplazi punktata, MSS anomalileri). Gebelikte DMAH (Enoksaparin) tercih edilmelidir.'
+    warning: 'KONTRENDİKE (FDA PLLR: Fetal Varfarin Sendromu, kondrodisplazi punktata, MSS anomalileri; TİTCK: Kategori D/X). Gebelikte DMAH (Enoksaparin) tercih edilmelidir.'
   },
   {
-    category: 'D',
+    category: 'PLLR: Yüksek Risk / Fetal Toksisite (D)',
     name: 'ACE İnhibitörleri ve ARB\'ler (Ramipril, Losartan vb.)',
     atcPrefixes: ['C09A', 'C09B', 'C09C', 'C09D'],
     keywords: [
@@ -299,28 +299,28 @@ const PREGNANCY_RISK_DATABASE = [
       'losartan', 'valsartan', 'candesartan', 'kandesartan', 'telmisartan', 'irbesartan', 'olmesartan',
       'delix', 'vasoxen', 'atacand', 'co-diovan', 'coversyl', 'micardis', 'karvea', 'karvezid', 'enap', 'renitec'
     ],
-    warning: '2. VE 3. TRİMESTERDE KONTRENDİKE. Fetal renal disgenezis, oligohidramniyoz, pulmoner hipoplazi ve neonatal anüri riski.'
+    warning: '2. VE 3. TRİMESTERDE KONTRENDİKE (FDA PLLR: Fetal Toksisite; TİTCK: Kategori D). Fetal renal disgenezis, oligohidramniyoz, pulmoner hipoplazi ve neonatal anüri riski.'
   },
   {
-    category: 'D',
+    category: 'PLLR: Yüksek Risk / Majör Malformasyon (D)',
     name: 'Valproik Asit (Depakin)',
     atcPrefixes: ['N03AG01'],
     keywords: ['valproate', 'valproik', 'depakin', 'convulex'],
-    warning: 'YÜKSEK TERATOJENİTE RİSKİ. Nöral tüp defektleri (spina bifida) ve bilişsel gerilik riski. Mümkünse alternatif antiepileptik seçilmelidir.'
+    warning: 'YÜKSEK TERATOJENİTE RİSKİ (FDA PLLR: Nörogelişimsel Gerilik ve Malformasyon; TİTCK: Kategori D). Nöral tüp defektleri (spina bifida) ve bilişsel gerilik riski. Mümkünse alternatif antiepileptik seçilmelidir.'
   },
   {
-    category: 'D',
+    category: 'PLLR: 3. Trimesterde Kontrendike (D)',
     name: 'NSAİİ\'ler (3. Trimesterde İbuprofen, Diklofenak vb.)',
     atcPrefixes: ['M01A'],
     keywords: ['ibuprofen', 'ibufen', 'naproxen', 'naproksen', 'diclofenac', 'diklofenak', 'dexketoprofen', 'deksketoprofen', 'ketoprofen', 'etodolac', 'etodolak', 'meloxicam', 'meloksikam', 'flurbiprofen', 'celecoxib', 'selekoksib', 'indomethacin', 'indometazin', 'arveles', 'apranax', 'voltaren', 'dolorex', 'majezik'],
-    warning: '3. TRİMESTERDE KONTRENDİKE (≥28. Hafta). Fetal duktus arteriozusun erken kapanması, pulmoner hipertansiyon ve oligohidramniyoz riski.'
+    warning: '3. TRİMESTERDE KONTRENDİKE (≥28. Hafta) (FDA PLLR: Erken Duktus Arteriozus Kapanması ve Oligohidramniyoz; TİTCK: Kategori D). Fetal duktus arteriozusun erken kapanması, pulmoner hipertansiyon ve oligohidramniyoz riski.'
   },
   {
-    category: 'D',
+    category: 'PLLR: 2-3. Trimesterde Önerilmez (D)',
     name: 'Tetrasiklinler / Doksisiklin',
     atcPrefixes: ['J01AA'],
     keywords: ['doxycycline', 'doksisiklin', 'monodox', 'tetradox', 'tetracycline', 'tetrasiklin'],
-    warning: '2. VE 3. TRİMESTERDE ÖNERİLMEZ. Fetal dişlerde kalıcı sarı-kahverengi renk değişimi ve kemik büyüme geriliği.'
+    warning: '2. VE 3. TRİMESTERDE ÖNERİLMEZ (FDA PLLR: Diş ve Kemik Toksisitesi; TİTCK: Kategori D). Fetal dişlerde kalıcı sarı-kahverengi renk değişimi ve kemik büyüme geriliği.'
   }
 ];
 

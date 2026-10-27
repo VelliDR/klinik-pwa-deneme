@@ -70,6 +70,7 @@ import {
   calculatePediatricDose,
   calculateIdealBodyWeight,
   getVaccineSchedule,
+  getComprehensiveVaccineSchedule,
   classifyPediatricBP,
   calculateCentorMcIsaac,
   calculateNEWS2,
@@ -658,6 +659,38 @@ assert.ok(hydroxyzineDose);
 assert.ok(hydroxyzineDose.name.includes('Hidroksizin'));
 assert.strictEqual(hydroxyzineDose.targetDoseMg, 25);
 assert.strictEqual(getVaccineSchedule(NaN), null);
+
+// 9.4B Kapsamlı Aşı Takvimi, Rotavirüs Zaman Pencereleri ve Meningokok Kuralları
+// 1. 2 aylık bebek: Rutin takvim + Rotavirüs 1. doz + MenB + MenACWY
+const vax2m = getComprehensiveVaccineSchedule(2);
+assert.ok(vax2m);
+assert.strictEqual(vax2m.rotavirusRule?.eligible, true);
+assert.strictEqual(vax2m.rotavirusRule?.windowStatus, 'OPTIMAL_FIRST_DOSE');
+assert.ok(vax2m.specialVaccines.some(v => v.includes('Rotavirüs')));
+assert.ok(vax2m.specialVaccines.some(v => v.includes('MenB')));
+assert.strictEqual(vax2m.meningococcalSchedule?.eligible, true);
+
+// 2. 5 aylık bebek (21.7 hafta): Rotavirüs 1. dozu almamışsa 15. haftadan sonra ilk doz BAŞLANAMAZ uyarısı
+const vax5m = getComprehensiveVaccineSchedule(5);
+assert.ok(vax5m);
+assert.strictEqual(vax5m.rotavirusRule?.windowStatus, 'OPTIMAL_SUBSEQUENT_DOSE');
+assert.ok(vax5m.rotavirusRule?.warning && vax5m.rotavirusRule.warning.includes('İNVAJİNASYON'));
+
+// 3. 9 aylık bebek (>32 hafta / 8 ay): Rotavirüs süresi dolmuştur, uygulanamaz
+const vax9m = getComprehensiveVaccineSchedule(9);
+assert.ok(vax9m);
+assert.strictEqual(vax9m.rotavirusRule?.eligible, false);
+assert.strictEqual(vax9m.rotavirusRule?.windowStatus, 'EXPIRED_CONTRAINDICATED');
+
+// 4. Gecikmiş aşı yakalama kuralları (Catch-up)
+assert.ok(vax2m.catchUpRules && vax2m.catchUpRules.length >= 5);
+assert.ok(vax2m.catchUpRules.some(r => r.includes('ASLA baştan başlanmaz')));
+assert.ok(vax2m.catchUpRules.some(r => r.includes('minimum 4 hafta')));
+
+// 5. getVaccineSchedule with includeSpecial flag
+const vaxWithSpecial = getVaccineSchedule(2, { includeSpecial: true });
+assert.ok(vaxWithSpecial && vaxWithSpecial.some(v => v.includes('Rotavirüs')));
+assert.ok(vaxWithSpecial && vaxWithSpecial.some(v => v.includes('MenB')));
 
 // 9.5 Blood Gas Engine: normal HCO3/pCO2 with borderline pH & mixed disorder compensationText
 const bgNormalBorderline = analyzeBloodGas({ pH: 7.36, pCO2: 40, HCO3: 24 });
@@ -1317,8 +1350,8 @@ assert.strictEqual(ibuprofenCapped.volumeMl, 20.0);      // 400 / 20 = 20.0 mL
 assert.ok(ibuprofenCapped.capNotice && ibuprofenCapped.capNotice.includes('400 mg'));
 
 // 16.4 Yetişkin Tavan Doz Budaması: Ondansetron (Max 8 mg/doz)
-// 60 kg çocuk: 60 * 0.15 = 9.0 mg -> 8.0 mg'a budanmalı!
-const ondanCapped = calculatePediatricDose(60, 'ondansetron_4');
+// 60 kg çocuk (12 yaş): 60 * 0.15 = 9.0 mg -> 8.0 mg'a budanmalı!
+const ondanCapped = calculatePediatricDose(60, 'ondansetron_4', { ageYears: 12 });
 assert.ok(ondanCapped);
 assert.strictEqual(ondanCapped.isCapped, true);
 assert.strictEqual(ondanCapped.uncappedDoseMg, 9.0);
@@ -1523,6 +1556,55 @@ assert.ok(adolCodeine);
 assert.strictEqual(adolCodeine.isBlocked, false);
 assert.strictEqual(adolCodeine.targetDoseMg, 25); // 50 * 0.5 = 25 mg
 assert.strictEqual(adolCodeine.volumeMl, 25.0);
+
+// 17.9B Yaş Girilmediğinde Güvenlik Kilitleri Denetimi (Kritik Klinik Güvenlik)
+// 1. 12 kg çocuk için yaş girilmemişse Kodein BLOKE edilmelidir
+const codeineNoAge = calculatePediatricDose(12, 'codeine_syrup');
+assert.ok(codeineNoAge);
+assert.strictEqual(codeineNoAge.isBlocked, true);
+assert.strictEqual(codeineNoAge.targetDoseMg, 0);
+assert.ok(codeineNoAge.blockReason && codeineNoAge.blockReason.includes('YAŞ BİLGİSİ ZORUNLUDUR'));
+
+// 2. 12 kg çocuk için yaş girilmemişse Tramadol BLOKE edilmelidir
+const tramadolNoAge = calculatePediatricDose(12, 'tramadol_drop');
+assert.ok(tramadolNoAge);
+assert.strictEqual(tramadolNoAge.isBlocked, true);
+assert.strictEqual(tramadolNoAge.targetDoseMg, 0);
+assert.ok(tramadolNoAge.blockReason && tramadolNoAge.blockReason.includes('YAŞ BİLGİSİ ZORUNLUDUR'));
+
+// 3. 4 kg bebek için yaş girilmemişse TMP-SMX BLOKE edilmelidir (Kernikterus riski)
+const tmpSmxNoAge = calculatePediatricDose(4, 'tmp_smx_200_40');
+assert.ok(tmpSmxNoAge);
+assert.strictEqual(tmpSmxNoAge.isBlocked, true);
+assert.strictEqual(tmpSmxNoAge.targetDoseMg, 0);
+assert.ok(tmpSmxNoAge.blockReason && tmpSmxNoAge.blockReason.includes('YAŞ BİLGİSİ ZORUNLUDUR'));
+
+// 4. 12 kg çocuk için yaş girilmemişse Ondansetron BLOKE edilmelidir (<6 ay ve cerrahi patoloji riski)
+const ondansetronNoAge = calculatePediatricDose(12, 'ondansetron_4');
+assert.ok(ondansetronNoAge);
+assert.strictEqual(ondansetronNoAge.isBlocked, true);
+assert.strictEqual(ondansetronNoAge.targetDoseMg, 0);
+assert.ok(ondansetronNoAge.blockReason && ondansetronNoAge.blockReason.includes('YAŞ BİLGİSİ ZORUNLUDUR'));
+
+// 5. İbuprofen: Yaş girilmemiş ancak kilo >= 7kg ise hesaplanır ama yaş doğrulaması uyarısı verilir
+const ibuprofenNoAge10kg = calculatePediatricDose(10, 'ibuprofen_100');
+assert.ok(ibuprofenNoAge10kg);
+assert.strictEqual(ibuprofenNoAge10kg.isBlocked, false);
+assert.strictEqual(ibuprofenNoAge10kg.targetDoseMg, 100);
+assert.strictEqual(ibuprofenNoAge10kg.hasDualStandardAlert, true);
+assert.ok(ibuprofenNoAge10kg.dualStandardWarning && ibuprofenNoAge10kg.dualStandardWarning.includes('YAŞ BİLGİSİ BELİRTİLMEDİ'));
+
+// 6. İbuprofen: Yaş girilmemiş ve kilo < 5kg ise mutlak alt sınır kilitlenir
+const ibuprofenNoAge4kg = calculatePediatricDose(4.5, 'ibuprofen_100');
+assert.ok(ibuprofenNoAge4kg);
+assert.strictEqual(ibuprofenNoAge4kg.isBlocked, true);
+assert.strictEqual(ibuprofenNoAge4kg.targetDoseMg, 0);
+
+// 7. İbuprofen: Yaş girilmemiş ve 5-7kg arası ise TİTCK ruhsat sınırı kilitlenir
+const ibuprofenNoAge6kg = calculatePediatricDose(6.5, 'ibuprofen_100');
+assert.ok(ibuprofenNoAge6kg);
+assert.strictEqual(ibuprofenNoAge6kg.isBlocked, true);
+assert.strictEqual(ibuprofenNoAge6kg.targetDoseMg, 0);
 
 // 17.10 GINA / AAP Negatif Kılavuz Uyarısı: Salbutamol Oral Şurup
 const salbutamolOral = calculatePediatricDose(15, 'salbutamol_syrup');
@@ -2420,6 +2502,28 @@ assert.strictEqual(t40_36.exchange, 22.75); // Midpoint of 21.5 and 24.0
 const t36_72_risk = calculateAap2022Thresholds(36, true, 72);
 assert.strictEqual(t36_72_risk.phototherapy, 14.9);
 assert.strictEqual(t36_72_risk.exchange, 21.8);
+
+// 23.2B AAP 2022 Kan Değişimi Plato Monotonluk Denetimi (336. Saat ve Tüm Zaman Dilimleri)
+// Gestasyonel yaş azaldıkça eşik kesinlikle monotonic azalmalıdır (T_40 >= T_39 >= ... >= T_35)
+const exNoRisk336 = [40, 39, 38, 37, 36, 35].map(ga => calculateAap2022Thresholds(ga, false, 336).exchange);
+assert.strictEqual(exNoRisk336[0], 27.0); // 40w
+assert.strictEqual(exNoRisk336[1], 26.5); // 39w
+assert.strictEqual(exNoRisk336[2], 26.0); // 38w
+assert.strictEqual(exNoRisk336[3], 25.5); // 37w
+assert.strictEqual(exNoRisk336[4], 25.0); // 36w
+assert.strictEqual(exNoRisk336[5], 24.5); // 35w
+for (let i = 0; i < exNoRisk336.length - 1; i++) {
+  assert.ok(exNoRisk336[i] >= exNoRisk336[i + 1], `336h exchange threshold must decrease with lower GA: ${exNoRisk336[i]} >= ${exNoRisk336[i + 1]}`);
+}
+
+// Tüm saat kilometre taşlarında (0, 12, 24, 48, 72, 96, 120, 168, 336h) monotonluk denetimi
+const milestoneHours = [0, 12, 24, 48, 72, 96, 120, 168, 336];
+for (const h of milestoneHours) {
+  const curveRow = [40, 39, 38, 37, 36, 35].map(ga => calculateAap2022Thresholds(ga, false, h).exchange);
+  for (let i = 0; i < curveRow.length - 1; i++) {
+    assert.ok(curveRow[i] >= curveRow[i + 1], `At ${h}h, exchange threshold for GA must be monotonic non-increasing: ${curveRow[i]} >= ${curveRow[i + 1]}`);
+  }
+}
 
 // 23.3 TC-01: Sınırda Fototerapi Eşiği Kontrolü (Table 11 TC-01)
 // GH: 38 0/7 hf, Postnatal Yaş: 48 saat, TSB: 16.2 mg/dL, Risk: Yok

@@ -443,7 +443,23 @@ export function calculatePediatricDose(
 
     // A. KODEİN & TRAMADOL KONTRENDİKASYON HARD STOP (<12 Yaş / CYP2D6 Polimorfizmi)
     if (drugKey === 'codeine_syrup' || drugKey === 'tramadol_drop' || drugKey.startsWith('codeine') || drugKey.startsWith('tramadol')) {
-        if (effectiveAgeMonths !== null && effectiveAgeMonths < 144) {
+        if (effectiveAgeMonths === null) {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - YAŞ BİLGİSİ ZORUNLUDUR 🛑',
+                syringeWarning: '🛑 YAŞ BİLGİSİ GEREKLİ: Kodein ve tramadol <12 yaş çocuklarda CYP2D6 toksisitesi nedeniyle kesin kontrendikedir.',
+                freq: 'YAŞ GEREKLİ',
+                isLocked: true,
+                isBlocked: true,
+                blockReason: '🛑 YAŞ BİLGİSİ ZORUNLUDUR: Kodein ve tramadol <12 yaş çocuklarda ve emziren annelerde CYP2D6 ultra-hızlı metabolizör toksisitesi (ölümcül solunum arresti) riski nedeniyle kesin kontrendikedir (FDA Black Box / EMA PRAC). Güvenli doz hesabı için hastanın yaşı girilmelidir.',
+                olcekText: 'YAŞ GİRİNİZ (BLOKE)',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        }
+        if (effectiveAgeMonths < 144) {
             return {
                 name: drug.name,
                 targetDoseMg: 0,
@@ -468,6 +484,23 @@ export function calculatePediatricDose(
     let softStopReason: string | undefined;
 
     if (drugKey === 'tmp_smx_200_40' || drugKey.startsWith('tmp_smx')) {
+        if (effectiveAgeMonths === null && effectiveAgeDays === null) {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - YAŞ BİLGİSİ ZORUNLUDUR 🛑',
+                syringeWarning: '🛑 YAŞ BİLGİSİ GEREKLİ: TMP-SMX yaşamın ilk 6–8 haftasında kernikterus riski nedeniyle kontrendikedir.',
+                freq: 'YAŞ GEREKLİ',
+                isLocked: true,
+                isBlocked: true,
+                blockReason: '🛑 YAŞ BİLGİSİ ZORUNLUDUR (TİTCK KÜB & AAP Red Book): Trimetoprim-Sulfametoksazol postnatal <42 gün (TİTCK KÜB: 6 hafta altı kontrendikedir) ve <60 gün (AAP Red Book / FDA etiketi: 2 ay altı) infantlarda bilirubini albüminden kopararak ölümcül Kernikterus riski yaratır. Güvenli doz hesabı için bebeğin postnatal yaşı (gün veya ay) girilmelidir.',
+                olcekText: 'YAŞ GİRİNİZ (BLOKE)',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        }
+
         const isUnder42Days = (options.ageDays !== undefined && options.ageDays !== null)
             ? options.ageDays < 42
             : (effectiveAgeMonths !== null && effectiveAgeMonths < (42 / 30.4375));
@@ -523,12 +556,13 @@ export function calculatePediatricDose(
     let dualStandardWarning: string | undefined;
 
     if (drugKey === 'ibuprofen' || drugKey === 'ibuprofen_100') {
+        const isAgeKnown = (options.ageDays !== undefined && options.ageDays !== null) || (effectiveAgeMonths !== null);
         const isUnder3Months = (options.ageDays !== undefined && options.ageDays !== null)
             ? options.ageDays < 90
             : (effectiveAgeMonths !== null && effectiveAgeMonths < 3);
         const isUnder5Kg = weightKg < 5.0;
 
-        // Mutlak Alt Sınır: <3 ay veya <5 kg -> Dünyadaki hiçbir kılavuz izin vermez
+        // Mutlak Alt Sınır: <3 ay veya <5 kg -> Farmakokinetik ve renal immatürite
         if (isUnder3Months || isUnder5Kg) {
             return {
                 name: drug.name,
@@ -539,7 +573,7 @@ export function calculatePediatricDose(
                 freq: 'KONTRENDİKE',
                 isLocked: true,
                 isBlocked: true,
-                blockReason: '🛑 KESİN KONTRENDİKASYON: İbuprofen <3 ay veya <5 kg infantlarda farmakokinetik ve renal immatürite nedeniyle kontrendikedir.',
+                blockReason: '🛑 KESİN KONTRENDİKASYON: İbuprofen <3 ay veya <5 kg infantlarda farmakokinetik ve renal immatürite nedeniyle kontrendikedir (BNFc: Yalnızca 2–3 aylık infantlarda MenB Meningokok aşı sonrası ateş için hekim gözetiminde dar bir istisna tanımlanmıştır).',
                 olcekText: 'KONTRENDİKE (BLOKE)',
                 isCapped: false,
                 tbwKg: weightKg
@@ -576,6 +610,9 @@ export function calculatePediatricDose(
                 hasDualStandardAlert = true;
                 dualStandardWarning = '⚠️ TİTCK Ruhsat Sınırı Uyarısı (<6 ay veya <7 kg): Hasta 6 aydan küçük veya 7 kg altındadır. TİTCK onaylı KÜB uyarınca bu yaş/kilo grubunda renal papiller nekroz riski nedeniyle önerilmemektedir. Uluslararası kılavuzlar (BNFc, EMA, AAP: ≥3 ay ve ≥5 kg) dehidratasyon yokluğunda ve hekim inisiyatifinde izin verir.';
             }
+        } else if (!isAgeKnown) {
+            hasDualStandardAlert = true;
+            dualStandardWarning = '⚠️ YAŞ BİLGİSİ BELİRTİLMEDİ: İbuprofen <3 ay infantlarda kontrendikedir (BNFc MenB aşı sonrası ateş dar istisnası hariç) ve TİTCK ruhsatı <6 ay için kısıtlıdır. Hastanın ≥3 ay (ve TİTCK için ≥6 ay) olduğu doğrulanmalıdır.';
         }
     }
 
@@ -611,7 +648,25 @@ export function calculatePediatricDose(
     let indicationBandNote: string | undefined;
 
     if (drugKey === 'ondansetron_4' || drugKey.startsWith('ondansetron')) {
-        const isUnder6m = effectiveAgeMonths !== null && effectiveAgeMonths < 6;
+        if (effectiveAgeMonths === null) {
+            return {
+                name: drug.name,
+                targetDoseMg: 0,
+                volumeMl: null,
+                metricDoseText: '0 mg (0 mL) - YAŞ BİLGİSİ ZORUNLUDUR 🛑',
+                syringeWarning: '🛑 YAŞ BİLGİSİ GEREKLİ: Ondansetron <6 ay infantlarda önerilmez; yaş teyit edilmelidir.',
+                freq: 'YAŞ GEREKLİ',
+                isLocked: true,
+                isBlocked: true,
+                blockReason: '🛑 YAŞ BİLGİSİ ZORUNLUDUR (AAP / CPS / NICE): Ondansetron <6 ay infantlarda viral akut gastroenteritte güvenlik ve etkinlik verisi bulunmadığından ve altta yatan invajinasyon, sepsis, cerrahi obstrüksiyon gibi sistemik patolojileri maskeleme riski nedeniyle önerilmez. Güvenli doz hesabı için hastanın yaşı girilmelidir.',
+                offLabelNotice: drug.offLabelNotice,
+                olcekText: 'YAŞ GİRİNİZ (BLOKE)',
+                isCapped: false,
+                tbwKg: weightKg
+            };
+        }
+
+        const isUnder6m = effectiveAgeMonths < 6;
         const isUnder8kg = weightKg < 8.0;
 
         if (isUnder6m || isUnder8kg) {
@@ -620,11 +675,11 @@ export function calculatePediatricDose(
                 targetDoseMg: 0,
                 volumeMl: null,
                 metricDoseText: '0 mg (0 mL) - KONTRENDİKE / UYARI 🛑',
-                syringeWarning: '🛑 AAP/CPS: <6 ay veya <8 kg infantlarda viral gastroenteritte kontrendikedir.',
+                syringeWarning: '🛑 AAP/CPS/NICE: <6 ay veya <8 kg infantlarda viral gastroenteritte önerilmez.',
                 freq: 'KONTRENDİKE',
                 isLocked: true,
                 isBlocked: true,
-                blockReason: '🛑 KONTRENDİKASYON / UYARI (AAP / CPS): <6 ay veya <8 kg infantlarda viral akut gastroenterit kusmasında antiemetik kullanımı mortalite ve hipoksi riskini artırır; oral rehidrasyon (ORS) esastır.',
+                blockReason: '🛑 KONTRENDİKASYON / UYARI (AAP / CPS / NICE): <6 ay veya <8 kg infantlarda viral akut gastroenterit kusmasında antiemetik güvenlilik ve etkinlik verisi yetersizdir; altta yatan invajinasyon, sepsis, nekrotizan enterokolit veya cerrahi obstrüksiyonu maskeleme riski nedeniyle önerilmez. Öncelikli yaklaşım oral rehidrasyondur (ORS).',
                 offLabelNotice: drug.offLabelNotice,
                 olcekText: 'KONTRENDİKE (BLOKE)',
                 isCapped: false,
@@ -807,25 +862,194 @@ export function calculatePediatricDose(
     };
 }
 
-export function getVaccineSchedule(ageInMonths: number | null | undefined): string[] | null {
+export interface ComprehensiveVaccineScheduleResult {
+    ageInMonths: number;
+    routineVaccines: string[];
+    specialVaccines: string[];
+    rotavirusRule?: {
+        eligible: boolean;
+        windowStatus: 'NOT_YET' | 'OPTIMAL_FIRST_DOSE' | 'OPTIMAL_SUBSEQUENT_DOSE' | 'EXPIRED_CONTRAINDICATED';
+        details: string;
+        warning?: string;
+    };
+    meningococcalSchedule?: {
+        eligible: boolean;
+        recommendations: string[];
+        details: string;
+    };
+    catchUpRules?: string[];
+}
+
+export function getVaccineSchedule(
+    ageInMonths: number | null | undefined,
+    options: { includeSpecial?: boolean } = {}
+): string[] | null {
     if (ageInMonths === null || ageInMonths === undefined || isNaN(ageInMonths) || ageInMonths < 0) return null;
     
     let vaccines: string[] = [];
     if (ageInMonths < 1 && ageInMonths >= 0) vaccines = ["Hepatit B (1. Doz) - Doğumda"];
     else if (ageInMonths >= 1 && ageInMonths < 2) vaccines = ["Hepatit B (2. Doz)"];
-    else if (ageInMonths >= 2 && ageInMonths < 4) vaccines = ["BCG (Verem)", "KPA (1. Doz)", "DaBT-İPA-Hib-HepB (1. Doz)"];
-    else if (ageInMonths >= 4 && ageInMonths < 6) vaccines = ["KPA (2. Doz)", "DaBT-İPA-Hib-HepB (2. Doz)"];
-    else if (ageInMonths >= 6 && ageInMonths < 9) vaccines = ["DaBT-İPA-Hib-HepB (3. Doz)", "OPA (1. Doz)"];
-    else if (ageInMonths >= 9 && ageInMonths < 12) vaccines = ["KKK (Ek Doz)"];
-    else if (ageInMonths >= 12 && ageInMonths < 18) vaccines = ["KPA (Rapel)", "Suçiçeği", "KKK (1. Doz)"];
-    else if (ageInMonths >= 18 && ageInMonths < 24) vaccines = ["DaBT-İPA-Hib-HepB (Rapel)", "OPA (2. Doz)", "Hepatit A (1. Doz)"];
+    else if (ageInMonths >= 2 && ageInMonths < 4) {
+        vaccines = ["BCG (Verem)", "KPA (1. Doz)", "DaBT-İPA-Hib-HepB (1. Doz)"];
+        if (options.includeSpecial) {
+            vaccines.push("Rotavirüs (1. Doz - Rotarix/RotaTeq: 6-14 hf 6 gün penceresi)", "MenB (1. Doz - Bexsero)", "MenACWY (Erken Doz - Nimenrix)");
+        }
+    }
+    else if (ageInMonths >= 4 && ageInMonths < 6) {
+        vaccines = ["KPA (2. Doz)", "DaBT-İPA-Hib-HepB (2. Doz)"];
+        if (options.includeSpecial) {
+            vaccines.push("Rotavirüs (2. Doz)", "MenB (2. Doz)");
+        }
+    }
+    else if (ageInMonths >= 6 && ageInMonths < 9) {
+        vaccines = ["DaBT-İPA-Hib-HepB (3. Doz)", "OPA (1. Doz)"];
+        if (options.includeSpecial) {
+            vaccines.push("Rotavirüs (3. Doz - RotaTeq için; en geç 32. haftada/8. ayda tamamlanmalı)", "İnfluenza (Grip - 6 aydan büyüklerde mevsimsel)");
+        }
+    }
+    else if (ageInMonths >= 9 && ageInMonths < 12) {
+        vaccines = ["KKK (Ek Doz)"];
+        if (options.includeSpecial) {
+            vaccines.push("MenACWY (1. Doz - Menveo/Nimenrix)");
+        }
+    }
+    else if (ageInMonths >= 12 && ageInMonths < 18) {
+        vaccines = ["KPA (Rapel)", "Suçiçeği", "KKK (1. Doz)"];
+        if (options.includeSpecial) {
+            vaccines.push("MenACWY (Rapel)", "MenB (Rapel)");
+        }
+    }
+    else if (ageInMonths >= 18 && ageInMonths < 24) {
+        vaccines = ["DaBT-İPA-Hib-HepB (Rapel)", "OPA (2. Doz)", "Hepatit A (1. Doz)"];
+        if (options.includeSpecial) {
+            vaccines.push("MenACWY / MenB (Eksik doz tamamlama)");
+        }
+    }
     else if (ageInMonths >= 24 && ageInMonths < 48) vaccines = ["Hepatit A (2. Doz)"];
-    else if (ageInMonths >= 48 && ageInMonths < 156) vaccines = ["KKK (2. Doz)", "DaBT-İPA (Rapel)"];
-    else if (ageInMonths >= 156 && ageInMonths < 216) vaccines = ["Td (Rapel) - 13 Yaş"];
+    else if (ageInMonths >= 48 && ageInMonths < 156) {
+        vaccines = ["KKK (2. Doz)", "DaBT-İPA (Rapel)"];
+        if (options.includeSpecial && ageInMonths >= 108) {
+            vaccines.push("HPV (9-14 yaş 2 doz şeması)");
+        }
+    }
+    else if (ageInMonths >= 156 && ageInMonths < 216) {
+        vaccines = ["Td (Rapel) - 13 Yaş"];
+        if (options.includeSpecial) {
+            vaccines.push("MenACWY (Adölesan tek rapel doz)", "HPV (3 doz şeması)");
+        }
+    }
     else if (ageInMonths >= 216 && ageInMonths < 780) vaccines = ["Erişkin Dönemi: Td (Tetanos-Difteri) Rapeli (10 yılda bir)"];
     else if (ageInMonths >= 780) vaccines = ["65 Yaş ve Üzeri: Pnömokok", "65 Yaş ve Üzeri: Yıllık Grip (İnfluenza)", "Td (Tetanos-Difteri) Rapeli"];
 
     return vaccines;
+}
+
+/**
+ * Kapsamlı Pediatrik Aşı ve Yakalama (Catch-Up) Motoru
+ * - Rotavirüs zaman pencereleri (ilk doz 6 - 14 hf 6 gün, son doz en geç 32. hafta)
+ * - Meningokok (MenACWY ve MenB) özel aşı planlaması
+ * - Gecikmiş aşı yakalama (Catch-up / CDC & Sağlık Bakanlığı) minimum aralık kuralları
+ */
+export function getComprehensiveVaccineSchedule(
+    ageInMonths: number | null | undefined,
+    options: { isDelayed?: boolean } = {}
+): ComprehensiveVaccineScheduleResult | null {
+    if (ageInMonths === null || ageInMonths === undefined || isNaN(ageInMonths) || ageInMonths < 0) return null;
+
+    const routineVaccines = getVaccineSchedule(ageInMonths, { includeSpecial: false }) || [];
+    const specialVaccines: string[] = [];
+
+    // 1. Rotavirüs Zaman Penceresi Kuralları
+    // Yaş haftası hesabı: 1 ay ~= 4.348 hafta
+    const ageWeeks = ageInMonths * (365.25 / 12 / 7);
+    let rotavirusRule: ComprehensiveVaccineScheduleResult['rotavirusRule'];
+
+    if (ageWeeks < 6.0) {
+        rotavirusRule = {
+            eligible: false,
+            windowStatus: 'NOT_YET',
+            details: 'Rotavirüs aşısı en erken 6. haftadan (yaklaşık 1.5 ay) itibaren başlanabilir.'
+        };
+    } else if (ageWeeks >= 6.0 && ageWeeks <= 14.857) { // 14 hafta 6 gün ~= 14.86 hafta
+        rotavirusRule = {
+            eligible: true,
+            windowStatus: 'OPTIMAL_FIRST_DOSE',
+            details: 'Rotavirüs 1. Doz için altın standart zaman penceresi (6 hafta ile 14 hafta 6 gün arası). Rotarix (2 doz) veya RotaTeq (3 doz) başlanmalıdır.'
+        };
+        specialVaccines.push('Rotavirüs (1. Doz - Rotarix / RotaTeq)');
+    } else if (ageWeeks > 14.857 && ageWeeks <= 32.0) { // 15 hafta ile 32 hafta (8 ay) arası
+        rotavirusRule = {
+            eligible: true,
+            windowStatus: 'OPTIMAL_SUBSEQUENT_DOSE',
+            details: 'Eğer 1. doz 15. haftadan önce başlanmışsa 2. ve 3. dozlar uygulanabilir. Son doz en geç 32. haftada (8 ay 0 gün) tamamlanmalıdır.',
+            warning: 'DİKKAT: Eğer bebek hiç aşılanmamışsa (1. doz verilmemişse), 15 hafta 0 günden sonra İNVAJİNASYON (barsak düğümlenmesi) riski nedeniyle 1. doz KESİNLİKLE BAŞLANAMAZ!'
+        };
+        specialVaccines.push('Rotavirüs (Devam Dozları - Yalnızca 1. dozu 15. haftadan önce almış bebekler için)');
+    } else {
+        rotavirusRule = {
+            eligible: false,
+            windowStatus: 'EXPIRED_CONTRAINDICATED',
+            details: 'Bebek 32 haftayı (8 ayı) doldurmuştur. Rotavirüs serisi bu yaştan sonra uygulanamaz (invajinasyon riski ve etkinlik düşüşü nedeniyle kontrendikedir).'
+        };
+    }
+
+    // 2. Meningokok (MenACWY & MenB) Kuralları
+    let meningococcalSchedule: ComprehensiveVaccineScheduleResult['meningococcalSchedule'];
+    const menRecs: string[] = [];
+
+    if (ageInMonths >= 2 && ageInMonths < 12) {
+        menRecs.push('Meningokok B (MenB - Bexsero): 2. veya 3. aydan itibaren 2+1 veya 3+1 şeması (Aşı sonrası ateş profilaksisi için parasetamol önerilir).');
+        menRecs.push('Meningokok ACWY (Nimenrix: 6 haftadan itibaren; Menveo: 2. aydan itibaren).');
+        specialVaccines.push('MenB (Bexsero)', 'MenACWY (Nimenrix / Menveo)');
+        meningococcalSchedule = {
+            eligible: true,
+            recommendations: menRecs,
+            details: 'İnfant döneminde invaziv meningokok menenjiti ve meningokoksemiye karşı MenB ve MenACWY aşı serisi başlanabilir.'
+        };
+    } else if (ageInMonths >= 12 && ageInMonths < 24) {
+        menRecs.push('MenACWY rapel dozu (12-14. aylarda).');
+        menRecs.push('MenB rapel dozu (son infant dozundan en az 6 ay sonra, 12-15. aylarda).');
+        specialVaccines.push('MenACWY (Rapel)', 'MenB (Rapel)');
+        meningococcalSchedule = {
+            eligible: true,
+            recommendations: menRecs,
+            details: '1-2 yaş arasında infant döneminde başlanan meningokok aşılarının rapel (pekiştirme) dozları tamamlanmalıdır.'
+        };
+    } else if (ageInMonths >= 24) {
+        menRecs.push('Daha önce aşılanmamış çocuklarda tek doz MenACWY ve 2 doz MenB (en az 1 ay arayla).');
+        menRecs.push('Adölesan rapeli: 11-12 yaşta MenACWY tek doz, 16 yaşta rapel.');
+        if (ageInMonths < 216) {
+            specialVaccines.push('MenACWY (Yakalama/Adölesan Dozu)', 'MenB (Yakalama Serisi)');
+        }
+        meningococcalSchedule = {
+            eligible: true,
+            recommendations: menRecs,
+            details: '2 yaş ve üzeri çocuklarda risk durumuna veya aile isteğine bağlı olarak tamamlama şeması uygulanır.'
+        };
+    }
+
+    // 3. Gecikmiş Aşı Yakalama (Catch-Up) Kuralları
+    const catchUpRules: string[] = [
+        '📌 Genel Yakalama Kuralı: Aşı serisi gecikmişse ASLA baştan başlanmaz; kalınan yerden devam edilir (önceki dozlar geçerlidir).',
+        '⏱️ DaBT-İPA-Hib (5\'li Karma): İlk 3 doz arasında minimum 4 hafta (1 ay) ara olmalıdır. 4. pekiştirme dozu ile 3. doz arasında en az 6 ay bulunmalıdır.',
+        '⏱️ Hepatit B: 1. ve 2. doz arası minimum 4 hafta; 2. ve 3. doz arası minimum 8 hafta; 1. ve 3. doz arası minimum 16 hafta ve bebek en az 24 haftalık (6 aylık) olmalıdır.',
+        '⏱️ KKK (Kızamık-Kabakulak-Kızamıkçık): Minimum yaş 12 aydır. İki doz arasında minimum 4 hafta bulunmalıdır.',
+        '⏱️ Hepatit A: Minimum yaş 18 aydır. 1. ve 2. doz arasında en az 6 ay bulunmalıdır.',
+        '⏱️ BCG (Verem): 3. aydan sonra ilk kez yapılacaksa PPD (Tüberkülin Cilt Testi) kontrolü şarttır.'
+    ];
+
+    if (options.isDelayed) {
+        specialVaccines.push(...catchUpRules);
+    }
+
+    return {
+        ageInMonths,
+        routineVaccines,
+        specialVaccines,
+        rotavirusRule,
+        meningococcalSchedule,
+        catchUpRules
+    };
 }
 
 const AAP_BP_THRESHOLDS: Record<'male' | 'female', Record<number, { s90: number; d90: number; s95: number; d95: number }>> = {

@@ -164,12 +164,17 @@ Uygulama standart bir web tarayıcısı üzerinden doğrudan çalıştırılabil
 
 ### 16. Pediatrik Şurup & Süspansiyon Dozlama Motoru
 - Kilo bazlı miligram dozlama, konsantrasyon kilitleri ve ölçek (5 mL) / oral şırınga (mL) hacim dönüşümü.
-- **TİTCK & BNFc Çift Eşik Denetimi:** Türkiye ruhsatlı konsantrasyonlar ile BNFc referansları arasında doz doğrulama.
+- **Yaş Bilgisi Eksikliği Güvenlik Kalkanı:** Kodein, tramadol, TMP-SMX ve ondansetron gibi yaşa bağlı mutlak kontrendikasyonu veya kısıtlaması bulunan ilaçlarda yaş girilmeden doz hesaplaması bloke edilir; hekimden yaş doğrulaması istenir.
+- **TİTCK & BNFc Çift Eşik Denetimi:** Türkiye ruhsatlı konsantrasyonlar ile BNFc referansları arasında doz doğrulama (örn. İbuprofen için $<3$ ay kontrendikasyonu ve BNFc MenB aşı sonrası ateş dar istisnası; TİTCK $<6$ ay / $<7\text{ kg}$ ruhsat kısıtı).
 - **Erişkin Tavan Doz Kısıtlaması (Cap Clamping):** Çocuklarda hesaplanan dozun erişkin maksimum tekil veya günlük dozunu aşmasını önleyen sınırlama.
-- **Pediatrik Obezitede İdeal Vücut Ağırlığı (IBW):** BMI persantili $>95$ olan çocuklarda aşırı dozlamayı önlemek adına boya göre 50. persentil kilo bazlı dozlama önerisi.
+- **Pediatrik Obezitede Ağırlık Metriği & IBW:** BMI persantili $>95$ olan obez çocuklarda hidrofilik parasetamol için İdeal Vücut Ağırlığı ($\text{IBW}$), vankomisin için Düzeltilmiş Ağırlık ($\text{AdjBW}$), amoksisilinde gerçek kilo ($\text{TBW}$) ile tavan budaması.
 
-### 17. Ulusal Çocukluk Çağı Aşı Takvimi Sorgulama
-- T.C. Sağlık Bakanlığı aşı takvimine göre yaşa uygun rutin aşılar ve gecikmiş aşı yakalama şemaları.
+### 17. Çocukluk Çağı Aşı Takvimi & Gecikmiş Yakalama (Catch-Up) Motoru
+- **T.C. Sağlık Bakanlığı Rutin Aşı Takvimi:** Doğumdan 65 yaş üstüne kadar yaşa uygun ulusal rutin aşılar.
+- **Özel Aşı Takvimleri:**
+  - **Rotavirüs (Rotarix / RotaTeq):** İlk doz için 6 hafta ile 14 hafta 6 gün altın standart penceresi ($15\text{ hafta }0\text{ gün}$ ve sonrasında invajinasyon riski nedeniyle ilk doz başlanamaz); son doz en geç 32. haftada (8 ay) tamamlanmalıdır.
+  - **Meningokok (MenACWY & MenB):** İnfant (2-3. aydan itibaren Bexsero / Nimenrix / Menveo), 1-2 yaş pekiştirme ve adölesan rapel rejimleri.
+- **Gecikmiş Aşı Yakalama (Catch-Up) Kuralları:** Seriye asla baştan başlanmadan kalınan yerden devam edilmesi, minimum doz aralıkları (DaBT için min. 4 hafta, KKK için min. 4 hafta, HepB için 0-1-6 ay şeması) ve PPD gereksinimleri.
 
 ### 18. Centor / McIsaac Farenjit Değerlendirmesi
 - Grup A Streptokok farenjiti olasılığı, hızlı antijen testi gereksinimi ve ampirik antibiyotik kararına destek.
