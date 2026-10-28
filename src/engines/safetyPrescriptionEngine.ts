@@ -207,9 +207,20 @@ export const RENAL_DRUG_DATABASE: RenalDrugEntry[] = [
     aliases: ['vankomisin', 'vancocin', 'edicin', 'vancomax'],
     atcPrefix: 'J01XA01',
     name: 'Vankomisin (Vancomycin)',
+    tdmRecommended: true,
     rules: [
-      { maxEgfr: 20, status: 'DOSE_REDUCTION', message: 'Mutlak GFR < 20 mL/dak: Doz aralığı 48-72 saate çıkarılmalı veya seviye bazlı (AUC/MIC veya trough düzeyi) verilmelidir; TDM zorunludur.' },
-      { maxEgfr: 49, status: 'DOSE_REDUCTION', message: 'Mutlak GFR 20-49 mL/dak: Doz aralığı 24 saate çıkarılmalıdır (15-20 mg/kg / 24 saat); vadi düzeyi (trough) izlenmelidir.' }
+      { maxEgfr: 20, status: 'DOSE_REDUCTION', message: 'Mutlak GFR < 20 mL/dak: Doz aralığı 48-72 saate çıkarılmalı veya seviye bazlı (AUC/MIC veya trough düzeyi) verilmelidir; TDM zorunludur. [ACORN JAMA 2023: Piperasilin/Tazobaktam ile birlikte kreatinin artışı tübüler sekresyon yarışması (psödo-AKI) olup diyaliz veya mortalite artışı göstermez; Sefepime gereksiz geçiş nörotoksisiteyi artırabilir].' },
+      { maxEgfr: 49, status: 'DOSE_REDUCTION', message: 'Mutlak GFR 20-49 mL/dak: Doz aralığı 24 saate çıkarılmalıdır (15-20 mg/kg / 24 saat); vadi düzeyi (trough) izlenmelidir. [ACORN JAMA 2023: Pip/Tazo ile kombinasyonda psödo-AKI mekanizmasına dikkat ediniz].' }
+    ]
+  },
+  {
+    generic: 'piperacillin_tazobactam',
+    aliases: ['piperasilin', 'tazobaktam', 'tazocin', 'tazonam', 'pip/tazo', 'tazopril'],
+    atcPrefix: 'J01CR05',
+    name: 'Piperasilin / Tazobaktam (Tazocin)',
+    rules: [
+      { maxEgfr: 20, status: 'DOSE_REDUCTION', message: 'eGFR < 20 mL/dk: Doz 2.25 g / 8 saat (veya 4.5 g / 12 saat) olarak azaltılmalıdır. [ACORN JAMA 2023: Vankomisin ile birlikte psödo-AKI kreatinin artışı tübüler sekresyon rekabetidir, diyaliz ihtiyacını artırmaz; Sefepime gereksiz geçiş nörotoksisite riski taşır].' },
+      { maxEgfr: 50, status: 'DOSE_REDUCTION', message: 'eGFR 20-50 mL/dk: Doz 3.375 g / 6 saat veya 4.5 g / 8 saat olarak ayarlanmalıdır.' }
     ]
   },
   {
@@ -285,7 +296,7 @@ const TRIPLE_WHAMMY_CLASSES = {
     keywords: [
       'ramipril', 'enalapril', 'lisinopril', 'perindopril', 'captopril', 'kaptopril', 'fosinopril', 'zofenopril',
       'losartan', 'valsartan', 'candesartan', 'kandesartan', 'telmisartan', 'irbesartan', 'olmesartan',
-      'delix', 'vasoxen', 'co-diovan', 'karvezid', 'micardis', 'atacand', 'coversyl', 'enap', 'renitec'
+      'delix', 'vasoxen', 'co-diovan', 'karvezid', 'micardis', 'micardis plus', 'co-hyzaar', 'delix plus', 'atacand', 'atacand plus', 'coversyl', 'enap', 'renitec'
     ]
   },
   diuretics: {
@@ -293,7 +304,8 @@ const TRIPLE_WHAMMY_CLASSES = {
     atcPrefixes: ['C03'],
     keywords: [
       'furosemide', 'furosemid', 'lasix', 'desal', 'torasemide', 'torasemid', 'torem',
-      'hydrochlorothiazide', 'hidroklorotiyazid', 'hctz', 'indapamide', 'indapamid', 'fludex',
+      'hydrochlorothiazide', 'hidroklorotiyazid', 'hctz', 'co-diovan', 'karvezid', 'micardis plus', 'co-hyzaar', 'delix plus', 'atacand plus',
+      'indapamide', 'indapamid', 'fludex',
       'chlorthalidone', 'klortalidon', 'spironolactone', 'spironolakton', 'aldactone', 'eplerenone', 'inspra'
     ]
   },
@@ -407,6 +419,29 @@ function matchesNormalizedKeyword(normText: string, rawKeyword: string): boolean
     return regex.test(normText);
   }
   return normText.includes(normK);
+}
+
+/**
+ * Dar Terapötik İndeksli İlaçlar İçin Kanıt Temelli TDM ve Hedef Vadi Düzeyleri
+ */
+export function getTdmGuidance(drugQueryOrName: string): string | null {
+  const k = normalizeStr(drugQueryOrName);
+  if (k.includes('vancomycin') || k.includes('vanko') || k.includes('edicin')) {
+    return '🎯 Hedef Vadi (Trough) Düzeyi: Ciddi enfeksiyonlarda (pnömoni, sepsis) 15–20 mcg/mL, diğer enfeksiyonlarda 10–15 mcg/mL. Bir sonraki dozdan 30 dk önce kan örneği alınmalıdır.';
+  }
+  if (k.includes('gentamicin') || k.includes('genta') || k.includes('gensu') || k.includes('amikacin') || k.includes('tobramycin')) {
+    return '🎯 Hedef Çukur Düzeyi: Gentamisin/Tobramisin <1 mcg/mL, Amikasin <4-5 mcg/mL. Doz öncesi çukur düzeyi nefrotoksisiteyi önlemek için şarttır.';
+  }
+  if (k.includes('digoxin') || k.includes('digoksin')) {
+    return '🎯 Hedef Serum Düzeyi: 0.5–0.9 ng/mL (>1.0 ng/mL mortaliteyi ve toksisiteyi artırır). Dozdan en az 6-8 saat sonra kan örneği alınmalıdır.';
+  }
+  if (k.includes('lithium') || k.includes('lityum')) {
+    return '🎯 Hedef Vadi Düzeyi: İdame: 0.6–0.8 mEq/L (Akut: 0.8–1.0 mEq/L; >1.2 toksik). Dozdan 12 saat sonra vadi düzeyi ölçülmelidir.';
+  }
+  if (k.includes('methotrexate') || k.includes('metotreksat') || k.includes('trexan')) {
+    return '🎯 TDM ve Lökovorin Kurtarma: 24, 48 ve 72. saat MTX düzeyleri izlenmeli; klirens gecikmesinde hidrasyon ve lökovorin dozu artırılmalıdır.';
+  }
+  return null;
 }
 
 /**
@@ -535,7 +570,8 @@ export function checkRenalDoseAdjustments(params: RenalDoseCheckParams = {}): Re
           metricUsed,
           effectiveClearanceValue: effectiveClearance,
           clearanceUnit,
-          tdmRecommended: tdm
+          tdmRecommended: tdm,
+          tdmGuidance: getTdmGuidance(matchedEntry.name) || getTdmGuidance(drugName)
         });
       }
     }
@@ -677,9 +713,15 @@ export function detectTripleWhammy(drugs: DrugInputItem[] = []): TripleWhammyRes
  */
 export function checkPregnancySafety(
   drugs: DrugInputItem[] = [],
-  options: { trimester?: number } = {}
+  options: { trimester?: number; gestationalWeeks?: number } = {}
 ): PregnancySafetyResult {
-  const trimester = Number(options?.trimester || 1);
+  const gestWeeks = options?.gestationalWeeks;
+  let trimester = Number(options?.trimester || 1);
+  if (gestWeeks !== undefined && gestWeeks !== null) {
+    if (gestWeeks >= 28) trimester = 3;
+    else if (gestWeeks >= 14) trimester = 2;
+    else trimester = 1;
+  }
   const alerts: PregnancySafetyAlert[] = [];
 
   if (!Array.isArray(drugs)) {
@@ -708,9 +750,32 @@ export function checkPregnancySafety(
       const isAtcMatched = entry.atcPrefixes?.some(p => normAtc.startsWith(normalizeStr(p))) ?? false;
       const isKeywordMatched = entry.keywords.some(k => matchesNormalizedKeyword(normName, k));
       if (isAtcMatched || isKeywordMatched) {
-        // Trimester spesifik kontroller (NSAİİ 1-2. trimesterde Kategori C / düşük risk, 3. trimesterde Kategori D / kontrendike)
-        if (entry.name.includes('3. Trimesterde') && trimester < 3) {
-          continue;
+        // Trimester ve gestasyonel hafta spesifik kontroller (FDA Drug Safety Communication: NSAİİ 20. hf vs 28. hf)
+        if (entry.name.includes('3. Trimesterde')) {
+          const isAtLeast28Weeks = (gestWeeks !== undefined && gestWeeks >= 28) || trimester >= 3;
+          const isAtLeast20Weeks = (gestWeeks !== undefined && gestWeeks >= 20) || trimester === 2;
+
+          if (isAtLeast28Weeks) {
+            alerts.push({
+              drugName: entry.name,
+              userDrug: name,
+              category: entry.category,
+              warning: entry.warning,
+              isHighRisk: true
+            });
+            continue;
+          } else if (isAtLeast20Weeks) {
+            alerts.push({
+              drugName: 'NSAİİ\'ler (20. Hafta ve Sonrası Dikkat)',
+              userDrug: name,
+              category: 'PLLR: 20. Hafta ve Sonrası Dikkat (C/D)',
+              warning: '⚠️ 20. HAFTA UYARISI (FDA PLLR: Fetal Renal Disfonksiyon & Oligohidramniyoz): 20. haftadan itibaren fetal böbrek disfonksiyonu ve amniyon sıvısında azalma (oligohidramniyoz) riski başlar. NSAİİ kullanımından kaçınınız; zorunluysa en düşük dozda, maksimum 48 saatle sınırlandırınız (USG ile amniyon izlemi önerilir).',
+              isHighRisk: true
+            });
+            continue;
+          } else {
+            continue;
+          }
         }
 
         const isCatX = entry.category.includes('X');

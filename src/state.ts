@@ -113,6 +113,7 @@ export const appState: AppState = {
 
     safetyPrescription: {
         active: false,
+        interactions: null,
         renalAdjustments: null,
         tripleWhammy: null,
         pregnancySafety: null,

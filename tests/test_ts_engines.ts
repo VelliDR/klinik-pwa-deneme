@@ -124,6 +124,7 @@ import {
   getRxNormConceptByAtc,
   getRxNormConceptByKey,
   resolveToRxNormConcept,
+  resolveToRxNormConceptsMulti,
   resolveBatchRxNormConcepts
 } from '../src/engines/rxNormMappingEngine';
 import { getDrugRxNormBadge } from '../src/drugEngine';
@@ -131,6 +132,12 @@ import {
   evaluatePrescriptionInteractions,
   isAcornVptRegimen
 } from '../src/engines/interactionTierEngine';
+import {
+  identifyRenalDrugCategory
+} from '../src/engines/renalDoseEngine';
+import {
+  getTdmGuidance
+} from '../src/engines/safetyPrescriptionEngine';
 import {
   calculateMostellerBSA,
   calculateDuboisBSA,
@@ -4870,9 +4877,86 @@ assert.ok(preecSevere.alert?.includes('HİPERTANSİF ACİL PROTOKOLÜ'), 'Hipert
 assert.ok(preecSevere.alert?.includes('Labetalol') || preecSevere.alert?.includes('Nifedipin'), 'Acil antihipertansif (Labetalol / Nifedipin) yer almalıdır');
 assert.ok(preecSevere.alert?.includes('MgSO4'), 'Eklampsi profilaksisi için MgSO4 yer almalıdır');
 
-console.log('✓ Motor 19 Kadın Doğum & Obstetrik Hesaplayıcı Motoru verified (100% healthy)');
+// --- Section 49: Motor 21 Akılcı Reçete, İlaç Güvenliği, 4-Kademeli Etkileşim & DOAC Klerens (Adım 23) ---
+console.log('\n--- Section 49: Motor 21 Akılcı Reçete & İlaç Güvenliği Motoru ---');
 
-console.log('\n🎉 ALL 48 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+// 49.1 HATA-M21-001: 4-Kademeli Etkileşim Motorunun Tier 1 Hard Stop Alarmları
+const pde5Nitrate = evaluatePrescriptionInteractions(['Viagra 50mg', 'Monoket 20mg']);
+assert.strictEqual(pde5Nitrate.hasHardStop, true, 'Sildenafil + Nitrat ölümcül Tier 1 Hard Stop üretmelidir');
+assert.strictEqual(pde5Nitrate.highestTier, 'TIER_1_HARD_STOP', 'En yüksek kademe TIER_1_HARD_STOP olmalıdır');
+assert.ok(pde5Nitrate.alerts.some(a => a.ruleId === 'DDI_PDE5_NITRATE_001'), 'DDI_PDE5_NITRATE_001 kuralı tetiklenmelidir');
+
+const carbapenemValproate = evaluatePrescriptionInteractions(['Meronem 1g', 'Depakin 500mg']);
+assert.strictEqual(carbapenemValproate.hasHardStop, true, 'Meropenem + Valproik Asit Tier 1 Hard Stop üretmelidir');
+
+// 49.2 HATA-M21-002: DOAC Reçetelerinde Zorunlu Cockcroft-Gault Klerensi Sınıflandırması
+const doacEliquis = identifyRenalDrugCategory('Eliquis 5mg');
+assert.strictEqual(doacEliquis.category, 'DOAC_COCKCROFT_MANDATORY', 'Apiksaban DOAC_COCKCROFT_MANDATORY sınıfında olmalıdır');
+assert.strictEqual(doacEliquis.metric, 'COCKCROFT_GAULT_CRCL', 'Ölçüt COCKCROFT_GAULT_CRCL olmalıdır');
+assert.ok(doacEliquis.rationale.includes('Cockcroft-Gault'), 'EHRA gerekçesi bulunmalıdır');
+
+const doacXarelto = identifyRenalDrugCategory('Xarelto 20mg');
+assert.strictEqual(doacXarelto.category, 'DOAC_COCKCROFT_MANDATORY');
+
+// 49.3 HATA-M21-003: Sabit Doz Kombinasyon (FDC) Çoklu Etkin Madde Çözümleme & Triple Whammy
+const codiovanConcepts = resolveToRxNormConceptsMulti('Co-Diovan 160/12.5');
+assert.strictEqual(codiovanConcepts.length, 2, 'Co-Diovan iki ayrı aktif maddeye ayrışmalıdır');
+const codiovanKeys = codiovanConcepts.map(c => c.canonicalKey);
+assert.ok(codiovanKeys.includes('valsartan'), 'Valsartan bulunmalıdır');
+assert.ok(codiovanKeys.includes('hydrochlorothiazide'), 'Hidroklorotiyazid bulunmalıdır');
+
+const karvezidConcepts = resolveToRxNormConceptsMulti('Karvezid 300/12.5');
+assert.strictEqual(karvezidConcepts.length, 2, 'Karvezid iki ayrı aktif maddeye ayrışmalıdır');
+const karvezidKeys = karvezidConcepts.map(c => c.canonicalKey);
+assert.ok(karvezidKeys.includes('irbesartan'));
+assert.ok(karvezidKeys.includes('hydrochlorothiazide'));
+
+// FDC ile Triple Whammy Doğrulaması: Co-Diovan + Arveles (NSAİİ)
+const tripleWhammyFdc = detectTripleWhammy(['Co-Diovan 160/12.5', 'Arveles 25mg']);
+assert.strictEqual(tripleWhammyFdc.isTripleWhammy, true, 'Co-Diovan + NSAİİ tam bir Triple Whammy üretmelidir');
+assert.strictEqual(tripleWhammyFdc.alertClass, 'danger');
+
+// 49.4 HATA-M21-004: Dar Terapötik İndeksli İlaçlarda TDM ve Hedef Vadi Düzeyleri
+const vancoTdm = getTdmGuidance('Vancomycin');
+assert.ok(vancoTdm);
+assert.ok(vancoTdm.includes('mcg/mL'), 'Vankomisin hedef vadi düzeyi içermelidir');
+
+const digoxTdm = getTdmGuidance('Digoxin');
+assert.ok(digoxTdm);
+assert.ok(digoxTdm.includes('ng/mL'), 'Digoksin hedef vadi düzeyi içermelidir');
+
+const lithiumTdm = getTdmGuidance('Lithium');
+assert.ok(lithiumTdm);
+assert.ok(lithiumTdm.includes('mEq/L'), 'Lityum hedef düzeyi içermelidir');
+
+const vancoRenal = checkRenalDoseAdjustments({
+  egfr: 35,
+  drugs: ['Vancocin 1g']
+});
+assert.strictEqual(vancoRenal.alertsCount, 1);
+assert.ok(vancoRenal.warnings![0].tdmGuidance, 'Renal uyarıda tdmGuidance eklenmiş olmalıdır');
+assert.ok(vancoRenal.warnings![0].tdmGuidance!.includes('Hedef Vadi'));
+
+// 49.5 HATA-M21-005: Gebelikte NSAİİ 20. Hafta (Oligohidramniyoz) ve 28. Hafta (Erken Duktus Kapanması)
+const nsaidWeek24 = checkPregnancySafety([{ brand: 'Dolorex 50mg', generic: 'Diklofenak' }], { trimester: 2, gestationalWeeks: 24 });
+assert.ok(nsaidWeek24.alertsCount > 0);
+assert.ok(nsaidWeek24.alerts.some(a => a.warning.toLowerCase().includes('oligohidramniyoz') && a.warning.toLowerCase().includes('20. hafta')), '24. haftada 20. hafta oligohidramniyoz uyarısı verilmelidir');
+
+const nsaidWeek30 = checkPregnancySafety([{ brand: 'Dolorex 50mg', generic: 'Diklofenak' }], { trimester: 3, gestationalWeeks: 30 });
+assert.ok(nsaidWeek30.alertsCount > 0);
+assert.ok(nsaidWeek30.alerts.some(a => a.warning.includes('3. TRİMESTERDE KONTRENDİKE') && a.warning.includes('Duktus Arteriozus')), '30. haftada erken duktus kapanması kontrendikasyonu verilmelidir');
+
+// 49.6 HATA-M21-006: ACORN JAMA 2023 Vankomisin + Pip/Tazo Psödo-AKI Rehberliği
+assert.strictEqual(isAcornVptRegimen(['Vancomycin 1g', 'Tazocin 4.5g']), true, 'VPT rejimi tespit edilmelidir');
+const vptRenalWarnings = checkRenalDoseAdjustments({
+  egfr: 30,
+  drugs: ['Vancomycin 1g', 'Tazocin 4.5g']
+});
+assert.ok(vptRenalWarnings.warnings!.some(w => w.message.includes('ACORN (JAMA 2023)') || (w.tdmGuidance && w.tdmGuidance.includes('ACORN')) || w.message.includes('psödo-AKI')), 'ACORN JAMA 2023 atfı içermelidir');
+
+console.log('✓ Motor 21 Akılcı Reçete & İlaç Güvenliği Motoru verified (100% healthy)');
+
+console.log('\n🎉 ALL 49 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

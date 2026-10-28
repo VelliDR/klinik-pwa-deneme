@@ -48,9 +48,39 @@ export const getChk = (id: string): boolean => {
  * çalışmasını engeller, ardışık olayları tek bir boyama (paint) karesinde birleştirir.
  */
 let pendingRafId: number | null = null;
+let pendingMicrotask = false;
 
 export const scheduleUpdate = (callback: () => void): void => {
-    if (typeof window === 'undefined' || typeof requestAnimationFrame !== 'function') {
+    if (typeof window === 'undefined') {
+        callback();
+        return;
+    }
+
+    // HATA-M24-003: Sekme arka plandaysa (document.hidden === true) veya RAF desteklenmiyorsa:
+    // Browser RAF'ı donduracağı için queueMicrotask veya setTimeout ile anında çalıştır
+    if (typeof document !== 'undefined' && document.hidden) {
+        if (pendingRafId !== null) {
+            cancelAnimationFrame(pendingRafId);
+            pendingRafId = null;
+        }
+        if (!pendingMicrotask) {
+            pendingMicrotask = true;
+            if (typeof queueMicrotask === 'function') {
+                queueMicrotask(() => {
+                    pendingMicrotask = false;
+                    callback();
+                });
+            } else {
+                setTimeout(() => {
+                    pendingMicrotask = false;
+                    callback();
+                }, 0);
+            }
+        }
+        return;
+    }
+
+    if (typeof requestAnimationFrame !== 'function') {
         callback();
         return;
     }

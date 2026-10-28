@@ -12,8 +12,11 @@ import {
     checkCypStatinInteraction,
     checkRenalDoseAdjustments,
     checkPregnancySafety,
-    checkNeonatalDrugSafety
+    checkNeonatalDrugSafety,
+    evaluatePrescriptionInteractions,
+    getTdmGuidance
 } from '../engines/safetyPrescriptionEngine';
+import { identifyRenalDrugCategory } from '../engines/renalDoseEngine';
 import { ensureDrugCatalogReady, isDrugCatalogReady, searchDrugsInDB, type DrugSearchMode } from '../db/titckIndexedDB';
 import { ensureMonographsReady, findMonographSync } from '../monographEngine';
 import { getDrugBadgesHTML } from '../drugEngine';
@@ -56,6 +59,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
     }
     const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.eddData?.trimester || appState.medicine.pregnancyTrimester || 0);
 
+    const outInteractions = getEl('output-safety-interactions');
     const outWhammy = getEl('output-safety-triple-whammy');
     const outSerotonin = getEl('output-safety-serotonin');
     const outHyperkalemia = getEl('output-safety-hyperkalemia');
@@ -65,6 +69,57 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
     const badgeSafety = getEl('badge-safety-status');
 
     if (selectedDrugs.length > 0) {
+        const patientAgeYears = ageData.y !== undefined && ageData.y !== null ? ageData.y : (appState.biometry.ageYears ?? null);
+        const scrVal = getNum('input-creatinine');
+
+        // 0. 4-Kademeli Etkileşim Motoru (Interaction Tier Engine)
+        const interactionsRes = evaluatePrescriptionInteractions(selectedDrugs, {
+            egfr: safetyEgfr,
+            ageYears: patientAgeYears,
+            trimester: safetyTrim,
+            ageDays: isNeonate ? (ageData.days ?? null) : null
+        });
+        appState.safetyPrescription.interactions = interactionsRes;
+        if (outInteractions) {
+            const importantAlerts = (interactionsRes?.alerts || []).filter((a: any) => a.tier === 1 || a.tier === 2);
+            if (importantAlerts.length > 0) {
+                outInteractions.classList.remove('hidden');
+                outInteractions.innerHTML = `
+                    <div class="space-y-2">
+                        ${importantAlerts.map((a: any) => {
+                            if (a.tier === 1) {
+                                return `
+                                    <div class="p-2.5 rounded-lg bg-rose-950/70 border-2 border-rose-600 text-rose-200 text-xs space-y-1">
+                                        <div class="flex items-center justify-between font-bold text-rose-300">
+                                            <span class="flex items-center gap-1.5">[🚨 TIER 1 - ÖLÜMCÜL KONTRENDİKASYON / HARD STOP]</span>
+                                            <span class="text-[10px] font-mono uppercase bg-rose-900/80 px-2 py-0.5 rounded border border-rose-500">${escapeHtml(a.ruleId)}</span>
+                                        </div>
+                                        <div class="font-semibold text-white">${escapeHtml(a.alertTitle)}</div>
+                                        <div class="text-rose-100/90 leading-relaxed">${escapeHtml(a.message)}</div>
+                                        <div class="text-[10px] text-rose-300 font-mono pt-0.5">Kılavuz / Kaynak: ${escapeHtml(a.guidelineSource)}</div>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div class="p-2.5 rounded-lg bg-amber-950/60 border border-amber-600 text-amber-200 text-xs space-y-1">
+                                        <div class="flex items-center justify-between font-bold text-amber-300">
+                                            <span class="flex items-center gap-1.5">[⚠️ TIER 2 - YÜKSEK RİSK / SOFT STOP]</span>
+                                            <span class="text-[10px] font-mono uppercase bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">${escapeHtml(a.ruleId)}</span>
+                                        </div>
+                                        <div class="font-semibold text-white">${escapeHtml(a.alertTitle)}</div>
+                                        <div class="text-amber-100/90 leading-relaxed">${escapeHtml(a.message)}</div>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                outInteractions.classList.add('hidden');
+                outInteractions.innerHTML = '';
+            }
+        }
+
         // 1. Triple Whammy AKI
         const whammyRes = detectTripleWhammy(selectedDrugs);
         appState.safetyPrescription.tripleWhammy = whammyRes;
@@ -101,7 +156,6 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         }
 
         // 3. Ölümcül Hiperkalemi Kalkanı (RAAS + K-Tutucu + Trimetoprim/Bactrim + NSAİİ)
-        const patientAgeYears = ageData.y !== undefined && ageData.y !== null ? ageData.y : (appState.biometry.ageYears ?? null);
         const hyperKRes = checkHyperkalemiaRisk(selectedDrugs, {
             egfr: safetyEgfr,
             ageYears: patientAgeYears,
@@ -141,9 +195,14 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             outCypStatin.classList.add('hidden');
         }
 
-        // 5. Renal Doz Kesintileri (eGFR)
+        // 5. DOAC ve Renal Doz Kesintileri (eGFR / CrCl)
+        const hasDoacInSelected = selectedDrugs.some((d: any) => {
+            const cat = identifyRenalDrugCategory(d);
+            return cat.category === 'DOAC_COCKCROFT_MANDATORY';
+        });
+        const hasDoacLock = hasDoacInSelected && (!safetyEgfr && (scrVal === null || scrVal === undefined || isNaN(scrVal)));
+
         if (safetyEgfr) {
-            const scrVal = getNum('input-creatinine');
             const renalRes = checkRenalDoseAdjustments({
                 egfr: safetyEgfr,
                 ageYears: appState.biometry.ageYears,
@@ -174,7 +233,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                     outRenal.innerHTML = `
                         <div class="font-bold text-xs">${headerTitle}</div>
                         ${alertsHtml}
-                        ${(renalRes.warnings || []).map((w: any) => `<div class="text-xs leading-relaxed">• <strong>${escapeHtml(w.drug)}</strong>: ${escapeHtml(w.message)}</div>`).join('')}
+                        ${(renalRes.warnings || []).map((w: any) => {
+                            const tdmGuide = w.tdmGuidance || getTdmGuidance(w.drug);
+                            const tdmBadge = tdmGuide ? `<span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-purple-900/60 border border-purple-500 text-purple-200 font-bold uppercase mr-1">TDM ŞART</span>` : '';
+                            const tdmHtml = tdmGuide ? `<div class="mt-0.5 text-[11px] text-purple-300 font-semibold">• <strong>TDM Kılavuzu:</strong> ${escapeHtml(tdmGuide)}</div>` : '';
+                            return `<div class="text-xs leading-relaxed">• ${tdmBadge}<strong>${escapeHtml(w.drug)}</strong>: ${escapeHtml(w.message)}${tdmHtml}</div>`;
+                        }).join('')}
                     `;
                 }
             } else if (outRenal) {
@@ -182,11 +246,17 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             }
         } else {
             appState.safetyPrescription.renalAdjustments = null;
-            const scrVal = getNum('input-creatinine');
             const isPediatric = ((appState.biometry.ageYears !== null && appState.biometry.ageYears < 18) || 
                                  (appState.biometry.ageMonths !== null && appState.biometry.ageMonths < 216));
             if (outRenal) {
-                if (isPediatric && scrVal !== null && scrVal > 1.2 && !appState.biometry.heightCm) {
+                if (hasDoacLock) {
+                    outRenal.classList.remove('hidden');
+                    outRenal.className = 'p-2.5 rounded-lg border tabular-nums space-y-1 text-xs bg-rose-950/60 border-rose-600 text-rose-200';
+                    outRenal.innerHTML = `
+                        <div class="font-bold text-xs uppercase tracking-wide text-rose-300">🚫 DOAC RENAL GÜVENLİK KİLİDİ</div>
+                        <div class="text-xs leading-relaxed font-semibold text-rose-300">DOAC (Apiksaban/Rivaroksaban/Dabigatran/Edoksaban) reçetelerinde Cockcroft-Gault CrCl kontrolü zorunludur. Lütfen kreatinin giriniz! Obez veya renal riskli hastalarda eGFR ile doz tayini majör fatal kanama riski oluşturur.</div>
+                    `;
+                } else if (isPediatric && scrVal !== null && scrVal > 1.2 && !appState.biometry.heightCm) {
                     outRenal.classList.remove('hidden');
                     outRenal.className = 'p-2.5 rounded-lg border tabular-nums space-y-1 text-xs bg-rose-950/50 border-rose-600/70 text-rose-200';
                     outRenal.innerHTML = `
@@ -200,15 +270,19 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         }
 
         // 6. Gebelik & Fetal Risk
-        if (safetyTrim > 0) {
-            const pregRes = checkPregnancySafety(selectedDrugs, { trimester: safetyTrim });
+        const gestationalWeeks = appState.obgyn.eddData?.weeks;
+        if (safetyTrim > 0 || (typeof gestationalWeeks === 'number' && gestationalWeeks > 0)) {
+            const pregRes = checkPregnancySafety(selectedDrugs, {
+                trimester: safetyTrim,
+                gestationalWeeks: gestationalWeeks
+            });
             appState.safetyPrescription.pregnancySafety = pregRes;
             if (pregRes.alertsCount > 0) {
                 if (outPreg) {
                     outPreg.classList.remove('hidden');
                     outPreg.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${pregRes.hasSevereFetalRisk ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
                     outPreg.innerHTML = `
-                        <div class="font-bold text-xs">Gebelik ve Fetotoksisite Uyarısı (${escapeHtml(safetyTrim)}. Trimester)</div>
+                        <div class="font-bold text-xs">Gebelik ve Fetotoksisite Uyarısı (${escapeHtml(safetyTrim || (gestationalWeeks ? Math.ceil(gestationalWeeks / 13) : ''))}. Trimester${gestationalWeeks ? ` - ${gestationalWeeks}. Hafta` : ''})</div>
                         ${pregRes.alerts.map((a: any) => `<div class="text-xs leading-relaxed">• <strong>${escapeHtml(a.drugName)} (Kategori ${escapeHtml(a.category)})</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
                     `;
                 }
@@ -246,11 +320,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         if (badgeSafety) {
             const isPediatric = ((appState.biometry.ageYears !== null && appState.biometry.ageYears < 18) || 
                                  (appState.biometry.ageMonths !== null && appState.biometry.ageMonths < 216));
-            const scrVal = getNum('input-creatinine');
             const hasPedRenalRisk = !safetyEgfr && isPediatric && scrVal !== null && scrVal > 1.2 && !appState.biometry.heightCm;
 
             const hasDanger = Boolean(
                 hasPedRenalRisk ||
+                hasDoacLock ||
+                (interactionsRes?.hasHardStop) ||
                 (appState.safetyPrescription.tripleWhammy?.isTripleWhammy) ||
                 (appState.safetyPrescription.serotoninSyndrome?.severity === 'CRITICAL') ||
                 (appState.safetyPrescription.hyperkalemiaRisk?.severity === 'CRITICAL') ||
@@ -261,6 +336,8 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             );
             const totalWarns = 
                 (hasPedRenalRisk ? 1 : 0) +
+                (hasDoacLock ? 1 : 0) +
+                (interactionsRes?.alerts?.length || 0) +
                 (appState.safetyPrescription.renalAdjustments?.alertsCount || 0) +
                 (appState.safetyPrescription.pregnancySafety?.alertsCount || 0) +
                 (appState.safetyPrescription.neonatalDrugSafety?.alertsCount || 0) +
@@ -280,7 +357,9 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             }
         }
     } else {
+        const outInteractions = getEl('output-safety-interactions');
         const outNeoDrug = getEl('output-safety-neonatal');
+        appState.safetyPrescription.interactions = null;
         appState.safetyPrescription.tripleWhammy = null;
         appState.safetyPrescription.serotoninSyndrome = null;
         appState.safetyPrescription.hyperkalemiaRisk = null;
@@ -288,6 +367,10 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         appState.safetyPrescription.renalAdjustments = null;
         appState.safetyPrescription.pregnancySafety = null;
         appState.safetyPrescription.neonatalDrugSafety = null;
+        if (outInteractions) {
+            outInteractions.classList.add('hidden');
+            outInteractions.innerHTML = '';
+        }
         if (outWhammy) outWhammy.classList.add('hidden');
         if (outSerotonin) outSerotonin.classList.add('hidden');
         if (outHyperkalemia) outHyperkalemia.classList.add('hidden');

@@ -521,6 +521,7 @@ export interface RenalDrugEntry {
   aliases: string[];
   atcPrefix?: string;
   name: string;
+  tdmRecommended?: boolean;
   rules: RenalDrugRule[];
 }
 
@@ -536,6 +537,7 @@ export interface RenalDoseWarning {
   effectiveClearanceValue?: number;
   clearanceUnit?: string;
   tdmRecommended?: boolean;
+  tdmGuidance?: string | null;
 }
 
 export interface RenalDoseCheckParams {
