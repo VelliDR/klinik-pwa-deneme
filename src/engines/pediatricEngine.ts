@@ -147,6 +147,8 @@ export interface PediatricDoseResult {
     offLabelNotice?: string;
     confusionWarning?: string;
     reconstitutionStability?: string;
+    dailyCumulativeWarning?: string;
+    highVolumeWarning?: string;
     indicationBandNote?: string;
     ageWarning?: string;
 }
@@ -633,8 +635,12 @@ export function calculatePediatricDose(
             : (effectiveAgeMonths !== null && effectiveAgeMonths < 6);
         const isUnder7Kg = weightKg < 7.0;
 
-        // TİTCK Eşiği: <6 ay veya <7 kg -> TİTCK onaylı KÜB'de önerilmez
-        if (isUnder6Months || isUnder7Kg) {
+        // HATA-M16-005: Yaş bilinmediğinde ve kilo <10 kg olduğunda bebeğin <6 ay olma riski vardır; TİTCK kilidi aktif olmalıdır
+        const isPotentialUnder6M = !isAgeKnown && weightKg < 10.0;
+        const isTitckRestricted = isUnder6Months || isUnder7Kg || isPotentialUnder6M;
+
+        // TİTCK Eşiği: <6 ay veya <7 kg (veya yaş belirtilmemiş ve <10 kg) -> TİTCK onaylı KÜB'de önerilmez
+        if (isTitckRestricted) {
             if (!options.allowOffLabelTitck) {
                 return {
                     name: drug.name,
@@ -648,15 +654,17 @@ export function calculatePediatricDose(
                     hasDualStandardAlert: true,
                     blockReason: isUnder7Kg
                         ? '⚠️ TİTCK KÜB Ruhsat Sınırı Uyarısı: Vücut ağırlığı 7 kg altındadır. TİTCK KÜB uyarınca 7 kg altındaki çocuklarda renal papiller nekroz riski nedeniyle kullanımı önerilmemektedir. Hekim onayı olmadan mL dozu hesaplanamaz. (Uluslararası kılavuzlar ≥3 ay ve ≥5 kg için izin verir).'
-                        : '⚠️ TİTCK KÜB Ruhsat Sınırı Uyarısı: Hasta 6 aydan küçüktür. TİTCK KÜB uyarınca 6 aydan küçük bebeklerde renal papiller nekroz riski nedeniyle kullanımı önerilmemektedir. Hekim onayı olmadan mL dozu hesaplanamaz. (Uluslararası kılavuzlar ≥3 ay ve ≥5 kg için izin verir).',
-                    dualStandardWarning: '⚠️ TİTCK Ruhsat Sınırı Uyarısı (<6 ay veya <7 kg): Hasta 6 aydan küçük veya 7 kg altındadır. TİTCK onaylı KÜB uyarınca bu yaş/kilo grubunda renal papiller nekroz riski nedeniyle önerilmemektedir. Uluslararası kılavuzlar (BNFc, EMA, AAP: ≥3 ay ve ≥5 kg) dehidratasyon yokluğunda ve hekim onayıyla izin verir.',
+                        : (isUnder6Months
+                            ? '⚠️ TİTCK KÜB Ruhsat Sınırı Uyarısı: Hasta 6 aydan küçüktür. TİTCK KÜB uyarınca 6 aydan küçük bebeklerde renal papiller nekroz riski nedeniyle kullanımı önerilmemektedir. Hekim onayı olmadan mL dozu hesaplanamaz. (Uluslararası kılavuzlar ≥3 ay ve ≥5 kg için izin verir).'
+                            : '⚠️ TİTCK KÜB Ruhsat Sınırı Uyarısı: Yaş belirtilmedi ve vücut ağırlığı <10 kg olduğundan bebeğin <6 ay olma riski mevcuttur. TİTCK KÜB uyarınca hekim bebeğin ≥6 ay olduğunu onaylamadıkça veya TİTCK onayı verilmedikçe doz kilitlidir.'),
+                    dualStandardWarning: '⚠️ TİTCK Ruhsat Sınırı Uyarısı (<6 ay veya <7 kg): Hasta 6 aydan küçük veya 7 kg altındadır (veya yaş belirtilmemiştir). TİTCK onaylı KÜB uyarınca bu yaş/kilo grubunda renal papiller nekroz riski nedeniyle önerilmemektedir. Uluslararası kılavuzlar (BNFc, EMA, AAP: ≥3 ay ve ≥5 kg) dehidratasyon yokluğunda ve hekim onayıyla izin verir.',
                     olcekText: 'HEKİM ONAYI BEKLENİYOR',
                     isCapped: false,
                     tbwKg: weightKg
                 };
             } else {
                 hasDualStandardAlert = true;
-                dualStandardWarning = '⚠️ TİTCK Ruhsat Sınırı Uyarısı (<6 ay veya <7 kg): Hasta 6 aydan küçük veya 7 kg altındadır. TİTCK onaylı KÜB uyarınca bu yaş/kilo grubunda renal papiller nekroz riski nedeniyle önerilmemektedir. Uluslararası kılavuzlar (BNFc, EMA, AAP: ≥3 ay ve ≥5 kg) dehidratasyon yokluğunda ve hekim inisiyatifinde izin verir.';
+                dualStandardWarning = '⚠️ TİTCK Ruhsat Sınırı Uyarısı (<6 ay veya <7 kg): Hasta 6 aydan küçük veya 7 kg altındadır (veya yaş belirtilmemiştir). TİTCK onaylı KÜB uyarınca bu yaş/kilo grubunda renal papiller nekroz riski nedeniyle önerilmemektedir. Uluslararası kılavuzlar (BNFc, EMA, AAP: ≥3 ay ve ≥5 kg) dehidratasyon yokluğunda ve hekim inisiyatifinde izin verir.';
             }
         } else if (!isAgeKnown) {
             hasDualStandardAlert = true;
@@ -688,7 +696,12 @@ export function calculatePediatricDose(
             ratioNotice = '🚫 Klavulanat Toksisitesi Uyarısı: 80-90 mg/kg/gün amoksisilin dozu 7:1 formülasyonla verildiğinde günlük klavulanat dozu 12.8 mg/kg\'a ulaşır. Yüksek doz AOM rejimlerinde mutlaka 14:1 (ES 600/42.9 mg) formülasyonu tercih edilmelidir!';
         }
     } else if (drug.ratio === '14:1') {
-        ratioNotice = '✅ 14:1 ES Formülasyonu: Yüksek doz amoksisilin (90 mg/kg/gün) rejimlerinde klavulanat yükünü (6.4 mg/kg/gün) toksik eşik altında tutarak dirençli S. pneumoniae tedavisinde güvenle kullanılır.';
+        // HATA-M16-003: ES formu seçildiğinde AOM seçilmediyse kılavuz uyarısı
+        if (options.indication === 'aom_high_dose') {
+            ratioNotice = '✅ 14:1 ES Formülasyonu: Yüksek doz amoksisilin (90 mg/kg/gün) rejimlerinde klavulanat yükünü (6.4 mg/kg/gün) toksik eşik altında tutarak dirençli S. pneumoniae tedavisinde güvenle kullanılır.';
+        } else {
+            ratioNotice = '⚠️ ES Formu Uyarısı: 14:1 (600/42.9) formülasyonu yüksek doz AOM ve dirençli S. pneumoniae enfeksiyonları içindir (90 mg/kg/gün). Genel/hafif enfeksiyonlarda gereksiz yüksek doz antibiyotikten kaçınmak için standart 7:1 (BID 200 veya 400) tercih ediniz.';
+        }
     }
 
     // E. ONDANSETRON KİLO BANDI VE GASTROENTERİT GÜVENLİK DENETİMİ (TC-012, TC-013)
@@ -780,7 +793,9 @@ export function calculatePediatricDose(
     let activeWeightKg = weightKg;
     let usedWeightType: 'TBW' | 'IBW' = 'TBW';
 
-    if (isObese && options.useIbw && ibwInfo) {
+    // HATA-M16-006: Obez çocuklarda hidrofilik ilaçlar (parasetamol) varsayılan olarak güvenli IBW üzerinden dozlanmalıdır
+    const applyIbw = isObese && ibwInfo && (options.useIbw !== undefined ? options.useIbw : Boolean(drug.isHydrophilic));
+    if (applyIbw && ibwInfo) {
         activeWeightKg = ibwInfo.ibwKg;
         usedWeightType = 'IBW';
     }
@@ -796,6 +811,18 @@ export function calculatePediatricDose(
     let capNotice: string | undefined;
     if (isCapped) {
         capNotice = `🛡️ Yetişkin Tavan Doz Kilidi Aktif: Kilo bazlı hesaplanan ${rawDoseMg} mg dozu, azami yetişkin tek doz tavanı olan ${drug.maxDose} mg ile sınırlandırıldı. (Günlük azami tavan: ${drug.maxDailyDose || drug.maxDose * 4} mg).`;
+    }
+
+    // HATA-M16-001: Günlük kümülatif doz tavanı kontrolü (özellikle ibuprofen günde 4 dozda 1200 mg aşımı)
+    let dailyCumulativeWarning: string | undefined;
+    if (drug.maxDailyDose) {
+        const maxDailyDosesPerDay = (drugKey === 'ibuprofen_100' || drugKey.startsWith('ibuprofen')) ? 4 : (drug.freq.includes('4-6') ? 4 : (drug.freq.includes('12') ? 2 : 3));
+        const estimatedDailyDose = targetDoseMg * maxDailyDosesPerDay;
+        if (estimatedDailyDose > drug.maxDailyDose) {
+            const safeMaxSingleDose = Math.floor(drug.maxDailyDose / maxDailyDosesPerDay);
+            const safeMaxVolume = drug.concentration ? (Math.round((safeMaxSingleDose / drug.concentration) * 10) / 10) : null;
+            dailyCumulativeWarning = `⚠️ Günlük Kümülatif Doz Aşımı Uyarısı: ${targetDoseMg} mg x ${maxDailyDosesPerDay} doz = ${estimatedDailyDose} mg/gün, erişkin günlük azami tavanı olan ${drug.maxDailyDose} mg'ı aşmaktadır. Günde ${maxDailyDosesPerDay} kez (${maxDailyDosesPerDay === 4 ? '6 saatte bir' : 'sık aralıklarla'}) verilecekse tek doz en fazla ${safeMaxSingleDose} mg${safeMaxVolume !== null ? ` (${safeMaxVolume} mL)` : ''} olmalıdır.`;
+        }
     }
 
     // 3. Obezite Uyarısı ve IBW Karşılaştırma Dozu
@@ -838,6 +865,7 @@ export function calculatePediatricDose(
             maxDoseCeiling: drug.maxDose,
             maxDailyDoseMg: drug.maxDailyDose,
             capNotice,
+            dailyCumulativeWarning,
             isObeseAlert,
             tbwKg: weightKg,
             ibwKg: ibwInfo?.ibwKg,
@@ -866,6 +894,12 @@ export function calculatePediatricDose(
     const volumeMl = Math.round(rawVolume * 10) / 10;
     const metricDoseText = `${targetDoseMg} mg (${volumeMl} mL)${usedWeightType === 'IBW' ? ' [IBW Bazlı Doz]' : ''}`;
 
+    // HATA-M16-002: Yüksek hacim ve sorbitol uyarısı (>15 mL)
+    let highVolumeWarning: string | undefined;
+    if (volumeMl > 15 && drug.concentration && drug.concentration > 0) {
+        highVolumeWarning = `⚠️ Aşırı Sıvı Hacmi Uyarısı: Tek seferde ${volumeMl} mL şurup içirilmesi çocukta bulantı, kusma ve yüksek sorbitol yüküne yol açabilir. Mümkünse daha konsantre formülasyona (örn. 250 mg/5 mL) veya çiğneme tableti / tablete geçiniz.`;
+    }
+
     // <10 mL Dozlarda Oral Enjektör Güvenlik Kilidi
     let syringeWarning = '';
     if (volumeMl < 10) {
@@ -884,12 +918,14 @@ export function calculatePediatricDose(
         isLocked: false,
         isBlocked: false,
         concentrationText: drug.concentrationText,
-        olcekText: `${volumeMl} mL (Oral Enjektör)`,
+        olcekText: `${volumeMl} mL (Oral Enjektör ile)`,
         isCapped,
         uncappedDoseMg: isCapped ? rawDoseMg : undefined,
         maxDoseCeiling: drug.maxDose,
         maxDailyDoseMg: drug.maxDailyDose,
         capNotice,
+        dailyCumulativeWarning,
+        highVolumeWarning,
         isObeseAlert,
         tbwKg: weightKg,
         ibwKg: ibwInfo?.ibwKg,

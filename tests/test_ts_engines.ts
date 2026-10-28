@@ -4634,7 +4634,60 @@ assert.ok(pretermIron.prophylaxis.text.includes('tam enteral beslenmeye'), 'Pret
 
 console.log('✓ Motor 15 Pediatrik Demir & Talasemi Ayrımı verified (100% healthy)');
 
-console.log('\n🎉 ALL 44 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+// --- Section 45: Motor 16 Pediatrik Şurup & Süspansiyon Dozlama Motoru (Adım 19) ---
+console.log('\n--- Section 45: Motor 16 Pediatrik Şurup & Süspansiyon Dozlama Motoru ---');
+
+// 45.1 HATA-M16-001: İbuprofen Günlük Kümülatif Doz Tavanı (Daily Adult Cap)
+const ibupCumChild = calculatePediatricDose(35, 'ibuprofen_100');
+assert.strictEqual(ibupCumChild.targetDoseMg, 350);
+assert.ok(ibupCumChild.dailyCumulativeWarning, '35 kg çocukta 4x350 = 1400 mg/gün için günlük tavan uyarısı üretilmelidir');
+assert.ok(ibupCumChild.dailyCumulativeWarning?.includes('1400 mg/gün'), 'Günlük toplam dozu belirtmelidir');
+assert.ok(ibupCumChild.dailyCumulativeWarning?.includes('300 mg'), '6 saatte bir en fazla 300 mg (15 mL) önerilmelidir');
+
+// 45.2 HATA-M16-002: Düşük Konsantrasyonlu Parasetamol Şurubunda (120 mg/5 mL) Yüksek Hacim Uyarısı
+const paraHighVolChild = calculatePediatricDose(40, 'paracetamol_120');
+assert.strictEqual(paraHighVolChild.volumeMl, 25.0);
+assert.ok(paraHighVolChild.highVolumeWarning, '25 mL tek doz hacminde yüksek hacim uyarısı üretilmelidir');
+assert.ok(paraHighVolChild.highVolumeWarning?.includes('25 mL'), 'Hacmi belirtmelidir');
+assert.ok(paraHighVolChild.highVolumeWarning?.includes('250 mg/5 mL') || paraHighVolChild.highVolumeWarning?.includes('tablet'), 'Daha konsantre forma veya tablete geçiş önerilmelidir');
+
+// 45.3 HATA-M16-003: Amoksisilin-Klavulanat 14:1 (ES 600) Endikasyon Uyarısı
+const amoxEsGeneral = calculatePediatricDose(15, 'amoklavin_600', { indication: 'general' });
+assert.ok(amoxEsGeneral.ratioNotice?.includes('⚠️ ES Formu Uyarısı'), 'AOM seçilmediğinde 14:1 formu için kılavuz uyarısı üretilmelidir');
+assert.ok(amoxEsGeneral.ratioNotice?.includes('7:1 (BID 200 veya 400)'), 'Standart 7:1 önerilmelidir');
+
+const amoxEsAom = calculatePediatricDose(15, 'amoklavin_600', { indication: 'aom_high_dose' });
+assert.ok(amoxEsAom.ratioNotice?.includes('✅ 14:1 ES Formülasyonu'), 'AOM seçildiğinde 14:1 ES onay bildirimi üretilmelidir');
+
+// 45.4 HATA-M16-004: Metrik Dozaj Çıktısında Oral Dozaj Enjektörü Vurgusu
+const syringeDose = calculatePediatricDose(12, 'paracetamol_250');
+assert.strictEqual(syringeDose.olcekText, '3.6 mL (Oral Enjektör ile)', 'olcekText oral enjektör ile vurgusunu içermelidir');
+
+// 45.5 HATA-M16-005: Yaş Bilinmediğinde ve Kilo <10 kg İken TİTCK Kilidi
+const ibupNoAge7kg = calculatePediatricDose(7.5, 'ibuprofen_100', { allowOffLabelTitck: false });
+assert.strictEqual(ibupNoAge7kg.isBlocked, true, 'Yaş belirtilmediğinde ve kilo 7.5 kg (<10 kg) iken TİTCK ruhsat kilidi aktif olmalıdır');
+assert.ok(ibupNoAge7kg.blockReason?.includes('<10 kg') || ibupNoAge7kg.blockReason?.includes('bebeğin <6 ay olma riski'), 'Bebeklik eşik uyarısı içermelidir');
+
+// 45.6 HATA-M16-006: Obez Çocukta Hidrofilik İlaçlarda (Parasetamol) Varsayılan IBW Dozlaması
+const obeseChildNoOpt = calculatePediatricDose(45, 'paracetamol_120', {
+  ageMonths: 84,
+  heightCm: 120,
+  gender: 'male'
+});
+assert.strictEqual(obeseChildNoOpt.isObeseAlert, true);
+assert.strictEqual(obeseChildNoOpt.usedWeightType, 'IBW', 'Obez çocukta hidrofilik parasetamol useIbw belirtilmediğinde varsayılan olarak IBW kullanmalıdır');
+
+const obeseChildExplicitTbw = calculatePediatricDose(45, 'paracetamol_120', {
+  ageMonths: 84,
+  heightCm: 120,
+  gender: 'male',
+  useIbw: false
+});
+assert.strictEqual(obeseChildExplicitTbw.usedWeightType, 'TBW', 'Açıkça useIbw: false verildiğinde TBW kullanılmalıdır');
+
+console.log('✓ Motor 16 Pediatrik Şurup & Süspansiyon Dozlama Motoru verified (100% healthy)');
+
+console.log('\n🎉 ALL 45 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

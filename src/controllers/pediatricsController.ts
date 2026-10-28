@@ -219,7 +219,8 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                                 <div class="text-right">
                                     <span class="text-[9px] text-slate-400 block">Uygulanacak Hacim</span>
                                     ${syrupDose.volumeMl !== null 
-                                        ? `<span class="text-xs font-bold text-cyan-400">${syrupDose.volumeMl} mL</span>`
+                                        ? `<span class="text-xs font-bold text-cyan-400">${syrupDose.volumeMl} mL</span>
+                                           <span class="text-[9px] text-cyan-300 block font-medium">(Oral Enjektör ile)</span>`
                                         : `<span class="text-xs font-bold text-amber-400">[Kilitli]</span>`}
                                 </div>
                             </div>
@@ -233,7 +234,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                                 </div>
                             ` : ''}
                             ${syrupDose.ratioNotice ? `
-                                <div class="p-1.5 rounded ${syrupDose.ratio === '14:1' ? 'bg-emerald-950/40 border border-emerald-700/70 text-emerald-300' : 'bg-amber-950/40 border border-amber-700/70 text-amber-300'} text-[10px]">
+                                <div class="p-1.5 rounded ${syrupDose.ratio === '14:1' ? (syrupDose.ratioNotice.includes('⚠️') ? 'bg-amber-950/40 border border-amber-700/70 text-amber-300' : 'bg-emerald-950/40 border border-emerald-700/70 text-emerald-300') : 'bg-amber-950/40 border border-amber-700/70 text-amber-300'} text-[10px]">
                                     ${syrupDose.ratioNotice}
                                 </div>
                             ` : ''}
@@ -265,6 +266,18 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                             ${syrupDose.indicationBandNote ? `
                                 <div class="p-1.5 rounded bg-indigo-950/40 border border-indigo-700/70 text-indigo-300 text-[10px]">
                                     ${syrupDose.indicationBandNote}
+                                </div>
+                            ` : ''}
+                            ${syrupDose.dailyCumulativeWarning ? `
+                                <div class="p-1.5 rounded bg-amber-950/40 border border-amber-700/70 text-amber-300 text-[10px] flex items-start gap-1.5">
+                                    <span class="text-amber-400 font-bold">[GÜNLÜK TAVAN]</span>
+                                    <div>${syrupDose.dailyCumulativeWarning}</div>
+                                </div>
+                            ` : ''}
+                            ${syrupDose.highVolumeWarning ? `
+                                <div class="p-1.5 rounded bg-rose-950/40 border border-rose-700/70 text-rose-300 text-[10px] flex items-start gap-1.5">
+                                    <span class="text-rose-400 font-bold">[YÜKSEK HACİM]</span>
+                                    <div>${syrupDose.highVolumeWarning}</div>
                                 </div>
                             ` : ''}
                             ${syrupDose.isCapped && syrupDose.capNotice ? `
