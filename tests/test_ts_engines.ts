@@ -4687,7 +4687,65 @@ assert.strictEqual(obeseChildExplicitTbw.usedWeightType, 'TBW', 'Açıkça useIb
 
 console.log('✓ Motor 16 Pediatrik Şurup & Süspansiyon Dozlama Motoru verified (100% healthy)');
 
-console.log('\n🎉 ALL 45 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+console.log('\n--- Section 46: Motor 17 & 18 Aşı Takvimi, Yakalama & Centor/McIsaac ---');
+
+// 46.1 HATA-M18-001: Centor/McIsaac <3 Yaş Çocuklarda Kılavuz Kalkanı
+const centorToddler = calculateCentorMcIsaac({
+  feverOver38: true,
+  noCough: true,
+  tenderCervicalNodes: true,
+  tonsillarExudate: true,
+  ageYears: 1.5
+});
+assert.strictEqual(centorToddler.isUnder3Years, true, '<3 yaş için kalkan aktif olmalıdır');
+assert.ok(centorToddler.guidelineWarning?.includes('3 yaşından küçük çocuklarda geçerli değildir'), 'IDSA <3 yaş kılavuz uyarısı içermelidir');
+assert.ok(centorToddler.riskPercent.includes('<3 Yaş Geçersiz'), 'Risk yüzdesi geçersiz olarak işaretlenmelidir');
+
+// 46.2 HATA-M18-002: Yaş Belirtilmediğinde Centor Bilgilendirme Notu
+const centorNoAge = calculateCentorMcIsaac({
+  feverOver38: true,
+  noCough: true,
+  tenderCervicalNodes: true,
+  tonsillarExudate: false,
+  ageYears: undefined
+});
+assert.strictEqual(centorNoAge.isAgeUnknown, true, 'Yaş belirtilmediği tespit edilmelidir');
+assert.ok(centorNoAge.guidelineWarning?.includes('yaşı belirtilmediğinden'), 'Yaş eksikliği uyarısı verilmelidir');
+assert.strictEqual(centorNoAge.score, 3, 'Yaş puanı eklenmeden 3 semptom puanı olmalıdır');
+
+// 46.3 HATA-M17-001: T.C. Sağlık Bakanlığı GBP 5'li Karma ve 18. Ay HepB Yokluğu
+const vax2Schedule = getVaccineSchedule(2);
+assert.ok(vax2Schedule && vax2Schedule.some(v => v.includes('DaBT-İPA-Hib (1. Doz)')), '2. ayda 5li karma DaBT-İPA-Hib bulunmalıdır');
+assert.ok(!vax2Schedule?.some(v => v.includes('DaBT-İPA-Hib-HepB')), '2. ayda 6li karma adı yer almamalıdır');
+
+const vax18Schedule = getVaccineSchedule(18);
+assert.ok(vax18Schedule && vax18Schedule.some(v => v.includes('DaBT-İPA-Hib (Rapel)')), '18. ayda DaBT-İPA-Hib rapeli bulunmalıdır');
+assert.ok(!vax18Schedule?.some(v => v.includes('DaBT-İPA-Hib-HepB') || v.includes('Hepatit B (Rapel)')), '18. ayda HepB rapeli bulunmamalıdır');
+
+const vax6Schedule = getVaccineSchedule(6);
+assert.ok(vax6Schedule && vax6Schedule.some(v => v.includes('DaBT-İPA-Hib (3. Doz)')), '6. ayda 5li karma 3. doz bulunmalıdır');
+assert.ok(vax6Schedule && vax6Schedule.some(v => v.includes('Hepatit B (3. Doz)')), '6. ayda Hepatit B 3. doz bulunmalıdır');
+
+// 46.4 HATA-M17-002: 48. Ay Aşılarının 4-5 Yaşla Sınırlandırılması ve 10 Yaş Rutin Aşı Boşluğu
+const vax48Schedule = getVaccineSchedule(48);
+assert.ok(vax48Schedule && vax48Schedule.some(v => v.includes('KKK (2. Doz)')), '48. ayda KKK 2 bulunmalıdır');
+const vax120Schedule = getVaccineSchedule(120);
+assert.ok(vax120Schedule && vax120Schedule.length === 0, '10 yaşında (120 ay) rutin GBP planlı aşısı bulunmamalıdır');
+
+// 46.5 HATA-M17-003: getComprehensiveVaccineSchedule Rotavirüs İnvajinasyon Kalkanı & MenACWY/MenB
+const compVax5m = getComprehensiveVaccineSchedule(5);
+assert.strictEqual(compVax5m?.rotavirusRule?.windowStatus, 'OPTIMAL_SUBSEQUENT_DOSE');
+assert.ok(compVax5m?.rotavirusRule?.warning?.includes('İNVAJİNASYON'), '15 haftadan sonra ilk doz için invajinasyon uyarısı bulunmalıdır');
+assert.ok(compVax5m?.meningococcalSchedule?.eligible === true, 'Meningokok takvimi aktif olmalıdır');
+
+// 46.6 HATA-M17-004: Gecikmiş Aşı Yakalama 28 Gün Canlı Aşı ve BCG 6 Yaş Sınırı
+const compVaxCatchup = getComprehensiveVaccineSchedule(2, { isDelayed: true });
+assert.ok(compVaxCatchup?.catchUpRules?.some(r => r.includes('Canlı Aşı İnterferans Kuralı') && r.includes('28 gün')), '28 gün canlı aşı aralığı kuralı bulunmalıdır');
+assert.ok(compVaxCatchup?.catchUpRules?.some(r => r.includes('BCG (Verem)') && r.includes('6 yaşını (72 ay)')), 'BCG 6 yaş üst sınırı bulunmalıdır');
+
+console.log('✓ Motor 17 & 18 Aşı Takvimi, Yakalama & Centor/McIsaac verified (100% healthy)');
+
+console.log('\n🎉 ALL 46 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

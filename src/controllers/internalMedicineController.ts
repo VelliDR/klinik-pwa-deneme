@@ -569,7 +569,8 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     const centorRes = getEl('output-centor-result');
 
     if ((cFever || cNoCough || cNodes || cTonsils) && centorRes) {
-        const centorAgeY = y !== null ? y : (m ? m / 12 : 20);
+        // HATA-M18-002: Yaş belirtilmediğinde sessizce 20 yaş atanmamalı, undefined verilmelidir
+        const centorAgeY = y !== null ? y : (m !== null && m !== undefined ? m / 12 : undefined);
         appState.pediatrics.centor = calculateCentorMcIsaac({
             feverOver38: cFever,
             noCough: cNoCough,
@@ -579,11 +580,16 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         });
         const ct = appState.pediatrics.centor;
         if (ct) {
+            let extraHtml = '';
+            if (ct.guidelineWarning) {
+                extraHtml = `<div class="p-1.5 rounded ${ct.isUnder3Years ? 'bg-rose-950/50 border border-rose-600/80 text-rose-200' : 'bg-amber-950/50 border border-amber-600/80 text-amber-200'} text-[10px] mt-1">${ct.guidelineWarning}</div>`;
+            }
             renderClinicalCardResult(centorRes, {
                 title: `<strong class="${ct.alertClass}">Centor Skoru: ${ct.score}</strong>`,
                 riskText: `GAS Riski: ${ct.riskPercent}`,
                 recommendations: ct.recommendation,
-                alertClass: ct.score >= 4 ? 'danger' : (ct.score >= 2 ? 'warning' : 'slate')
+                extraHtml,
+                alertClass: ct.isUnder3Years ? 'warning' : (ct.score >= 4 ? 'danger' : (ct.score >= 2 ? 'warning' : 'slate'))
             });
         }
     } else {

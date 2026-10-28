@@ -977,19 +977,19 @@ export function getVaccineSchedule(
     if (ageInMonths < 1 && ageInMonths >= 0) vaccines = ["Hepatit B (1. Doz) - Doğumda"];
     else if (ageInMonths >= 1 && ageInMonths < 2) vaccines = ["Hepatit B (2. Doz)"];
     else if (ageInMonths >= 2 && ageInMonths < 4) {
-        vaccines = ["BCG (Verem)", "KPA (1. Doz)", "DaBT-İPA-Hib-HepB (1. Doz)"];
+        vaccines = ["BCG (Verem)", "KPA (1. Doz)", "DaBT-İPA-Hib (1. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("Rotavirüs (1. Doz - Rotarix/RotaTeq: 6-14 hf 6 gün penceresi)", "MenB (1. Doz - Bexsero)", "MenACWY (Erken Doz - Nimenrix)");
         }
     }
     else if (ageInMonths >= 4 && ageInMonths < 6) {
-        vaccines = ["KPA (2. Doz)", "DaBT-İPA-Hib-HepB (2. Doz)"];
+        vaccines = ["KPA (2. Doz)", "DaBT-İPA-Hib (2. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("Rotavirüs (2. Doz)", "MenB (2. Doz)");
         }
     }
     else if (ageInMonths >= 6 && ageInMonths < 9) {
-        vaccines = ["DaBT-İPA-Hib-HepB (3. Doz)", "OPA (1. Doz)"];
+        vaccines = ["DaBT-İPA-Hib (3. Doz)", "OPA (1. Doz)", "Hepatit B (3. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("Rotavirüs (3. Doz - RotaTeq için; en geç 32. haftada/8. ayda tamamlanmalı)", "İnfluenza (Grip - 6 aydan büyüklerde mevsimsel)");
         }
@@ -1007,14 +1007,17 @@ export function getVaccineSchedule(
         }
     }
     else if (ageInMonths >= 18 && ageInMonths < 24) {
-        vaccines = ["DaBT-İPA-Hib-HepB (Rapel)", "OPA (2. Doz)", "Hepatit A (1. Doz)"];
+        vaccines = ["DaBT-İPA-Hib (Rapel)", "OPA (2. Doz)", "Hepatit A (1. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("MenACWY / MenB (Eksik doz tamamlama)");
         }
     }
     else if (ageInMonths >= 24 && ageInMonths < 48) vaccines = ["Hepatit A (2. Doz)"];
-    else if (ageInMonths >= 48 && ageInMonths < 156) {
+    else if (ageInMonths >= 48 && ageInMonths < 60) {
         vaccines = ["KKK (2. Doz)", "DaBT-İPA (Rapel)"];
+    }
+    else if (ageInMonths >= 60 && ageInMonths < 156) {
+        vaccines = [];
         if (options.includeSpecial && ageInMonths >= 108) {
             vaccines.push("HPV (9-14 yaş 2 doz şeması)");
         }
@@ -1118,11 +1121,12 @@ export function getComprehensiveVaccineSchedule(
     // 3. Gecikmiş Aşı Yakalama (Catch-Up) Kuralları
     const catchUpRules: string[] = [
         '📌 Genel Yakalama Kuralı: Aşı serisi gecikmişse ASLA baştan başlanmaz; kalınan yerden devam edilir (önceki dozlar geçerlidir).',
+        '⏱️ Canlı Aşı İnterferans Kuralı: İki canlı virüs/bakteri aşısı (KKK, Suçiçeği, BCG) aynı gün yapılmadıysa, aralarında EN AZ 4 hafta (28 gün) beklenmelidir.',
         '⏱️ DaBT-İPA-Hib (5\'li Karma): İlk 3 doz arasında minimum 4 hafta (1 ay) ara olmalıdır. 4. pekiştirme dozu ile 3. doz arasında en az 6 ay bulunmalıdır.',
         '⏱️ Hepatit B: 1. ve 2. doz arası minimum 4 hafta; 2. ve 3. doz arası minimum 8 hafta; 1. ve 3. doz arası minimum 16 hafta ve bebek en az 24 haftalık (6 aylık) olmalıdır.',
         '⏱️ KKK (Kızamık-Kabakulak-Kızamıkçık): Minimum yaş 12 aydır. İki doz arasında minimum 4 hafta bulunmalıdır.',
         '⏱️ Hepatit A: Minimum yaş 18 aydır. 1. ve 2. doz arasında en az 6 ay bulunmalıdır.',
-        '⏱️ BCG (Verem): 3. aydan sonra ilk kez yapılacaksa PPD (Tüberkülin Cilt Testi) kontrolü şarttır.'
+        '⏱️ BCG (Verem): 3. aydan sonra ilk kez yapılacaksa PPD (Tüberkülin Cilt Testi) kontrolü şarttır. 6 yaşını (72 ay) doldurmuş çocuklarda artık BCG aşısı uygulanmaz.'
     ];
 
     if (options.isDelayed) {
@@ -1360,6 +1364,9 @@ export interface CentorResult {
     riskPercent: string;
     recommendation: string;
     alertClass: string;
+    isUnder3Years?: boolean;
+    guidelineWarning?: string;
+    isAgeUnknown?: boolean;
 }
 
 export function calculateCentorMcIsaac({ 
@@ -1375,8 +1382,11 @@ export function calculateCentorMcIsaac({
     if (tenderCervicalNodes) score += 1;
     if (tonsillarExudate) score += 1;
 
+    const isAgeKnown = ageYears !== null && ageYears !== undefined && !isNaN(ageYears);
+    const isUnder3Years = isAgeKnown && ageYears < 3;
+
     let agePoints = 0;
-    if (ageYears !== null && ageYears !== undefined && !isNaN(ageYears)) {
+    if (isAgeKnown) {
         if (ageYears >= 3 && ageYears <= 14) agePoints = 1;
         else if (ageYears >= 15 && ageYears <= 44) agePoints = 0;
         else if (ageYears >= 45) agePoints = -1;
@@ -1386,25 +1396,42 @@ export function calculateCentorMcIsaac({
     let riskPercent = '%1 - %10';
     let recommendation = '';
     let alertClass = 'text-emerald-400';
+    let guidelineWarning: string | undefined;
 
-    if (score <= 1) {
-        riskPercent = '%1 - %10 (Çok Düşük)';
-        recommendation = 'Streptokok olasılığı çok düşüktür. Boğaz kültürü ve antibiyotik ÖNERİLMEZ. Semptomatik / analjezik takip yeterlidir.';
-        alertClass = 'text-emerald-400';
-    } else if (score <= 3) {
-        riskPercent = '%15 - %32 (Orta)';
-        recommendation = 'Hızlı Antijen Testi (Strep-A) veya Boğaz Kültürü önerilir. Yalnızca test pozitif çıkarsa antibiyotik başlanmalıdır.';
+    // HATA-M18-001: <3 yaş çocuklarda Centor/McIsaac kılavuz kalkanı
+    if (isUnder3Years) {
+        guidelineWarning = '⚠️ KILAVUZ UYARISI: Centor/McIsaac skoru 3 yaşından küçük çocuklarda geçerli değildir. <3 yaş çocuklarda AGBHS farenjiti ve Akut Romatizmal Ateş son derece nadirdir; rutin boğaz kültürü ve ampirik antibiyotik önerilmez (IDSA Kılavuzu).';
+        riskPercent = '<%5 (<3 Yaş Geçersiz)';
+        recommendation = '⚠️ Centor/McIsaac skoru 3 yaşından küçük çocuklarda geçerli değildir. Bu yaşta tonsillofarenjitler neredeyse tamamen viraldir; rutin boğaz kültürü veya ampirik antibiyotik önerilmez (IDSA). Semptomatik takip yeterlidir.';
         alertClass = 'text-amber-400';
     } else {
-        riskPercent = '%51 - %53 (Yüksek)';
-        recommendation = 'Yüksek AGBHS olasılığı. Hızlı test/kültürle doğrulayınız veya klinik karara göre ampirik antibiyotik (Amoksisilin/Penisilin V) değerlendiriniz.';
-        alertClass = 'text-rose-400';
+        // HATA-M18-002: Yaş bilinmediğinde bilgilendirme
+        if (!isAgeKnown) {
+            guidelineWarning = 'ℹ️ Hastanın yaşı belirtilmediğinden McIsaac yaş puanı (3-14 yaş için +1, ≥45 yaş için -1) eklenememiştir. Lütfen demografi sekmesinden yaş giriniz.';
+        }
+
+        if (score <= 1) {
+            riskPercent = '%1 - %10 (Çok Düşük)';
+            recommendation = 'Streptokok olasılığı çok düşüktür. Boğaz kültürü ve antibiyotik ÖNERİLMEZ. Semptomatik / analjezik takip yeterlidir.';
+            alertClass = 'text-emerald-400';
+        } else if (score <= 3) {
+            riskPercent = '%15 - %32 (Orta)';
+            recommendation = 'Hızlı Antijen Testi (Strep-A) veya Boğaz Kültürü önerilir. Yalnızca test pozitif çıkarsa antibiyotik başlanmalıdır.';
+            alertClass = 'text-amber-400';
+        } else {
+            riskPercent = '%51 - %53 (Yüksek)';
+            recommendation = 'Yüksek AGBHS olasılığı. Hızlı test/kültürle doğrulayınız veya klinik karara göre ampirik antibiyotik (Amoksisilin/Penisilin V) değerlendiriniz.';
+            alertClass = 'text-rose-400';
+        }
     }
 
     return {
         score,
         riskPercent,
         recommendation,
-        alertClass
+        alertClass,
+        isUnder3Years,
+        guidelineWarning,
+        isAgeUnknown: !isAgeKnown
     };
 }

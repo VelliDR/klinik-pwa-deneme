@@ -10,6 +10,7 @@ import { appState } from '../state';
 import type { PatientAgeResult } from './biometryController';
 import { 
     getVaccineSchedule, 
+    getComprehensiveVaccineSchedule,
     calculatePediatricDose, 
     classifyPediatricBP 
 } from '../engines/pediatricEngine';
@@ -23,15 +24,54 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
     const totalMonths = (y === null && m === null) ? null : (m !== null ? m : (y !== null ? y * 12 : null));
     const isPreterm = getChk('chk-preterm');
 
-    // 1. AŞI TAKVİMİ
+    // 1. AŞI TAKVİMİ (HATA-M17-003: getComprehensiveVaccineSchedule entegrasyonu, Rotavirüs & MenACWY/MenB)
     if (totalMonths !== null) {
-        const vax = getVaccineSchedule(totalMonths);
-        appState.pediatrics.vaccines = vax || null;
+        const compVax = getComprehensiveVaccineSchedule(totalMonths);
+        appState.pediatrics.vaccines = compVax ? compVax.routineVaccines : null;
         const vaxEl = getEl('output-ped-vaccines');
-        if (vaxEl) {
-            vaxEl.innerHTML = vax && vax.length 
-                ? `<ul class="list-disc pl-4 text-slate-300">${vax.map((v: string) => `<li>${v}</li>`).join('')}</ul>`
-                : 'Bu ay için planlı aşı bulunamadı.';
+        if (vaxEl && compVax) {
+            let html = '';
+            
+            // Rutin GBP (Sağlık Bakanlığı)
+            html += `<div class="font-bold text-slate-200 mb-1 text-[10px]">Rutin GBP (Sağlık Bakanlığı):</div>`;
+            if (compVax.routineVaccines && compVax.routineVaccines.length > 0) {
+                html += `<ul class="list-disc pl-4 text-slate-300 space-y-0.5">${compVax.routineVaccines.map((v: string) => `<li>${v}</li>`).join('')}</ul>`;
+            } else {
+                html += `<div class="text-slate-400 italic text-[10px]">Bu ay için rutin planlı aşı bulunmamaktadır.</div>`;
+            }
+
+            // Rotavirüs Güvenlik Penceresi & İnvajinasyon Kalkanı
+            if (compVax.rotavirusRule) {
+                const rr = compVax.rotavirusRule;
+                if (rr.windowStatus === 'OPTIMAL_FIRST_DOSE') {
+                    html += `<div class="mt-2 p-1.5 rounded bg-emerald-950/40 border border-emerald-700/60 text-emerald-300 text-[10px]">
+                        <strong>Rotavirüs (Özel):</strong> ${rr.details}
+                    </div>`;
+                } else if (rr.windowStatus === 'OPTIMAL_SUBSEQUENT_DOSE') {
+                    html += `<div class="mt-2 p-1.5 rounded bg-amber-950/40 border border-amber-700/60 text-amber-300 text-[10px]">
+                        <strong>Rotavirüs (Özel):</strong> ${rr.details}
+                        ${rr.warning ? `<div class="text-rose-400 font-bold mt-1">${rr.warning}</div>` : ''}
+                    </div>`;
+                } else if (rr.windowStatus === 'EXPIRED_CONTRAINDICATED') {
+                    html += `<div class="mt-2 p-1.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[10px]">
+                        <strong>Rotavirüs:</strong> ${rr.details}
+                    </div>`;
+                }
+            }
+
+            // Meningokok (MenACWY & MenB)
+            if (compVax.meningococcalSchedule && compVax.meningococcalSchedule.eligible) {
+                html += `<div class="mt-2 p-1.5 rounded bg-sky-950/40 border border-sky-700/60 text-sky-300 text-[10px]">
+                    <strong>Meningokok Özel Takvimi:</strong>
+                    <ul class="list-disc pl-4 mt-0.5 space-y-0.5 text-sky-200">
+                        ${compVax.meningococcalSchedule.recommendations.map(r => `<li>${r}</li>`).join('')}
+                    </ul>
+                </div>`;
+            }
+
+            vaxEl.innerHTML = html;
+        } else if (vaxEl) {
+            vaxEl.innerHTML = 'Bu ay için planlı aşı bulunamadı.';
         }
     } else {
         appState.pediatrics.vaccines = null;
