@@ -68,7 +68,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
             let ironHtml = '';
 
             if (isPreterm) {
-                ironHtml += `<div class="mb-1.5 px-2 py-1 bg-amber-950/60 text-amber-300 border border-amber-700/60 rounded text-[10px] font-bold">PRETERM BEBEK PROTOKOLÜ (2. aydan itibaren 2-4 mg/kg/gün)</div>`;
+                ironHtml += `<div class="mb-1.5 px-2 py-1 bg-amber-950/60 text-amber-300 border border-amber-700/60 rounded text-[10px] font-bold">PRETERM BEBEK PROTOKOLÜ (2. aydan itibaren 2-4 mg/kg/gün • Tam enteral beslenme ≥100-120 mL/kg/gün şartıyla)</div>`;
             }
 
             const evalColor = ir.hbEvaluation.badgeColor === 'rose' ? 'text-rose-400' : ir.hbEvaluation.badgeColor === 'amber' ? 'text-amber-400' : 'text-emerald-400';
@@ -100,6 +100,9 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                         ${diff.warningText ? `<div>${diff.warningText}</div>` : ''}
                     </div>`;
                 }
+                if (diff.ferritinInfectionNote) {
+                    ironHtml += `<div class="text-[9px] text-sky-300 my-1 leading-snug">${diff.ferritinInfectionNote}</div>`;
+                }
             }
 
             if (ir.prophylaxis.eligible) {
@@ -113,11 +116,16 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
             }
 
             if (ir.treatment.eligible) {
-                ironHtml += `<div class="mt-1"><strong>Tedavi:</strong> ${ir.treatment.mgDay} mg/gün<br><span class="text-[9px] text-slate-300">Damla: Ferrum ${ir.treatment.ferrumDrops} damla | Ferro Sanol ${ir.treatment.ferroDrops} damla</span>`;
+                const divNote = ir.treatment.dividedDoseText ? `<div class="text-[9px] text-amber-300 font-medium mt-0.5">${ir.treatment.dividedDoseText}</div>` : '';
+                const ferrumStr = ir.treatment.ferrumDividedDrops ? `Ferrum ${ir.treatment.ferrumDividedDrops}` : `Ferrum ${ir.treatment.ferrumDrops} damla`;
+                const ferroStr = ir.treatment.ferroDividedDrops ? `Ferro Sanol ${ir.treatment.ferroDividedDrops}` : `Ferro Sanol ${ir.treatment.ferroDrops} damla`;
+
+                ironHtml += `<div class="mt-1"><strong>Tedavi:</strong> ${ir.treatment.mgDay} mg/gün<br><span class="text-[9px] text-slate-300">Damla: ${ferrumStr} | ${ferroStr}</span>`;
                 if (ir.treatment.syrupMl) {
-                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${ir.treatment.syrupMl} mL (Oral Enjektör ile)</span>`;
+                    const syrupStr = ir.treatment.syrupDividedMl ? ir.treatment.syrupDividedMl : `${ir.treatment.syrupMl} mL`;
+                    ironHtml += `<br><span class="text-[9px] text-slate-300">Şurup (50mg/5mL): ${syrupStr} (Oral Enjektör ile)</span>`;
                 }
-                ironHtml += `<br><span class="text-[9px] text-rose-400">${ir.treatment.text}</span></div>`;
+                ironHtml += `${divNote}<br><span class="text-[9px] text-rose-400">${ir.treatment.text}</span></div>`;
             } else if (ir.treatment.text) {
                 ironHtml += `<div class="mt-1 text-[10px] text-slate-400">${ir.treatment.text}</div>`;
             }

@@ -21,6 +21,10 @@ export interface IronDosagePlan {
     text: string;
     syrupMl?: number;
     syrupOlcek?: number;
+    dividedDoseText?: string;
+    ferrumDividedDrops?: string;
+    ferroDividedDrops?: string;
+    syrupDividedMl?: string;
 }
 
 export interface IronDifferentialAnalysis {
@@ -37,6 +41,7 @@ export interface IronDifferentialAnalysis {
     warningTitle?: string;
     warningText?: string;
     badgeColor?: 'rose' | 'amber' | 'emerald' | 'sky';
+    ferritinInfectionNote?: string;
 }
 
 export interface PediatricIronResult {
@@ -57,9 +62,9 @@ function getAgeSpecificMcvLimits(ageMonths: number): { lower: number; upper: num
     if (ageMonths <= 0.5) return { lower: 95, upper: 120 };
     if (ageMonths <= 3) return { lower: 80, upper: 105 };
     if (ageMonths < 6) return { lower: 74, upper: 95 };
-    if (ageMonths < 24) return { lower: 70, upper: 86 };
+    if (ageMonths < 12) return { lower: 70, upper: 86 };
     if (ageMonths <= 120) {
-        // TPHD Kuralı (>1-2 yaş): MCV alt sınır = 70 + Yaş(yıl), üst sınır = 84 + (Yaş x 0.6)
+        // TPHD Kuralı (1-10 yaş): MCV alt sınır = 70 + Yaş(yıl), üst sınır = 84 + (Yaş x 0.6)
         const ageYears = Math.floor(ageMonths / 12);
         return {
             lower: 70 + ageYears,
@@ -243,7 +248,7 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
                 blockEmpiricalIronForThalassemia = true;
                 diffBadge = 'rose';
                 diffTitle = `🚨 β-TALASEMİ TAŞIYICILIĞI YÜKSEK RİSKİ (Mentzer: ${mentzerIndex} < 13, Ferritin: ${cleanFerritin} ng/mL)`;
-                diffText = `Mikrositoz (MCV ${cleanMcv} fL < yaş alt sınırı ${mcvLimits.lower} fL) ve yüksek eritrosit sayısına (${cleanRbc} M/µL) karşın Ferritin normal/yüksek (≥${ferritinCutoff} ng/mL). Toksik demir yüklenmesini önlemek için ampirik demir tedavisi DURDURULDU. Hemoglobin elektroforezi (HPLC) ile β-talasemi taşıyıcılığı araştırılmalıdır.`;
+                diffText = `Mikrositoz (MCV ${cleanMcv} fL < yaş alt sınırı ${mcvLimits.lower} fL) ve yüksek eritrosit sayısına (${cleanRbc} M/µL) karşın Ferritin normal/yüksek (≥${ferritinCutoff} ng/mL). Toksik demir yüklenmesini önlemek için ampirik demir tedavisi DURDURULDU. Hemoglobin elektroforezi (HPLC) ile β-talasemi taşıyıcılığı araştırılmalıdır. (Not: Ferritin akut faz reaktanı olduğundan aktif enfeksiyon/yüksek CRP durumunda yalancı normal çıkabileceği göz önünde bulundurulmalıdır).`;
             } else if (cleanFerritin !== null && cleanFerritin < ferritinCutoff) {
                 thalassemiaRisk = 'POSSIBLE';
                 diffBadge = 'amber';
@@ -269,9 +274,10 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
         }
     } else if (isMicrocytic !== null) {
         if (isMicrocytic) {
+            thalassemiaRisk = 'POSSIBLE';
             diffBadge = 'amber';
-            diffTitle = `Mikrositoz Saptandı (MCV: ${cleanMcv} fL < ${mcvLimits.lower} fL)`;
-            diffText = `TPHD yaş formülüne (70 + yaş) göre mikrositoz mevcut. Talasemi ayırıcı tanısı (Mentzer = MCV/RBC) için Eritrosit (RBC) ve Serum Ferritin değerlerini ekleyiniz.`;
+            diffTitle = `⚠️ MİKROSİTOZ SAPTANDI: Talasemi Taşıyıcılığı Dışlanamadı (RBC Eksik)`;
+            diffText = `MCV: ${cleanMcv} fL (Yaş alt sınırı: ${mcvLimits.lower} fL, TPHD). Belirgin mikrositoz mevcut ancak RBC girilmediği için Mentzer İndeksi hesaplanamadı. β-talasemi taşıyıcılığını ekarte etmek için Eritrosit (RBC) ve Serum Ferritin görünüz.`;
         } else {
             diffBadge = 'emerald';
             diffTitle = `Normositer MCV (${cleanMcv} fL)`;
@@ -284,6 +290,10 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
         diffTitle = `⚡ Anemisiz (Latent) Demir Eksikliği (Ferritin: ${cleanFerritin} < ${ferritinCutoff} ng/mL)`;
         diffText = `Hemoglobin henüz anemi eşiğinin altına inmemiş olsa da depo demiri tükenmiştir. Beslenme düzenlemesi ve oral demir replasmanı değerlendirilmelidir.`;
     }
+
+    const ferritinInfectionNote = cleanFerritin !== null
+        ? 'ℹ️ DİKKAT: Ferritin bir akut faz reaktanıdır; aktif enfeksiyon veya yüksek CRP varlığında yalancı yüksek çıkabilir. Enfeksiyonlu çocukta Ferritin <30-50 ng/mL olsa dahi demir eksikliği dışlanamaz.'
+        : undefined;
 
     result.differential = {
         hasCbcDetails,
@@ -298,7 +308,8 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
         thalassemiaRisk,
         warningTitle: diffTitle,
         warningText: diffText,
-        badgeColor: diffBadge
+        badgeColor: diffBadge,
+        ferritinInfectionNote
     };
 
     // ── 2. PROFİLAKSİ HESABI (T.C. Sağlık Bakanlığı & TPHD) ──
@@ -322,7 +333,7 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
             result.prophylaxis.eligible = true;
             const mgPerKg = weightKg < 1.5 ? 4 : 2;
             result.prophylaxis.mgDay = Math.min(Math.round(weightKg * mgPerKg), 15);
-            result.prophylaxis.text = `⚡ PRETERM BEBEK PROFİLAKSİ PROTOKOLÜ (TPHD): 2. aydan itibaren ${mgPerKg} mg/kg/gün demir takviyesi (Maks 15 mg/gün).`;
+            result.prophylaxis.text = `⚡ PRETERM BEBEK PROFİLAKSİ PROTOKOLÜ (TPHD): 2. aydan itibaren ${mgPerKg} mg/kg/gün demir takviyesi (Maks 15 mg/gün). Klinik Güvenlik: Demir profilaksisi bebeğin tam enteral beslenmeye (≥100-120 mL/kg/gün) ulaştığı doğrulandıktan sonra başlanmalıdır.`;
         }
     }
 
@@ -336,11 +347,20 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
             result.prophylaxis.mgDay = 0;
         } else {
             result.treatment.eligible = true;
-            const maxDose = ageMonths <= 72 ? 60 : 200;
+            // HATA-M15-003: 6 yaş altı çocuklarda keyfi 60 mg tavanı kaldırıldı, TPHD genel pediatrik tavan doz 200 mg'dır.
+            const maxDose = 200;
             result.treatment.mgDay = Math.min(Math.round(weightKg * 4), maxDose);
-            const thalassemiaCaution = thalassemiaRisk === 'HIGH'
-                ? ' ⚠️ DİKKAT: Mentzer < 13 saptandı; tedaviye başlamadan önce mutlaka Ferritin ile demir eksikliği doğrulanmalıdır!'
-                : (!hasCbcDetails ? ' (Tedavi öncesi MCV, RBC/Mentzer ve Ferritin ile β-talasemi taşıyıcılığı dışlanmalıdır.)' : '');
+
+            // HATA-M15-001: Mikrositoz varlığında RBC girilmediğinde talasemi uyarısı kaybolmamalıdır
+            let thalassemiaCaution = '';
+            if (thalassemiaRisk === 'HIGH') {
+                thalassemiaCaution = ' ⚠️ DİKKAT: Mentzer < 13 saptandı; tedaviye başlamadan önce mutlaka Ferritin ile demir eksikliği doğrulanmalıdır!';
+            } else if (isMicrocytic && cleanRbc === null) {
+                thalassemiaCaution = ' ⚠️ DİKKAT: Belirgin mikrositoz mevcut ancak RBC girilmediği için Mentzer İndeksi hesaplanamadı. β-talasemi taşıyıcılığını ekarte etmek için RBC ve Ferritin görünüz.';
+            } else if (!hasCbcDetails) {
+                thalassemiaCaution = ' (Tedavi öncesi MCV, RBC/Mentzer ve Ferritin ile β-talasemi taşıyıcılığı dışlanmalıdır.)';
+            }
+
             result.treatment.text = `TPHD Terapötik Doz: 4 mg/kg/gün elementer demir (3–6 mg/kg/gün aralığı, Maks ${maxDose} mg/gün; Hb normale döndükten sonra depolar için 2–3 ay devam).${thalassemiaCaution}`;
             
             if (result.prophylaxis.eligible) {
@@ -370,6 +390,21 @@ export function calculatePediatricIron(params: PediatricIronInput = {}): Pediatr
         result.treatment.ferroDrops = Math.ceil(result.treatment.mgDay / 1.5);
         result.treatment.syrupMl = parseFloat((result.treatment.mgDay / 10).toFixed(1));
         result.treatment.syrupOlcek = parseFloat((result.treatment.syrupMl / 5).toFixed(1));
+
+        // HATA-M15-002: Terapötik demir dozu günde 2 veya 3 doza bölünerek verilmelidir
+        const ferrumD2 = Math.round(result.treatment.ferrumDrops / 2);
+        const ferrumD3 = Math.round(result.treatment.ferrumDrops / 3);
+        result.treatment.ferrumDividedDrops = `Günde 2x${ferrumD2} damla (veya 3x${ferrumD3} damla)`;
+
+        const ferroD2 = Math.round(result.treatment.ferroDrops / 2);
+        const ferroD3 = Math.round(result.treatment.ferroDrops / 3);
+        result.treatment.ferroDividedDrops = `Günde 2x${ferroD2} damla (veya 3x${ferroD3} damla)`;
+
+        const syrupD2 = (result.treatment.syrupMl / 2).toFixed(1);
+        const syrupD3 = (result.treatment.syrupMl / 3).toFixed(1);
+        result.treatment.syrupDividedMl = `Günde 2x${syrupD2} mL (veya 3x${syrupD3} mL)`;
+
+        result.treatment.dividedDoseText = 'Oral demir tedavisi gastrointestinal toleransı artırmak ve intestinal hepsidin salınımını önlemek için günde 2 veya 3 doza bölünerek (aç karnına veya öğün aralarında) verilmelidir.';
     }
 
     return result;

@@ -4567,7 +4567,74 @@ assert.ok(openFontanelle.clinicalRecommendations.some(r => r.includes('Transfont
 
 console.log('✓ Motor 14 Pediatrik Büyüme & Persentil Motoru verified (100% healthy)');
 
-console.log('\n🎉 ALL 43 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+// ==========================================
+// 44. MOTOR 15: PEDİATRİK DEMİR & TALASEMİ AYRIMI (TPHD, MENTZER, DİVİDED DOSE, PRETERM)
+// ==========================================
+console.log('\n--- Section 44: Motor 15 Pediatrik Demir & Talasemi Ayrımı ---');
+
+// 44.1 HATA-M15-001: Mikrositoz Varlığında RBC Girilmediğinde Talasemi Uyarısı
+const microcyticNoRbc = calculatePediatricIron({
+  ageMonths: 24,
+  weightKg: 12,
+  hb: 9.0,
+  mcv: 60
+});
+assert.strictEqual(microcyticNoRbc.differential?.isMicrocytic, true, 'MCV 60 fL mikrositer olarak tespit edilmelidir');
+assert.strictEqual(microcyticNoRbc.differential?.thalassemiaRisk, 'POSSIBLE', 'RBC girilmediğinde talasemi riski POSSIBLE olarak işaretlenmelidir');
+assert.ok(microcyticNoRbc.treatment.text.includes('Belirgin mikrositoz mevcut ancak RBC girilmediği için Mentzer İndeksi hesaplanamadı'), 'Tedavi çıktısında RBC eksikliği ve talasemi uyarısı yer almalıdır');
+
+// 44.2 HATA-M15-002: Terapötik Demir Dozunun Günde 2-3 Doza Bölünmesi
+const dividedDoseChild = calculatePediatricIron({
+  ageMonths: 24,
+  weightKg: 10,
+  hb: 8.5
+});
+assert.strictEqual(dividedDoseChild.treatment.mgDay, 40);
+assert.strictEqual(dividedDoseChild.treatment.ferrumDrops, 16);
+assert.strictEqual(dividedDoseChild.treatment.ferrumDividedDrops, 'Günde 2x8 damla (veya 3x5 damla)');
+assert.strictEqual(dividedDoseChild.treatment.ferroDividedDrops, 'Günde 2x14 damla (veya 3x9 damla)');
+assert.strictEqual(dividedDoseChild.treatment.syrupDividedMl, 'Günde 2x2.0 mL (veya 3x1.3 mL)');
+assert.ok(dividedDoseChild.treatment.dividedDoseText?.includes('günde 2 veya 3 doza bölünerek'), 'Bölünmüş doz metni mevcut olmalıdır');
+
+// 44.3 HATA-M15-003: 6 Yaş Altı Çocuklarda Keyfi 60 mg Tavanının Kaldırılması
+const olderChildIron = calculatePediatricIron({
+  ageMonths: 60,
+  weightKg: 25,
+  hb: 8.5
+});
+assert.strictEqual(olderChildIron.treatment.mgDay, 100, '25 kg çocukta 4 mg/kg karşılığı 100 mg olmalıdır; 60 mg ile kısıtlanmamalıdır');
+
+// 44.4 HATA-M15-004: 12-24 Ay Arası Çocuklarda TPHD 70 + Yaş MCV Kuralı
+const ironToddler = calculatePediatricIron({
+  ageMonths: 18,
+  weightKg: 11,
+  hb: 9.5,
+  mcv: 70.5
+});
+assert.strictEqual(ironToddler.differential?.mcvLowerLimit, 71, '18 aylık (1 yaş) çocukta MCV alt sınırı 70 + 1 = 71 fL olmalıdır');
+assert.strictEqual(ironToddler.differential?.isMicrocytic, true, '70.5 fL değeri 71 fL altında olduğundan mikrositer sayılmalıdır');
+
+// 44.5 HATA-M15-005: Ferritin Değerlendirmesinde Akut Enfeksiyon / İnflamasyon Kalkanı
+const ironWithFerritin = calculatePediatricIron({
+  ageMonths: 24,
+  weightKg: 12,
+  hb: 9.0,
+  ferritin: 25
+});
+assert.ok(ironWithFerritin.differential?.ferritinInfectionNote?.includes('akut faz reaktanıdır'), 'Ferritin akut faz reaktanı uyarısı bulunmalıdır');
+
+// 44.6 HATA-M15-006: Preterm Bebek Profilaksisinde Tam Enteral Beslenme Şartı
+const pretermIron = calculatePediatricIron({
+  ageMonths: 2.5,
+  weightKg: 3.5,
+  isPreterm: true
+});
+assert.strictEqual(pretermIron.prophylaxis.eligible, true);
+assert.ok(pretermIron.prophylaxis.text.includes('tam enteral beslenmeye'), 'Preterm profilaksisinde tam enteral beslenme şartı yer almalıdır');
+
+console.log('✓ Motor 15 Pediatrik Demir & Talasemi Ayrımı verified (100% healthy)');
+
+console.log('\n🎉 ALL 44 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 
