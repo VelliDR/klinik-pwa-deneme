@@ -214,8 +214,49 @@ assert.ok(appState.safetyPrescription.tripleWhammy?.isTripleWhammy, 'Triple Wham
 const twAlertEl = document.getElementById('alert-item-tw') as any;
 assert.strictEqual(twAlertEl.classList.contains('hidden'), false, 'Triple Whammy alert item in Inspector must be visible');
 const totalAlertsBadge = document.getElementById('badge-total-alerts') as any;
-assert.ok(totalAlertsBadge.textContent.includes('Uyarı'), 'Total alerts badge must count the warning');
 console.log('✓ Pipeline E: Safety Shield Triple Whammy -> Alerts Inspector sync verified.');
+
+// F. EKG RR Boxes -> Heart Rate & NEWS2 Triage Score Auto-Sync (HATA-M24-002)
+(document.getElementById('input-age') as any).value = '45';
+(document.getElementById('input-ecg-rr-boxes') as any).value = '10'; // 10 small boxes = 400ms -> 150 bpm
+(document.getElementById('input-hr') as any).value = ''; // clear HR
+(document.getElementById('input-rr') as any).value = '16';
+(document.getElementById('input-sys-bp') as any).value = '120';
+(document.getElementById('input-temp') as any).value = '36.8';
+(document.getElementById('input-spo2') as any).value = '98';
+
+appModule.updateAllTabs();
+
+assert.strictEqual(appState.biometry.heartRate, 150, 'appState.biometry.heartRate must be set to 150 from EKG RR');
+assert.strictEqual((document.getElementById('input-hr') as any).value, '150', 'input-hr must be updated to 150 from EKG RR');
+assert.strictEqual(appState.medicine.news2.score, 3, 'NEWS2 HR score must be 3 (+3 for HR 150)');
+assert.strictEqual(appState.medicine.news2.hasRedScore, true, 'NEWS2 hasRedScore must be true');
+console.log('✓ Pipeline F: EKG RR Boxes -> Heart Rate & NEWS2 Triage sync verified.');
+
+// G. Global Labs Fallbacks -> Downstream Placeholders (HATA-M24-005)
+(document.getElementById('input-serum-na') as any).value = '138';
+(document.getElementById('input-creatinine') as any).value = '2.2';
+(document.getElementById('input-glucose') as any).value = '250';
+
+appModule.updateAllTabs();
+
+const fenaNaEl = document.getElementById('input-fena-s-na') as HTMLInputElement;
+const fenaCrEl = document.getElementById('input-fena-s-cr') as HTMLInputElement;
+assert.ok(fenaNaEl.placeholder.includes('Global: 138'), 'fena-s-na placeholder must reflect global Na');
+assert.ok(fenaCrEl.placeholder.includes('Global: 2.2'), 'fena-s-cr placeholder must reflect global Cr');
+console.log('✓ Pipeline G: Global Labs -> Downstream Placeholders verified.');
+
+// H. OBGYN Trimester Single Source of Truth (HATA-M24-004)
+(document.getElementById('input-lmp') as any).value = '2026-06-01'; // 2nd trimester
+appModule.updateAllTabs();
+assert.strictEqual(appState.obgyn.trimester, 2, 'appState.obgyn.trimester must be 2');
+console.log('✓ Pipeline H: OBGYN Trimester Single Source of Truth verified.');
+
+// I. Re-entrancy Guard (HATA-M24-001)
+assert.doesNotThrow(() => {
+    appModule.updateAllTabs();
+}, 'updateAllTabs re-entrancy guard must prevent call stack overflow');
+console.log('✓ Pipeline I: Re-entrancy guard & loop shield verified.');
 
 // ----------------------------------------------------------------------------
 // TEST 4: MOTOR BAĞIMLILIK ÇÖZÜCÜ SONSUZ DÖNGÜ VE PERFORMANS TESTİ

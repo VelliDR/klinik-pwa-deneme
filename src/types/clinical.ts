@@ -46,6 +46,7 @@ export interface PatientBiometry {
   egfrAbsolute?: number | null;
   egfrFormula?: string | null;
   cystatinC?: number | null;
+  heartRate?: number | null;
 }
 
 import type {
@@ -148,6 +149,7 @@ export interface AppState {
   };
   obgyn: {
     active: boolean;
+    trimester?: number | null;
     eddData: ObstetricsResult | null;
     bishop: BishopResult | null;
     preeclampsia: PreeclampsiaResult | null;

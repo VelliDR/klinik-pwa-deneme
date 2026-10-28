@@ -341,12 +341,15 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                 const calculatedRr = Math.round(bVal * msPerBox);
                 rrInput.value = String(calculatedRr);
                 if (hrInput && document.activeElement !== hrInput) {
-                    hrInput.value = String(Math.round(60000 / calculatedRr));
+                    const newHr = Math.round(60000 / calculatedRr);
+                    hrInput.value = String(newHr);
+                    appState.biometry.heartRate = newHr;
                 }
             } else if (rrBoxesInput.value === '') {
                 rrInput.value = '';
                 if (hrInput && document.activeElement !== hrInput) {
                     hrInput.value = '';
+                    appState.biometry.heartRate = null;
                 }
             }
         }
@@ -635,9 +638,39 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     }
 
     // 9. NEFROLOJİ, TOKSİKOLOJİ & PNÖMONİ (FENa, FEUrea, Düzeltilmiş Na, APAP, CURB-65)
-    const fenaSNa = getNum('input-fena-s-na') ?? getNum('input-serum-na');
+    // HATA-M24-005: Global laboratuvar fallbacks ve dinamik placeholder senkronizasyonu
+    const globalSNa = getNum('input-serum-na');
+    const globalCr = getNum('input-creatinine');
+    const globalGlu = getNum('input-glucose');
+
+    const fenaSNaEl = getEl<HTMLInputElement>('input-fena-s-na');
+    if (fenaSNaEl && (typeof document === 'undefined' || document.activeElement !== fenaSNaEl)) {
+        fenaSNaEl.placeholder = globalSNa !== null ? `Global: ${globalSNa} mEq/L` : '140';
+    }
+
+    const fenaSCrEl = getEl<HTMLInputElement>('input-fena-s-cr');
+    if (fenaSCrEl && (typeof document === 'undefined' || document.activeElement !== fenaSCrEl)) {
+        fenaSCrEl.placeholder = globalCr !== null ? `Global: ${globalCr} mg/dL` : '1.8';
+    }
+
+    const corrNaEl = getEl<HTMLInputElement>('input-corr-na-meas');
+    if (corrNaEl && (typeof document === 'undefined' || document.activeElement !== corrNaEl)) {
+        corrNaEl.placeholder = globalSNa !== null ? `Global: ${globalSNa} mEq/L` : '130';
+    }
+
+    const corrGluEl = getEl<HTMLInputElement>('input-corr-glucose');
+    if (corrGluEl && (typeof document === 'undefined' || document.activeElement !== corrGluEl)) {
+        corrGluEl.placeholder = globalGlu !== null ? `Global: ${globalGlu} mg/dL` : '380';
+    }
+
+    const bgNaEl = getEl<HTMLInputElement>('input-bg-na');
+    if (bgNaEl && (typeof document === 'undefined' || document.activeElement !== bgNaEl)) {
+        bgNaEl.placeholder = globalSNa !== null ? `Global: ${globalSNa}` : '140';
+    }
+
+    const fenaSNa = getNum('input-fena-s-na') ?? globalSNa;
     const fenaUNa = getNum('input-fena-u-na');
-    const fenaSCr = getNum('input-fena-s-cr') ?? getNum('input-creatinine');
+    const fenaSCr = getNum('input-fena-s-cr') ?? globalCr;
     const fenaUCr = getNum('input-fena-u-cr');
     const fenaDiuretic = getChk('chk-fena-diuretic');
     const feureaUnit = getVal('select-feurea-unit') || 'bun';

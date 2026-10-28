@@ -381,7 +381,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
     const nSpo2 = getNum('input-spo2');
     const nSbp = getNum('input-sys-bp');
     const nDbp = getNum('input-dia-bp');
-    const nHr = getNum('input-hr');
+    const nHr = appState.biometry.heartRate ?? getNum('input-hr');
     const nTemp = getNum('input-temp');
     const nAvpu = getVal('input-avpu');
     const nOx = getChk('input-oxygen');

@@ -25,7 +25,8 @@ export const appState: AppState = {
         egfr: null,
         egfrAbsolute: null,
         egfrFormula: null,
-        cystatinC: null
+        cystatinC: null,
+        heartRate: null
     },
 
     // 2. Sekme-Spesifik Veriler
@@ -54,6 +55,7 @@ export const appState: AppState = {
 
     obgyn: {
         active: false,
+        trimester: null,
         eddData: null,
         bishop: null,
         preeclampsia: null

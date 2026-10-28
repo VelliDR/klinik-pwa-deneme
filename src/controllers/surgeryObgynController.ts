@@ -221,18 +221,20 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     const lmp = getVal('input-lmp');
     const eddRes = getEl('output-edd');
     let trimesterChanged = false;
-    const prevTrimester = appState.medicine.pregnancyTrimester ?? (appState.obgyn.eddData?.trimester ?? null);
+    const prevTrimester = appState.obgyn.trimester ?? appState.medicine.pregnancyTrimester ?? (appState.obgyn.eddData?.trimester ?? null);
 
     if (lmp && eddRes) {
         const eddVal = calculateObstetrics(lmp);
         if (eddVal && eddVal.isInvalid) {
             appState.obgyn.eddData = null;
+            appState.obgyn.trimester = null;
             appState.medicine.pregnancyTrimester = null;
             trimesterChanged = prevTrimester !== null;
             eddRes.classList.remove('hidden');
             eddRes.innerHTML = `<span class="text-rose-400 text-xs font-semibold">${escapeHtml(eddVal.error || '⚠️ Hatalı SAT: Son adet tarihi gelecekte olamaz (veya >44 hafta olamaz).')}</span>`;
         } else if (eddVal) {
             appState.obgyn.eddData = eddVal;
+            appState.obgyn.trimester = eddVal.trimester;
             appState.medicine.pregnancyTrimester = eddVal.trimester;
             trimesterChanged = prevTrimester !== eddVal.trimester;
 
@@ -260,12 +262,14 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             `;
         } else {
             appState.obgyn.eddData = null;
+            appState.obgyn.trimester = null;
             appState.medicine.pregnancyTrimester = null;
             trimesterChanged = prevTrimester !== null;
             eddRes.classList.add('hidden');
         }
     } else {
         appState.obgyn.eddData = null;
+        appState.obgyn.trimester = null;
         appState.medicine.pregnancyTrimester = null;
         trimesterChanged = prevTrimester !== null;
         if (eddRes) eddRes.classList.add('hidden');

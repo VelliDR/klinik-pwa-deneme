@@ -43,6 +43,10 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
     const isNeonate = (ageData.days !== null && ageData.days !== undefined && ageData.days <= 28);
     const selectedDrugs = (appState.treatment && appState.treatment.selectedDrugs) ? appState.treatment.selectedDrugs : [];
     appState.safetyPrescription.selectedSafetyDrugs = selectedDrugs;
+    const safetyEgfrEl = getEl<HTMLInputElement>('input-safety-egfr');
+    if (safetyEgfrEl && (typeof document === 'undefined' || document.activeElement !== safetyEgfrEl)) {
+        safetyEgfrEl.placeholder = appState.biometry.egfr !== null ? `Global: ${appState.biometry.egfr} mL/dk` : 'Biyometriden otm.';
+    }
     const safetyEgfr = getNum('input-safety-egfr') ?? appState.biometry.egfr;
     const safetyTrimEl = getEl<HTMLSelectElement>('select-safety-trimester');
     if (safetyTrimEl) {
@@ -52,12 +56,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                 safetyTrimEl.dataset.userModified = 'true';
             });
         }
-        if (!safetyTrimEl.dataset.userModified && appState.obgyn.eddData?.trimester &&
+        if (!safetyTrimEl.dataset.userModified && (appState.obgyn.trimester || appState.obgyn.eddData?.trimester) &&
             (typeof document === 'undefined' || document.activeElement !== safetyTrimEl)) {
-            safetyTrimEl.value = String(appState.obgyn.eddData.trimester);
+            safetyTrimEl.value = String(appState.obgyn.trimester || appState.obgyn.eddData?.trimester);
         }
     }
-    const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.eddData?.trimester || appState.medicine.pregnancyTrimester || 0);
+    const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.trimester || appState.obgyn.eddData?.trimester || appState.medicine.pregnancyTrimester || 0);
 
     const outInteractions = getEl('output-safety-interactions');
     const outWhammy = getEl('output-safety-triple-whammy');

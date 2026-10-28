@@ -188,7 +188,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
 
     // 2. TROMBOEMBOLİ & KARDİYAK ACİL SKORLARI
     // Vitaller ve Demografiden Wells PTE ve PERC otomatik senkronizasyon (HATA-M5-004)
-    const nHr = getNum('input-hr');
+    const nHr = appState.biometry.heartRate ?? getNum('input-hr');
     const nSpo2 = getNum('input-spo2');
 
     const chkPeHr = getEl('chk-pe-hr-100') as HTMLInputElement | null;
