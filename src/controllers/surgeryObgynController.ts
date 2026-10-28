@@ -23,6 +23,7 @@ import {
     calculatePreeclampsia 
 } from '../engines/obgynEngine';
 import { getEl, getVal, getNum, getChk, escapeHtml } from '../utils/domUtils';
+import { updateSafetyAlertsCard } from './safetyAlertsController';
 
 export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     const y = ageData.y;
@@ -219,18 +220,59 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     // 5. OBSTETRİK & JİNEKOLOJİ (OB/GYN)
     const lmp = getVal('input-lmp');
     const eddRes = getEl('output-edd');
+    let trimesterChanged = false;
+    const prevTrimester = appState.medicine.pregnancyTrimester ?? (appState.obgyn.eddData?.trimester ?? null);
+
     if (lmp && eddRes) {
         const eddVal = calculateObstetrics(lmp);
-        appState.obgyn.eddData = eddVal;
-        if (eddVal) {
+        if (eddVal && eddVal.isInvalid) {
+            appState.obgyn.eddData = null;
+            appState.medicine.pregnancyTrimester = null;
+            trimesterChanged = prevTrimester !== null;
             eddRes.classList.remove('hidden');
-            eddRes.innerHTML = `GH: ${eddVal.gestationalAge} | TDT: ${eddVal.edd}`;
+            eddRes.innerHTML = `<span class="text-rose-400 text-xs font-semibold">${escapeHtml(eddVal.error || '⚠️ Hatalı SAT: Son adet tarihi gelecekte olamaz (veya >44 hafta olamaz).')}</span>`;
+        } else if (eddVal) {
+            appState.obgyn.eddData = eddVal;
+            appState.medicine.pregnancyTrimester = eddVal.trimester;
+            trimesterChanged = prevTrimester !== eddVal.trimester;
+
+            // Sync to select-safety-trimester if user hasn't explicitly changed it
+            const safetyTrimEl = getEl<HTMLSelectElement>('select-safety-trimester');
+            if (safetyTrimEl && !safetyTrimEl.dataset.userModified) {
+                safetyTrimEl.value = String(eddVal.trimester);
+            }
+
+            eddRes.classList.remove('hidden');
+            let recHtml = '';
+            if (eddVal.recommendations && eddVal.recommendations.length > 0) {
+                recHtml = `
+                    <div class="mt-1.5 p-2 rounded bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 text-[11px] space-y-1">
+                        <div class="font-bold text-cyan-300">🔍 Gestasyonel Hafta Takip Önerileri:</div>
+                        ${eddVal.recommendations.map(r => `<div>• ${escapeHtml(r)}</div>`).join('')}
+                    </div>
+                `;
+            }
+            eddRes.innerHTML = `
+                <div class="text-xs text-slate-200 font-medium">
+                    GH: <span class="text-amber-300 font-bold">${escapeHtml(eddVal.gestationalAge)}</span> | TDT: <span class="text-emerald-300 font-bold">${escapeHtml(eddVal.edd)}</span>
+                </div>
+                ${recHtml}
+            `;
         } else {
+            appState.obgyn.eddData = null;
+            appState.medicine.pregnancyTrimester = null;
+            trimesterChanged = prevTrimester !== null;
             eddRes.classList.add('hidden');
         }
     } else {
         appState.obgyn.eddData = null;
+        appState.medicine.pregnancyTrimester = null;
+        trimesterChanged = prevTrimester !== null;
         if (eddRes) eddRes.classList.add('hidden');
+    }
+
+    if (trimesterChanged) {
+        updateSafetyAlertsCard(ageData);
     }
 
     const bDil = getNum('input-bishop-dil');
@@ -262,10 +304,12 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     const hasObgynContext = Boolean(appState.obgyn.eddData) || prePro || preSym;
     if (preSbp !== null && preDbp !== null && isFemalePatient && hasObgynContext && preRes) {
         const symptoms = preSym ? ['symptom'] : [];
-        appState.obgyn.preeclampsia = calculatePreeclampsia(preSbp, preDbp, prePro, symptoms);
+        const gestWeeks = appState.obgyn.eddData?.weeks;
+        appState.obgyn.preeclampsia = calculatePreeclampsia(preSbp, preDbp, prePro, symptoms, gestWeeks);
         if (appState.obgyn.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
             preRes.classList.remove('hidden');
-            preRes.innerHTML = `${appState.obgyn.preeclampsia.diagnosis}<br><span class="text-xs text-rose-300 font-normal">${appState.obgyn.preeclampsia.alert || ''}</span>`;
+            const alertText = appState.obgyn.preeclampsia.alert ? `<div class="mt-1 text-xs text-rose-200 font-normal leading-relaxed bg-rose-950/40 p-2 rounded border border-rose-800/50">${escapeHtml(appState.obgyn.preeclampsia.alert)}</div>` : '';
+            preRes.innerHTML = `<div class="font-bold text-xs ${appState.obgyn.preeclampsia.isSevere ? 'text-rose-400' : 'text-amber-300'}">${escapeHtml(appState.obgyn.preeclampsia.diagnosis)}</div>${alertText}`;
         } else {
             preRes.classList.add('hidden');
         }

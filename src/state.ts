@@ -61,6 +61,7 @@ export const appState: AppState = {
 
     medicine: {
         active: false,
+        pregnancyTrimester: null,
         bloodGas: null,
         fluid: null,
         neonatalFluid: null,

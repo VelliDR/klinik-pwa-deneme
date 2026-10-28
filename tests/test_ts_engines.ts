@@ -4801,7 +4801,78 @@ assert.ok(inotropeHigh.extremeDoseWarning?.includes('AŞIRI YÜKSEK İNOTROP DOZ
 
 console.log('✓ Motor 12 & 13 Steroid Eşdeğerliği, HOMA-IR & GIR/İnfüzyon verified (100% healthy)');
 
-console.log('\n🎉 ALL 47 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+// --- Section 48: Motor 19 Kadın Doğum & Obstetrik Hesaplayıcı Motoru (Adım 22) ---
+console.log('\n--- Section 48: Motor 19 Kadın Doğum & Obstetrik Hesaplayıcı Motoru ---');
+
+// 48.1 HATA-M19-001: SAT Gelecek Tarih veya >44 Hafta Aşımında Validasyon
+const futureDate = new Date();
+futureDate.setDate(futureDate.getDate() + 10);
+const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth()+1).padStart(2,'0')}-${String(futureDate.getDate()).padStart(2,'0')}`;
+const obgynFuture = calculateObstetrics(futureDateStr);
+assert.ok(obgynFuture);
+assert.strictEqual(obgynFuture.isInvalid, true, 'Gelecek tarih için isInvalid: true dönmelidir');
+assert.ok(obgynFuture.error?.includes('Son adet tarihi gelecekte olamaz'), 'Gelecek tarih hatası içermelidir');
+
+const oldDate = new Date();
+oldDate.setDate(oldDate.getDate() - 350); // ~50 hafta
+const oldDateStr = `${oldDate.getFullYear()}-${String(oldDate.getMonth()+1).padStart(2,'0')}-${String(oldDate.getDate()).padStart(2,'0')}`;
+const obgynOld = calculateObstetrics(oldDateStr);
+assert.ok(obgynOld);
+assert.strictEqual(obgynOld.isInvalid, true, '>44 hafta için isInvalid: true dönmelidir');
+assert.ok(obgynOld.error?.includes('44 haftadan büyük olamaz'), '>44 hafta uyarısı içermelidir');
+
+// 48.2 HATA-M19-002: Gestasyonel Haftaya Özel Kritik Tarama Önerileri
+const ogttDate = new Date();
+ogttDate.setDate(ogttDate.getDate() - (26 * 7)); // 26. hafta
+const ogttDateStr = `${ogttDate.getFullYear()}-${String(ogttDate.getMonth()+1).padStart(2,'0')}-${String(ogttDate.getDate()).padStart(2,'0')}`;
+const obgyn26w = calculateObstetrics(ogttDateStr);
+assert.ok(obgyn26w && !obgyn26w.isInvalid);
+assert.ok(obgyn26w.recommendations.some(r => r.includes('Oral Glukoz Tolerans Testi (OGTT)')), '26. haftada OGTT önerisi üretilmelidir');
+
+const usgDate = new Date();
+usgDate.setDate(usgDate.getDate() - (20 * 7)); // 20. hafta
+const usgDateStr = `${usgDate.getFullYear()}-${String(usgDate.getMonth()+1).padStart(2,'0')}-${String(usgDate.getDate()).padStart(2,'0')}`;
+const obgyn20w = calculateObstetrics(usgDateStr);
+assert.ok(obgyn20w && !obgyn20w.isInvalid);
+assert.ok(obgyn20w.recommendations.some(r => r.includes('Detaylı (Ayrıntılı) Fetal Ultrason')), '20. haftada Detaylı Ultrason önerisi üretilmelidir');
+
+// 48.3 HATA-M19-003: 3. Trimester NSAİİ Kontrendikasyonu & Fetal Toksisite Kalkanı
+const pregTrim3Nsaid = checkPregnancySafety([{ brand: 'Apranax 550mg', generic: 'Naproksen' }], { trimester: 3 });
+assert.ok(pregTrim3Nsaid.alertsCount > 0, '3. trimesterde Naproksen alarm üretmelidir');
+assert.ok(pregTrim3Nsaid.alerts.some(a => a.warning.includes('3. TRİMESTERDE KONTRENDİKE') && a.warning.includes('Duktus Arteriozus')), 'Erken duktus kapanması uyarısı verilmelidir');
+
+// 48.4 HATA-M19-004: Bishop İndüksiyon Skorunda Fizyolojik Parametre Sınırları (Clamping)
+const bishopOverflow = calculateBishop(5, 4, 3, 3, 3);
+assert.ok(bishopOverflow);
+assert.strictEqual(bishopOverflow.score, 13, 'Aşırı parametre değerleri maksimum skor olan 13 ile sınırlandırılmalıdır (3+3+3+2+2)');
+assert.ok(bishopOverflow.interpretation.includes('Elverişli'));
+
+const bishopMin = calculateBishop(-1, -2, -3, -1, -1);
+assert.ok(bishopMin);
+assert.strictEqual(bishopMin.score, 0, 'Negatif parametreler 0 ile sınırlandırılmalıdır');
+
+// 48.5 HATA-M19-005: Preeklampsi <20 Hafta Gebelerde Kronik Hipertansiyon Tanısı
+const preecPre20Mild = calculatePreeclampsia(145, 95, true, [], 14); // 14 haftalık
+assert.ok(preecPre20Mild);
+assert.strictEqual(preecPre20Mild.isChronicHypertension, true, '<20 hafta için kronik hipertansiyon olmalıdır');
+assert.ok(preecPre20Mild.diagnosis.includes('Kronik Hipertansiyon'), 'Tanı Kronik Hipertansiyon olmalıdır');
+
+const preecPost20Mild = calculatePreeclampsia(145, 95, true, [], 24); // 24 haftalık
+assert.ok(preecPost20Mild);
+assert.strictEqual(preecPost20Mild.diagnosis, 'Preeklampsi (Ağır Özelliksiz)', '≥20 hafta ve proteinüri için Preeklampsi (Ağır Özelliksiz) olmalıdır');
+
+// 48.6 HATA-M19-006: Ağır Özellikli Preeklampside Acil Antihipertansif Protokolü & MgSO4
+const preecSevere = calculatePreeclampsia(170, 115, true, ['severe'], 32);
+assert.ok(preecSevere);
+assert.strictEqual(preecSevere.diagnosis, 'Preeklampsi (Ağır Özellikli)');
+assert.strictEqual(preecSevere.isSevere, true);
+assert.ok(preecSevere.alert?.includes('HİPERTANSİF ACİL PROTOKOLÜ'), 'Hipertansif acil protokol başlığı bulunmalıdır');
+assert.ok(preecSevere.alert?.includes('Labetalol') || preecSevere.alert?.includes('Nifedipin'), 'Acil antihipertansif (Labetalol / Nifedipin) yer almalıdır');
+assert.ok(preecSevere.alert?.includes('MgSO4'), 'Eklampsi profilaksisi için MgSO4 yer almalıdır');
+
+console.log('✓ Motor 19 Kadın Doğum & Obstetrik Hesaplayıcı Motoru verified (100% healthy)');
+
+console.log('\n🎉 ALL 48 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

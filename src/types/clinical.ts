@@ -154,6 +154,7 @@ export interface AppState {
   };
   medicine: {
     active: boolean;
+    pregnancyTrimester?: number | null;
     bloodGas: BloodGasResult | null;
     fluid: MaintenanceFluidResult | null;
     neonatalFluid: NeonatalFluidResult | null;

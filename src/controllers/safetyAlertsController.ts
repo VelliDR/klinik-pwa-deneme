@@ -42,11 +42,19 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
     appState.safetyPrescription.selectedSafetyDrugs = selectedDrugs;
     const safetyEgfr = getNum('input-safety-egfr') ?? appState.biometry.egfr;
     const safetyTrimEl = getEl<HTMLSelectElement>('select-safety-trimester');
-    if (safetyTrimEl && appState.obgyn.eddData?.trimester && safetyTrimEl.value === '0' &&
-        (typeof document === 'undefined' || document.activeElement !== safetyTrimEl)) {
-        safetyTrimEl.value = String(appState.obgyn.eddData.trimester);
+    if (safetyTrimEl) {
+        if (!safetyTrimEl.dataset.listenerBound) {
+            safetyTrimEl.dataset.listenerBound = 'true';
+            safetyTrimEl.addEventListener('change', () => {
+                safetyTrimEl.dataset.userModified = 'true';
+            });
+        }
+        if (!safetyTrimEl.dataset.userModified && appState.obgyn.eddData?.trimester &&
+            (typeof document === 'undefined' || document.activeElement !== safetyTrimEl)) {
+            safetyTrimEl.value = String(appState.obgyn.eddData.trimester);
+        }
     }
-    const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.eddData?.trimester || 0);
+    const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.eddData?.trimester || appState.medicine.pregnancyTrimester || 0);
 
     const outWhammy = getEl('output-safety-triple-whammy');
     const outSerotonin = getEl('output-safety-serotonin');
