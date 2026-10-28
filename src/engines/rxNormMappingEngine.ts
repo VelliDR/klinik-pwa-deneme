@@ -518,7 +518,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
     displayNameTr: 'Hidroklorotiyazid',
     displayNameEn: 'Hydrochlorothiazide',
     atcCodes: ['C03AA03'],
-    aliases: ['hidroklorotiyazid', 'hctz', 'co-diovan', 'hyzaar'],
+    aliases: ['hidroklorotiyazid', 'hctz', 'co-diovan', 'hyzaar', 'co-hyzaar', 'karvezid', 'micardis plus', 'delix plus', 'atacand plus'],
     drugClasses: ['thiazide_diuretic', 'triple_whammy_diuretic', 'lithium_clearance_reducer'],
     pediatricHighAlert: false
   },
@@ -528,7 +528,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
     displayNameTr: 'Ramipril',
     displayNameEn: 'Ramipril',
     atcCodes: ['C09AA05'],
-    aliases: ['delix', 'ramipril', 'ramicard'],
+    aliases: ['delix', 'ramipril', 'ramicard', 'delix plus'],
     drugClasses: ['ace_inhibitor', 'raas_blocker', 'triple_whammy_ras', 'hyperkalemic', 'fetotoxic_pregnancy'],
     pediatricHighAlert: false,
     boxedWarning: true
@@ -583,7 +583,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
     displayNameTr: 'Losartan',
     displayNameEn: 'Losartan',
     atcCodes: ['C09CA01'],
-    aliases: ['cozaar', 'losartan', 'sarvas', 'hyzaar'],
+    aliases: ['cozaar', 'losartan', 'sarvas', 'hyzaar', 'co-hyzaar'],
     drugClasses: ['arb', 'raas_blocker', 'triple_whammy_ras', 'hyperkalemic', 'fetotoxic_pregnancy'],
     pediatricHighAlert: false,
     boxedWarning: true
@@ -600,12 +600,34 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
     boxedWarning: true
   },
   {
+    canonicalKey: 'irbesartan',
+    rxCui: '52246',
+    displayNameTr: 'İrbesartan',
+    displayNameEn: 'Irbesartan',
+    atcCodes: ['C09CA04'],
+    aliases: ['karvea', 'karvezid', 'irbesartan', 'irprestan'],
+    drugClasses: ['arb', 'raas_blocker', 'triple_whammy_ras', 'hyperkalemic', 'fetotoxic_pregnancy'],
+    pediatricHighAlert: false,
+    boxedWarning: true
+  },
+  {
+    canonicalKey: 'telmisartan',
+    rxCui: '73066',
+    displayNameTr: 'Telmisartan',
+    displayNameEn: 'Telmisartan',
+    atcCodes: ['C09CA07'],
+    aliases: ['micardis', 'micardis plus', 'telmisartan', 'telsartan'],
+    drugClasses: ['arb', 'raas_blocker', 'triple_whammy_ras', 'hyperkalemic', 'fetotoxic_pregnancy'],
+    pediatricHighAlert: false,
+    boxedWarning: true
+  },
+  {
     canonicalKey: 'candesartan',
     rxCui: '214354',
     displayNameTr: 'Kandesartan',
     displayNameEn: 'Candesartan',
     atcCodes: ['C09CA06'],
-    aliases: ['atacand', 'kandesartan', 'candesartan', 'ayra'],
+    aliases: ['atacand', 'kandesartan', 'candesartan', 'ayra', 'atacand plus'],
     drugClasses: ['arb', 'raas_blocker', 'triple_whammy_ras', 'hyperkalemic', 'fetotoxic_pregnancy'],
     pediatricHighAlert: false,
     boxedWarning: true
@@ -1769,17 +1791,132 @@ export function resolveToRxNormConcept(input: DrugInputItem | string | null | un
 }
 
 /**
- * Batch resolve a list of drugs
+ * Resolve a drug input that may contain multiple active ingredients (Fixed-Dose Combinations - FDC)
+ * e.g., Co-Diovan -> [valsartan, hydrochlorothiazide], Karvezid -> [irbesartan, hydrochlorothiazide]
+ */
+export function resolveToRxNormConceptsMulti(
+  input: DrugInputItem | string | null | undefined
+): ResolvedRxConcept[] {
+  if (!input) return [];
+
+  let rawString = '';
+  let atc = '';
+  let cui = '';
+  let originalInput: string | Record<string, unknown> = '';
+
+  if (typeof input === 'string') {
+    rawString = input;
+    originalInput = input;
+  } else if (typeof input === 'object') {
+    originalInput = input as Record<string, unknown>;
+    const brand = (input.brand || input.brandName || input.name || '') as string;
+    const generic = (input.generic || '') as string;
+    rawString = `${brand} ${generic}`.trim();
+    atc = (input.atcCode || input.atc || '') as string;
+    cui = ((input as any).rxCui || (input as any).rxcui || (input as any).cui || '') as string;
+  }
+
+  const norm = normalizeRxText(rawString);
+  if (!norm) return [];
+
+  const matchedConcepts: ResolvedRxConcept[] = [];
+  const matchedKeys = new Set<string>();
+
+  const addConcept = (c: RxNormConceptDefinition, conf: ConceptMatchConfidence) => {
+    if (!matchedKeys.has(c.canonicalKey)) {
+      matchedKeys.add(c.canonicalKey);
+      matchedConcepts.push(buildResolvedConcept(c, originalInput, conf));
+    }
+  };
+
+  // 1. Direct CUI
+  if (cui) {
+    const byCui = BY_CUI_MAP.get(String(cui).trim());
+    if (byCui) addConcept(byCui, 'EXACT_CUI');
+  }
+
+  // 2. Direct ATC
+  if (atc) {
+    const byAtc = BY_ATC_MAP.get(atc.trim().toUpperCase());
+    if (byAtc) addConcept(byAtc, 'EXACT_ATC');
+  }
+
+  // 3. Exact Canonical Key
+  if (BY_CANONICAL_MAP.has(norm)) {
+    addConcept(BY_CANONICAL_MAP.get(norm)!, 'CANONICAL_KEY');
+  }
+
+  // 4. Exact Generic Name match
+  for (const concept of OFFLINE_RXNORM_CONCEPTS) {
+    if (
+      normalizeRxText(concept.displayNameEn) === norm ||
+      normalizeRxText(concept.displayNameTr) === norm
+    ) {
+      addConcept(concept, 'EXACT_GENERIC');
+    }
+  }
+
+  // 5. Brand Alias exact match across all concepts (captures multiple FDC active ingredients)
+  for (const concept of OFFLINE_RXNORM_CONCEPTS) {
+    for (const alias of concept.aliases) {
+      if (normalizeRxText(alias) === norm) {
+        addConcept(concept, 'BRAND_ALIAS');
+      }
+    }
+  }
+
+  // 6. Substring / Token matches if nothing matched yet, or expand partial aliases
+  for (const concept of OFFLINE_RXNORM_CONCEPTS) {
+    if (containsKeywordSafe(norm, concept.canonicalKey)) {
+      addConcept(concept, 'TOKEN_MATCH');
+      continue;
+    }
+    if (containsKeywordSafe(norm, concept.displayNameEn) || containsKeywordSafe(norm, concept.displayNameTr)) {
+      addConcept(concept, 'TOKEN_MATCH');
+      continue;
+    }
+    for (const alias of concept.aliases) {
+      if (containsKeywordSafe(norm, alias)) {
+        addConcept(concept, 'TOKEN_MATCH');
+        break;
+      }
+    }
+  }
+
+  // Fallback to single resolve if multi returned empty
+  if (matchedConcepts.length === 0) {
+    const single = resolveToRxNormConcept(input);
+    if (single) matchedConcepts.push(single);
+  }
+
+  return matchedConcepts;
+}
+
+/**
+ * Batch resolve a list of drugs, automatically expanding Fixed-Dose Combinations (FDC)
  */
 export function resolveBatchRxNormConcepts(
   inputs: (DrugInputItem | string | null | undefined)[]
 ): ResolvedRxConcept[] {
   if (!Array.isArray(inputs)) return [];
   const results: ResolvedRxConcept[] = [];
+  const seenCanonicalKeys = new Set<string>();
+
   for (const item of inputs) {
-    const resolved = resolveToRxNormConcept(item);
-    if (resolved) {
-      results.push(resolved);
+    const concepts = resolveToRxNormConceptsMulti(item);
+    if (concepts.length > 0) {
+      for (const c of concepts) {
+        if (!seenCanonicalKeys.has(c.canonicalKey)) {
+          seenCanonicalKeys.add(c.canonicalKey);
+          results.push(c);
+        }
+      }
+    } else {
+      const single = resolveToRxNormConcept(item);
+      if (single && !seenCanonicalKeys.has(single.canonicalKey)) {
+        seenCanonicalKeys.add(single.canonicalKey);
+        results.push(single);
+      }
     }
   }
   return results;

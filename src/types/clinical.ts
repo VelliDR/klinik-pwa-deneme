@@ -201,6 +201,7 @@ export interface AppState {
   };
   safetyPrescription: {
     active: boolean;
+    interactions?: any | null;
     renalAdjustments: RenalDoseCheckResult | null;
     tripleWhammy: TripleWhammyResult | null;
     pregnancySafety: PregnancySafetyResult | null;
