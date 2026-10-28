@@ -189,7 +189,7 @@ assert.ok(soapReport.includes('[O] OBJEKTİF:'));
 assert.ok(soapReport.includes('[A] DEĞERLENDİRME:'));
 assert.ok(soapReport.includes('[P] PLAN & TEDAVİ:'));
 assert.ok(soapReport.includes('FENa:'), 'SOAP should include FENa calculation in objective findings');
-assert.ok(soapReport.includes('CHA₂DS₂-VASc'), 'SOAP should include CHA₂DS₂-VASc in assessment or objective');
+assert.ok(soapReport.includes('CHA2DS2-VASc') || soapReport.includes('CHA₂DS₂-VASc'), 'SOAP should include CHA2DS2-VASc in assessment or objective');
 assert.ok(soapReport.includes('HAS-BLED'), 'SOAP should include HAS-BLED in assessment or objective');
 
 console.log('✓ Global lab fallbacks, cardio-sync, and comprehensive SOAP generation verified.');

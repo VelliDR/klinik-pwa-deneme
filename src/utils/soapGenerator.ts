@@ -9,12 +9,31 @@ import { expandDotPhrases } from './soapTemplates';
 export function sanitizeForHbys(text: string): string {
   if (!text) return '';
   return text
+    // 1. Kritik Medikal & Matematiksel ASCII Dönüşümleri (HBYS / ANSI Windows-1254 Karakter Bozulması Önlemi)
+    .replace(/[µμ]g\/mL/g, 'mcg/mL')
+    .replace(/[µμ]g/g, 'mcg')
+    .replace(/[µμ]/g, 'mc')
+    .replace(/m²/g, 'm2')
+    .replace(/m³/g, 'm3')
+    .replace(/CHA₂DS₂/g, 'CHA2DS2')
+    .replace(/₂/g, '2')
+    .replace(/₁/g, '1')
+    .replace(/₃/g, '3')
+    .replace(/₄/g, '4')
+    .replace(/≥/g, '>=')
+    .replace(/≤/g, '<=')
+    .replace(/±/g, '+/-')
+    .replace(/→/g, '->')
+    .replace(/←/g, '<-')
+    .replace(/–|—/g, '-')
+    // 2. Klinik Güvenlik Rozetleri Metin Dönüşümleri
     .replace(/🛑/g, '[KRİTİK UYARI]')
     .replace(/🚨/g, '[KRİTİK UYARI]')
     .replace(/⚠️|⚠/g, '[DİKKAT]')
     .replace(/🔒/g, '[KİLİTLİ]')
     .replace(/⚡/g, '[ACİL]')
     .replace(/✓|✔/g, '[UYGUN]')
+    // 3. Geri Kalan Emojileri ve Varyasyon Seçicileri Temizle
     .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
     .replace(/[\u{2600}-\u{27BF}]/gu, '')
     .replace(/[\u{FE00}-\u{FE0F}]/gu, '');
@@ -621,8 +640,58 @@ export function generateSOAP(): string {
     pCount++;
   }
   if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {
-    const drugsStr = appState.treatment.selectedDrugs.map((d) => d.brand || d.generic).join(', ');
-    p.push(`${pCount}. Reçete / Tedavi Protokolü: ${drugsStr}.`);
+    const formattedDrugs = appState.treatment.selectedDrugs.map((d: any) => {
+      const drugName = (d.brand || d.brandName || d.name || d.generic || 'İlaç').trim();
+      const details: string[] = [];
+
+      // Kutu Adedi (DİB)
+      if (d.boxCount) {
+        details.push(`DİB: ${d.boxCount} Kutu`);
+      } else if (d.dosage || d.frequency || d.morningDose || d.mealTiming) {
+        details.push('DİB: 1 Kutu');
+      }
+
+      // Posoloji / Sıklık (S: 2x1 vb.)
+      let freqStr = d.frequency || '';
+      if (!freqStr) {
+        const doses = [
+          d.morningDose ?? (d.morning ? '1' : '0'),
+          d.noonDose ?? (d.noon ? '1' : '0'),
+          d.eveningDose ?? (d.evening ? '1' : '0'),
+          d.nightDose ?? (d.night ? '1' : '0')
+        ];
+        const activeCount = doses.filter(v => v !== '0' && v !== '-').length;
+        if (activeCount > 0) {
+          freqStr = `${activeCount}x1`;
+        }
+      }
+
+      const usageParts: string[] = [];
+      if (freqStr) usageParts.push(freqStr);
+      if (d.dosage) usageParts.push(d.dosage);
+      if (d.mealTiming) usageParts.push(d.mealTiming);
+      if (usageParts.length > 0) {
+        details.push(`S: ${usageParts.join(' ')}`);
+      }
+      if (d.duration) {
+        details.push(d.duration);
+      }
+
+      let fullDrugStr = drugName;
+      if (details.length > 0) {
+        fullDrugStr += ` (${details.join(', ')})`;
+      }
+      if (d.instructions && d.instructions.trim()) {
+        fullDrugStr += ` - ${d.instructions.trim()}`;
+      }
+      return fullDrugStr;
+    });
+
+    if (formattedDrugs.length === 1) {
+      p.push(`${pCount}. Reçete / Tedavi Protokolü: ${formattedDrugs[0]}.`);
+    } else {
+      p.push(`${pCount}. Reçete / Tedavi Protokolü:\n   * ` + formattedDrugs.join('\n   * '));
+    }
     pCount++;
   }
   if (appState.emergency?.anaphylaxis?.doses) {

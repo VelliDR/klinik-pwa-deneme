@@ -72,28 +72,65 @@ export const SOAP_TEMPLATES: SoapTemplate[] = [
     label: 'Üriner Sistem Enfeksiyonu',
     category: 'Dahiliye',
     text: 'Dizüri, pollaküri, suprapubik hassasiyet mevcut. KVAH (-/-), ateş yok. TİT ve idrar kültürü planlandı. Uygun antibiyoterapi başlandı.'
+  },
+  {
+    key: '.sepsis',
+    label: 'Sepsis / qSOFA Paketi',
+    category: 'Acil',
+    text: 'qSOFA / SIRS kriterleri değerlendirildi: Taşikardi, takipne ve hipotansiyon yönünden yüksek risk. Kan kültürleri ve serum laktat gönderildi. Kristaloid sıvı resüsitasyonu (30 mL/kg) ve erken geniş spektrumlu empirik antibiyoterapi başlandı.'
+  },
+  {
+    key: '.kardiyo',
+    label: 'Kardiyovasküler Acil / KKY',
+    category: 'Acil/Kardiyo',
+    text: 'Nefes darlığı, ortopne, paroksismal noktürnal dispne (PND) ve pretibial ödem (+/+). Akciğerlerde bilateral bazallerde krepitan raller (+). EKG çekildi, telekardiyografi planlandı. Loop diüretiği ve kardiyak monitorizasyon başlandı.'
+  },
+  {
+    key: '.pediatri',
+    label: 'Ateşli Çocuk / Febril İnceleme',
+    category: 'Pediatri',
+    text: 'Ateş odağı araştırıldı. Genel durumu iyi, toksik görünüm yok, çevreyle ilgili. Meninks iritasyon bulguları (-). Orofarenks, kulak zarları ve akciğer oskültasyonu doğal. Yaşa uygun hidrasyon ve antipiretik danışmanlığı verildi; kırmızı bayrak bulguları anlatıldı.'
+  },
+  {
+    key: '.pnomoni',
+    label: 'Toplum Kökenli Pnömoni (CURB-65)',
+    category: 'Dahiliye/Göğüs',
+    text: 'Öksürük, pürülan balgam, yan ağrısı ve subfebril ateş. Dinlemekle fokal krepitan raller (+). CURB-65 / CRB-65 riski hesaplandı. PA Akciğer grafisi ve solunum yolu antibiyoterapisi planlandı.'
+  },
+  {
+    key: '.dka',
+    label: 'Diyabetik Ketoasidoz (DKA)',
+    category: 'Dahiliye/Endokrin',
+    text: 'Poliüri, polidipsi, karın ağrısı ve Kussmaul solunumu. Kan şekeri yüksek, idrarda keton (+), venöz kan gazında metabolik asidoz. İzotonik SF hidrasyon protokolü, potasyum takibi ve insülin infüzyonu planlandı.'
   }
 ];
 
 /**
  * Verilen metin içindeki nokta kısayollarını (.apandisit vb.) otomatik olarak tespit edip
  * tam şablon metniyle değiştirir (Text Expansion).
+ * Türkçe karakter uyumlu (İ/i, I/ı) büyük-küçük harf duyarsız genişletme sağlar.
  */
 export function expandDotPhrases(text: string): { expandedText: string; expandedKeys: string[] } {
   if (!text) return { expandedText: '', expandedKeys: [] };
 
-  let result = text;
   const expandedKeys: string[] = [];
 
-  for (const tmpl of SOAP_TEMPLATES) {
-    // Kelime sınırı veya arkasından boşluk/satır sonu/noktalama gelen kısayolları eşle
-    // Örn: ".apandisit ", ".apandisit\n", ".apandisit."
-    const regex = new RegExp(`(^|\\s)${escapeRegex(tmpl.key)}(?=[\\s.,!?;:]|$)`, 'gi');
-    if (regex.test(result)) {
-      result = result.replace(regex, `$1${tmpl.text} `);
-      expandedKeys.push(tmpl.key);
+  // Türkçe karakterleri (ğüşıöçĞÜŞİÖÇ) ve alfanümerik karakterleri içeren nokta belirteçlerini yakala
+  const tokenRegex = /(^|\s)(\.[a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ]+)(?=[\s.,!?;:]|$)/gu;
+
+  const result = text.replace(tokenRegex, (match, prefix, token) => {
+    const lowerToken = token.toLocaleLowerCase('tr-TR');
+    const foundTmpl = SOAP_TEMPLATES.find(
+      t => t.key.toLocaleLowerCase('tr-TR') === lowerToken
+    );
+    if (foundTmpl) {
+      if (!expandedKeys.includes(foundTmpl.key)) {
+        expandedKeys.push(foundTmpl.key);
+      }
+      return `${prefix}${foundTmpl.text} `;
     }
-  }
+    return match;
+  });
 
   return { expandedText: result.trimEnd(), expandedKeys };
 }

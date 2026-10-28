@@ -139,6 +139,24 @@ import {
   getTdmGuidance
 } from '../src/engines/safetyPrescriptionEngine';
 import {
+  generateSOAP,
+  sanitizeForHbys
+} from '../src/utils/soapGenerator';
+import {
+  expandDotPhrases,
+  SOAP_TEMPLATES,
+  appendTemplateToText
+} from '../src/utils/soapTemplates';
+import {
+  copyToClipboardWithFallback
+} from '../src/controllers/workstationController';
+import {
+  showUpdatePrompt,
+  checkCacheWarming,
+  setupPWA,
+  isCacheWarm
+} from '../src/pwa';
+import {
   calculateMostellerBSA,
   calculateDuboisBSA,
   deindexEgfrToAbsolute,
@@ -646,7 +664,7 @@ try {
 }
 
 // 3. Dot Phrases Expansion Tests
-assert.strictEqual(SOAP_TEMPLATES.length, 10);
+assert.strictEqual(SOAP_TEMPLATES.length, 15, 'SOAP_TEMPLATES must have 15 structured clinical templates');
 const exp1 = expandDotPhrases('Hasta sağ alt karın ağrısı ile başvurdu. .apandisit ');
 assert.ok(exp1.expandedText.includes('McBurney hassasiyeti'));
 assert.strictEqual(exp1.expandedKeys.length, 1);
@@ -5037,7 +5055,169 @@ assert.strictEqual(eventDeduplicatedCount, 2, '50 ms içindeki aynı eleman olay
 
 console.log('✓ Motor 24 Çapraz Motor Reaktivitesi & Durum Yönetimi verified (100% healthy)');
 
-console.log('\n🎉 ALL 50 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+// ============================================================================
+// SECTION 51: ADIM 25 - SOAP & AKILLI REÇETE ENTEGRASYONU, PWA ÇEVRİMDISI DOĞRULAMA
+// ============================================================================
+console.log('\n--- Section 51: Motor 25 Dinamik SOAP, Akıllı Reçete & PWA Çevrimdışı Güvenlik Motoru ---');
+
+// 51.0 Node.js DOM Çevre Simülasyonu (PWA & Kopyalama Testleri)
+if (typeof (globalThis as any).document === 'undefined') {
+  const elements = new Map<string, any>();
+  (globalThis as any).document = {
+    getElementById: (id: string) => elements.get(id) || null,
+    createElement: (tag: string) => {
+      const el: any = {
+        id: '',
+        tagName: tag.toUpperCase(),
+        innerHTML: '',
+        value: '',
+        style: {},
+        classList: {
+          add: () => {},
+          remove: () => {},
+          contains: () => false
+        },
+        setAttribute: () => {},
+        select: () => {},
+        setSelectionRange: () => {},
+        remove: () => {
+          if (el.id) elements.delete(el.id);
+        },
+        click: () => {
+          if (el._clickHandler) el._clickHandler();
+        },
+        addEventListener: (evt: string, handler: any) => {
+          if (evt === 'click') el._clickHandler = handler;
+        }
+      };
+      return el;
+    },
+    body: {
+      appendChild: (el: any) => {
+        if (el.id) elements.set(el.id, el);
+        if (el.innerHTML && el.innerHTML.includes('pwa-btn-refresh')) {
+          const btn = (globalThis as any).document.createElement('button');
+          btn.id = 'pwa-btn-refresh';
+          elements.set('pwa-btn-refresh', btn);
+        }
+        return el;
+      },
+      removeChild: (el: any) => {
+        if (el.id) elements.delete(el.id);
+      }
+    },
+    execCommand: (cmd: string) => cmd === 'copy'
+  };
+}
+
+// 51.1 HATA-M25-001: PWA Service Worker Update Prompt & SKIP_WAITING Tetikleyicisi
+let skipWaitingSent = false;
+const mockRegistration = {
+  scope: 'http://localhost/',
+  waiting: {
+    postMessage: (msg: any) => {
+      if (msg && msg.type === 'SKIP_WAITING') {
+        skipWaitingSent = true;
+      }
+    }
+  }
+} as unknown as ServiceWorkerRegistration;
+
+const updateToast = showUpdatePrompt(mockRegistration);
+assert.ok(updateToast, 'showUpdatePrompt bir toast DOM elemanı oluşturmalıdır');
+assert.strictEqual(updateToast?.id, 'pwa-update-toast');
+assert.ok(updateToast?.innerHTML.includes('Yeni Güncelleme Hazır'));
+
+const btnRefresh = document.getElementById('pwa-btn-refresh') as HTMLButtonElement | null;
+assert.ok(btnRefresh, 'Toast içinde Şimdi Güncelle butonu yer almalıdır');
+btnRefresh?.click();
+assert.strictEqual(skipWaitingSent, true, 'Şimdi Güncelle butonuna tıklandığında SKIP_WAITING mesajı postMessage ile iletilmelidir');
+updateToast?.remove();
+
+// 51.2 HATA-M25-002: Güvensiz Bağlam (HTTP) Panoya Kopyalama Fallback Kalkanı (execCommand)
+let copySuccessCalled = false;
+let copyErrorCalled = false;
+// Mock document.execCommand in node/jsdom test environment
+if (typeof document !== 'undefined') {
+  (document as any).execCommand = (cmd: string) => {
+    if (cmd === 'copy') return true;
+    return false;
+  };
+}
+copyToClipboardWithFallback(
+  'Test Klinik Metin 123',
+  () => { copySuccessCalled = true; },
+  () => { copyErrorCalled = true; }
+);
+assert.strictEqual(copySuccessCalled, true, 'copyToClipboardWithFallback başarıyla tamamlanmalıdır');
+assert.strictEqual(copyErrorCalled, false, 'Fallback kopyalamada unhandled error oluşmamalıdır');
+
+// 51.3 HATA-M25-003: Akıllı Reçete Entegrasyonunda Zengin Posoloji & Kutu Adedinin SOAP Planına Yansıtılması
+appState.treatment = {
+  active: true,
+  selectedDrugs: [
+    {
+      brand: 'AUGMENTIN-BID 1000 MG',
+      dosage: '1000 mg',
+      boxCount: 1,
+      morningDose: '1',
+      eveningDose: '1',
+      morning: true,
+      evening: true,
+      mealTiming: 'TOK',
+      duration: '10 Gün',
+      instructions: 'Bol su ile tok karnına alınız'
+    }
+  ]
+};
+const richSoapOutput = generateSOAP();
+assert.ok(richSoapOutput.includes('AUGMENTIN-BID 1000 MG'), 'SOAP planı ilaç adını içermelidir');
+assert.ok(richSoapOutput.includes('DİB: 1 Kutu'), 'SOAP planı DİB kutu adedini içermelidir');
+assert.ok(richSoapOutput.includes('S: 2x1'), 'SOAP planı 2x1 sıklığını içermelidir');
+assert.ok(richSoapOutput.includes('TOK'), 'SOAP planı TOK öğün durumunu içermelidir');
+assert.ok(richSoapOutput.includes('10 Gün'), 'SOAP planı kullanım süresini içermelidir');
+assert.ok(richSoapOutput.includes('Bol su ile tok karnına alınız'), 'SOAP planı kullanım talimatını içermelidir');
+appState.treatment.selectedDrugs = [];
+
+// 51.4 HATA-M25-004: Dot Phrases Kütüphanesi Eksik Şablonlar & Türkçe Büyük/Küçük Harf (İ/i) Duyarsızlığı
+const templateKeys = SOAP_TEMPLATES.map(t => t.key);
+assert.ok(templateKeys.includes('.sepsis'), '.sepsis şablonu SOAP_TEMPLATES içinde yer almalıdır');
+assert.ok(templateKeys.includes('.kardiyo'), '.kardiyo şablonu SOAP_TEMPLATES içinde yer almalıdır');
+assert.ok(templateKeys.includes('.pediatri'), '.pediatri şablonu SOAP_TEMPLATES içinde yer almalıdır');
+assert.ok(templateKeys.includes('.pnomoni'), '.pnomoni şablonu SOAP_TEMPLATES içinde yer almalıdır');
+assert.ok(templateKeys.includes('.dka'), '.dka şablonu SOAP_TEMPLATES içinde yer almalıdır');
+
+// Test Turkish uppercase case-insensitivity: .APANDİSİT with dotted uppercase İ (\u0130)
+const expandTurkishUpper = expandDotPhrases('Hasta acile başvurdu. .APANDİSİT ');
+assert.ok(expandTurkishUpper.expandedText.includes('McBurney hassasiyeti'), '.APANDİSİT (Türkçe noktalı büyük İ) başarıyla genişletilmelidir');
+assert.ok(expandTurkishUpper.expandedKeys.includes('.apandisit'));
+
+const expandSepsisUpper = expandDotPhrases('Triyaj: .SEPSİS ');
+assert.ok(expandSepsisUpper.expandedText.includes('qSOFA / SIRS'), '.SEPSİS kısayolu başarıyla genişletilmelidir');
+
+const expandPneumonia = expandDotPhrases('Tanı: .PNOMONİ ');
+assert.ok(expandPneumonia.expandedText.includes('CURB-65 / CRB-65'), '.PNOMONİ kısayolu başarıyla genişletilmelidir');
+
+// 51.5 HATA-M25-005: sanitizeForHbys ile Kritik Medikal Simgelerin ASCII Dönüşümü (1000 Kat Toksik Doz Kalkanı)
+const toxicRawText = 'Parasetamol düzeyi: 150 µg/mL (veya 150 μg/mL), BSA: 1.84 m², CHA₂DS₂-VASc: 2, eGFR ≤ 30 mL/dk/1.73m² (Hedef ± 5, Dozaj → 50%, Hedef ≥ 90)';
+const sanitizedAscii = sanitizeForHbys(toxicRawText);
+assert.strictEqual(sanitizedAscii.includes('µ'), false, 'sanitizeForHbys micro simgesi (µ) içermemelidir');
+assert.strictEqual(sanitizedAscii.includes('μ'), false, 'sanitizeForHbys Greek mu simgesi (μ) içermemelidir');
+assert.ok(sanitizedAscii.includes('150 mcg/mL'), 'µg/mL ifadesi güvenli ASCII mcg/mL olmalıdır');
+assert.ok(sanitizedAscii.includes('1.84 m2'), 'm² ifadesi m2 olmalıdır');
+assert.ok(sanitizedAscii.includes('CHA2DS2-VASc'), 'CHA₂DS₂ ifadesi CHA2DS2 olmalıdır');
+assert.ok(sanitizedAscii.includes('eGFR <= 30'), '≤ simgesi <= olmalıdır');
+assert.ok(sanitizedAscii.includes('Hedef +/- 5'), '± simgesi +/- olmalıdır');
+assert.ok(sanitizedAscii.includes('Dozaj -> 50%'), '→ simgesi -> olmalıdır');
+assert.ok(sanitizedAscii.includes('Hedef >= 90'), '≥ simgesi >= olmalıdır');
+
+// 51.6 HATA-M25-006: PWA Çevrimdışı Durum Rozeti ve Cache Warming Doğrulaması
+assert.strictEqual(typeof checkCacheWarming, 'function', 'checkCacheWarming fonksiyonu mevcut olmalıdır');
+assert.strictEqual(typeof isCacheWarm, 'boolean', 'isCacheWarm boolean durumu mevcut olmalıdır');
+
+console.log('✓ Motor 25 Dinamik SOAP, Akıllı Reçete & PWA Çevrimdışı Güvenlik Motoru verified (100% healthy)');
+
+console.log('\n🎉 ALL 51 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

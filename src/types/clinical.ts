@@ -120,6 +120,20 @@ export interface SelectedDrugItem {
   company?: string;
   kt?: string | null;
   kub?: string | null;
+  dosage?: string;
+  frequency?: string;
+  boxCount?: number | string;
+  mealTiming?: string;
+  duration?: string;
+  instructions?: string;
+  morning?: boolean;
+  noon?: boolean;
+  evening?: boolean;
+  night?: boolean;
+  morningDose?: string;
+  noonDose?: string;
+  eveningDose?: string;
+  nightDose?: string;
   [key: string]: unknown;
 }
 

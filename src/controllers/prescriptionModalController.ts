@@ -9,6 +9,7 @@ import {
 } from '../utils/prescriptionPrinter';
 import { sanitizeForHbys } from '../utils/soapGenerator';
 import { evaluatePrescriptionInteractions } from '../engines/interactionTierEngine';
+import { copyToClipboardWithFallback, updateLiveSOAP } from './workstationController';
 
 
 const escapeHtml = (val: unknown): string => {
@@ -87,6 +88,30 @@ export function initPrescriptionModalController(): void {
     if (printableArea) {
       printableArea.innerHTML = html;
     }
+
+    if (appState.treatment) {
+      appState.treatment.selectedDrugs = activePrescriptionDrugs.map(d => ({
+        name: d.name,
+        brand: d.name,
+        generic: d.generic,
+        dosage: d.dosage,
+        frequency: [d.morningDose ?? (d.morning ? '1' : '0'), d.noonDose ?? (d.noon ? '1' : '0'), d.eveningDose ?? (d.evening ? '1' : '0'), d.nightDose ?? (d.night ? '1' : '0')].filter(v => v !== '0' && v !== '-').length > 0
+          ? `${[d.morningDose ?? (d.morning ? '1' : '0'), d.noonDose ?? (d.noon ? '1' : '0'), d.eveningDose ?? (d.evening ? '1' : '0'), d.nightDose ?? (d.night ? '1' : '0')].filter(v => v !== '0' && v !== '-').length}x1`
+          : undefined,
+        morning: d.morning,
+        noon: d.noon,
+        evening: d.evening,
+        night: d.night,
+        morningDose: d.morningDose,
+        noonDose: d.noonDose,
+        eveningDose: d.eveningDose,
+        nightDose: d.nightDose,
+        mealTiming: d.mealTiming,
+        duration: d.duration,
+        instructions: d.instructions
+      }));
+    }
+    updateLiveSOAP();
   }
 
   function renderRxEditorList(): void {
@@ -409,15 +434,19 @@ export function initPrescriptionModalController(): void {
         rxNumber: inputPrintRxNumber?.value || `RX-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
         allergyNotes: inputPrintAllergy?.value || 'Bilinen İlaç Alerjisi Yok'
       };
-      const plainText = sanitizeForHbys(generatePrescriptionPlainText(patientInfo, activePrescriptionDrugs));
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(plainText).then(() => {
+      const plainText = generatePrescriptionPlainText(patientInfo, activePrescriptionDrugs);
+      copyToClipboardWithFallback(
+        plainText,
+        () => {
           if (copyRxFeedback) {
             copyRxFeedback.classList.remove('hidden');
             setTimeout(() => copyRxFeedback.classList.add('hidden'), 2000);
           }
-        });
-      }
+        },
+        (err) => {
+          console.warn('[Prescription] Panoya kopyalama hatası:', err);
+        }
+      );
     });
   }
 

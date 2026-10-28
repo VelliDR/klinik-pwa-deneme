@@ -349,6 +349,59 @@ export function updateClinicalAlertsInspector(): void {
     }
 }
 
+/**
+ * Evrensel Pano Kopyalama Yöneticisi (W3C Clipboard API + execCommand Fallback)
+ * Güvensiz bağlamlarda (HTTP/yerel hastane intranetleri) veya pano izni reddedildiğinde
+ * gizli bir textarea üzerinden kopyalama yaparak sessiz çökmeleri ve unhandled promise rejection'ları engeller.
+ */
+export function copyToClipboardWithFallback(
+    text: string,
+    onSuccess: () => void,
+    onError?: (err: unknown) => void
+): void {
+    const cleanText = sanitizeForHbys(text);
+
+    function fallbackCopy(): void {
+        try {
+            if (typeof document === 'undefined') {
+                onError?.(new Error('DOM ortamı bulunamadı.'));
+                return;
+            }
+            const textarea = document.createElement('textarea');
+            textarea.value = cleanText;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            textarea.setSelectionRange(0, 99999);
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (successful) {
+                onSuccess();
+            } else {
+                onError?.(new Error('Pano kopyalama işlemi başarısız oldu.'));
+            }
+        } catch (err) {
+            onError?.(err);
+        }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(cleanText)
+            .then(() => {
+                onSuccess();
+            })
+            .catch(() => {
+                fallbackCopy();
+            });
+    } else {
+        fallbackCopy();
+    }
+}
+
 // ----------------------------------------------------------------------------
 // 3. CANLI SOAP EPİKRİZ GÜNCELLEMESİ (LIVE SOAP)
 // ----------------------------------------------------------------------------
@@ -978,8 +1031,9 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
         btnCopyModal.addEventListener('click', () => {
             const modalText = getEl<HTMLTextAreaElement>('text-soap-modal');
             const textToCopy = modalText ? modalText.value : (getEl<HTMLTextAreaElement>('text-soap-output')?.value || '');
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(sanitizeForHbys(textToCopy)).then(() => {
+            copyToClipboardWithFallback(
+                textToCopy,
+                () => {
                     if (modalFeedback) {
                         modalFeedback.classList.remove('hidden');
                         setTimeout(() => modalFeedback.classList.add('hidden'), 2000);
@@ -989,8 +1043,11 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
                         desktopFb.classList.remove('hidden');
                         setTimeout(() => desktopFb.classList.add('hidden'), 2000);
                     }
-                });
-            }
+                },
+                (err) => {
+                    console.warn('[SOAP] Panoya kopyalama hatası:', err);
+                }
+            );
         });
     }
 
@@ -998,15 +1055,19 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
     if (btnCopyDesktop) {
         btnCopyDesktop.addEventListener('click', () => {
             const text = getVal('text-soap-output');
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(sanitizeForHbys(text)).then(() => {
+            copyToClipboardWithFallback(
+                text,
+                () => {
                     const fb = getEl('copy-feedback');
                     if (fb) {
                         fb.classList.remove('hidden');
                         setTimeout(() => fb.classList.add('hidden'), 2000);
                     }
-                });
-            }
+                },
+                (err) => {
+                    console.warn('[SOAP] Panoya kopyalama hatası:', err);
+                }
+            );
         });
     }
 
