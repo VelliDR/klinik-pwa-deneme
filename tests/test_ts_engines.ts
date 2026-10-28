@@ -44,6 +44,8 @@ import {
   CENTILE_CHANNELS,
   WHO_2022_DATA,
   zToExactPercentile,
+  formatPercentileDisplay,
+  evaluateMalnutrition,
   standardNormalCDF,
   calculateNeonatalFluid,
   calculateMaintenanceFluid,
@@ -4464,9 +4466,108 @@ const elbwBaby = evaluateAap2022Jaundice({
 });
 assert.ok(elbwBaby.clinicalAlerts.some(a => a.type === 'PRETERM_IRRADIANCE_WARNING'));
 
-console.log('✓ Motor 7 Ek Preterm Sarılık & Rebound Motoru verified (100% healthy)');
+// ==========================================
+// 43. MOTOR 14: PEDİATRİK BÜYÜME & PERSENTİL MOTORU (WHO/NEYZI/MALNUTRITION/CRANIAL)
+// ==========================================
+console.log('\n--- Section 43: Motor 14 Pediatrik Büyüme & Persentil Motoru ---');
 
-console.log('\n🎉 ALL 42 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+// 43.1 HATA-M14-001: İlk Vizitte Akut Malnütrisyon (SAM/MAM) Taraması (Cross-sectional)
+const samEdemaChild = calculatePercentiles({
+  gender: 'female',
+  ageMonths: 12,
+  weightKg: 7.5,
+  heightCm: 72,
+  hasBilateralEdema: true
+});
+assert.ok(samEdemaChild.malnutritionAssessment, 'malnutritionAssessment mevcut olmalıdır');
+assert.strictEqual(samEdemaChild.malnutritionAssessment.category, 'SAM');
+assert.strictEqual(samEdemaChild.malnutritionAssessment.treatmentProtocol.setting, 'INPATIENT');
+
+const samMuacChild = calculatePercentiles({
+  gender: 'male',
+  ageMonths: 18,
+  weightKg: 8.0,
+  heightCm: 78,
+  muacMm: 110,
+  hasMedicalComplications: false
+});
+assert.strictEqual(samMuacChild.malnutritionAssessment?.category, 'SAM');
+assert.strictEqual(samMuacChild.malnutritionAssessment?.treatmentProtocol.setting, 'OUTPATIENT');
+
+// 43.2 HATA-M14-002: WAZ ile WHZ/BAZ Ayrımı (Orantılı Kısa Çocukta Yanlış MAM/SAM Engeli)
+const shortProportionalChild = calculatePercentiles({
+  gender: 'male',
+  ageMonths: 20,
+  weightKg: 8.5, // WAZ is low (Z: -2.38)
+  heightCm: 76,  // HAZ is also low (Z: -2.55) -> proportional
+  muacMm: 135
+});
+assert.ok(shortProportionalChild.weightZ < -2.0, 'Kilo z-skoru düşük olmalıdır (stunting zemininde düşük WAZ)');
+assert.ok(shortProportionalChild.bmiZ > -1.5, 'BMI/Boy z-skoru orantılı olduğu için normal aralıkta olmalıdır');
+assert.strictEqual(shortProportionalChild.malnutritionAssessment?.category, 'WELL_NOURISHED', 'Orantılı kısa çocuk hatalı şekilde MAM veya SAM olarak etiketlenmemelidir');
+
+// 43.3 HATA-M14-003: Çift Referansta Bağımsız Pozisyon Düzeltmesi (DSÖ vs Neyzi)
+const supine30Mo = calculatePercentiles({
+  gender: 'male',
+  ageMonths: 30,
+  weightKg: 13.5,
+  heightCm: 85.0,
+  measurementPosition: 'recumbent',
+  standard: 'who_2022'
+});
+// DSÖ 24 ay geçiş: 30 ayda yatarak ölçüm ayakta ölçüme çevrilmek için 0.7 cm çıkarılır -> 84.3 cm
+assert.strictEqual(supine30Mo.effectiveHeightCm, 84.3);
+// Neyzi 36 ay geçiş: 30 ayda yatarak ölçüm zaten standarttır, 0.7 cm çıkarılmaz -> 85.0 cm!
+assert.ok(supine30Mo.comparisonWithAlternative, 'comparisonWithAlternative tanımlı olmalıdır');
+assert.strictEqual(supine30Mo.comparisonWithAlternative.alternativeEffectiveHeight, 85.0, 'Neyzi 30 ayda yatarak ölçümde 0.7 cm çıkarılmamalıdır');
+
+// 43.4 HATA-M14-004: NICE Büyüme Duraklaması Doğum / Önceki Persentil Kanal Düşüşü
+const falteringChild = calculateGrowthVelocity({
+  ageMonths: 9,
+  currentWeightKg: 6.8,
+  previousWeightKg: 6.7,
+  daysBetween: 90,
+  birthPercentile: 75,
+  currentPercentile: 3
+});
+assert.strictEqual(falteringChild.centileDropAnalysis?.isPathologicalFaltering, true, 'Doğum persentiline göre kanal düşüşü yakalanmalıdır');
+assert.ok(falteringChild.centileDropAnalysis?.falteringReason?.includes('≥2 persentil kanalı düşüş'), 'Kanal düşüş kriteri açıklamalarda yer almalıdır');
+
+// 43.5 HATA-M14-005: Uç Z-skorları ve Persentil Formatı
+assert.strictEqual(formatPercentileDisplay(1, 0.01, -3.8), '%<1 (%0.01, Z: -3.8)');
+assert.strictEqual(formatPercentileDisplay(99, 99.98, 3.5), '%>99 (%99.98, Z: +3.5)');
+assert.strictEqual(formatPercentileDisplay(50, 50.0, 0.0), '%50');
+
+const extremeChild = calculatePercentiles({
+  gender: 'male',
+  ageMonths: 12,
+  weightKg: 6.0, // Extremely low weight for 12 months
+  heightCm: 75.7
+});
+assert.ok(extremeChild.weightPercentileDisplay.startsWith('%<1'), 'Aşırı düşük kilo persentili %<1 formatında olmalıdır');
+
+// 43.6 HATA-M14-006: Kraniyal Taramada Fontanel Kapanma Yaşı (>= 24 ayda USG yerine MR/BT)
+const closedFontanelle = calculateCranialScreening({
+  gender: 'male',
+  ageMonths: 26,
+  currentHeadCircCm: 53.0,
+  previousHeadCircCm: 48.0,
+  daysBetween: 60
+});
+assert.ok(closedFontanelle.clinicalRecommendations.some(r => r.includes('MRG') || r.includes('MR')), '24 aydan büyük çocukta fontanel kapalı olduğundan MRG önerilmelidir');
+
+const openFontanelle = calculateCranialScreening({
+  gender: 'male',
+  ageMonths: 6,
+  currentHeadCircCm: 47.0,
+  previousHeadCircCm: 43.0,
+  daysBetween: 30
+});
+assert.ok(openFontanelle.clinicalRecommendations.some(r => r.includes('Transfontanel USG')), 'Küçük süt çocuğunda TFUS önerilmelidir');
+
+console.log('✓ Motor 14 Pediatrik Büyüme & Persentil Motoru verified (100% healthy)');
+
+console.log('\n🎉 ALL 43 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

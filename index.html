@@ -536,6 +536,11 @@
                                 <div id="output-cranial-alert-title" class="font-bold"></div>
                                 <div id="output-cranial-alert-body" class="text-[9px] opacity-90"></div>
                             </div>
+                            <!-- HATA-M14-001: İlk vizitte kesitsel akut malnütrisyon (SAM/MAM) alarmı -->
+                            <div id="row-malnutrition-alert" class="hidden p-1.5 rounded text-[10px] leading-tight space-y-0.5">
+                                <div id="output-malnutrition-alert-title" class="font-bold"></div>
+                                <div id="output-malnutrition-alert-body" class="text-[9px] opacity-90"></div>
+                            </div>
                             <div id="row-position-alert" class="hidden p-1.5 rounded bg-blue-950/60 border border-blue-800/60 text-[10px] text-blue-300 leading-tight">
                                 <span id="output-position-alert"></span>
                             </div>
@@ -572,7 +577,7 @@
                             <span class="text-slate-400 group-open/gv:rotate-180 transition-transform text-[9px]">▼</span>
                         </summary>
                         <div class="mt-2 pt-2 border-t border-slate-800 space-y-2">
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 <div>
                                     <label class="text-[9px] text-slate-400 block mb-0.5">Önceki Ağırlık (kg)</label>
                                     <input type="number" step="0.01" id="input-gv-prev-weight" placeholder="Örn: 3.85" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-base" inputmode="decimal">
@@ -580,6 +585,10 @@
                                 <div>
                                     <label class="text-[9px] text-slate-400 block mb-0.5">Ölçüm Aralığı (Gün)</label>
                                     <input type="number" id="input-gv-days" placeholder="Örn: 14" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-base" inputmode="numeric">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] text-slate-400 block mb-0.5">Doğum / Önceki Persentil (%)</label>
+                                    <input type="number" step="0.1" id="input-gv-birth-percentile" placeholder="Örn: 50" class="w-full bg-slate-950 border border-slate-700 rounded p-1 text-base" inputmode="decimal">
                                 </div>
                                 <div>
                                     <label class="text-[9px] text-slate-400 block mb-0.5">Kol Çevresi - MUAC (mm)</label>

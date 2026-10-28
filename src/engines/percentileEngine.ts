@@ -44,6 +44,36 @@ export function zToExactPercentile(z: number | null | undefined, precision: numb
 }
 
 /**
+ * HATA-M14-005: Aşırı Z-skorlarında (Z < -2.33 veya Z > +2.33) persentilin
+ * 1 ile 99'a kilitlenerek (clamping) hekimden saklanmasını önleyen hassas klinik gösterim.
+ * Örn. Z = -3.8 için: "%<1 (%0.01, Z: -3.8)"
+ *      Z = +3.5 için: "%>99 (%99.98, Z: +3.5)"
+ *      Z = 0.0 için: "%50"
+ */
+export function formatPercentileDisplay(
+    percentile: number | null | undefined,
+    exactPercentile: number | null | undefined,
+    zScore: number | null | undefined
+): string {
+    if (percentile === null || percentile === undefined) return '--';
+    if (zScore !== null && zScore !== undefined && !isNaN(zScore)) {
+        if (zScore < -2.326) {
+            const exactStr = exactPercentile !== null && exactPercentile !== undefined
+                ? (exactPercentile < 0.01 ? '<0.01' : exactPercentile.toFixed(2))
+                : '<1';
+            return `%<1 (%${exactStr}, Z: ${zScore.toFixed(1)})`;
+        }
+        if (zScore > 2.326) {
+            const exactStr = exactPercentile !== null && exactPercentile !== undefined
+                ? (exactPercentile > 99.99 ? '>99.99' : exactPercentile.toFixed(2))
+                : '>99';
+            return `%>99 (%${exactStr}, Z: +${zScore.toFixed(1)})`;
+        }
+    }
+    return `%${percentile}`;
+}
+
+/**
  * Standart Cole ve Green LMS Z-skor formülü:
  * Z = ((X / M)^L - 1) / (L * S) (L != 0)
  * Z = ln(X / M) / S (L == 0)
@@ -393,6 +423,9 @@ export function getGrowthNorms(
 export interface StandardComparisonResult {
     alternativeStandard: GrowthStandard;
     alternativeStandardLabel: string;
+    alternativeEffectiveHeight?: number | null;
+    alternativePositionCorrectionCm?: number;
+    alternativePositionCorrectionApplied?: boolean;
     alternativeHeightZ: number | null;
     alternativeHeightPercentile: number | null;
     alternativeWeightZ: number | null;
@@ -401,6 +434,182 @@ export interface StandardComparisonResult {
     alternativeBmiPercentile: number | null;
     heightDiscordanceAlert: string | null;
     weightDiscordanceAlert: string | null;
+}
+
+export interface MalnutritionAssessment {
+    category: 'SAM' | 'MAM' | 'WELL_NOURISHED' | 'AT_RISK_INFANT';
+    categoryText: string;
+    alertClass: 'danger' | 'warning' | 'success';
+    criteriaMet: string[];
+    treatmentProtocol: {
+        setting: 'INPATIENT' | 'OUTPATIENT';
+        caloricTargetKcalKgDay: string;
+        dietRecommendation: string;
+        contraindications: string[];
+        monitoringAdvice: string;
+    };
+}
+
+export interface MalnutritionEvaluationParams {
+    ageMonths: number;
+    weightKg?: number | null;
+    heightCm?: number | null;
+    weightZ?: number | null;
+    heightZ?: number | null;
+    bmiZ?: number | null;
+    weightForLengthZ?: number | null;
+    muacMm?: number | null;
+    hasBilateralEdema?: boolean;
+    hasMedicalComplications?: boolean;
+    velocityStatus?: 'WEIGHT_LOSS' | 'INADEQUATE' | 'ADEQUATE' | 'EXCESSIVE';
+    centileDropAnalysis?: { isPathologicalFaltering: boolean; falteringReason?: string };
+}
+
+/**
+ * HATA-M14-001 & HATA-M14-002: DSÖ 2023 Çocukluk Çağı Akut Malnütrisyon Taraması (SAM / MAM).
+ * Tek bir vizitte bile (kesitsel) WHZ/VKİ Z < -3.0 SD, MUAC < 115 mm veya bilateral gode bırakan ödemde
+ * anında Şiddetli Akut Malnütrisyon (SAM) kalkanını devreye alır.
+ * NOT: WAZ (Yaşa Göre Ağırlık Z-skoru) tek başına malnütrisyon (wasting) kriteri olarak KULLANILMAZ;
+ * orantılı kısa çocukların yalancı pozitif malnütrisyon alması engellenir.
+ */
+export function evaluateMalnutrition(params: MalnutritionEvaluationParams): MalnutritionAssessment {
+    const {
+        ageMonths,
+        weightForLengthZ,
+        bmiZ,
+        muacMm,
+        hasBilateralEdema,
+        hasMedicalComplications,
+        velocityStatus,
+        centileDropAnalysis
+    } = params;
+
+    const criteriaMet: string[] = [];
+
+    if (hasBilateralEdema) {
+        criteriaMet.push('Besinsel bilateral gode bırakan ödem (Kwashiorkor)');
+    }
+
+    // HATA-M14-002: WHZ veya VKİ-Z (Boy-kilo oranı / Wasting) esas alınır
+    const effectiveWastingZ = (weightForLengthZ !== undefined && weightForLengthZ !== null)
+        ? weightForLengthZ
+        : (bmiZ !== undefined && bmiZ !== null ? bmiZ : undefined);
+
+    if (effectiveWastingZ !== undefined) {
+        if (effectiveWastingZ < -3.0) {
+            criteriaMet.push(`Boya göre ağırlık / VKİ Z-skoru < -3.0 SD (${effectiveWastingZ.toFixed(2)})`);
+        } else if (effectiveWastingZ < -2.0) {
+            criteriaMet.push(`Boya göre ağırlık / VKİ Z-skoru -3.0 ile -2.0 SD arasında (${effectiveWastingZ.toFixed(2)})`);
+        }
+    }
+
+    if (muacMm !== undefined && muacMm !== null && muacMm > 0) {
+        if (ageMonths < 6) {
+            if (muacMm < 110) {
+                criteriaMet.push(`0-6 ay kol çevresi (MUAC) < 110 mm (${muacMm} mm - Yüksek mortalite riski)`);
+            } else if (muacMm < 120) {
+                criteriaMet.push(`0-6 ay kol çevresi (MUAC) 110-119 mm (${muacMm} mm - Orta düzey risk)`);
+            }
+        } else {
+            if (muacMm < 115) {
+                criteriaMet.push(`6-59 ay kol çevresi (MUAC) < 115 mm (${muacMm} mm - SAM kriteri)`);
+            } else if (muacMm < 125) {
+                criteriaMet.push(`6-59 ay kol çevresi (MUAC) 115-124 mm (${muacMm} mm - MAM kriteri)`);
+            }
+        }
+    }
+
+    const isSAM = Boolean(
+        hasBilateralEdema ||
+        (effectiveWastingZ !== undefined && effectiveWastingZ < -3.0) ||
+        (muacMm !== undefined && muacMm !== null && ((ageMonths < 6 && muacMm < 110) || (ageMonths >= 6 && muacMm < 115)))
+    );
+
+    const isMAM = !isSAM && Boolean(
+        (effectiveWastingZ !== undefined && effectiveWastingZ < -2.0) ||
+        (muacMm !== undefined && muacMm !== null && ((ageMonths < 6 && muacMm < 120) || (ageMonths >= 6 && muacMm < 125)))
+    );
+
+    const isAtRiskInfant = !isSAM && !isMAM && ageMonths < 6 && Boolean(
+        velocityStatus === 'WEIGHT_LOSS' ||
+        velocityStatus === 'INADEQUATE' ||
+        (centileDropAnalysis && centileDropAnalysis.isPathologicalFaltering)
+    );
+
+    if (isSAM) {
+        const isUnder6M = ageMonths < 6;
+        const needsInpatient = Boolean(isUnder6M || hasMedicalComplications || hasBilateralEdema);
+
+        return {
+            category: 'SAM',
+            categoryText: 'Şiddetli Akut Malnütrisyon (SAM)',
+            alertClass: 'danger',
+            criteriaMet,
+            treatmentProtocol: {
+                setting: needsInpatient ? 'INPATIENT' : 'OUTPATIENT',
+                caloricTargetKcalKgDay: isUnder6M ? '100-130 kcal/kg/gün (Anne Sütü / F-75)' : '150-185 kcal/kg/gün RUTF',
+                dietRecommendation: isUnder6M
+                    ? 'Anne-bebek çifti değerlendirmesi, emzirme ve relaktasyon danışmanlığı, sağılmış anne sütü. Anne sütü yoksa seyreltik F-100 veya bebek formülü.'
+                    : 'RUTF (Ready-to-Use Therapeutic Food) ile ayaktan beslenme tedavisi. Tıbbi komplikasyon veya iştah testi başarısız ise Faz 1 F-75 ile yatarak tedavi.',
+                contraindications: isUnder6M
+                    ? ['0-6 ay bebeklerde RUTF (fıstık ezmesi bazlı terapötik macun) KONTRENDİKEDİR (solüt yükü ve aspirasyon riski)!']
+                    : ['Komplikasyonlu ve iştahsız çocuklara zorla RUTF verilmemelidir.', 'Standart İ.V. sıvı infüzyonlarında yüksek sodyum yükünden kaçınılmalıdır.'],
+                monitoringAdvice: isUnder6M
+                    ? 'Hastanede izlem: Hipoglisemi, hipotermi, etkin emme takibi, günlük tartı.'
+                    : 'Haftalık poliklinik kontrolü (hedef kilo alımı: >5 g/kg/gün), rutin oral amoksisilin tedavisi, A vitamini takviyesi.'
+            }
+        };
+    }
+
+    if (isMAM) {
+        return {
+            category: 'MAM',
+            categoryText: 'Orta Düzey Akut Malnütrisyon (MAM)',
+            alertClass: 'warning',
+            criteriaMet,
+            treatmentProtocol: {
+                setting: 'OUTPATIENT',
+                caloricTargetKcalKgDay: '100-130 kcal/kg/gün',
+                dietRecommendation: 'RUSF (Ready-to-Use Supplementary Food) veya yüksek enerjili ev yapımı ek gıdalarla zenginleştirilmiş diyet.',
+                contraindications: ['Rutin antibiyotik önerilmez (yalnızca kanıtlanmış enfeksiyon durumunda).'],
+                monitoringAdvice: '2 haftada bir büyüme hızı ve kol çevresi takibi. 4-6 haftada düzelme olmazsa ileri tetkik.'
+            }
+        };
+    }
+
+    if (isAtRiskInfant) {
+        return {
+            category: 'AT_RISK_INFANT',
+            categoryText: 'Erken Süt Çocukluğu Büyüme Duraklaması / Gelişme Geriliği Riski',
+            alertClass: 'warning',
+            criteriaMet: [
+                ...criteriaMet,
+                velocityStatus === 'WEIGHT_LOSS' ? 'Kilo kaybı saptandı' : 'Yetersiz büyüme hızı saptandı',
+                ...(centileDropAnalysis?.falteringReason ? [centileDropAnalysis.falteringReason] : [])
+            ],
+            treatmentProtocol: {
+                setting: hasMedicalComplications ? 'INPATIENT' : 'OUTPATIENT',
+                caloricTargetKcalKgDay: '110-120 kcal/kg/gün',
+                dietRecommendation: 'Anne sütü alma sıklığının günde en az 8-12 sefere çıkarılması, anne göğsünün tam boşaltılması (son süt alımı), relaktasyon ve emzirme desteği.',
+                contraindications: ['0-6 ay arasında katı gıda veya yetişkin/büyük çocuk takviyeleri verilmemelidir.'],
+                monitoringAdvice: 'Haftalık tartı kontrolü; büyüme hızı 15-20 g/gün seviyesine ulaşana kadar yakın takip.'
+            }
+        };
+    }
+
+    return {
+        category: 'WELL_NOURISHED',
+        categoryText: 'Normal Beslenme Durumu (Ötirofik)',
+        alertClass: 'success',
+        criteriaMet: criteriaMet.length > 0 ? criteriaMet : ['Antropometrik ve klinik malnütrisyon kriteri saptanmadı.'],
+        treatmentProtocol: {
+            setting: 'OUTPATIENT',
+            caloricTargetKcalKgDay: 'Yaşa uygun idame (90-110 kcal/kg/gün)',
+            dietRecommendation: 'Dönemine uygun dengeli anne sütü ve tamamlayıcı beslenme programının sürdürülmesi.',
+            contraindications: [],
+            monitoringAdvice: 'Rutin sağlam çocuk izlem takvimi.'
+        }
+    };
 }
 
 export interface PercentilesInput {
@@ -422,6 +631,10 @@ export interface PercentilesInput {
     hasVomitingLethargy?: boolean;
     hasSeparatedSutures?: boolean;
     parentalMacrocephaly?: boolean;
+    muacMm?: number | null;
+    hasBilateralEdema?: boolean;
+    hasMedicalComplications?: boolean;
+    weightForLengthZ?: number | null;
 }
 
 export interface PercentilesResult {
@@ -438,6 +651,10 @@ export interface PercentilesResult {
     weightExactPercentile: number | null;
     bmiExactPercentile: number | null;
     headCircumferenceExactPercentile: number | null;
+    heightPercentileDisplay?: string;
+    weightPercentileDisplay?: string;
+    bmiPercentileDisplay?: string;
+    headCircumferencePercentileDisplay?: string;
     isRestrictedLMSApplied: boolean;
     standardUsed: GrowthStandard;
     standardLabel: string;
@@ -445,6 +662,7 @@ export interface PercentilesResult {
     positionCorrectionApplied: boolean;
     positionCorrectionCm: number;
     positionCorrectionNote: string | null;
+    effectiveHeightCm?: number | null;
     comparisonWithAlternative?: StandardComparisonResult | null;
     lmsParameters?: {
         height?: { l: number; m: number; s: number };
@@ -455,6 +673,7 @@ export interface PercentilesResult {
     category: string;
     headCircCategory: string | null;
     cranialScreening?: CranialScreeningResult | null;
+    malnutritionAssessment?: MalnutritionAssessment | null;
     weight: number | null;
     height: number | null;
     bmi: number | null;
@@ -477,7 +696,11 @@ export function calculatePercentiles({
     hasSunsetEyes = false,
     hasVomitingLethargy = false,
     hasSeparatedSutures = false,
-    parentalMacrocephaly = false
+    parentalMacrocephaly = false,
+    muacMm = null,
+    hasBilateralEdema = false,
+    hasMedicalComplications = false,
+    weightForLengthZ = null
 }: PercentilesInput): PercentilesResult | null {
     const effectiveMonths = (ageMonths !== undefined && ageMonths !== null) ? ageMonths : totalMonths;
     if (effectiveMonths === null || effectiveMonths === undefined || isNaN(effectiveMonths)) return null;
@@ -591,8 +814,14 @@ export function calculatePercentiles({
     let heightDiscordanceAlert: string | null = null;
     let weightDiscordanceAlert: string | null = null;
 
-    if (effectiveHeight !== null && effectiveHeight > 0) {
-        altHeightZ = calculateLMSZScore(effectiveHeight, altNorms.height.l, altNorms.height.m, altNorms.height.s, false);
+    // HATA-M14-003: Alternatif referans pozisyonel boy düzeltmesini birincil referanstan miras almamalı;
+    // kendi geçiş sınırına (DSÖ için 24 ay, Neyzi için 36 ay) göre bağımsız düzeltmelidir.
+    let altEffectiveHeight = heightCm;
+    let altPosResult: PositionAdjustmentResult | null = null;
+    if (heightCm !== null && heightCm > 0) {
+        altPosResult = adjustHeightForPosition(heightCm, effectiveMonths, measurementPosition, altStandard);
+        altEffectiveHeight = altPosResult.adjustedHeightCm;
+        altHeightZ = calculateLMSZScore(altEffectiveHeight, altNorms.height.l, altNorms.height.m, altNorms.height.s, false);
         altHeightP = zToPercentile(altHeightZ);
         if (heightZ !== null && altHeightZ !== null) {
             if (standard === 'neyzi_2015' && altHeightZ < -2.0 && heightZ >= -1.88) {
@@ -615,8 +844,8 @@ export function calculatePercentiles({
         }
     }
 
-    if (effectiveHeight && weightKg && effectiveHeight > 0 && weightKg > 0) {
-        const heightM = effectiveHeight / 100;
+    if (altEffectiveHeight && weightKg && altEffectiveHeight > 0 && weightKg > 0) {
+        const heightM = altEffectiveHeight / 100;
         const altBmiVal = Number((weightKg / (heightM * heightM)).toFixed(1));
         altBmiZ = calculateLMSZScore(altBmiVal, altNorms.bmi.l, altNorms.bmi.m, altNorms.bmi.s, shouldRestrict);
         altBmiP = zToPercentile(altBmiZ);
@@ -625,6 +854,9 @@ export function calculatePercentiles({
     const comparisonWithAlternative: StandardComparisonResult = {
         alternativeStandard: altStandard,
         alternativeStandardLabel: altStandard === 'who_2022' ? 'DSÖ 2022 (WHO Child Growth Standards)' : 'Neyzi 2015 (Türk Çocukları Ulusal Referansı)',
+        alternativeEffectiveHeight: altEffectiveHeight,
+        alternativePositionCorrectionCm: altPosResult?.adjustmentCm || 0,
+        alternativePositionCorrectionApplied: altPosResult?.wasAdjusted || false,
         alternativeHeightZ: altHeightZ !== null ? Number(altHeightZ.toFixed(2)) : null,
         alternativeHeightPercentile: altHeightP,
         alternativeWeightZ: altWeightZ !== null ? Number(altWeightZ.toFixed(2)) : null,
@@ -634,6 +866,29 @@ export function calculatePercentiles({
         heightDiscordanceAlert,
         weightDiscordanceAlert
     };
+
+    // HATA-M14-005: Klinik gösterim formatı
+    const heightPercentileDisplay = formatPercentileDisplay(heightP, heightExactP, heightZ);
+    const weightPercentileDisplay = formatPercentileDisplay(weightP, weightExactP, weightZ);
+    const bmiPercentileDisplay = formatPercentileDisplay(bmiP, bmiExactP, bmiZ);
+    const headCircumferencePercentileDisplay = formatPercentileDisplay(headCircP, headCircExactP, headCircZ);
+
+    // HATA-M14-001 & HATA-M14-002: Tek vizitte kesitsel akut malnütrisyon (SAM/MAM) taraması
+    let malnutritionAssessment: MalnutritionAssessment | null = null;
+    if (effectiveMonths <= 216 && (weightKg || effectiveHeight || muacMm || hasBilateralEdema)) {
+        malnutritionAssessment = evaluateMalnutrition({
+            ageMonths: effectiveMonths,
+            weightKg,
+            heightCm: effectiveHeight,
+            weightZ,
+            heightZ,
+            bmiZ,
+            weightForLengthZ,
+            muacMm,
+            hasBilateralEdema,
+            hasMedicalComplications
+        });
+    }
 
     return { 
         heightZ: heightZ !== null ? Number(heightZ.toFixed(2)) : null,
@@ -649,6 +904,10 @@ export function calculatePercentiles({
         weightExactPercentile: weightExactP,
         bmiExactPercentile: bmiExactP,
         headCircumferenceExactPercentile: headCircExactP,
+        heightPercentileDisplay,
+        weightPercentileDisplay,
+        bmiPercentileDisplay,
+        headCircumferencePercentileDisplay,
         isRestrictedLMSApplied: weightRestrictedTriggered || bmiRestrictedTriggered,
         standardUsed: standard,
         standardLabel: standard === 'who_2022' ? 'DSÖ 2022 (WHO Child Growth Standards)' : 'Neyzi 2015 (Türk Çocukları Ulusal Referansı)',
@@ -656,6 +915,7 @@ export function calculatePercentiles({
         positionCorrectionApplied: posResult?.wasAdjusted || false,
         positionCorrectionCm: posResult?.adjustmentCm || 0,
         positionCorrectionNote: posResult?.note || null,
+        effectiveHeightCm: effectiveHeight,
         comparisonWithAlternative,
         lmsParameters: {
             height: { l: norms.height.l, m: norms.height.m, s: norms.height.s },
@@ -666,6 +926,7 @@ export function calculatePercentiles({
         category,
         headCircCategory,
         cranialScreening,
+        malnutritionAssessment,
         weight: weightP,
         height: heightP,
         bmi: bmiP
@@ -1045,125 +1306,16 @@ export function calculateGrowthVelocity(input: GrowthVelocityInput): GrowthVeloc
     }
 
     // Akut Malnütrisyon Taraması (WHO 2022/2023 Rehberleri)
-    const criteriaMet: string[] = [];
-
-    if (hasBilateralEdema) {
-        criteriaMet.push('Besinsel bilateral gode bırakan ödem (Kwashiorkor)');
-    }
-
-    if (weightForLengthZ !== undefined) {
-        if (weightForLengthZ < -3.0) {
-            criteriaMet.push(`Boya göre ağırlık (W/L) Z-skoru < -3.0 SD (${weightForLengthZ.toFixed(2)})`);
-        } else if (weightForLengthZ < -2.0) {
-            criteriaMet.push(`Boya göre ağırlık (W/L) Z-skoru -3.0 ile -2.0 SD arasında (${weightForLengthZ.toFixed(2)})`);
-        }
-    }
-
-    if (muacMm !== undefined && muacMm > 0) {
-        if (ageMonths < 6) {
-            if (muacMm < 110) {
-                criteriaMet.push(`0-6 ay kol çevresi (MUAC) < 110 mm (${muacMm} mm - Yüksek mortalite riski)`);
-            } else if (muacMm < 120) {
-                criteriaMet.push(`0-6 ay kol çevresi (MUAC) 110-119 mm (${muacMm} mm - Orta düzey risk)`);
-            }
-        } else {
-            if (muacMm < 115) {
-                criteriaMet.push(`6-59 ay kol çevresi (MUAC) < 115 mm (${muacMm} mm - SAM kriteri)`);
-            } else if (muacMm < 125) {
-                criteriaMet.push(`6-59 ay kol çevresi (MUAC) 115-124 mm (${muacMm} mm - MAM kriteri)`);
-            }
-        }
-    }
-
-    const isSAM = Boolean(
-        hasBilateralEdema ||
-        (weightForLengthZ !== undefined && weightForLengthZ < -3.0) ||
-        (muacMm !== undefined && ((ageMonths < 6 && muacMm < 110) || (ageMonths >= 6 && muacMm < 115)))
-    );
-
-    const isMAM = !isSAM && Boolean(
-        (weightForLengthZ !== undefined && weightForLengthZ < -2.0) ||
-        (muacMm !== undefined && ((ageMonths < 6 && muacMm < 120) || (ageMonths >= 6 && muacMm < 125)))
-    );
-
-    const isAtRiskInfant = !isSAM && !isMAM && ageMonths < 6 && Boolean(
-        velocityStatus === 'WEIGHT_LOSS' ||
-        velocityStatus === 'INADEQUATE' ||
-        (centileDropAnalysis && centileDropAnalysis.isPathologicalFaltering)
-    );
-
-    let malnutritionAssessment: GrowthVelocityResult['malnutritionAssessment'] = undefined;
-
-    if (isSAM) {
-        const isUnder6M = ageMonths < 6;
-        const needsInpatient = Boolean(isUnder6M || hasMedicalComplications || hasBilateralEdema);
-
-        malnutritionAssessment = {
-            category: 'SAM',
-            categoryText: 'Şiddetli Akut Malnütrisyon (SAM)',
-            alertClass: 'danger',
-            criteriaMet,
-            treatmentProtocol: {
-                setting: needsInpatient ? 'INPATIENT' : 'OUTPATIENT',
-                caloricTargetKcalKgDay: isUnder6M ? '100-130 kcal/kg/gün (Anne Sütü / F-75)' : '150-185 kcal/kg/gün RUTF',
-                dietRecommendation: isUnder6M
-                    ? 'Anne-bebek çifti değerlendirmesi, emzirme ve relaktasyon danışmanlığı, sağılmış anne sütü. Anne sütü yoksa seyreltik F-100 veya bebek formülü.'
-                    : 'RUTF (Ready-to-Use Therapeutic Food) ile ayaktan beslenme tedavisi. Tıbbi komplikasyon veya iştah testi başarısız ise Faz 1 F-75 ile yatarak tedavi.',
-                contraindications: isUnder6M
-                    ? ['0-6 ay bebeklerde RUTF (fıstık ezmesi bazlı terapötik macun) KONTRENDİKEDİR (solüt yükü ve aspirasyon riski)!']
-                    : ['Komplikasyonlu ve iştahsız çocuklara zorla RUTF verilmemelidir.', 'Standart İ.V. sıvı infüzyonlarında yüksek sodyum yükünden kaçınılmalıdır.'],
-                monitoringAdvice: isUnder6M
-                    ? 'Hastanede izlem: Hipoglisemi, hipotermi, etkin emme takibi, günlük tartı.'
-                    : 'Haftalık poliklinik kontrolü (hedef kilo alımı: >5 g/kg/gün), rutin oral amoksisilin tedavisi, A vitamini takviyesi.'
-            }
-        };
-    } else if (isMAM) {
-        malnutritionAssessment = {
-            category: 'MAM',
-            categoryText: 'Orta Düzey Akut Malnütrisyon (MAM)',
-            alertClass: 'warning',
-            criteriaMet,
-            treatmentProtocol: {
-                setting: 'OUTPATIENT',
-                caloricTargetKcalKgDay: '100-130 kcal/kg/gün',
-                dietRecommendation: 'RUSF (Ready-to-Use Supplementary Food) veya yüksek enerjili ev yapımı ek gıdalarla zenginleştirilmiş diyet.',
-                contraindications: ['Rutin antibiyotik önerilmez (yalnızca kanıtlanmış enfeksiyon durumunda).'],
-                monitoringAdvice: '2 haftada bir büyüme hızı ve kol çevresi takibi. 4-6 haftada düzelme olmazsa ileri tetkik.'
-            }
-        };
-    } else if (isAtRiskInfant) {
-        malnutritionAssessment = {
-            category: 'AT_RISK_INFANT',
-            categoryText: 'Erken Süt Çocukluğu Büyüme Duraklaması / Gelişme Geriliği Riski',
-            alertClass: 'warning',
-            criteriaMet: [
-                ...criteriaMet,
-                velocityStatus === 'WEIGHT_LOSS' ? 'Kilo kaybı saptandı' : 'Yetersiz büyüme hızı saptandı',
-                ...(centileDropAnalysis?.falteringReason ? [centileDropAnalysis.falteringReason] : [])
-            ],
-            treatmentProtocol: {
-                setting: hasMedicalComplications ? 'INPATIENT' : 'OUTPATIENT',
-                caloricTargetKcalKgDay: '110-120 kcal/kg/gün',
-                dietRecommendation: 'Anne sütü alma sıklığının günde en az 8-12 sefere çıkarılması, anne göğsünün tam boşaltılması (son süt alımı), relaktasyon ve emzirme desteği.',
-                contraindications: ['0-6 ay arasında katı gıda veya yetişkin/büyük çocuk takviyeleri verilmemelidir.'],
-                monitoringAdvice: 'Haftalık tartı kontrolü; büyüme hızı 15-20 g/gün seviyesine ulaşana kadar yakın takip.'
-            }
-        };
-    } else {
-        malnutritionAssessment = {
-            category: 'WELL_NOURISHED',
-            categoryText: 'Normal Beslenme Durumu (Ötirofik)',
-            alertClass: 'success',
-            criteriaMet: ['Antropometrik ve klinik malnütrisyon kriteri saptanmadı.'],
-            treatmentProtocol: {
-                setting: 'OUTPATIENT',
-                caloricTargetKcalKgDay: 'Yaşa uygun idame (90-110 kcal/kg/gün)',
-                dietRecommendation: 'Dönemine uygun dengeli anne sütü ve tamamlayıcı beslenme programının sürdürülmesi.',
-                contraindications: [],
-                monitoringAdvice: 'Rutin sağlam çocuk izlem takvimi.'
-            }
-        };
-    }
+    const malnutritionAssessment = evaluateMalnutrition({
+        ageMonths,
+        weightKg: currentWeightKg,
+        weightForLengthZ,
+        muacMm,
+        hasBilateralEdema,
+        hasMedicalComplications,
+        velocityStatus,
+        centileDropAnalysis
+    });
 
     return {
         isValid: true,
@@ -1364,7 +1516,12 @@ export function calculateCranialScreening(input: CranialScreeningInput): Cranial
         riskTitle = '🔴 ACİL HİDROSEFALİ ALARMI: KİBAS Bulguları & Hızlı/Geniş Baş Çevresi';
         alertClass = 'danger';
         urgencyLevel = 'EMERGENCY_IMAGING';
-        clinicalRecommendations.push('Ön fontanel açıksa derhal yatak başı Transfontanel Ultrasonografi (TFUS) veya sedasyonsuz Hızlı Beyin MRG planlanmalıdır.');
+        // HATA-M14-006: 24 ay ve üzeri çocuklarda fontanel kapalıdır, TFUS yapılamaz
+        if (ageMonths < 24) {
+            clinicalRecommendations.push('Ön fontanel açıksa derhal yatak başı Transfontanel Ultrasonografi (TFUS) veya sedasyonsuz Hızlı Beyin MRG planlanmalıdır.');
+        } else {
+            clinicalRecommendations.push('Fontanel kapalı olduğu için derhal acil Beyin MRG (veya acil Kraniyal BT) planlanmalıdır.');
+        }
         clinicalRecommendations.push('Acil Çocuk Beyin Cerrahisi (Nöroşirürji) konsültasyonu istenmelidir.');
         clinicalRecommendations.push('⚠️ KİBAS şüphesinde serebellar tonsiller herniasyon riski nedeniyle beyin görüntülemesi yapılmadan Lomber Ponksiyon (LP) KONTRENDİKEDİR.');
     } else if (isStaticSevereMacro) {
@@ -1372,7 +1529,9 @@ export function calculateCranialScreening(input: CranialScreeningInput): Cranial
         riskTitle = '🔴 İLERİ MAKROSEFALİ (Z > +3.0 SD): Kritik Hidrosefali Taraması';
         alertClass = 'danger';
         urgencyLevel = 'EMERGENCY_IMAGING';
-        clinicalRecommendations.push('Z-skoru +3.0 SD üzerindedir (>99.87. persentil). Klinik semptom olmasa bile acil nörogörüntüleme (TFUS / Kraniyal MRG) endikedir.');
+        clinicalRecommendations.push(ageMonths < 24
+            ? 'Z-skoru +3.0 SD üzerindedir (>99.87. persentil). Klinik semptom olmasa bile acil nörogörüntüleme (TFUS / Kraniyal MRG) endikedir.'
+            : 'Z-skoru +3.0 SD üzerindedir (>99.87. persentil). Fontanel kapalı olduğundan klinik semptom olmasa bile acil nörogörüntüleme (Kraniyal MRG / BT) endikedir.');
         clinicalRecommendations.push('Konjenital hidrosefali, araknoid kist, subdural efüzyon ve metabolik/genetik megalensefali dışlanmalıdır.');
     } else if (hasKibasSigns) {
         hydrocephalusRisk = 'CRITICAL';
@@ -1386,7 +1545,11 @@ export function calculateCranialScreening(input: CranialScreeningInput): Cranial
         alertClass = 'warning';
         urgencyLevel = 'PLANNED_USG';
         clinicalRecommendations.push('Baş çevresi artış hızı yaşa göre beklenen azami sınırı aşmaktadır. Persentil kanal sıçraması hidrosefalinin erken evresi olabilir.');
-        clinicalRecommendations.push('Ön fontanel açıksa Transfontanel USG ile ventrikül boyutları (Evans indeksi) taranmalıdır.');
+        if (ageMonths < 24) {
+            clinicalRecommendations.push('Ön fontanel açıksa Transfontanel USG ile ventrikül boyutları (Evans indeksi) taranmalıdır.');
+        } else {
+            clinicalRecommendations.push('Fontanel kapalı olduğundan Kraniyal MRG ile ventrikül boyutları (Evans indeksi) taranmalıdır.');
+        }
         clinicalRecommendations.push('2-4 hafta arayla yakın baş çevresi takibi yapılmalıdır.');
     } else if (isStaticMacro) {
         if (parentalMacrocephaly && !isVelocityElevated) {
@@ -1402,7 +1565,11 @@ export function calculateCranialScreening(input: CranialScreeningInput): Cranial
             alertClass = 'warning';
             urgencyLevel = 'PLANNED_USG';
             clinicalRecommendations.push('Anne ve baba baş çevreleri ölçülerek ailesel makrosefali kuralı (Weaver) değerlendirilmelidir.');
-            clinicalRecommendations.push('Fontanel açıksa TFUS ile ekstraaksiyel sıvı ve ventrikül genişliği taranmalıdır.');
+            if (ageMonths < 24) {
+                clinicalRecommendations.push('Fontanel açıksa TFUS ile ekstraaksiyel sıvı ve ventrikül genişliği taranmalıdır.');
+            } else {
+                clinicalRecommendations.push('Fontanel kapalı olduğundan Kraniyal MRG / BT ile ekstraaksiyel sıvı ve ventrikül genişliği taranmalıdır.');
+            }
         }
     } else if (isStaticSevereMicro) {
         hydrocephalusRisk = 'CRITICAL';

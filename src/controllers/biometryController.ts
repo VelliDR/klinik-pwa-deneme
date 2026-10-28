@@ -606,6 +606,10 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
     const csSutures = getChk('check-cs-sutures');
     const csParental = getChk('check-cs-parental');
 
+    const gvMuacVal = getNum('input-gv-muac');
+    const gvEdemaVal = getChk('check-gv-edema');
+    const gvCompVal = getChk('check-gv-complications');
+
     if ((appState.biometry.weightKg || appState.biometry.heightCm || headCirc) && appState.biometry.gender && growthMonths !== null) {
         appState.pediatrics.percentiles = calculatePercentiles({
             totalMonths: growthMonths,
@@ -622,17 +626,22 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             hasSunsetEyes: csSunset,
             hasVomitingLethargy: csVomiting,
             hasSeparatedSutures: csSutures,
-            parentalMacrocephaly: csParental
+            parentalMacrocephaly: csParental,
+            muacMm: gvMuacVal ?? undefined,
+            hasBilateralEdema: gvEdemaVal,
+            hasMedicalComplications: gvCompVal
         });
         if (appState.pediatrics.percentiles && percContainer) {
             percContainer.classList.remove('hidden');
             const p = appState.pediatrics.percentiles;
             const stdBadge = p.standardUsed === 'who_2022' ? 'DSÖ' : 'Neyzi';
             if (outPWeight) {
-                outPWeight.innerHTML = p.weightPercentile !== null ? `%${p.weightPercentile} <span class="text-[9px] text-slate-500">(Z: ${p.weightZ}) [${stdBadge}]</span>` : '--';
+                const wDisp = p.weightPercentileDisplay || (p.weightPercentile !== null ? `%${p.weightPercentile}` : '--');
+                outPWeight.innerHTML = p.weightPercentile !== null ? `${wDisp} <span class="text-[9px] text-slate-500">(Z: ${p.weightZ}) [${stdBadge}]</span>` : '--';
             }
             if (outPHeight) {
-                outPHeight.innerHTML = p.heightPercentile !== null ? `%${p.heightPercentile} <span class="text-[9px] text-slate-500">(Z: ${p.heightZ}) [${stdBadge}]</span>` : '--';
+                const hDisp = p.heightPercentileDisplay || (p.heightPercentile !== null ? `%${p.heightPercentile}` : '--');
+                outPHeight.innerHTML = p.heightPercentile !== null ? `${hDisp} <span class="text-[9px] text-slate-500">(Z: ${p.heightZ}) [${stdBadge}]</span>` : '--';
             }
 
             const rowCranialAlert = getEl('row-cranial-alert');
@@ -641,7 +650,8 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
 
             if (p.headCircumferencePercentile !== null && rowHeadCirc && outputHeadCirc) {
                 rowHeadCirc.classList.remove('hidden');
-                outputHeadCirc.innerHTML = `%${p.headCircumferencePercentile} <span class="text-[9px] text-slate-500">(Z: ${p.headCircZ}) [${stdBadge}]</span>`;
+                const hcDisp = p.headCircumferencePercentileDisplay || `%${p.headCircumferencePercentile}`;
+                outputHeadCirc.innerHTML = `${hcDisp} <span class="text-[9px] text-slate-500">(Z: ${p.headCircZ}) [${stdBadge}]</span>`;
 
                 if (p.cranialScreening && p.cranialScreening.hydrocephalusRisk !== 'SAFE' && rowCranialAlert && outCranialAlertTitle && outCranialAlertBody) {
                     rowCranialAlert.classList.remove('hidden');
@@ -655,6 +665,21 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             } else {
                 if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
                 if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
+            }
+
+            // HATA-M14-001: İlk vizitte kesitsel akut malnütrisyon (SAM/MAM) alarmı
+            const rowMalAlert = getEl('row-malnutrition-alert');
+            const outMalTitle = getEl('output-malnutrition-alert-title');
+            const outMalBody = getEl('output-malnutrition-alert-body');
+
+            if (p.malnutritionAssessment && p.malnutritionAssessment.category !== 'WELL_NOURISHED' && rowMalAlert && outMalTitle && outMalBody) {
+                rowMalAlert.classList.remove('hidden');
+                const isDanger = p.malnutritionAssessment.alertClass === 'danger';
+                rowMalAlert.className = `p-1.5 rounded text-[10px] leading-tight space-y-0.5 ${isDanger ? 'bg-rose-950/80 border border-rose-800 text-rose-300' : 'bg-amber-950/80 border border-amber-800 text-amber-300'}`;
+                outMalTitle.innerText = `🚨 ${p.malnutritionAssessment.categoryText} (${p.malnutritionAssessment.treatmentProtocol.setting === 'INPATIENT' ? 'YATARAK İZLEM' : 'Ayaktan'})`;
+                outMalBody.innerText = `Kriter: ${p.malnutritionAssessment.criteriaMet.join(' • ')} | Hedef: ${p.malnutritionAssessment.treatmentProtocol.caloricTargetKcalKgDay}`;
+            } else if (rowMalAlert) {
+                rowMalAlert.classList.add('hidden');
             }
 
             if (p.positionCorrectionApplied && rowPosAlert && outPosAlert && p.positionCorrectionNote) {
@@ -676,6 +701,8 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
             const rowCranialAlert = getEl('row-cranial-alert');
             if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
+            const rowMalAlert = getEl('row-malnutrition-alert');
+            if (rowMalAlert) rowMalAlert.classList.add('hidden');
             if (rowPosAlert) rowPosAlert.classList.add('hidden');
             if (rowDiscAlert) rowDiscAlert.classList.add('hidden');
         }
@@ -685,6 +712,8 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
         if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
         const rowCranialAlert = getEl('row-cranial-alert');
         if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
+        const rowMalAlert = getEl('row-malnutrition-alert');
+        if (rowMalAlert) rowMalAlert.classList.add('hidden');
         if (rowPosAlert) rowPosAlert.classList.add('hidden');
         if (rowDiscAlert) rowDiscAlert.classList.add('hidden');
     }
@@ -721,6 +750,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
     // Erken Süt Çocukluğu (<6 Ay) Büyüme Hızı & Akut Malnütrisyon Taraması (WHO 2022/2023)
     const prevWeightKg = getNum('input-gv-prev-weight');
     const gvDays = getNum('input-gv-days');
+    const gvBirthPerc = getNum('input-gv-birth-percentile');
     const gvMuac = getNum('input-gv-muac');
     const gvEdema = getChk('check-gv-edema');
     const gvComplications = getChk('check-gv-complications');
@@ -728,16 +758,18 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
 
     if (appState.biometry.weightKg && prevWeightKg && gvDays && gvDays > 0 && totalMonths !== null) {
         const curPerc = appState.pediatrics.percentiles ? appState.pediatrics.percentiles.weightPercentile : undefined;
-        const curWlZ = appState.pediatrics.percentiles ? appState.pediatrics.percentiles.weightZ : undefined;
+        // HATA-M14-002 FIX: WAZ (weightZ) is NOT WHZ! Use bmiZ (or dedicated weightForLengthZ) for wasting assessment
+        const curBmiZ = appState.pediatrics.percentiles ? appState.pediatrics.percentiles.bmiZ : undefined;
 
         appState.pediatrics.growthVelocity = calculateGrowthVelocity({
             currentWeightKg: appState.biometry.weightKg,
             previousWeightKg: prevWeightKg,
             daysBetween: gvDays,
             ageMonths: totalMonths,
+            birthPercentile: gvBirthPerc ?? undefined,
             currentPercentile: curPerc ?? undefined,
             muacMm: gvMuac ?? undefined,
-            weightForLengthZ: curWlZ ?? undefined,
+            weightForLengthZ: curBmiZ ?? undefined,
             hasBilateralEdema: gvEdema,
             hasMedicalComplications: gvComplications
         });
