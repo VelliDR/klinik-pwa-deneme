@@ -122,7 +122,7 @@ export function updateNeonatologyCard(ageData: PatientAgeResult): void {
                 if (aapRes.status === 'TCB_REQUIRES_STAT_TSB_CONFIRMATION') {
                     extra += `
                         <div class="text-[9px] bg-rose-950/50 border border-rose-600 p-2 rounded mt-1 space-y-1 text-rose-200">
-                            <div class="font-bold text-rose-300 text-[10px]">🛑 HARD-STOP: TcB İLE KAN DEĞİŞİMİ / ESKALASYON KARARI VERİLEMEZ (AAP 2022 KAS 6 & 17)</div>
+                            <div class="font-bold text-rose-300 text-[10px]">[HARD-STOP]: TcB İLE KAN DEĞİŞİMİ / ESKALASYON KARARI VERİLEMEZ (AAP 2022 KAS 6 & 17)</div>
                             <div>• Transkütan ölçüm (TcB) cihazlarının yüksek seviyelerde doygunluk ve sapma riski nedeniyle doğrudan invaziv kan değişimi tetiklenemez.</div>
                             <div class="font-semibold text-amber-300">• Derhal acil STAT venöz TSB kanı alınız ve sonuç çıkana dek bebeği yoğun LED fototerapiye alınız.</div>
                         </div>

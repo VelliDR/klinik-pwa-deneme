@@ -217,7 +217,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             }
 
             if (bgAnalysis.isNeonatalNorms) {
-                outputHtml += `<div class="text-[9px] text-cyan-300 font-medium mt-0.5">👶 Yenidoğan Normları Uygulandı (Referans: pH 7.30–7.42, HCO3 19–24, pCO2 35–48)</div>`;
+                outputHtml += `<div class="text-[9px] text-cyan-300 font-medium mt-0.5">Yenidoğan Normları Uygulandı (Referans: pH 7.30–7.42, HCO3 19–24, pCO2 35–48)</div>`;
             }
 
             if (bgAnalysis.warnings && bgAnalysis.warnings.length > 0) {
@@ -776,7 +776,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             } else if (apapRes.isToxic && !appState.biometry.weightKg) {
                 nacHtml = `
                     <div class="p-2 rounded bg-amber-950/60 border border-amber-700 text-[9px] text-amber-200 mt-1 font-sans">
-                        ⚠️ <strong>Dozaj Güvenlik Kalkanı:</strong> Hastanın tartı kilosu girilmediğinden miligram bazlı IV NAC ve infüzyon sıvı hacmi hesaplanamadı. Aşırı/eksik dozajı önlemek için lütfen Biyometri kartından hastanın kilosunu giriniz.
+                        <strong>[Dozaj Güvenlik Kalkanı]:</strong> Hastanın tartı kilosu girilmediğinden miligram bazlı IV NAC ve infüzyon sıvı hacmi hesaplanamadı. Aşırı/eksik dozajı önlemek için lütfen Biyometri kartından hastanın kilosunu giriniz.
                     </div>
                 `;
             }

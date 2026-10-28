@@ -292,11 +292,178 @@ export function findMonographSync(drug?: MonographLookupInput | null): ClinicalM
   return null;
 }
 
+export interface MasterMonographRecord {
+  atc: string;
+  genericTr: string;
+  genericEn: string;
+  drugClass: string;
+  adultDose: string;
+  pediatricDose: string;
+  pregnancyFda: string;
+  pregnancyPllr: string;
+  lactation: string;
+  lactmed: string;
+  organImpairment: string;
+  blackBox: string;
+  contraindications: string;
+  contraDiseases: string[];
+  indications: string[];
+  rxnorm: string;
+  chembl: string;
+  phase?: string;
+  storage?: string;
+  dailyMedSpl?: string;
+  brands?: string[];
+}
+
+let masterCache: Record<string, MasterMonographRecord> | null = null;
+let masterLoadingPromise: Promise<Record<string, MasterMonographRecord>> | null = null;
+
+export function isMasterMonographsReady(): boolean {
+  return masterCache !== null && Object.keys(masterCache).length > 0;
+}
+
+export function getMasterMonographsCache(): Record<string, MasterMonographRecord> | null {
+  return masterCache;
+}
+
+export async function ensureMasterMonographsReady(): Promise<Record<string, MasterMonographRecord>> {
+  if (isMasterMonographsReady() && masterCache) {
+    return masterCache;
+  }
+  if (masterLoadingPromise) {
+    return masterLoadingPromise;
+  }
+
+  masterLoadingPromise = (async () => {
+    const candidatePaths = [
+      './data/clinical_monographs_master.json',
+      '/data/clinical_monographs_master.json',
+      'data/clinical_monographs_master.json'
+    ];
+
+    for (const p of candidatePaths) {
+      try {
+        const res = await fetch(p);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            masterCache = data as Record<string, MasterMonographRecord>;
+            return masterCache;
+          }
+        }
+      } catch {
+        // Sonraki adayı dene
+      }
+    }
+    return {};
+  })();
+
+  try {
+    return await masterLoadingPromise;
+  } finally {
+    masterLoadingPromise = null;
+  }
+}
+
+export function convertMasterToClinicalMonograph(m: MasterMonographRecord, selectedBrand?: string): ClinicalMonograph {
+  // Gebelik & Laktasyon & LactMed Metin İnşası
+  const pregParts: string[] = [];
+  if (m.pregnancyFda) pregParts.push(`FDA Gebelik Sınıfı: ${m.pregnancyFda}`);
+  if (m.pregnancyPllr) pregParts.push(`Gebelik Risk Özeti (PLLR):\n${m.pregnancyPllr}`);
+  if (m.lactation) pregParts.push(`Laktasyon & Anne Sütü:\n${m.lactation}`);
+  if (m.lactmed) pregParts.push(`LactMed Kaydı: ${m.lactmed}`);
+  const pregStr = pregParts.join('\n\n') || 'Klinik hekim değerlendirmesi önerilir.';
+
+  // Endikasyonlar
+  const indStr = Array.isArray(m.indications) && m.indications.length > 0
+    ? m.indications.join(', ')
+    : 'KÜB / prospektüs endikasyonlarına başvurunuz.';
+
+  // Kontrendikasyonlar
+  const contraParts: string[] = [];
+  if (m.contraindications && !m.contraindications.includes('None. None.')) {
+    contraParts.push(m.contraindications);
+  }
+  if (Array.isArray(m.contraDiseases) && m.contraDiseases.length > 0) {
+    contraParts.push(`Kontrendike Hastalıklar (MED-RT): ${m.contraDiseases.join(', ')}`);
+  }
+  const contraStr = contraParts.join('\n\n') || 'Standart kontrendikasyon önlemleri (etken maddeye aşırı duyarlılık vb.) geçerlidir.';
+
+  // Kara Kutu (Black Box)
+  const bbWarnings = m.blackBox && !m.blackBox.includes('Standart kullanım önlemleri geçerlidir')
+    ? [m.blackBox]
+    : [];
+
+  const pearlParts: string[] = [
+    `ATC Kodu: ${m.atc} (${m.drugClass || 'Farmasötik Ajan'})`
+  ];
+  if (m.rxnorm) pearlParts.push(`RxNorm RxCUI: ${m.rxnorm}`);
+  if (m.chembl) pearlParts.push(`ChEMBL: ${m.chembl}`);
+  if (m.phase) pearlParts.push(`Geliştirme Fazı: ${m.phase}`);
+  if (m.storage) pearlParts.push(`Saklama: ${m.storage}`);
+
+  return {
+    id: `master_${m.atc.toLowerCase()}`,
+    genericTr: m.genericTr || m.genericEn,
+    genericEn: m.genericEn || m.genericTr,
+    atcCodes: [m.atc],
+    genericKeywords: [m.genericTr.toLowerCase(), m.genericEn.toLowerCase()],
+    brandExamples: m.brands && m.brands.length > 0 ? m.brands : (selectedBrand ? [selectedBrand] : []),
+    drugClass: m.drugClass || 'Klinik Farmasötik Ajan',
+    indications: indStr,
+    adultDose: m.adultDose || 'KÜB / prospektüs pozolojisine başvurunuz.',
+    pediatricDose: m.pediatricDose || 'Pediatrik kullanım ve yaş sınırları için resmi KÜB belgesine başvurunuz.',
+    maxDailyDose: 'Resmi KÜB / prospektüs tavan dozuna bakınız.',
+    renalAdjustment: m.organImpairment || 'Böbrek yetmezliğinde (eGFR) hekim değerlendirmesi ve doz uyarlaması önerilir.',
+    hepaticAdjustment: m.organImpairment || 'Karaciğer yetmezliğinde dikkatli kullanım önerilir.',
+    pregnancyLactation: pregStr,
+    contraindications: contraStr,
+    clinicalPearls: pearlParts.join(' • '),
+    safety_warnings: {
+      black_box_warnings: bbWarnings,
+      absolute_contraindications: contraParts
+    },
+    metadata: {
+      source_documents: ['TİTCK Türkiye İlaç Klinik Master', 'FDA DailyMed SPL', 'MED-RT', 'LactMed (NCBI)'],
+      version_date: '2026-10',
+      last_reviewed_iso: new Date().toISOString()
+    }
+  };
+}
+
+export function hasMasterMonographSync(atcCode?: string): boolean {
+  if (!atcCode || !masterCache) return false;
+  return Boolean(masterCache[atcCode.trim().toUpperCase()]);
+}
+
 export async function findMonographForDrug(drug?: MonographLookupInput | null): Promise<ClinicalMonograph | null> {
   if (!isMonographsReady()) {
     await ensureMonographsReady();
   }
-  return findMonographSync(drug);
+  const sync = findMonographSync(drug);
+  if (sync) return sync;
+
+  // 136 çekirdek monografta bulunamadıysa 1.794 ATC'lik Klinik Master kütüphanesini tara
+  const master = await ensureMasterMonographsReady();
+  if (master && drug) {
+    const rawAtc = String(drug.atcCode || drug.atc || '').trim().toUpperCase();
+    if (rawAtc && master[rawAtc]) {
+      return convertMasterToClinicalMonograph(master[rawAtc], drug.brand);
+    }
+
+    // ATC ile tam eşleşmediyse etken madde adıyla eşleştir
+    const genNorm = normalizeText(drug.generic || '');
+    if (genNorm && genNorm !== 'belirtilmedi') {
+      for (const item of Object.values(master)) {
+        if (normalizeText(item.genericTr) === genNorm || normalizeText(item.genericEn) === genNorm) {
+          return convertMasterToClinicalMonograph(item, drug.brand);
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function escapeSafeHtml(str: string): string {
@@ -451,11 +618,11 @@ export function renderMonographCardHTML(mono: ClinicalMonograph, selectedBrand?:
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
           <div class="text-[10px] uppercase tracking-wider font-bold text-emerald-400 mb-0.5">Erişkin Dozu</div>
-          <div class="text-slate-200 leading-relaxed font-mono text-[11px]">${escapeSafeHtml(mono.adultDose)}</div>
+          <div class="text-slate-200 leading-relaxed font-mono text-[11px] whitespace-pre-line max-h-60 overflow-y-auto">${escapeSafeHtml(mono.adultDose)}</div>
         </div>
         <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
           <div class="text-[10px] uppercase tracking-wider font-bold text-blue-400 mb-0.5">Pediatrik Doz</div>
-          <div class="text-slate-200 leading-relaxed font-mono text-[11px]">${escapeSafeHtml(mono.pediatricDose)}</div>
+          <div class="text-slate-200 leading-relaxed font-mono text-[11px] whitespace-pre-line max-h-60 overflow-y-auto">${escapeSafeHtml(mono.pediatricDose)}</div>
         </div>
       </div>
     `;
@@ -542,7 +709,7 @@ export function renderMonographCardHTML(mono: ClinicalMonograph, selectedBrand?:
     reproductiveHTML = `
       <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
         <div class="text-[10px] uppercase tracking-wider font-bold text-pink-400 mb-0.5">Gebelik ve Emzirme Güvenliği</div>
-        <div class="text-slate-200 leading-relaxed text-[11px]">${escapeSafeHtml(mono.pregnancyLactation)}</div>
+        <div class="text-slate-200 leading-relaxed text-[11px] whitespace-pre-line max-h-56 overflow-y-auto">${escapeSafeHtml(mono.pregnancyLactation)}</div>
       </div>
     `;
   }
@@ -631,11 +798,11 @@ export function renderMonographCardHTML(mono: ClinicalMonograph, selectedBrand?:
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
           <div class="text-[10px] uppercase tracking-wider font-bold text-cyan-400 mb-0.5">Renal Doz Uyarlaması (eGFR)</div>
-          <div class="text-slate-200 leading-relaxed text-[11px]">${escapeSafeHtml(mono.renalAdjustment)}</div>
+          <div class="text-slate-200 leading-relaxed text-[11px] whitespace-pre-line max-h-48 overflow-y-auto">${escapeSafeHtml(mono.renalAdjustment)}</div>
         </div>
         <div class="bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
           <div class="text-[10px] uppercase tracking-wider font-bold text-purple-400 mb-0.5">Karaciğer Yetmezliği</div>
-          <div class="text-slate-200 leading-relaxed text-[11px]">${escapeSafeHtml(mono.hepaticAdjustment)}</div>
+          <div class="text-slate-200 leading-relaxed text-[11px] whitespace-pre-line max-h-48 overflow-y-auto">${escapeSafeHtml(mono.hepaticAdjustment)}</div>
         </div>
       </div>
 
@@ -648,7 +815,7 @@ export function renderMonographCardHTML(mono: ClinicalMonograph, selectedBrand?:
       <!-- Contraindications -->
       <div class="bg-rose-950/35 border border-rose-700/60 rounded-lg p-2.5">
         <div class="text-[10px] uppercase tracking-wider font-bold text-rose-300 mb-0.5">[KONTRENDİKE] Kontrendikasyonlar ve Kritik Uyarılar</div>
-        <div class="text-rose-100 leading-relaxed text-[11px]">${escapeSafeHtml(mono.contraindications)}</div>
+        <div class="text-rose-100 leading-relaxed text-[11px] whitespace-pre-line max-h-48 overflow-y-auto">${escapeSafeHtml(mono.contraindications)}</div>
       </div>
 
       <!-- Clinical Pearls -->

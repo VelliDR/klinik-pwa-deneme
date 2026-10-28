@@ -374,7 +374,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
             renderClinicalCardResult(heartOut, {
                 title: `HEART Skoru: ${heartRes.score}/10`,
                 riskText: `${heartRes.riskCategory} (%${heartRes.maceRatePercent} MACE)`,
-                subtitle: isUnder18 ? '⚠️ HEART skoru erişkin AKS içindir; pediatrik yaşta (<18 yaş) valide edilmemiştir.' : undefined,
+                subtitle: isUnder18 ? 'HEART skoru erişkin AKS içindir; pediatrik yaşta (<18 yaş) valide edilmemiştir.' : undefined,
                 recommendations: heartRes.recommendations,
                 alertClass: heartRes.alertClass
             });
@@ -432,7 +432,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
             renderClinicalCardResult(afOut, {
                 title: `CHA₂DS₂-VASc: ${afRes.score} Puan`,
                 riskText: `Yıllık İnme: %${afRes.annualStrokeRiskPercent}`,
-                subtitle: isUnder18 ? '⚠️ CHA₂DS₂-VASc erişkin atriyal fibrilasyonu içindir; pediatrik yaşta (<18 yaş) geçerli değildir.' : undefined,
+                subtitle: isUnder18 ? 'CHA₂DS₂-VASc erişkin atriyal fibrilasyonu içindir; pediatrik yaşta (<18 yaş) geçerli değildir.' : undefined,
                 recommendations: afRes.anticoagulationRecommendation,
                 alertClass: afRes.alertClass
             });
@@ -484,7 +484,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
             renderClinicalCardResult(hasbledOut, {
                 title: `HAS-BLED: ${bRes.score} Puan`,
                 riskText: bRes.bleedingRiskCategory,
-                subtitle: isUnder18 ? '⚠️ HAS-BLED erişkin antikoagülasyonu içindir; pediatrik yaşta (<18 yaş) geçerli değildir.' : undefined,
+                subtitle: isUnder18 ? 'HAS-BLED erişkin antikoagülasyonu içindir; pediatrik yaşta (<18 yaş) geçerli değildir.' : undefined,
                 recommendations: bRes.recommendations,
                 alertClass: bRes.alertClass === 'danger' ? 'text-rose-400' : 'text-emerald-400'
             });

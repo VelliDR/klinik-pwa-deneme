@@ -90,7 +90,7 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             if (pkVal.requiresDextroseMaintenance && pkVal.maintenanceHourlyMl !== null) {
                 pkHtml += `<div class="mt-1 p-1.5 rounded bg-rose-950/60 border border-rose-700/60 text-[9px] text-rose-200 font-semibold space-y-0.5">
                     <div>&lt;30 kg Pediatrik Ek İdame (%5 Dekstrozlu): ${pkVal.maintenanceDailyMl} mL/gün (<strong>${pkVal.maintenanceHourlyMl} mL/saat</strong>)</div>
-                    <div class="text-amber-300 font-bold">👉 Toplam İlk 8 Saat İnfüzyon Hızı (Yanık + İdame): ${pkVal.combinedFirst8HoursRate} mL/saat</div>
+                    <div class="text-amber-300 font-bold">Toplam İlk 8 Saat İnfüzyon Hızı (Yanık + İdame): ${pkVal.combinedFirst8HoursRate} mL/saat</div>
                 </div>`;
             }
             if (pkVal.clinicalNote) {

@@ -13,6 +13,7 @@ export default defineConfig({
         'icons/icon-512.png',
         'data/medicines.json',
         'data/clinical_monographs.json',
+        'data/clinical_monographs_master.json',
         'data/atc_knowledge_base.json'
       ],
       manifest: {

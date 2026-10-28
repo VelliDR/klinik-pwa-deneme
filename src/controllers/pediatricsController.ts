@@ -399,11 +399,11 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                 riskContainer.className = `p-3 rounded-xl border flex flex-col gap-1 ${isUrgent ? 'bg-rose-950/40 border-rose-600/50' : 'bg-slate-800 border-slate-700/50'}`;
                 badgeRiskType.textContent = news2Res.isPartial ? 'NEWS2 (Kısmi)' : 'NEWS2';
                 badgeRiskType.className = `text-xs font-bold tabular-nums ${isUrgent ? 'text-rose-400' : 'text-slate-300'}`;
-                textRiskScore.textContent = `Skor: ${news2Res.score}${news2Res.hasRedScore ? ' (🚨 Kırmızı Skor: Tekil Parametre ≥3)' : ''}`;
+                textRiskScore.textContent = `Skor: ${news2Res.score}${news2Res.hasRedScore ? ' (Kırmızı Skor: Tekil Parametre ≥3)' : ''}`;
                 
                 let recText = `${news2Res.risk} — ${news2Res.recommendation}`;
                 if (news2Res.isPartial && news2Res.missingParams && news2Res.missingParams.length > 0) {
-                    recText = `⚠️ Kısmi Triyaj Skoru (Eksik: ${news2Res.missingParams.join(', ')}). ${recText}`;
+                    recText = `[Kısmi Triyaj Skoru] (Eksik: ${news2Res.missingParams.join(', ')}). ${recText}`;
                 }
                 flagContainer.innerHTML = recText;
             }

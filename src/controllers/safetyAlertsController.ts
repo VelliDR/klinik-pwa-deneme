@@ -182,7 +182,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                     outRenal.classList.remove('hidden');
                     outRenal.className = 'p-2.5 rounded-lg border tabular-nums space-y-1 text-xs bg-rose-950/50 border-rose-600/70 text-rose-200';
                     outRenal.innerHTML = `
-                        <div class="font-bold text-xs">🚨 DİKKAT: Pediatrik Renal Dozaj Güvenlik Kalkanı Riski</div>
+                        <div class="font-bold text-xs uppercase tracking-wide text-rose-300">[DİKKAT] Pediatrik Renal Dozaj Güvenlik Kalkanı Riski</div>
                         <div class="text-xs leading-relaxed font-semibold text-rose-300">Serum Kreatinini (${escapeHtml(scrVal)} mg/dL) yüksek ancak Boy (cm) girilmediği için Schwartz renal klerensi hesaplanamadı! Böbrek yetmezliği riski ve nefrotoksisite nedeniyle lütfen boy giriniz.</div>
                     `;
                 } else {
@@ -325,7 +325,7 @@ export function renderSelectedDrugs(): void {
                 </div>
                 <span class="text-[10px] text-slate-400 mt-0.5">${safeGeneric}${d.company ? ` • <span class="text-slate-500">${escapeHtml(d.company)}</span>` : ''}</span>
                 <div class="flex flex-wrap items-center gap-2 mt-1">
-                    <button type="button" class="btn-open-monograph inline-flex items-center gap-0.5 text-[9px] ${hasMonograph ? 'text-emerald-400 hover:text-emerald-300 font-semibold' : 'text-slate-300 hover:text-white'} hover:underline" ${dataAttrs}>${hasMonograph ? 'Monograf' : 'Klinik Özet'}</button>
+                    <button type="button" class="btn-open-monograph inline-flex items-center gap-0.5 text-[9px] ${hasMonograph ? 'text-emerald-400 hover:text-emerald-300 font-semibold' : 'text-sky-400 hover:text-sky-300 font-semibold'} hover:underline" ${dataAttrs}>${hasMonograph ? 'Monograf' : 'Klinik Detay'}</button>
                     ${(validKt || validKub) ? `
                         ${validKt ? `<a href="${validKt}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-0.5 text-[9px] text-amber-400 hover:text-amber-300 hover:underline" ${dataAttrs}>Prospektüs</a>` : ''}
                         ${validKub ? `<a href="${validKub}" target="_blank" rel="noopener noreferrer" class="btn-pdf-link inline-flex items-center gap-0.5 text-[9px] text-sky-400 hover:text-sky-300 hover:underline" ${dataAttrs}>KÜB</a>` : ''}
@@ -482,7 +482,7 @@ export async function executeDrugSearch(q: string): Promise<void> {
                             ${r.company ? `<div class="text-[9px] text-slate-400 truncate mt-0.5">${safeCompany}</div>` : ''}
                         </div>
                         <div class="flex items-center gap-1 flex-shrink-0">
-                            <button type="button" class="btn-open-monograph ${hasMonograph ? 'bg-emerald-950/80 border-emerald-700/70 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-500' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-500'} border text-[10px] px-2 py-1 rounded font-semibold transition-all" ${dataAttrs} title="Çevrimdışı Klinik Monograf / Doz & Güvenlik Özeti">${hasMonograph ? 'Monograf' : 'Özet'}</button>
+                            <button type="button" class="btn-open-monograph ${hasMonograph ? 'bg-emerald-950/80 border-emerald-700/70 text-emerald-300 hover:bg-emerald-900 hover:border-emerald-500' : 'bg-sky-950/80 border-sky-700/70 text-sky-300 hover:bg-sky-900 hover:border-sky-500'} border text-[10px] px-2 py-1 rounded font-semibold transition-all" ${dataAttrs} title="Çevrimdışı Klinik Monograf, Dozaj & Güvenlik">${hasMonograph ? 'Monograf' : 'Detay'}</button>
                             <button type="button" class="btn-muadil bg-slate-800 border border-slate-700 hover:bg-slate-700 hover:border-slate-500 text-[10px] px-2 py-1 rounded text-cyan-300 transition-all opacity-90 hover:opacity-100" data-id="${escapeHtml(r.id || '')}" data-brand="${safeBrand}" data-generic="${safeGeneric}" data-atc="${safeAtc}" data-barcode="${safeBarcode}" data-company="${safeCompany}" data-rx="${escapeHtml(r.prescriptionType || '')}" data-esdeger="${safeEg}" data-discount="${safeDiscount}" data-kamuno="${safeKamuNo}" data-pregnancy="${safePregnancy}" data-coldchain="${safeColdChain}" data-sgk="${safeSgk}" data-kt="${safeKtUrl}" data-kub="${safeKubUrl}" title="Eşdeğer / Muadil İlaçları ve Kamu İskontolarını Karşılaştır">Muadil</button>
                         </div>
                     </div>

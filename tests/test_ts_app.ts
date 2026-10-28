@@ -131,7 +131,7 @@ console.log('--- 3. TESTING PATIENT AGE CALCULATION & BANNER UPDATE ---');
 const ageResult = appModule.calculatePatientAge();
 assert.strictEqual(ageResult.y, 25);
 assert.strictEqual(ageResult.formatted, '25 Yaş');
-assert.strictEqual(ageResult.ageGroupTag, '👤 Erişkin');
+assert.strictEqual(ageResult.ageGroupTag, 'Erişkin');
 
 console.log('✓ calculatePatientAge() in src/app.ts returned accurate adult demography.');
 

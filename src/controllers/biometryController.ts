@@ -120,11 +120,11 @@ export function calculatePatientAge(): PatientAgeResult {
         if (ageVal < 0) {
             if (breakdownEl && textBreakdown && badgeDobTag) {
                 breakdownEl.classList.remove('hidden');
-                textBreakdown.textContent = '⚠️ Yaş negatif olamaz!';
-                badgeDobTag.textContent = '⚠️ Hatalı Giriş';
+                textBreakdown.textContent = 'Yaş negatif olamaz!';
+                badgeDobTag.textContent = 'Hatalı Giriş';
                 badgeDobTag.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950/60 text-rose-300 border border-rose-700/60';
             }
-            return { y: null, m: null, days: null, weeks: null, hours: null, formatted: 'Geçersiz Yaş', ageGroupTag: '⚠️ Hatalı Giriş' };
+            return { y: null, m: null, days: null, weeks: null, hours: null, formatted: 'Geçersiz Yaş', ageGroupTag: 'Hatalı Giriş' };
         }
 
         const unit = (unitVal === 'dob') ? 'years' : unitVal;
@@ -135,7 +135,7 @@ export function calculatePatientAge(): PatientAgeResult {
             weeks = Math.round(ageVal * 52.14);
             hours = days * 24;
             formatted = `${y} Yaş`;
-            ageGroupTag = y < 1 ? '👶 Süt Çocuğu' : (y < 6 ? '🧒 Oyun Çocuğu' : (y < 12 ? '🎒 Okul Çocuğu' : (y < 18 ? '🧑 Ergen' : (y < 65 ? '👤 Erişkin' : '🧓 Geriatrik (65Y+)'))));
+            ageGroupTag = y < 1 ? 'Süt Çocuğu' : (y < 6 ? 'Oyun Çocuğu' : (y < 12 ? 'Okul Çocuğu' : (y < 18 ? 'Ergen' : (y < 65 ? 'Erişkin' : 'Geriatrik (65Y+)'))));
         } else if (unit === 'months') {
             y = +(ageVal / 12).toFixed(2);
             m = ageVal;
@@ -143,7 +143,7 @@ export function calculatePatientAge(): PatientAgeResult {
             weeks = +(days / 7).toFixed(1);
             hours = days * 24;
             formatted = `${m} Aylık`;
-            ageGroupTag = ageVal <= 1 ? '🍼 Yenidoğan / Süt Çocuğu' : (ageVal <= 12 ? '👶 Süt Çocuğu (1-12A)' : '🧒 Oyun Çocuğu');
+            ageGroupTag = ageVal <= 1 ? 'Yenidoğan / Süt Çocuğu' : (ageVal <= 12 ? 'Süt Çocuğu (1-12A)' : 'Oyun Çocuğu');
         } else if (unit === 'weeks') {
             weeks = ageVal;
             days = Math.round(ageVal * 7);
@@ -151,7 +151,7 @@ export function calculatePatientAge(): PatientAgeResult {
             m = +(days / 30.4375).toFixed(2);
             y = +(days / 365.25).toFixed(2);
             formatted = `${weeks} Haftalık`;
-            ageGroupTag = days <= 28 ? '🍼 Yenidoğan (0-28G)' : '👶 Süt Çocuğu (1-12A)';
+            ageGroupTag = days <= 28 ? 'Yenidoğan (0-28G)' : 'Süt Çocuğu (1-12A)';
         } else if (unit === 'days') {
             days = ageVal;
             hours = ageVal * 24;
@@ -159,7 +159,7 @@ export function calculatePatientAge(): PatientAgeResult {
             m = +(ageVal / 30.4375).toFixed(2);
             y = +(ageVal / 365.25).toFixed(2);
             formatted = days <= 28 ? `${days} Günlük Yenidoğan` : `${days} Günlük`;
-            ageGroupTag = days <= 28 ? '🍼 Yenidoğan (0-28G)' : '👶 Süt Çocuğu (1-12A)';
+            ageGroupTag = days <= 28 ? 'Yenidoğan (0-28G)' : 'Süt Çocuğu (1-12A)';
         }
 
         if (dobInput && typeof document !== 'undefined' && !isDobInputActive && days !== null) {
@@ -200,26 +200,26 @@ export function calculatePatientAge(): PatientAgeResult {
             y = +(days / 365.25).toFixed(2);
 
             if (days <= 28) {
-                ageGroupTag = '🍼 Yenidoğan (0-28G)';
+                ageGroupTag = 'Yenidoğan (0-28G)';
                 formatted = `${days} Günlük Yenidoğan (${hours} saat)`;
             } else if (days < 365) {
-                ageGroupTag = '👶 Süt Çocuğu (1-12A)';
+                ageGroupTag = 'Süt Çocuğu (1-12A)';
                 formatted = `${Math.floor(m)} Aylık (${weeks} Hf / ${days}G)`;
             } else if (y < 6) {
-                ageGroupTag = '🧒 Oyun Çocuğu (1-5Y)';
+                ageGroupTag = 'Oyun Çocuğu (1-5Y)';
                 const remM = Math.floor((days % 365.25) / 30.4375);
                 formatted = `${Math.floor(y)} Yaş ${remM ? remM + ' Ay' : ''}`;
             } else if (y < 12) {
-                ageGroupTag = '🎒 Okul Çocuğu (6-12Y)';
+                ageGroupTag = 'Okul Çocuğu (6-12Y)';
                 formatted = `${Math.floor(y)} Yaş`;
             } else if (y < 18) {
-                ageGroupTag = '🧑 Ergen / Adölesan';
+                ageGroupTag = 'Ergen / Adölesan';
                 formatted = `${Math.floor(y)} Yaş`;
             } else if (y < 65) {
-                ageGroupTag = '👤 Erişkin';
+                ageGroupTag = 'Erişkin';
                 formatted = `${Math.floor(y)} Yaş`;
             } else {
-                ageGroupTag = '🧓 Geriatrik (65Y+)';
+                ageGroupTag = 'Geriatrik (65Y+)';
                 formatted = `${Math.floor(y)} Yaş`;
             }
 
@@ -245,9 +245,9 @@ export function calculatePatientAge(): PatientAgeResult {
         } else if (breakdownEl) {
             // HATA-M1-002: Gelecek tarih seçildiğinde kullanıcıya bildirim ver
             breakdownEl.classList.remove('hidden');
-            if (textBreakdown) textBreakdown.textContent = '⚠️ Doğum tarihi gelecekte olamaz!';
+            if (textBreakdown) textBreakdown.textContent = 'Doğum tarihi gelecekte olamaz!';
             if (badgeDobTag) {
-                badgeDobTag.textContent = '⚠️ Gelecek Tarih';
+                badgeDobTag.textContent = 'Gelecek Tarih';
                 badgeDobTag.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-950/60 text-rose-300 border border-rose-700/60';
             }
         }
@@ -486,7 +486,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
                     outEgfrMeta.textContent = 'Schwartz için Boy (cm) girin';
                     outEgfrMeta.classList.remove('hidden');
                 } else if (isAdultWithoutGender) {
-                    outEgfrMeta.textContent = '⚠️ Cinsiyet Seçiniz';
+                    outEgfrMeta.textContent = 'Cinsiyet Seçiniz';
                     outEgfrMeta.classList.remove('hidden');
                 } else {
                     outEgfrMeta.textContent = '';
@@ -526,7 +526,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
         if (appState.pediatrics.correctedAge && correctedAgeEl) {
             if (appState.pediatrics.correctedAge.stopRuleApplied) {
                 correctedAgeEl.classList.remove('hidden');
-                correctedAgeEl.innerHTML = `<span class="text-amber-400 font-medium">⚠️ 2 yaşından (24 ay) büyük çocuklarda düzeltilmiş yaş uygulanmaz (AAP/CDC kılavuzu); takvim yaşı (${totalMonths} ay) esas alınmıştır.</span>`;
+                correctedAgeEl.innerHTML = `<span class="text-amber-400 font-medium">2 yaşından (24 ay) büyük çocuklarda düzeltilmiş yaş uygulanmaz (AAP/CDC kılavuzu); takvim yaşı (${totalMonths} ay) esas alınmıştır.</span>`;
             } else if (appState.pediatrics.correctedAge.isPreterm) {
                 correctedAgeEl.classList.remove('hidden');
                 if (appState.pediatrics.correctedAge.isTermEquivalent === false) {
