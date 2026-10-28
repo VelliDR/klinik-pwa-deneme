@@ -4745,7 +4745,63 @@ assert.ok(compVaxCatchup?.catchUpRules?.some(r => r.includes('BCG (Verem)') && r
 
 console.log('✓ Motor 17 & 18 Aşı Takvimi, Yakalama & Centor/McIsaac verified (100% healthy)');
 
-console.log('\n🎉 ALL 46 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+console.log('\n--- Section 47: Motor 12 & 13 Steroid Eşdeğerliği, HOMA-IR & GIR/İnfüzyon ---');
+
+// 47.1 HATA-M12-001: Suprafizyolojik Steroid Dozlarında HPA Aksı Baskılanma Alarmı
+const highDoseSteroid = convertSteroids({ sourceDrug: 'prednisolone', doseMg: 40 });
+assert.ok(highDoseSteroid);
+assert.strictEqual(highDoseSteroid.hpaSuppressionAlert, true, 'Prednizolon 40 mg için HPA baskılanma alarmı aktif olmalıdır');
+assert.ok(highDoseSteroid.hpaSuppressionWarning?.includes('HPA Aksı Baskılanma Uyarısı'), 'HPA uyarısı içermelidir');
+assert.ok(highDoseSteroid.hpaSuppressionWarning?.includes('tapering'), 'Tapering önerisi içermelidir');
+
+// 47.2 HATA-M12-002: Steroid Mineralokortikoid Potansiyeli ve Uyarısı
+const hydroSteroid = convertSteroids({ sourceDrug: 'hydrocortisone', doseMg: 100 });
+assert.ok(hydroSteroid);
+assert.ok(hydroSteroid.mineralocorticoidWarning?.includes('Mineralokortikoid Etki Uyarısı'), 'Yüksek mineralokortikoid uyarısı verilmelidir');
+const dexConversion = hydroSteroid.conversions.find(c => c.id === 'dexamethasone');
+assert.strictEqual(dexConversion?.mineralocorticoidPotency, 0.0, 'Deksametazon mineralokortikoid etkisi 0 olmalıdır');
+
+// 47.3 HATA-M12-003: HOMA-IR Birim Doğrulaması (<30) ve Aşırı Uç Değer (>250)
+const homaMmol = calculateHOMAIR({ fastingGlucoseMgDl: 5.5, fastingInsulinUuMl: 10 });
+assert.ok(homaMmol);
+assert.ok(homaMmol.unitWarning?.includes('mmol/L'), '<30 mg/dL için mmol/L şüphe uyarısı verilmelidir');
+
+const homaSevere = calculateHOMAIR({ fastingGlucoseMgDl: 280, fastingInsulinUuMl: 25 });
+assert.ok(homaSevere);
+assert.ok(homaSevere.validityWarning?.includes('akut hiperglisemi/ketoasidoz'), '>250 mg/dL için geçerlilik uyarısı verilmelidir');
+
+// 47.4 HATA-M13-001: GIR Periferik Ven Dekstroz Konsantrasyon Sınırı (%12.5) & Santral Hat
+const girHighDextrose = calculateGIR({ dextrosePercent: 20, rateMlHr: 10, weightKg: 3 });
+assert.ok(girHighDextrose);
+assert.strictEqual(girHighDextrose.centralLineRequired, true, '%20 Dekstroz için santral hat zorunlu olmalıdır');
+assert.ok(girHighDextrose.centralLineWarning?.includes('PERİFERİK VEN KONTRENDİKASYONU'), 'Periferik ven kontrendikasyonu belirtilmelidir');
+
+// 47.5 HATA-M13-002: Hipoglisemi Acil Bolusunda Erişkin vs İnfant Ayrımı
+const girBaby = calculateGIR({ dextrosePercent: 10, rateMlHr: 5, weightKg: 3, ageYears: 0 });
+assert.ok(girBaby);
+assert.strictEqual(girBaby.hypoglycemiaBolus.solution, '%10 Dekstroz', 'Bebek için %10 dekstroz bolusu önerilmelidir');
+assert.strictEqual(girBaby.hypoglycemiaBolus.doseMl, 6.0, '3 kg bebekte 2 mL/kg = 6.0 mL olmalıdır');
+
+const girAdult = calculateGIR({ dextrosePercent: 10, rateMlHr: 10, weightKg: 70, ageYears: 45 });
+assert.ok(girAdult);
+assert.ok(girAdult.hypoglycemiaBolus.solution.includes('Erişkin Protokolü'), 'Erişkin protokolü belirtilmelidir');
+assert.ok(girAdult.hypoglycemiaBolus.instructions.includes('%20 Dekstroz') || girAdult.hypoglycemiaBolus.instructions.includes('%50 Dekstroz'), 'Erişkin konsantre bolusu önerilmelidir');
+
+// 47.6 HATA-M13-003: İnotrop / Vazopressör İnfüzyon Toksik Aşırı Doz Tavan Kalkanı
+const inotropeHigh = calculateInfusionRate({
+  drugAmountMg: 4,
+  totalVolumeMl: 50,
+  weightKg: 70,
+  targetDose: 5.0,
+  doseUnit: 'mcg_kg_min'
+});
+assert.ok(inotropeHigh);
+assert.strictEqual(inotropeHigh.isExtremeDoseAlert, true, '>2 mcg/kg/dk için aşırı doz alarmı aktif olmalıdır');
+assert.ok(inotropeHigh.extremeDoseWarning?.includes('AŞIRI YÜKSEK İNOTROP DOZU'), 'Toksik aralık uyarısı verilmelidir');
+
+console.log('✓ Motor 12 & 13 Steroid Eşdeğerliği, HOMA-IR & GIR/İnfüzyon verified (100% healthy)');
+
+console.log('\n🎉 ALL 47 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

@@ -248,11 +248,22 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             doseUnit: infUnit
         });
         appState.medicine.infusion = infObj;
+        const infWarnEl = getEl('warning-infusion-rate');
         if (infObj && outInfRate) {
             outInfRate.textContent = `${infObj.rateMlHr} mL/saat`;
+            if (infWarnEl) {
+                if (infObj.isExtremeDoseAlert && infObj.extremeDoseWarning) {
+                    infWarnEl.classList.remove('hidden');
+                    infWarnEl.textContent = infObj.extremeDoseWarning;
+                } else {
+                    infWarnEl.classList.add('hidden');
+                }
+            }
         }
     } else {
         appState.medicine.infusion = null;
+        const infWarnEl = getEl('warning-infusion-rate');
+        if (infWarnEl) infWarnEl.classList.add('hidden');
         if (outInfRate) {
             if (infDose !== null && infNeedsWeight && !appState.biometry.weightKg) {
                 outInfRate.textContent = 'Kilo giriniz';
@@ -273,7 +284,8 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         appState.medicine.gir = calculateGIR({
             dextrosePercent: dextrosePct,
             rateMlHr: girRate,
-            weightKg: appState.biometry.weightKg
+            weightKg: appState.biometry.weightKg,
+            ageYears: y ?? undefined
         });
         const g = appState.medicine.gir;
         if (g) {
@@ -284,6 +296,11 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                 <span class="text-xs font-bold ${g.alertClass}">${g.gir} mg/kg/dk</span>
             </div>`;
             gHtml += `<div class="text-[10px] ${g.alertClass}">${g.interpretation}</div>`;
+            if (g.centralLineRequired && g.centralLineWarning) {
+                gHtml += `<div class="p-1.5 bg-rose-950/70 border border-rose-600 rounded text-rose-200 font-bold text-[10px]">
+                    ${g.centralLineWarning}
+                </div>`;
+            }
             if (g.status === 'LOW' || g.gir < 4) {
                 gHtml += `<div class="p-1.5 bg-rose-950/60 border border-rose-700/60 rounded text-rose-300 font-bold text-[9px]">
                     [ACİL] Hipoglisemi Acil Bolus: ${g.hypoglycemiaBolus.instructions}
@@ -523,10 +540,20 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                     ${st.conversions.map((c: any) => `
                         <div class="flex justify-between items-center ${c.isSource ? 'text-amber-300 font-bold' : 'text-slate-300'}">
                             <span>${c.name}:</span>
-                            <span>${c.equivalentDoseMg} mg</span>
+                            <span>${c.equivalentDoseMg} mg <span class="text-[9px] text-slate-400 font-normal">(${c.mineralocorticoidPotency}x Min.)</span></span>
                         </div>
                     `).join('')}
                 </div>
+                ${st.hpaSuppressionAlert && st.hpaSuppressionWarning ? `
+                    <div class="mt-2 p-1.5 rounded bg-rose-950/60 border border-rose-700/60 text-rose-200 text-[10px] font-medium">
+                        ${st.hpaSuppressionWarning}
+                    </div>
+                ` : ''}
+                ${st.mineralocorticoidWarning ? `
+                    <div class="mt-1.5 p-1.5 rounded bg-amber-950/50 border border-amber-700/60 text-amber-200 text-[10px]">
+                        ${st.mineralocorticoidWarning}
+                    </div>
+                ` : ''}
             `;
         }
     } else {
@@ -554,6 +581,16 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                     <span>Eşik: &gt; ${hm.cutoff} (${hm.tannerStage})</span>
                 </div>
                 <div class="text-[10px] leading-relaxed">${hm.interpretation}</div>
+                ${hm.unitWarning ? `
+                    <div class="p-1 rounded bg-amber-950/60 border border-amber-600/70 text-amber-200 text-[10px]">
+                        ${hm.unitWarning}
+                    </div>
+                ` : ''}
+                ${hm.validityWarning ? `
+                    <div class="p-1 rounded bg-rose-950/60 border border-rose-600/70 text-rose-200 text-[10px]">
+                        ${hm.validityWarning}
+                    </div>
+                ` : ''}
             `;
         }
     } else {

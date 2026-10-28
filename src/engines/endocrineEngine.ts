@@ -31,6 +31,9 @@ export interface SteroidConversionResult {
     sourceDrug: string;
     inputDoseMg: number;
     conversions: SteroidConversionItem[];
+    hpaSuppressionAlert?: boolean;
+    hpaSuppressionWarning?: string;
+    mineralocorticoidWarning?: string;
 }
 
 export function convertSteroids({ sourceDrug, doseMg }: { sourceDrug: string; doseMg: number | null | undefined }): SteroidConversionResult | null {
@@ -59,10 +62,28 @@ export function convertSteroids({ sourceDrug, doseMg }: { sourceDrug: string; do
         });
     }
 
+    // HATA-M12-001: Suprafizyolojik Steroid Dozlarında HPA Aksı Baskılanma Alarmı (Prednizolon eşdeğeri >= 20 mg)
+    const predEquivMg = (hydrocortisoneUnits / 20.0) * 5.0;
+    let hpaSuppressionAlert = false;
+    let hpaSuppressionWarning: string | undefined;
+    if (predEquivMg >= 20.0) {
+        hpaSuppressionAlert = true;
+        hpaSuppressionWarning = '⚠️ HPA Aksı Baskılanma Uyarısı (Eşdeğer Doz ≥20 mg Prednizon): >3 hafta süreli kullanımda HPA aksı belirgin baskılanır. İlaç aniden kesilemez; akut adrenal krizi önlemek için kademeli doz azaltımı (tapering) uygulanmalıdır.';
+    }
+
+    // HATA-M12-002: Mineralokortikoid Potansiyeli Uyarısı
+    let mineralocorticoidWarning: string | undefined;
+    if (sourceInfo.mineralo >= 0.8) {
+        mineralocorticoidWarning = 'ℹ️ Mineralokortikoid Etki Uyarısı: Seçilen steroidin mineralokortikoid potansiyeli yüksektir. Sodyum/su tutulumu ve hipokalemi riski nedeniyle kalp yetmezliği, hipertansiyon ve siroz hastalarında dikkatli olunmalıdır.';
+    }
+
     return {
         sourceDrug: sourceInfo.name,
         inputDoseMg: doseMg,
-        conversions
+        conversions,
+        hpaSuppressionAlert,
+        hpaSuppressionWarning,
+        mineralocorticoidWarning
     };
 }
 
@@ -79,6 +100,8 @@ export interface HOMAIRResult {
     tannerStage: string;
     interpretation: string;
     alertClass: string;
+    unitWarning?: string;
+    validityWarning?: string;
 }
 
 export function calculateHOMAIR({ fastingGlucoseMgDl, fastingInsulinUuMl, tannerStage = 'prepubertal' }: HOMAIRInput): HOMAIRResult | null {
@@ -92,6 +115,17 @@ export function calculateHOMAIR({ fastingGlucoseMgDl, fastingInsulinUuMl, tanner
     const isPubertal = tannerStage === 'pubertal' || tannerStage === 'tanner_2_5';
     const cutoff = isPubertal ? 3.16 : 2.50;
     const isResistant = homaValue >= cutoff;
+
+    // HATA-M12-003: Birim doğrulaması ve aşırı uç değer kontrolü
+    let unitWarning: string | undefined;
+    if (fastingGlucoseMgDl < 30) {
+        unitWarning = '⚠️ Glukoz değeri <30 mg/dL\'dir. Değer mmol/L cinsinden girilmiş olabilir (mmol/L -> mg/dL dönüşümü için 18 ile çarpınız).';
+    }
+
+    let validityWarning: string | undefined;
+    if (fastingGlucoseMgDl > 250) {
+        validityWarning = '⚠️ Açlık glukozu >250 mg/dL olan akut hiperglisemi/ketoasidoz tablolarında HOMA-IR formülü beta-hücre dekompansasyonu nedeniyle güvenilirliğini yitirir; bazal stabil açlık gereklidir.';
+    }
 
     let interpretation = '';
     let alertClass = '';
@@ -110,6 +144,8 @@ export function calculateHOMAIR({ fastingGlucoseMgDl, fastingInsulinUuMl, tanner
         isResistant,
         tannerStage: isPubertal ? 'Pubertal (Tanner 2-5)' : 'Prepubertal (Tanner 1)',
         interpretation,
-        alertClass
+        alertClass,
+        unitWarning,
+        validityWarning
     };
 }

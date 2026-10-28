@@ -12,6 +12,8 @@ export interface InfusionRateResult {
     rateMlHr: number;
     concentrationMcgMl: number;
     concentrationMgMl: number;
+    isExtremeDoseAlert?: boolean;
+    extremeDoseWarning?: string;
 }
 
 export function calculateInfusionRate({
@@ -41,10 +43,20 @@ export function calculateInfusionRate({
         rateMlHr = (targetDose * weightKg) / mgPerMl;
     }
 
+    // HATA-M13-003: İnotrop / Vazopressör İnfüzyon Hesabında (ISMP High-Alert) Toksik Aşırı Doz Tavan Kalkanı
+    let isExtremeDoseAlert = false;
+    let extremeDoseWarning: string | undefined;
+    if (doseUnit === 'mcg_kg_min' && targetDose > 2.0) {
+        isExtremeDoseAlert = true;
+        extremeDoseWarning = '⚠️ AŞIRI YÜKSEK İNOTROP DOZU: Girilen doz (>2 mcg/kg/dk) toksik aralıktadır. Lütfen dozu ve ondalık basamağı teyit ediniz.';
+    }
+
     return {
         rateMlHr: Number(rateMlHr.toFixed(1)),
         concentrationMcgMl: Number(mcgPerMl.toFixed(1)),
-        concentrationMgMl: Number(mgPerMl.toFixed(2))
+        concentrationMgMl: Number(mgPerMl.toFixed(2)),
+        isExtremeDoseAlert,
+        extremeDoseWarning
     };
 }
 
@@ -52,6 +64,7 @@ export interface GIRInput {
     dextrosePercent: number | null | undefined;
     rateMlHr: number | null | undefined;
     weightKg: number | null | undefined;
+    ageYears?: number | null | undefined;
 }
 
 export interface GIRResult {
@@ -59,6 +72,8 @@ export interface GIRResult {
     status: 'LOW' | 'OPTIMAL' | 'HIGH' | 'CRITICAL_HIGH';
     interpretation: string;
     alertClass: string;
+    centralLineRequired?: boolean;
+    centralLineWarning?: string;
     hypoglycemiaBolus: {
         solution: string;
         doseMl: number;
@@ -66,7 +81,7 @@ export interface GIRResult {
     };
 }
 
-export function calculateGIR({ dextrosePercent, rateMlHr, weightKg }: GIRInput): GIRResult | null {
+export function calculateGIR({ dextrosePercent, rateMlHr, weightKg, ageYears }: GIRInput): GIRResult | null {
     if (!dextrosePercent || !rateMlHr || !weightKg || dextrosePercent <= 0 || rateMlHr <= 0 || weightKg <= 0) {
         return null;
     }
@@ -96,17 +111,40 @@ export function calculateGIR({ dextrosePercent, rateMlHr, weightKg }: GIRInput):
         alertClass = 'text-purple-400';
     }
 
-    const hypoBolusMl = Number((2 * weightKg).toFixed(1));
+    // HATA-M13-001: Periferik ven konsantrasyon sınırı (%12.5) kalkanı
+    let centralLineRequired = false;
+    let centralLineWarning: string | undefined;
+    if (dextrosePercent > 12.5) {
+        centralLineRequired = true;
+        centralLineWarning = `🚫 PERİFERİK VEN KONTRENDİKASYONU: Dekstroz konsantrasyonu >%12.5'tir (%${dextrosePercent}). Kimyasal flebit ve ağır doku nekrozu riski nedeniyle periferik venden verilemez; Santral Venöz Yol (UVC / PICC) zorunludur!`;
+    }
+
+    // HATA-M13-002: Hipoglisemi acil bolusunda yaş ve kilo ayrımı (Erişkin vs İnfant)
+    const isAdult = (ageYears !== null && ageYears !== undefined && ageYears >= 18) || weightKg >= 40;
+    let hypoglycemiaBolus: GIRResult['hypoglycemiaBolus'];
+
+    if (isAdult) {
+        hypoglycemiaBolus = {
+            solution: '%20 veya %50 Dekstroz (Erişkin Protokolü)',
+            doseMl: 50,
+            instructions: 'Erişkin Hipoglisemi Bolusu: %20 Dekstroz 75-100 mL IV (veya %50 Dekstroz 40-50 mL / 1 ampul IV puşe), ardından KŞ takibiyle idame infüzyona geçiniz.'
+        };
+    } else {
+        const hypoBolusMl = Number((2 * weightKg).toFixed(1));
+        hypoglycemiaBolus = {
+            solution: '%10 Dekstroz',
+            doseMl: hypoBolusMl,
+            instructions: `%10 Dekstroz ${hypoBolusMl} mL IV yavaş puşe (2 mL/kg), ardından GIR 6-8 mg/kg/dk idame başlatın.`
+        };
+    }
 
     return {
         gir: girValue,
         status,
         interpretation,
         alertClass,
-        hypoglycemiaBolus: {
-            solution: '%10 Dekstroz',
-            doseMl: hypoBolusMl,
-            instructions: `%10 Dekstroz ${hypoBolusMl} mL IV yavaş puşe (2 mL/kg), ardından GIR 6-8 mg/kg/dk idame başlatın.`
-        }
+        centralLineRequired,
+        centralLineWarning,
+        hypoglycemiaBolus
     };
 }
