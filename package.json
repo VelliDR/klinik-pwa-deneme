@@ -1,0 +1,27 @@
+{
+  "name": "klinik-yardimci-pwa",
+  "private": true,
+  "version": "2.0.0",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "tsx tests/test_engines.js && tsx tests/test_drug_search.js && tsx tests/test_workstation_shortcuts.js && tsx tests/test_workstation_packages.js && tsx tests/test_ts_engines.ts && tsx tests/test_ts_app.ts && tsx tests/test_cross_engine_stress.ts && tsx tests/test_pwa_offline.ts && tsx tests/test_atc_knowledge.ts",
+    "test:ts": "tsx tests/test_ts_engines.ts && tsx tests/test_ts_app.ts && tsx tests/test_cross_engine_stress.ts && tsx tests/test_pwa_offline.ts && tsx tests/test_atc_knowledge.ts",
+    "data:sync": "python3 scripts/sync_xlsx_to_master.py",
+    "data:build": "python3 scripts/sync_xlsx_to_master.py && node scripts/build-drug-catalog.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vite-plugin-pwa": "^0.21.1"
+  }
+}

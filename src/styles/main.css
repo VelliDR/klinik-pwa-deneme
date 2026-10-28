@@ -1,0 +1,243 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Scrollbar Gizleme Yardımcısı */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Monospace ve düşey sayısal hizalama standardı */
+.tabular-nums,
+#patient-context-banner,
+#header-patient-info,
+[id^="output-"],
+[id^="badge-"],
+.timer-display {
+    font-variant-numeric: tabular-nums;
+}
+
+/* iOS Safari Zoom Koruması ve Dokunma Hedefleri (En az 16px font-size) */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    font-size: 16px !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select {
+    min-height: 42px;
+}
+@media (min-width: 641px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select {
+        min-height: 38px;
+    }
+}
+@media (max-width: 640px) {
+    button {
+        min-height: 42px;
+    }
+}
+
+/* Kart vurgulama nabız animasyonu */
+@keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+.card-highlight {
+    animation: pulse-ring 1.8s ease-out;
+    border-color: rgba(244, 63, 94, 0.9) !important;
+}
+
+/* Safe area iOS ve Android alt çubuk */
+.safe-bottom-pad {
+    padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
+}
+
+/* ============================================================================
+ * AYDINLIK TEMA (LIGHT MODE - POLİKLİNİK GÜNDÜZ ERGONOMİSİ)
+ * ============================================================================ */
+html.light-theme {
+    color-scheme: light;
+}
+
+html.light-theme body {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+/* Header & Banner */
+html.light-theme header {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.light-theme #header-patient-info {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+html.light-theme #header-patient-gender {
+    color: #334155 !important;
+}
+
+html.light-theme #patient-context-banner {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
+}
+
+html.light-theme #patient-context-banner .bg-slate-900 {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme #patient-context-banner .text-slate-200 {
+    color: #0f172a !important;
+}
+
+html.light-theme #category-pills {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+html.light-theme .cat-pill.active {
+    background-color: rgba(14, 165, 233, 0.15) !important;
+    color: #0284c7 !important;
+    border-color: rgba(14, 165, 233, 0.4) !important;
+}
+
+html.light-theme .cat-pill:not(.active) {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme .cat-pill:not(.active):hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* Kartlar (details) */
+html.light-theme details {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.light-theme details summary {
+    color: #e11d48 !important;
+}
+
+html.light-theme details summary span:first-child {
+    color: #be123c !important;
+}
+
+html.light-theme details > div {
+    border-color: #f1f5f9 !important;
+}
+
+/* Form Kontrolleri (input, select, textarea) */
+html.light-theme input,
+html.light-theme select,
+html.light-theme textarea {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme input:focus,
+html.light-theme select:focus,
+html.light-theme textarea:focus {
+    border-color: #f43f5e !important;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
+}
+
+html.light-theme label {
+    color: #475569 !important;
+}
+
+/* Alt Çıkış Kutuları */
+html.light-theme .bg-slate-900,
+html.light-theme .bg-slate-950 {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+html.light-theme .text-slate-200,
+html.light-theme .text-slate-300 {
+    color: #1e293b !important;
+}
+
+html.light-theme .text-slate-400 {
+    color: #64748b !important;
+}
+
+/* Butonlar */
+html.light-theme button.bg-slate-800 {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme button.bg-slate-800:hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+/* ============================================================================
+ * @MEDIA PRINT HASTA REÇETE VE DOZAJ ÇİZELGESİ YAZDIRMA STANDARDI
+ * ============================================================================ */
+@media print {
+    /* Yazdırma sırasında sayfa dışındaki tüm UI elemanlarını ve modalları gizle */
+    header,
+    nav,
+    footer,
+    aside,
+    main,
+    #clinical-workspace,
+    #inspector-panel,
+    #drawer-clinical-alerts-inspector,
+    #modal-quick-switcher,
+    #modal-prescription-print,
+    #modal-emergency-protocols,
+    #mobile-floating-bar,
+    #container-preset-pills,
+    #patient-context-banner,
+    #category-pills,
+    .no-print,
+    details:not(#card-print-target),
+    button {
+        display: none !important;
+    }
+
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 11pt !important;
+    }
+
+    #printable-prescription-container {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 12mm 15mm;
+    }
+}
