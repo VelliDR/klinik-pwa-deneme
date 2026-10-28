@@ -98,10 +98,15 @@ export function updatePatientBanner(): void {
             headerPatientInfo.classList.add('flex');
 
             if (headerPatientAge) {
-                headerPatientAge.textContent = hasAge ? shortAgeDisplay : 'Yaş: --';
+                headerPatientAge.textContent = hasAge ? shortAgeDisplay : '--';
             }
             if (headerPatientGender) {
-                headerPatientGender.textContent = hasGender ? genderDisplay : 'Cins: Belirtilmedi';
+                headerPatientGender.textContent = hasGender ? genderDisplay : '--';
+            }
+            const headerPatientWeight = getEl('header-patient-weight');
+            if (headerPatientWeight) {
+                const w = appState.biometry.weightKg;
+                headerPatientWeight.textContent = (w !== null && w !== undefined && w > 0) ? `${w} kg` : '--';
             }
         } else {
             headerPatientInfo.classList.add('hidden');
@@ -473,8 +478,8 @@ export function initWorkstationPackages(): void {
 
         if (!motors || motors.length === 0) return;
 
-        // Workspace içindeki tüm doğrudan <details> kartlarını filtrele (iç içe alt details öğelerini gizleme)
-        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace > details');
+        // Workspace içindeki tüm klinik motor kartlarını filtrele
+        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
         allCards.forEach(card => {
             if (motors.includes(card.id)) {
                 card.classList.remove('hidden');
@@ -483,6 +488,11 @@ export function initWorkstationPackages(): void {
                 card.classList.add('hidden');
             }
         });
+
+        // Popover dropdown olarak açıksa kapat
+        if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
+            cardShortcuts.classList.add('hidden');
+        }
 
         // Birincil karta yumuşak geçiş ve nabız animasyonu
         const targetCard = (primaryId ? getEl<HTMLDetailsElement>(primaryId) : null) || getEl<HTMLDetailsElement>(motors[0]);
@@ -552,10 +562,15 @@ export function initWorkstationPackages(): void {
 
     // B. Tüm Motorları Göster & Sıfırla
     function showAllMotors(): void {
-        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace > details');
+        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
         allCards.forEach(c => c.classList.remove('hidden'));
 
         currentActivePackId = null;
+
+        // Popover dropdown olarak açıksa kapat
+        if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
+            cardShortcuts.classList.add('hidden');
+        }
 
         if (containerButtons) {
             containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
@@ -830,6 +845,27 @@ export function initWorkstationPackages(): void {
         });
     }
 
+    // Header Paketler Dropdown Butonu ve Dışarı Tıklama Dinleyicisi
+    const btnHeaderDropdown = getEl('btn-header-packages-dropdown');
+    if (btnHeaderDropdown && cardShortcuts) {
+        btnHeaderDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+            cardShortcuts.classList.toggle('hidden');
+        });
+    }
+
+    if (typeof document !== 'undefined') {
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
+                const headerContainer = getEl('header-packages-container');
+                if (headerContainer && !headerContainer.contains(target)) {
+                    cardShortcuts.classList.add('hidden');
+                }
+            }
+        });
+    }
+
     // Başlangıçta Butonları ve Özel Paketleri Çiz
     renderPackageButtons();
 }
@@ -857,7 +893,7 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
             pill.classList.add('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30');
 
             const cat = pill.getAttribute('data-cat');
-            const cards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace > details');
+            const cards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
             if (cat === 'all') {
                 cards.forEach(c => c.classList.remove('hidden'));
                 const ws = getEl('clinical-workspace');
@@ -885,7 +921,7 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
         });
     });
 
-    // 2. Desktop Left Sidebar Navigation Links
+    // 2. Desktop Left Sidebar & Mobile Drawer Navigation Links
     document.querySelectorAll('.nav-sidebar-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -902,8 +938,61 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
                 targetCard.classList.add('card-highlight');
                 setTimeout(() => targetCard.classList.remove('card-highlight'), 1800);
             }
+
+            // Aktif modül stili güncelle: border-l-2 border-cyan-400 bg-slate-900 text-cyan-300 font-medium
+            document.querySelectorAll('.nav-sidebar-link').forEach(l => {
+                l.classList.remove('border-l-2', 'border-cyan-400', 'bg-slate-900', 'text-cyan-300', 'font-medium');
+                l.classList.add('text-slate-400');
+            });
+            link.classList.remove('text-slate-400');
+            link.classList.add('border-l-2', 'border-cyan-400', 'bg-slate-900', 'text-cyan-300', 'font-medium');
+
+            // Mobilde tıklandıysa çekmeceyi kapat
+            const mobileSidebar = getEl('mobile-sidebar-drawer');
+            if (mobileSidebar && !mobileSidebar.classList.contains('hidden')) {
+                mobileSidebar.classList.add('hidden');
+            }
         });
     });
+
+    // 2.1. Hasta Bilgi Kapsülü Tıklandığında Demografi Kartına Yumuşak Kaydırma
+    const headerPatientCapsule = getEl('header-patient-info');
+    if (headerPatientCapsule) {
+        headerPatientCapsule.addEventListener('click', () => {
+            const cardDemografi = getEl<HTMLDetailsElement>('card-demografi');
+            if (cardDemografi) {
+                cardDemografi.classList.remove('hidden');
+                cardDemografi.open = true;
+                if (typeof cardDemografi.scrollIntoView === 'function') {
+                    cardDemografi.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                cardDemografi.classList.add('card-highlight');
+                setTimeout(() => cardDemografi.classList.remove('card-highlight'), 1800);
+            }
+        });
+    }
+
+    // 2.2. Mobil Kenar Çubuğu (Sidebar Drawer) Etkileşimleri
+    const btnMobileSidebar = getEl('btn-mobile-sidebar-toggle');
+    const drawerMobileSidebar = getEl('mobile-sidebar-drawer');
+    const btnCloseMobileSidebar = getEl('btn-close-mobile-sidebar');
+    const backdropMobileSidebar = getEl('mobile-sidebar-backdrop');
+
+    if (btnMobileSidebar && drawerMobileSidebar) {
+        btnMobileSidebar.addEventListener('click', () => {
+            drawerMobileSidebar.classList.remove('hidden');
+        });
+    }
+    if (btnCloseMobileSidebar && drawerMobileSidebar) {
+        btnCloseMobileSidebar.addEventListener('click', () => {
+            drawerMobileSidebar.classList.add('hidden');
+        });
+    }
+    if (backdropMobileSidebar && drawerMobileSidebar) {
+        backdropMobileSidebar.addEventListener('click', () => {
+            drawerMobileSidebar.classList.add('hidden');
+        });
+    }
 
     // 3. Reset Patient Data
     const btnReset = getEl('btn-reset-patient');

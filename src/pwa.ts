@@ -87,34 +87,34 @@ export function setupPWA(): void {
         if (!badge) return;
 
         if (!navigator.onLine) {
-            badge.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block shrink-0 shadow-sm';
+            badge.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block shrink-0 shadow-sm';
             badge.innerHTML = '';
-            badge.title = 'Çevrimdışı Mod (Tam Fonksiyonel)';
-            badge.setAttribute('aria-label', 'PWA Çevrimdışı Mod');
+            badge.title = 'Çevrimdışı (Yerel Veritabanı Aktif)';
+            badge.setAttribute('aria-label', 'Yerel Veritabanı Aktif');
             return;
         }
 
         // Çevrimiçi durum: Önbellek hazır mı (Cache Warming) denetle
         if (!isCacheWarm) {
-            badge.className = 'w-2 h-2 rounded-full bg-sky-400 animate-ping inline-block shrink-0 shadow-sm';
+            badge.className = 'w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping inline-block shrink-0 shadow-sm';
             badge.innerHTML = '';
-            badge.title = 'Çevrimiçi • Önbellek Hazırlanıyor...';
+            badge.title = 'Önbellek Hazırlanıyor...';
             badge.setAttribute('aria-label', 'PWA Önbellek Hazırlanıyor');
 
             const warmed = await checkCacheWarming();
             if (warmed) {
-                badge.className = 'w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0 shadow-sm';
-                badge.title = 'Çevrimiçi • Çevrimdışı Kullanıma Hazır (PWA)';
-                badge.setAttribute('aria-label', 'PWA Çevrimdışı Hazır');
+                badge.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0 shadow-sm';
+                badge.title = 'Yerel Veritabanı Aktif';
+                badge.setAttribute('aria-label', 'Yerel Veritabanı Aktif');
             } else {
                 // Henüz indirilmediyse 2.5 saniye sonra tekrar dene
                 setTimeout(updateNetworkStatus, 2500);
             }
         } else {
-            badge.className = 'w-2 h-2 rounded-full bg-emerald-400 inline-block shrink-0 shadow-sm';
+            badge.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0 shadow-sm';
             badge.innerHTML = '';
-            badge.title = 'Çevrimiçi • Çevrimdışı Kullanıma Hazır (PWA)';
-            badge.setAttribute('aria-label', 'PWA Çevrimdışı Hazır');
+            badge.title = 'Yerel Veritabanı Aktif';
+            badge.setAttribute('aria-label', 'Yerel Veritabanı Aktif');
         }
     }
 

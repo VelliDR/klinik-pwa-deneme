@@ -34,9 +34,14 @@ select {
     }
 }
 @media (max-width: 640px) {
-    button {
+    button:not(header button):not(.h-7) {
         min-height: 42px;
     }
+}
+header button,
+header .btn-compact,
+.h-7 {
+    min-height: unset;
 }
 
 /* Kart vurgulama nabız animasyonu */
