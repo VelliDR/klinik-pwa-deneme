@@ -123,10 +123,32 @@ Uygulama standart bir web tarayıcısı üzerinden doğrudan çalıştırılabil
 - **APGAR Skoru:** 1. ve 5. dakika resüsitasyon değerlendirmesi.
 - **Westley Krup Skoru & CDS Dehidratasyon Skalası.**
 
-### 8. Kan Gazı Analizi & Asit-Baz Dengesi (ABG / VBG)
-- pH, $\text{pCO}_2$, $\text{HCO}_3^-$ üzerinden metabolik ve solunumsal primer asit-baz bozukluğu tespiti.
-- **Winter Formülü:** Metabolik asidozda solunumsal kompanzasyonun yeterliliği.
-- **Anyon Açığı (AG) & Delta-Delta ($\Delta/\Delta$):** HAGMA, NAGMA ve eşlik eden mikst bozuklukların incelenmesi.
+### 8. Kan Gazı Analizi & Fizyopatolojik Asit-Baz Motoru (ABG / VBG)
+- **3 Ekolün Eş Zamanlı Analizi (Boston, Kopenhag & Stewart-Fencl):**
+  - **Boston Ekolü (Henderson-Hasselbalch):** Primer asidoz/alkaloz tespiti, fizyolojik kompanzasyon sınırları (Winter formülü $pCO_2 = 1.5 \times HCO_3 + 8 \pm 2$, metabolik alkaloz kuralı $pCO_2 = 0.7 \times \Delta HCO_3 + 40 \pm 2$, akut/kronik respiratuar 1-4-2-5 kompanzasyon katsayıları) ve aşırı kompanzasyon imkansızlığı kalkanı.
+  - **Kopenhag Ekolü (Siggaard-Andersen Van Slyke SBE):** $\text{SBE} = (HCO_3 - 24.8) + 16.2 \times (pH - 7.40)$ denklemiyle solunumsal dalgalanmalardan arındırılmış saf ekstrasellüler standart baz fazlalığı/açığı (normal referans: $-2$ ila $+2\text{ mEq/L}$).
+  - **Stewart-Fencl Fizikokimyasal Modeli:**
+    - Görünür İyon Farkı: $\text{SID}_a = [Na^+] - [Cl^-]$ (Normal: $38 - 42\text{ mEq/L}$). Düşük $\text{SID}_a$ ile iyatrojenik hiperkloremik asidoz (SF yüklemesi) ayrımı.
+    - SBE Bileşen Ayrıştırması: Klor katkısı ($\text{SBE}_{Na-Cl}$), albümin tamponu ($\text{SBE}_{Alb}$) ve ölçülemeyen anyonlar ($\text{SBE}_{\text{unmeasured}}$).
+    - Güçlü İyon Açığı: $\text{SIG} = \text{SID}_a - \text{SID}_e$ ile gizli patolojik anyon tespiti.
+- **İç Kalite ve Kassirer-Bleich Doğrulaması:**
+  - $[H^+] = 24 \times \frac{pCO_2}{HCO_3}\text{ nmol/L}$ ile ölçülen $[H^+] = 10^{(9-pH)}$ ve yatak başı kuralı $[H^+] \approx 80 - (\text{pH ondalığı})$ kıyaslaması; sapma $>\%10$ ise analizör kalibrasyonu veya preanalitik numune hatası uyarısı.
+- **Anyon Açığı (AG), Figge Albümin Düzeltmesi & Delta Analizi:**
+  - Hipoalbüminemi ile maskelenen gizli HAGMA'ların tespiti ($\text{Düz. AG} = \text{AG} + 2.5 \times (4.0 - \text{Albüm})$).
+  - $\Delta/\Delta$ Delta oranı ($\Delta\text{AG} / \Delta\text{HCO}_3$) ve $\Delta\text{Gap} = \Delta\text{AG} - \Delta\text{HCO}_3$ ile mikst HAGMA + NAGMA veya HAGMA + Metabolik Alkaloz üçlü bozukluk taraması.
+- **Oksijenasyon, Alveolo-Arteriyel ($A\text{-}a$) Gradiyenti & Berlin ARDS:**
+  - Alveolar Gaz Denklemi ($PAO_2 = FiO_2 \times (P_B - 47) - \frac{PaCO_2}{0.8}$).
+  - Ölçülen ve yaşa göre beklenen $A\text{-}a$ gradiyenti ($(\text{Yaş}/4) + 4$) ile hipoksemi mekanizma ayrımı: Normal $A\text{-}a$ (Saf hipoventilasyon, sedatif intoksikasyonu, KOAH) vs Yüksek $A\text{-}a$ (V/Q uyumsuzluğu, difüzyon defekti veya intrapulmoner sağdan sola şant).
+  - Horovitz İndeksi ($PaO_2 / FiO_2$) ve Berlin 2012 ARDS evrelemesi (Hafif: $201-300$, Orta: $101-200$, Ağır: $\le 100\text{ mmHg}$).
+- **Vücut Sıcaklığı Düzeltmesi (Alpha-stat vs pH-stat):**
+  - Hipotermi ve hipertermide in vivo $pH$, $pCO_2$ ve $pO_2$ değerleri; erişkin yoğun bakımda Alpha-stat yaklaşımı ve pediatrik KPB için pH-stat notları.
+- **Venöz (VBG) $\rightarrow$ Arteriyel Eşdeğeri & Şok Alarmı:**
+  - $pH (+0.035)$, $pCO_2 (-5\text{ mmHg})$ ve $HCO_3 (-1.5\text{ mEq/L})$ düzeltmeleri. Veno-arteriyel $pCO_2$ farkının ($\Delta pCO_2 > 6\text{ mmHg}$) kardiyak debi azlığı ve doku hipoperfüzyonunu gösteren uyarısı.
+- **Yenidoğan Fizyolojik Normları ($<28$ gün):**
+  - Yaşamın ilk ayında fizyolojik asidoz normları ($pH\text{ 7.30–7.42}$, $HCO_3\text{ 19–24 mEq/L}$, $pCO_2\text{ 35–48 mmHg}$) ile gereksiz agresif müdahalelerin önlenmesi.
+- **Kompakt Kullanıcı Deneyimi & "🔬 Fizyopatolojik Detay Kutusu":**
+  - Ana ekranda kalabalık yaratmayan 3 satırlı grid ve tek tıkla açılan laktat, $K^+$, sıcaklık akordiyonu.
+  - Kartın altında 5 yapılandırılmış bölümden oluşan interaktif ve canlı açık kalma durumunu koruyan derin fizyopatoloji kutusu.
 
 ### 9. İdame Sıvı Tedavisi (Holliday-Segar & TND Yenidoğan)
 - **Holliday-Segar (4-2-1 Kuralı):** Günlük toplam sıvı hacmi ve saatlik infüzyon hızı.

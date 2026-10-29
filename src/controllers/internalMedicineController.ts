@@ -175,19 +175,33 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         }
     }
 
-    // 3. KAN GAZI ANALİZİ (ABG / VBG)
+    // 3. KAN GAZI ANALİZİ (ABG / VBG) & FİZYOPATOLOJİK ANALİZ MOTORU
     const ph = getNum('input-bg-ph');
     const pco2 = getNum('input-bg-pco2');
     const hco3 = getNum('input-bg-hco3');
+    const po2 = getNum('input-bg-po2');
+    const fio2 = getNum('input-bg-fio2');
+    const bgNa = getNum('input-bg-na') ?? getNum('input-serum-na') ?? undefined;
+    const bgCl = getNum('input-bg-cl') ?? undefined;
+    const bgAlb = getNum('input-bg-alb') ?? getNum('input-albumin') ?? undefined;
+    const bgLactate = getNum('input-bg-lactate') ?? undefined;
+    const bgK = getNum('input-bg-k') ?? getNum('input-serum-k') ?? undefined;
+    const bgTemp = getNum('input-bg-temp') ?? undefined;
     const bgRes = getEl('container-bg-warnings');
+
     if (ph && pco2 && hco3 && bgRes) {
         const bgAnalysis = analyzeBloodGas({
             pH: ph, 
             pCO2: pco2, 
             HCO3: hco3, 
-            Na: getNum('input-bg-na') ?? getNum('input-serum-na') ?? undefined, 
-            Cl: getNum('input-bg-cl') ?? undefined, 
-            Albumin: getNum('input-bg-alb') ?? getNum('input-albumin') ?? undefined, 
+            pO2: po2 ?? undefined,
+            FiO2: fio2 ?? undefined,
+            Na: bgNa, 
+            Cl: bgCl, 
+            Albumin: bgAlb, 
+            lactate: bgLactate,
+            potassium: bgK,
+            temperature: bgTemp,
             sampleType: (getVal('select-bg-type') as 'ABG' | 'VBG') || 'ABG',
             ageInDays: appState.biometry.ageDays ?? undefined,
             ageInYears: appState.biometry.ageYears ?? undefined,
@@ -196,36 +210,211 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         appState.medicine.bloodGas = bgAnalysis;
         if (bgAnalysis) {
             bgRes.classList.remove('hidden');
-            let outputHtml = '';
+            const wasDetailOpen = Boolean(getEl('box-bg-deep-details')?.hasAttribute('open'));
 
             const isAbnormal = bgAnalysis.primaryDisorder !== 'Normal/Miks' && !bgAnalysis.primaryDisorder.includes('Normal');
             const headingColor = isAbnormal ? 'text-rose-400' : 'text-emerald-400';
-            
-            outputHtml += `<div class="${headingColor} font-bold text-xs">${bgAnalysis.primaryDisorder}</div>`;
-            
+            const badgeBg = isAbnormal ? 'bg-rose-950/80 border-rose-500/60 text-rose-200' : 'bg-emerald-950/80 border-emerald-500/60 text-emerald-200';
+
+            let outputHtml = '';
+
+            // 1. Ana Başlık ve Numune Rozeti
+            outputHtml += `
+            <div class="flex items-center justify-between gap-2 pb-1 border-b border-slate-700/60">
+                <div class="${headingColor} font-bold text-xs flex items-center gap-1.5">
+                    <span>${isAbnormal ? '⚠️' : '✅'}</span>
+                    <span>${bgAnalysis.primaryDisorder}</span>
+                </div>
+                <span class="text-[9px] px-2 py-0.5 rounded font-mono font-semibold border ${badgeBg}">
+                    ${bgAnalysis.isVBG ? 'Venöz (Arteriyel Eşdeğeri)' : 'Arteriyel'}
+                </span>
+            </div>`;
+
+            // 2. Fizyolojik Kompansasyon Durumu
             if (bgAnalysis.compensationText) {
-                outputHtml += `<div class="text-[11px] text-slate-300 mt-0.5">${bgAnalysis.compensationText}</div>`;
+                outputHtml += `<div class="text-[11px] text-slate-200 bg-slate-800/60 rounded p-1.5 border border-slate-700/40">${bgAnalysis.compensationText}</div>`;
             }
 
-            if (bgAnalysis.corrected_AG !== null) {
-                const agText = `Anyon Açığı (AG): ${bgAnalysis.AG?.toFixed(1)}${bgAnalysis.hasAlbumin ? ` (Düz. AG: ${bgAnalysis.corrected_AG.toFixed(1)})` : ''}${bgAnalysis.deltaRatio !== null ? ` | Δ/Δ: ${bgAnalysis.deltaRatio}` : ''} — ${bgAnalysis.hagmaStatus}`;
-                outputHtml += `<div class="text-[10px] text-amber-300 mt-1 pt-1 border-t border-slate-700/50">${agText}</div>`;
+            // 3. Majör Klinik Göstergeler Matrisi (Kompakt Kartlar)
+            outputHtml += `<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] pt-0.5">`;
+
+            // Anyon Açığı (AG) & Düzeltilmiş AG
+            const agValStr = bgAnalysis.AG !== null ? bgAnalysis.AG.toFixed(1) : '--';
+            const corrAgStr = bgAnalysis.hasAlbumin && bgAnalysis.corrected_AG !== null ? ` (Düz: ${bgAnalysis.corrected_AG.toFixed(1)})` : '';
+            outputHtml += `
+            <div class="bg-[#060A12] border border-slate-800 rounded p-1.5">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Anyon Açığı (AG)</div>
+                <div class="text-amber-300 font-bold font-mono text-[11px]">${agValStr}${corrAgStr}</div>
+                <div class="text-[9px] text-slate-400 truncate">${bgAnalysis.hagmaStatus}</div>
+            </div>`;
+
+            // Kopenhag SBE (Van Slyke)
+            const sbeSign = bgAnalysis.sbe > 0 ? '+' : '';
+            outputHtml += `
+            <div class="bg-[#060A12] border border-slate-800 rounded p-1.5">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Kopenhag SBE</div>
+                <div class="text-cyan-300 font-bold font-mono text-[11px]">${sbeSign}${bgAnalysis.sbe.toFixed(1)} mEq/L</div>
+                <div class="text-[9px] text-slate-400 truncate">${bgAnalysis.sbeInterpretation}</div>
+            </div>`;
+
+            // Stewart Modeli (SIDa = Na - Cl)
+            const sidaStr = bgAnalysis.stewart?.sida !== null && bgAnalysis.stewart?.sida !== undefined 
+                ? `${bgAnalysis.stewart.sida.toFixed(1)} mEq/L` 
+                : '--';
+            const sidaInterp = bgAnalysis.stewart?.sidaInterpretation ?? 'Na/Cl bekleniyor';
+            outputHtml += `
+            <div class="bg-[#060A12] border border-slate-800 rounded p-1.5">
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Stewart SIDa (Na-Cl)</div>
+                <div class="text-sky-300 font-bold font-mono text-[11px]">${sidaStr}</div>
+                <div class="text-[9px] text-slate-400 truncate">${sidaInterp}</div>
+            </div>`;
+
+            // Oksijenasyon & Horovitz P/F veya Delta Oranı
+            if (bgAnalysis.oxygenation) {
+                outputHtml += `
+                <div class="bg-[#060A12] border border-slate-800 rounded p-1.5">
+                    <div class="text-[9px] text-slate-400 uppercase font-semibold">Horovitz (P/F)</div>
+                    <div class="text-emerald-300 font-bold font-mono text-[11px]">${Math.round(bgAnalysis.oxygenation.horovitzIndex)}</div>
+                    <div class="text-[9px] text-slate-400 truncate">${bgAnalysis.oxygenation.ardsSeverity}</div>
+                </div>`;
+            } else {
+                outputHtml += `
+                <div class="bg-[#060A12] border border-slate-800 rounded p-1.5">
+                    <div class="text-[9px] text-slate-400 uppercase font-semibold">Delta Oranı (Δ/Δ)</div>
+                    <div class="text-indigo-300 font-bold font-mono text-[11px]">${bgAnalysis.deltaRatio !== null ? bgAnalysis.deltaRatio : '--'}</div>
+                    <div class="text-[9px] text-slate-400 truncate">${bgAnalysis.deltaGap !== null && bgAnalysis.deltaGap !== undefined ? `ΔGap: ${bgAnalysis.deltaGap > 0 ? '+' : ''}${bgAnalysis.deltaGap.toFixed(1)}` : 'Metabolik tarama'}</div>
+                </div>`;
             }
 
+            outputHtml += `</div>`;
+
+            // 4. Spesifik Preanalitik & Klinik Uyarılar
             if (bgAnalysis.isVBG) {
-                outputHtml += `<div class="text-[9px] text-sky-300 mt-0.5">Dönüştürülmüş Arteriyel Eşdeğeri: pH ${bgAnalysis.pH.toFixed(3)}, pCO2 ${bgAnalysis.pCO2.toFixed(1)} mmHg, HCO3 ${bgAnalysis.HCO3.toFixed(1)} mEq/L</div>`;
+                outputHtml += `
+                <div class="text-[9px] text-sky-300 bg-sky-950/30 border border-sky-800/40 rounded p-1.5 space-y-0.5">
+                    <div><b>VBG Dönüşümü:</b> Hesaplanan arteriyel eşdeğer: pH ${bgAnalysis.pH.toFixed(3)}, pCO2 ${bgAnalysis.pCO2.toFixed(1)} mmHg, HCO3 ${bgAnalysis.HCO3.toFixed(1)} mEq/L</div>
+                    <div class="text-sky-400/90 text-[8.5px]">⚠️ Veno-arteriyel pCO2 farkı (ΔpCO2) >6 mmHg ise kardiyak debi azlığı, şok ve doku hipoperfüzyonunu gösterir.</div>
+                </div>`;
+            }
+
+            if (bgAnalysis.isInternallyConsistent === false) {
+                outputHtml += `
+                <div class="text-[9px] text-rose-300 bg-rose-950/40 border border-rose-700/60 rounded p-1.5">
+                    <b>⚠️ Analitik Tutarsızlık (Kassirer-Bleich):</b> Ölçülen pH ile pCO2/HCO3 oranından hesaplanan [H+] arasında %${bgAnalysis.consistencyDetails?.diffPercent.toFixed(1)} sapma tespit edildi. Pıhtı, hava kabarcığı veya beklemiş numune olasılığını kontrol ediniz.
+                </div>`;
             }
 
             if (bgAnalysis.isNeonatalNorms) {
-                outputHtml += `<div class="text-[9px] text-cyan-300 font-medium mt-0.5">Yenidoğan Normları Uygulandı (Referans: pH 7.30–7.42, HCO3 19–24, pCO2 35–48)</div>`;
+                outputHtml += `<div class="text-[9px] text-cyan-300 font-medium">Yenidoğan Fizyolojik Normları Uygulandı (Ref: pH 7.30–7.42, HCO3 19–24, pCO2 35–48)</div>`;
+            }
+
+            if (bgAnalysis.temperatureCorrection && bgAnalysis.temperatureCorrection.patientTemp !== 37) {
+                outputHtml += `
+                <div class="text-[9px] text-teal-300 bg-teal-950/30 border border-teal-800/40 rounded p-1.5">
+                    <b>Vücut Sıcaklığı Düzeltmesi (${bgAnalysis.temperatureCorrection.patientTemp}°C):</b> in vivo pH ${bgAnalysis.temperatureCorrection.corrected_pH}, pCO2 ${bgAnalysis.temperatureCorrection.corrected_pCO2} mmHg${bgAnalysis.temperatureCorrection.corrected_pO2 !== null ? `, pO2 ${bgAnalysis.temperatureCorrection.corrected_pO2} mmHg` : ''}. (${bgAnalysis.temperatureCorrection.alphaStatNote})
+                </div>`;
             }
 
             if (bgAnalysis.warnings && bgAnalysis.warnings.length > 0) {
-                outputHtml += `<div class="text-[9px] text-amber-400 mt-1 space-y-0.5">${bgAnalysis.warnings.map((w: string) => `<div>${w}</div>`).join('')}</div>`;
+                outputHtml += `<div class="text-[9px] text-amber-400 space-y-0.5 border-t border-slate-700/40 pt-1">${bgAnalysis.warnings.map((w: string) => `<div>• ${w}</div>`).join('')}</div>`;
             }
 
+            // 5. DETAY KUTUSU: 8 Basamaklı Sistematik Değerlendirme & Ekol Karşılaştırma Köşesi
+            outputHtml += `
+            <details id="box-bg-deep-details" ${wasDetailOpen ? 'open' : ''} class="group/deep mt-2 rounded-lg border border-cyan-700/50 bg-[#060A12] p-2 transition-all">
+                <summary class="cursor-pointer select-none flex items-center justify-between text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 list-none [&::-webkit-details-marker]:hidden">
+                    <span class="flex items-center gap-1.5">
+                        <span class="text-xs">🔬</span>
+                        <span>Fizyopatolojik Detay & Ekol Karşılaştırma Kutusu</span>
+                    </span>
+                    <span class="text-[9px] text-cyan-400 group-open/deep:rotate-180 transition-transform">▼ Detay</span>
+                </summary>
+                
+                <div class="mt-2 space-y-2 text-[10px] text-slate-300 border-t border-cyan-900/40 pt-2">
+                    <!-- Bölüm A: İç Tutarlılık (Kassirer-Bleich) -->
+                    <div class="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                        <div class="font-bold text-cyan-400 text-[10px] mb-0.5">1. Analitik Kalite & Kassirer-Bleich İçsel Tutarlılığı</div>
+                        <div class="space-y-0.5 text-slate-300">
+                            <div>• Denklem: [H+] = 24 × (pCO2 / HCO3) = <b>${bgAnalysis.consistencyDetails?.hCalc} nmol/L</b></div>
+                            <div>• pH'dan Ölçülen: [H+] = 10^(9-pH) = <b>${bgAnalysis.consistencyDetails?.hMeas} nmol/L</b> ${bgAnalysis.consistencyDetails?.hEst ? `(Lineer Kural: ~${bgAnalysis.consistencyDetails.hEst} nmol/L)` : ''}</div>
+                            <div>• Tutarlılık Durumu: <span class="${bgAnalysis.isInternallyConsistent ? 'text-emerald-400' : 'text-rose-400'} font-semibold">%${bgAnalysis.consistencyDetails?.diffPercent.toFixed(1)} sapma — ${bgAnalysis.consistencyDetails?.interpretation ?? ''}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Bölüm B: Üç Ekolün Karşılaştırmalı Analizi -->
+                    <div class="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                        <div class="font-bold text-cyan-400 text-[10px] mb-0.5">2. Metodolojik Ekol Karşılaştırması</div>
+                        <div class="space-y-1 text-slate-300">
+                            <div>
+                                <b class="text-slate-200">Boston Ekolü (Henderson-Hasselbalch):</b>
+                                <span class="text-slate-400"> ${bgAnalysis.compensationText || 'Primer bozukluk ve beklenen fizyolojik kompanzasyon aralıkları.'}</span>
+                            </div>
+                            <div>
+                                <b class="text-slate-200">Kopenhag Ekolü (Siggaard-Andersen Van Slyke SBE):</b>
+                                <span class="text-slate-400"> SBE = <b>${sbeSign}${bgAnalysis.sbe.toFixed(1)} mEq/L</b> (${bgAnalysis.sbeInterpretation}). Solunumsal dalgalanmalardan arındırılmış saf ekstrasellüler metabolik baz fazlalığı/açığıdır.</span>
+                            </div>
+                            <div>
+                                <b class="text-slate-200">Stewart-Fencl Fizikokimyasal Modeli:</b>
+                                <div class="pl-2 mt-0.5 space-y-0.5 text-slate-400">
+                                    <div>- Görünür İyon Farkı (SIDa = Na - Cl): <b>${bgAnalysis.stewart?.sida !== null && bgAnalysis.stewart?.sida !== undefined ? bgAnalysis.stewart.sida.toFixed(1) + ' mEq/L' : '--'}</b> (Normal: 38–42 mEq/L). ${bgAnalysis.stewart?.sidaInterpretation ?? ''}</div>
+                                    <div>- Klor Katkısı (SBE_NaCl): <b>${bgAnalysis.stewart?.sbeNaCl !== null && bgAnalysis.stewart?.sbeNaCl !== undefined ? (bgAnalysis.stewart.sbeNaCl > 0 ? '+' : '') + bgAnalysis.stewart.sbeNaCl.toFixed(1) + ' mEq/L' : '--'}</b></div>
+                                    <div>- Albümin Katkısı (SBE_Alb): <b>${bgAnalysis.stewart?.sbeAlb !== null && bgAnalysis.stewart?.sbeAlb !== undefined ? (bgAnalysis.stewart.sbeAlb > 0 ? '+' : '') + bgAnalysis.stewart.sbeAlb.toFixed(1) + ' mEq/L' : '--'}</b></div>
+                                    <div>- Ölçülemeyen Anyonlar (SBE_unmeasured): <b>${bgAnalysis.stewart?.sbeUnmeasured !== null && bgAnalysis.stewart?.sbeUnmeasured !== undefined ? (bgAnalysis.stewart.sbeUnmeasured > 0 ? '+' : '') + bgAnalysis.stewart.sbeUnmeasured.toFixed(1) + ' mEq/L' : '--'}</b></div>
+                                    ${bgAnalysis.stewart?.sig !== null && bgAnalysis.stewart?.sig !== undefined ? `<div>- Güçlü İyon Açığı (SIG): <b>${bgAnalysis.stewart.sig.toFixed(1)} mEq/L</b> (${bgAnalysis.stewart.sigInterpretation})</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bölüm C: Oksijenasyon, A-a Gradiyenti & Şant -->
+                    <div class="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                        <div class="font-bold text-cyan-400 text-[10px] mb-0.5">3. Oksijenasyon, Alveolo-Arteriyel (A-a) Gradiyenti & Şant</div>
+                        ${bgAnalysis.oxygenation ? `
+                        <div class="space-y-0.5 text-slate-300">
+                            <div>• Alveolar O2 (PAO2): <b>${Math.round(bgAnalysis.oxygenation.pao2Alveolar)} mmHg</b> | Ölçülen PaO2: <b>${Math.round(bgAnalysis.oxygenation.pO2)} mmHg</b></div>
+                            <div>• P(A-a)O2 Gradiyenti: <b>${Math.round(bgAnalysis.oxygenation.aaGradient)} mmHg</b> (Yaşa Göre Beklenen: ~${Math.round(bgAnalysis.oxygenation.expectedAaGradient)} mmHg)</div>
+                            <div>• Horovitz İndeksi (PaO2/FiO2): <b>${Math.round(bgAnalysis.oxygenation.horovitzIndex)}</b> — <span class="text-amber-300 font-semibold">${bgAnalysis.oxygenation.ardsSeverity}</span></div>
+                            <div>• Hipoksemi Mekanizması: <span class="text-cyan-300">${bgAnalysis.oxygenation.mechanism}</span></div>
+                            <div class="text-[9px] text-slate-400 mt-0.5">• Klinik Not: Normal A-a gradiyenti saf hipoventilasyonu (opiat/sedatif, KOAH, nöromüsküler) gösterir; artmış A-a gradiyenti intrapulmoner şant, V/Q uyumsuzluğu veya difüzyon defektini (ARDS, emboli, pnömoni) kanıtlar.</div>
+                        </div>` : `
+                        <div class="text-slate-400 italic">pO2 değeri girildiğinde Alveolar Gaz Denklemi, A-a gradiyenti, Horovitz indeksi ve Berlin ARDS evrelemesi hesaplanır.</div>
+                        `}
+                    </div>
+
+                    <!-- Bölüm D: Sıcaklık Düzeltmesi (Alpha-stat vs pH-stat) -->
+                    <div class="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                        <div class="font-bold text-cyan-400 text-[10px] mb-0.5">4. Vücut Sıcaklığı & Alpha-stat vs pH-stat Stratejisi</div>
+                        ${bgAnalysis.temperatureCorrection ? `
+                        <div class="space-y-0.5 text-slate-300">
+                            <div>• Analiz Sıcaklığı: 37.0°C | Hasta Vücut Sıcaklığı: <b>${bgAnalysis.temperatureCorrection.patientTemp}°C</b></div>
+                            <div>• in vivo Düzeltilmiş: pH <b>${bgAnalysis.temperatureCorrection.corrected_pH}</b>, pCO2 <b>${bgAnalysis.temperatureCorrection.corrected_pCO2} mmHg</b>${bgAnalysis.temperatureCorrection.corrected_pO2 !== null ? `, pO2 <b>${bgAnalysis.temperatureCorrection.corrected_pO2} mmHg</b>` : ''}</div>
+                            <div>• <b>Alpha-stat Yaklaşımı (Standart):</b> ${bgAnalysis.temperatureCorrection.alphaStatNote}</div>
+                            <div>• <b>pH-stat Yaklaşımı:</b> ${bgAnalysis.temperatureCorrection.phStatNote}</div>
+                        </div>` : `
+                        <div class="text-slate-400">Hasta 37°C normotermik kabul edilmiştir. Hipotermi veya hipertermi durumunda sıcaklık alanına hastanın vücut ısısını giriniz.</div>
+                        `}
+                    </div>
+
+                    <!-- Bölüm E: 8 Aşamalı Sistematik Karar Özeti -->
+                    ${bgAnalysis.eightStepAnalysis ? `
+                    <div class="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                        <div class="font-bold text-cyan-400 text-[10px] mb-1">5. 8 Aşamalı Sistematik Karar Yolu</div>
+                        <div class="space-y-0.5 text-[9.5px] text-slate-300">
+                            <div><b>1. Kalite & Tutarlılık:</b> ${bgAnalysis.eightStepAnalysis.step1_quality}</div>
+                            <div><b>2. Oksijenasyon:</b> ${bgAnalysis.eightStepAnalysis.step2_oxygenation}</div>
+                            <div><b>3. Asit-Baz Durumu:</b> ${bgAnalysis.eightStepAnalysis.step3_acidBaseState}</div>
+                            <div><b>4. Primer Bozukluk:</b> ${bgAnalysis.eightStepAnalysis.step4_primaryDisorder}</div>
+                            <div><b>5. Kompansasyon:</b> ${bgAnalysis.eightStepAnalysis.step5_compensation}</div>
+                            <div><b>6. Anyon Açığı:</b> ${bgAnalysis.eightStepAnalysis.step6_anionGap}</div>
+                            <div><b>7. Delta Analizi:</b> ${bgAnalysis.eightStepAnalysis.step7_deltaRatio}</div>
+                            <div><b>8. Stewart & Kopenhag:</b> ${bgAnalysis.eightStepAnalysis.step8_stewartCopenhagen}</div>
+                        </div>
+                    </div>` : ''}
+                </div>
+            </details>`;
+
             bgRes.innerHTML = outputHtml;
-            bgRes.className = `text-[10px] p-2.5 rounded-lg space-y-1 border ${isAbnormal ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-slate-900/60 border-slate-700/50 text-slate-200'}`;
+            bgRes.className = `text-[10px] p-2.5 rounded-lg space-y-2 border ${isAbnormal ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-slate-900/60 border-slate-700/50 text-slate-200'}`;
         }
     } else {
         appState.medicine.bloodGas = null;

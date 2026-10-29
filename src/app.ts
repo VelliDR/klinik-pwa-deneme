@@ -27,7 +27,8 @@ import {
     updateClinicalAlertsInspector,
     updateLiveSOAP,
     initWorkstationPackages,
-    initResponsiveWorkstation
+    initResponsiveWorkstation,
+    resetAllPatientData
 } from './controllers/workstationController';
 
 // ----------------------------------------------------------------------------
@@ -42,7 +43,8 @@ export {
     updateClinicalAlertsInspector,
     updateLiveSOAP,
     initWorkstationPackages,
-    initResponsiveWorkstation
+    initResponsiveWorkstation,
+    resetAllPatientData
 };
 
 // ----------------------------------------------------------------------------

@@ -3,6 +3,7 @@ import {
   getCurrentStatusDoses,
   getWeightAndIsAdult,
   setEmergencyWeightMode,
+  resetEmergencyWeightMode,
   startAnaphylaxisCountdown,
   resetAnaphylaxisTimer,
   getAnaphylaxisTimerState,
@@ -417,3 +418,55 @@ export function initEmergencyUiController(hooks: EmergencyControllerHooks): void
     });
   }
 }
+
+export function resetEmergencyUi(): void {
+  resetAnaphylaxisTimer();
+  resetStatusStopwatch();
+  resetEmergencyWeightMode();
+
+  const timerAdrDisplay = getEl('timer-adr-display');
+  const timerAdrBar = getEl('timer-adr-bar');
+  const btnAdrStart = getEl('btn-adr-start');
+  const btnAdrRepeat = getEl('btn-adr-repeat');
+  const alertAdrExpired = getEl('alert-adr-expired');
+  const badgeAdrTimerStatus = getEl('badge-adr-timer-status');
+
+  if (timerAdrDisplay) timerAdrDisplay.textContent = '05:00';
+  if (timerAdrBar) timerAdrBar.style.width = '100%';
+  if (btnAdrStart) btnAdrStart.classList.remove('hidden');
+  if (btnAdrRepeat) btnAdrRepeat.classList.add('hidden');
+  if (alertAdrExpired) alertAdrExpired.classList.add('hidden');
+  if (badgeAdrTimerStatus) {
+    badgeAdrTimerStatus.textContent = 'Beklemede';
+    badgeAdrTimerStatus.className = 'text-xs tabular-nums text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800';
+  }
+
+  const timerStatusDisplay = getEl('timer-status-display');
+  const badgeStatusPhase = getEl('badge-status-phase');
+  const btnStatusStart = getEl('btn-status-start');
+  const btnStatusPause = getEl('btn-status-pause');
+
+  if (timerStatusDisplay) timerStatusDisplay.textContent = '00:00';
+  if (badgeStatusPhase) badgeStatusPhase.textContent = 'Faz 1: 0–5 dk (Stabilizasyon)';
+  if (btnStatusStart) {
+    btnStatusStart.textContent = 'Başlat';
+    btnStatusStart.classList.remove('hidden');
+  }
+  if (btnStatusPause) btnStatusPause.classList.add('hidden');
+
+  const cardPhase1 = getEl('card-status-phase-1');
+  const cardPhase2 = getEl('card-status-phase-2');
+  const cardPhase3 = getEl('card-status-phase-3');
+  const cardPhase4 = getEl('card-status-phase-4');
+  [cardPhase1, cardPhase2, cardPhase3, cardPhase4].forEach((c, idx) => {
+    if (!c) return;
+    if (idx === 0) {
+      c.classList.add('border-cyan-500', 'bg-cyan-950/40', 'ring-1', 'ring-cyan-500/50');
+      c.classList.remove('border-slate-800', 'bg-slate-950/60');
+    } else {
+      c.classList.remove('border-cyan-500', 'bg-cyan-950/40', 'ring-1', 'ring-cyan-500/50');
+      c.classList.add('border-slate-800', 'bg-slate-950/60');
+    }
+  });
+}
+

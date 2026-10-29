@@ -4,15 +4,20 @@
 import assert from 'assert';
 
 const elements = new Map();
-function createElement(tag: string) {
+function createElement(tag: string, id: string = '') {
     const classes = new Set<string>();
     return {
+        id,
         tagName: tag.toUpperCase(),
         value: '',
+        defaultValue: '',
         innerHTML: '',
         innerText: '',
         textContent: '',
         checked: false,
+        defaultChecked: false,
+        selectedIndex: 0,
+        options: [] as any[],
         style: {} as Record<string, string>,
         classList: {
             add: (...cls: string[]) => cls.forEach(c => classes.add(c)),
@@ -36,6 +41,7 @@ function createElement(tag: string) {
         },
         children: [] as any[],
         appendChild: (c: any) => c,
+        focus: () => {},
         _handlers: {} as Record<string, Function[]>,
         addEventListener: function(event: string, handler: Function) {
             this._handlers[event] = this._handlers[event] || [];
@@ -62,7 +68,8 @@ const mockPresets = ['0d', '1d', '3d', '7d', '14d', '1m', '1y', '5y', '25y'].map
     removeEventListener: () => {},
     navigator: { onLine: true, serviceWorker: { register: () => Promise.resolve() } },
     document: null,
-    location: { reload: () => {} }
+    location: { reload: () => {} },
+    scrollTo: () => {}
 };
 (globalThis as any).indexedDB = { open: () => ({ onupgradeneeded: null, onsuccess: null, onerror: null }) };
 
@@ -72,7 +79,15 @@ const mockPresets = ['0d', '1d', '3d', '7d', '14d', '1m', '1y', '5y', '25y'].map
     createElement: createElement,
     getElementById: (id: string) => {
         if (!elements.has(id)) {
-            elements.set(id, createElement('div'));
+            let tag = 'div';
+            if (id.startsWith('input-') || id.startsWith('chk-') || id.startsWith('check-')) tag = 'input';
+            else if (id.startsWith('select-')) tag = 'select';
+            else if (id.startsWith('text-')) tag = 'textarea';
+            const el = createElement(tag, id);
+            if (id.startsWith('chk-') || id.startsWith('check-') || id === 'input-oxygen') {
+                (el as any).type = 'checkbox';
+            }
+            elements.set(id, el);
         }
         return elements.get(id);
     },
@@ -80,6 +95,15 @@ const mockPresets = ['0d', '1d', '3d', '7d', '14d', '1m', '1y', '5y', '25y'].map
     querySelectorAll: (sel: string) => {
         if (sel === '.btn-dob-preset') {
             return mockPresets;
+        }
+        if (sel.includes('input')) {
+            return Array.from(elements.values()).filter((el: any) => el.tagName === 'INPUT');
+        }
+        if (sel.includes('select')) {
+            return Array.from(elements.values()).filter((el: any) => el.tagName === 'SELECT');
+        }
+        if (sel.includes('textarea')) {
+            return Array.from(elements.values()).filter((el: any) => el.tagName === 'TEXTAREA');
         }
         return [];
     }
@@ -193,6 +217,43 @@ assert.ok(soapReport.includes('CHA2DS2-VASc') || soapReport.includes('CHA₂DS�
 assert.ok(soapReport.includes('HAS-BLED'), 'SOAP should include HAS-BLED in assessment or objective');
 
 console.log('✓ Global lab fallbacks, cardio-sync, and comprehensive SOAP generation verified.');
+
+console.log('--- 6. TESTING IN-PLACE PATIENT RESET (resetAllPatientData) ---');
+assert.strictEqual(typeof appModule.resetAllPatientData, 'function', 'resetAllPatientData should be exported');
+
+// Set arbitrary patient data
+(document.getElementById('input-dob') as any).value = '1980-05-15';
+(document.getElementById('input-weight') as any).value = '80';
+(document.getElementById('input-height') as any).value = '175';
+(document.getElementById('input-custom-notes') as any).value = 'Hasta baş dönmesi şikayeti ile başvurdu.';
+appState.treatment.selectedDrugs = [{ brand: 'PAROL 500 MG', generic: 'Paracetamol' } as any];
+
+appModule.updateAllTabs();
+assert.strictEqual(appState.biometry.weightKg, 80);
+assert.strictEqual(appState.treatment.selectedDrugs.length, 1);
+
+// Execute in-place reset without confirm dialog
+const resetResult = appModule.resetAllPatientData({ skipConfirm: true });
+assert.strictEqual(resetResult, true, 'resetAllPatientData should return true');
+
+// Verify all inputs are emptied
+assert.strictEqual((document.getElementById('input-dob') as any).value, '', 'input-dob should be cleared');
+assert.strictEqual((document.getElementById('input-weight') as any).value, '', 'input-weight should be cleared');
+assert.strictEqual((document.getElementById('input-height') as any).value, '', 'input-height should be cleared');
+assert.strictEqual((document.getElementById('input-custom-notes') as any).value, '', 'input-custom-notes should be cleared');
+
+// Verify appState is reset
+assert.strictEqual(appState.biometry.weightKg, null, 'appState.biometry.weightKg should be reset to null');
+assert.strictEqual(appState.biometry.ageYears, null, 'appState.biometry.ageYears should be reset to null');
+assert.strictEqual(appState.treatment.selectedDrugs.length, 0, 'selectedDrugs should be empty');
+assert.strictEqual(appState.thrombosis.cha2ds2vasc, null, 'cha2ds2vasc should be null');
+assert.strictEqual(appState.nephroTox.fena, null, 'fena should be null');
+
+// Verify SOAP note is clean
+const cleanSoap = generateSOAP();
+assert.ok(cleanSoap.includes('Girilen veri yok.') || !cleanSoap.includes('80 kg'), 'SOAP note should reflect cleared patient');
+
+console.log('✓ In-place patient data reset (resetAllPatientData) verified (100% healthy)');
 
 console.log('\n======================================================');
 console.log('🎉 ALL TypeScript APP & WORKSTATION TESTS PASSED (100% PARITY)! 🎉');

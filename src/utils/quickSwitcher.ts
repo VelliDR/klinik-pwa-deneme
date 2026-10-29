@@ -17,6 +17,15 @@ export interface QuickSwitcherItem {
 
 export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
   {
+    id: 'action-reset-patient',
+    name: 'Yeni Hasta / Formu Sıfırla',
+    shortName: 'Yeni Hasta',
+    category: 'eylem',
+    icon: 'refresh',
+    desc: 'Tüm hasta verilerini, klinik hesaplamaları ve reçeteyi sıfırla',
+    keywords: ['sifirla', 'reset', 'yeni hasta', 'temizle', 'clear', 'hasta sifirla', 'yeni']
+  },
+  {
     id: 'card-demografi',
     name: 'Hasta Yaş & Demografi',
     shortName: 'Yaş & Demografi',
@@ -246,6 +255,16 @@ const MOTOR_DOM_ID_ALIASES: Record<string, string> = {
 };
 
 export function jumpToMotor(motorId: string): boolean {
+  if (motorId === 'action-reset-patient') {
+    if (typeof document === 'undefined') return false;
+    const btnReset = document.getElementById('btn-reset-patient') as HTMLButtonElement | null;
+    if (btnReset) {
+      btnReset.click();
+      return true;
+    }
+    return false;
+  }
+
   const resolvedId = MOTOR_DOM_ID_ALIASES[motorId] || motorId;
   const card = document.getElementById(resolvedId) || document.getElementById(motorId);
   if (!card) return false;

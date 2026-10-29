@@ -8,13 +8,13 @@ import { escapeHtml, getEl, getVal } from '../utils/domUtils';
 import { generateSOAP, sanitizeForHbys } from '../utils/soapGenerator';
 import { expandDotPhrases, appendTemplateToText } from '../utils/soapTemplates';
 import { resetAnaphylaxisTimer, resetStatusStopwatch, resetEmergencyWeightMode } from '../utils/emergencyManager';
-import { initEmergencyUiController } from './emergencyUiController';
+import { initEmergencyUiController, resetEmergencyUi } from './emergencyUiController';
 import { initTheme, toggleTheme } from '../utils/themeManager';
 import { getSvgIcon } from '../utils/icons';
 import { QuickSwitcherItem, QUICK_SWITCHER_ITEMS, searchQuickSwitcher, jumpToMotor } from '../utils/quickSwitcher';
 import { initMonographModalController } from './monographModalController';
 import { initEquivalentsModalController } from './equivalentsModalController';
-import { initPrescriptionModalController } from './prescriptionModalController';
+import { initPrescriptionModalController, resetPrescriptionData } from './prescriptionModalController';
 import { initEcgUiController } from './ecgUiController';
 import { initVaccineModalController } from './vaccineModalController';
 import {
@@ -892,6 +892,234 @@ export function initWorkstationPackages(): void {
 }
 
 // ----------------------------------------------------------------------------
+// 4.1. HASTA SIFIRLAMA MOTORU (IN-PLACE COMPLETE PATIENT & WORKSTATION RESET)
+// ----------------------------------------------------------------------------
+export function resetAllPatientData(options: { skipConfirm?: boolean } = {}): boolean {
+    if (typeof window !== 'undefined' && !options.skipConfirm) {
+        const confirmed = window.confirm('Tüm hasta verileri, klinik hesaplamalar ve reçete sıfırlanıp yeni hasta kaydı açılsın mı?');
+        if (!confirmed) return false;
+    }
+
+    if (typeof document === 'undefined') return true;
+
+    // 1. Acil durum zamanlayıcıları, kronometre ve oturum verilerini sıfırla
+    resetEmergencyUi();
+    try {
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('klinik_pwa_emergency_timers_v2');
+        }
+    } catch {
+        // sessionStorage erişimi kısıtlıysa sessizce devam et
+    }
+
+    // 2. Reçete modalı durumunu sıfırla
+    resetPrescriptionData();
+
+    // 3. Tedavi ve Güvenlik İlaç Listelerini Sıfırla
+    if (appState.treatment) {
+        appState.treatment.selectedDrugs = [];
+    }
+    if (appState.safetyPrescription) {
+        appState.safetyPrescription.selectedSafetyDrugs = [];
+    }
+    renderSelectedDrugs();
+
+    // 4. Klinik AppState Motor Durumlarını Başlangıç Değerlerine Döndür
+    appState.biometry = {
+        ageYears: null,
+        ageMonths: null,
+        ageWeeks: null,
+        ageDays: null,
+        ageHours: null,
+        dob: null,
+        birthTime: null,
+        ageFormatted: null,
+        ageGroupTag: null,
+        isNeonate: false,
+        birthWeightG: null,
+        gender: null,
+        weightKg: null,
+        heightCm: null,
+        bsa: null,
+        bmi: null,
+        ibwKg: null,
+        adjBwKg: null,
+        isObese: false,
+        egfr: null,
+        egfrAbsolute: null,
+        egfrFormula: null,
+        cystatinC: null,
+        heartRate: null
+    };
+
+    appState.pediatrics = {
+        active: false,
+        percentiles: null,
+        targetHeight: null,
+        correctedAge: null,
+        bp: null,
+        centor: null,
+        vaccines: null,
+        syrupDose: null,
+        pews: null,
+        pgcs: null,
+        growthVelocity: null,
+        cranialScreening: null
+    };
+
+    appState.surgery = {
+        active: false,
+        alvarado: null,
+        ranson: null,
+        parkland: null,
+        suture: null
+    };
+
+    appState.obgyn = {
+        active: false,
+        trimester: null,
+        eddData: null,
+        bishop: null,
+        preeclampsia: null
+    };
+
+    appState.medicine = {
+        active: false,
+        pregnancyTrimester: null,
+        bloodGas: null,
+        fluid: null,
+        neonatalFluid: null,
+        sodium: null,
+        calcium: null,
+        infusion: null,
+        gir: null,
+        steroid: null,
+        homaIR: null,
+        news2: null,
+        gcs: null
+    };
+
+    appState.other = {
+        active: false,
+        cardiac: null,
+        drugPrescription: null
+    };
+
+    appState.thrombosis = {
+        active: false,
+        wellsDVT: null,
+        wellsPTE: null,
+        perc: null,
+        cha2ds2vasc: null,
+        hasbled: null,
+        heart: null
+    };
+
+    appState.nephroTox = {
+        active: false,
+        fena: null,
+        feurea: null,
+        correctedSodium: null,
+        osmolalGap: null,
+        paracetamol: null,
+        curb65: null
+    };
+
+    appState.neonatology = {
+        active: false,
+        bhutani: null,
+        apgar: null,
+        westleyCroup: null,
+        cdsDehydration: null,
+        weightLoss: null
+    };
+
+    appState.emergency = {
+        active: false,
+        anaphylaxis: null,
+        statusEpilepticus: null
+    };
+
+    // 5. DOM Form Elemanlarını Sıfırla (HTML Varsayılan Değerlerine Döndür)
+    const NON_PATIENT_ELEMENT_IDS = new Set([
+        'input-custom-pack-name',
+        'input-custom-pack-icon',
+        'input-vaccine-filter',
+        'input-print-doctor-name'
+    ]);
+
+    const allInputs = document.querySelectorAll<HTMLInputElement>('input');
+    allInputs.forEach(input => {
+        if (input.id && NON_PATIENT_ELEMENT_IDS.has(input.id)) return;
+
+        if (input.type === 'checkbox' || input.type === 'radio' || input.id.startsWith('chk-') || input.id.startsWith('check-')) {
+            input.checked = Boolean(input.defaultChecked);
+        }
+        if (input.type !== 'checkbox' && input.type !== 'radio') {
+            input.value = input.defaultValue || '';
+        }
+
+        delete input.dataset.userModified;
+        delete input.dataset.userOverridden;
+        delete input.dataset.autofilled;
+    });
+
+    const allSelects = document.querySelectorAll<HTMLSelectElement>('select');
+    allSelects.forEach(select => {
+        if (select.id && NON_PATIENT_ELEMENT_IDS.has(select.id)) return;
+
+        let restored = false;
+        for (let i = 0; i < select.options.length; i++) {
+            const opt = select.options[i];
+            if (opt.defaultSelected) {
+                select.selectedIndex = i;
+                select.value = opt.value;
+                restored = true;
+                break;
+            }
+        }
+        if (!restored) {
+            select.selectedIndex = 0;
+            select.value = select.options.length > 0 ? select.options[0].value : '';
+        }
+
+        delete select.dataset.userModified;
+    });
+
+    const allTextareas = document.querySelectorAll<HTMLTextAreaElement>('textarea');
+    allTextareas.forEach(textarea => {
+        if (textarea.id && NON_PATIENT_ELEMENT_IDS.has(textarea.id)) return;
+        textarea.value = textarea.defaultValue || '';
+        delete textarea.dataset.userModified;
+    });
+
+    // 6. Kategori Filtresi Aktifse 'Tümü' (all) Moduna Döndür
+    const allPill = document.querySelector<HTMLButtonElement>('.cat-pill[data-cat="all"]');
+    if (allPill && !allPill.classList.contains('active')) {
+        allPill.click();
+    }
+
+    // 7. Tüm Sekme, Kart ve Çıktıları Reaktif Olarak Yeniden Hesapla (Temiz Boş Durum)
+    onTabsUpdateCallback();
+
+    // 8. Sayfayı Başa Yumuşakça Kaydır ve Demografi Kartındaki İlk Alana Odaklan
+    if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    setTimeout(() => {
+        const inputDob = document.getElementById('input-dob') as HTMLInputElement | null;
+        const inputAge = document.getElementById('input-age') as HTMLInputElement | null;
+        if (inputDob && typeof inputDob.focus === 'function') {
+            inputDob.focus();
+        } else if (inputAge && typeof inputAge.focus === 'function') {
+            inputAge.focus();
+        }
+    }, 150);
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
 // 5. RESPONSIVE WORKSTATION INIT (Drawer, Sheet, Presets, Network)
 // ----------------------------------------------------------------------------
 export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
@@ -1015,16 +1243,11 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
         });
     }
 
-    // 3. Reset Patient Data
+    // 3. Reset Patient Data (Yeni Hasta / Formu Sıfırla)
     const btnReset = getEl('btn-reset-patient');
-    if (btnReset && typeof window !== 'undefined') {
+    if (btnReset) {
         btnReset.addEventListener('click', () => {
-            if (confirm('Tüm hasta verileri ve hesaplamalar sıfırlansın mı?')) {
-                resetAnaphylaxisTimer();
-                resetStatusStopwatch();
-                resetEmergencyWeightMode();
-                window.location.reload();
-            }
+            resetAllPatientData();
         });
     }
 
@@ -1084,8 +1307,7 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
     const btnBottomReset = getEl('btn-bottom-reset');
     if (btnBottomReset) {
         btnBottomReset.addEventListener('click', () => {
-            const btnReset = getEl<HTMLButtonElement>('btn-reset-patient');
-            if (btnReset) btnReset.click();
+            resetAllPatientData();
         });
     }
 

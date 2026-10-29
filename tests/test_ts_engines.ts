@@ -481,8 +481,11 @@ assert.ok(soap.includes('[P] PLAN & TEDAVİ:'));
 console.log('✓ TypeScript Workstation Packages, Drug Engine & SOAP Generator passed');
 
 console.log('--- 7. VERIFYING ERGONOMICS, QUICK SWITCHER & PRESCRIPTION PRINTER (AŞAMA 2) ---');
-// 1. Quick Switcher Arama Testleri
-assert.strictEqual(QUICK_SWITCHER_ITEMS.length, 21);
+// 1. Quick Switcher Arama Testleri (21 Klinik Motor + 1 Hızlı Sıfırlama Eylemi)
+assert.strictEqual(QUICK_SWITCHER_ITEMS.length, 22);
+const searchReset = searchQuickSwitcher('sıfırla');
+assert.ok(searchReset.some(m => m.id === 'action-reset-patient'));
+
 const searchBloodGas = searchQuickSwitcher('kan gazı');
 assert.ok(searchBloodGas.some(m => m.id === 'card-kangazi'));
 
@@ -493,7 +496,7 @@ const searchRx = searchQuickSwitcher('titck');
 assert.ok(searchRx.some(m => m.id === 'card-ilac'));
 
 const searchEmpty = searchQuickSwitcher('');
-assert.strictEqual(searchEmpty.length, 21);
+assert.strictEqual(searchEmpty.length, 22);
 
 const searchNotFound = searchQuickSwitcher('bilinmeyen_arama_anahtari_xyz');
 assert.strictEqual(searchNotFound.length, 0);
@@ -4005,6 +4008,67 @@ assert.ok(hagmaMetAlkBg);
 assert.strictEqual(hagmaMetAlkBg.deltaRatio, null);
 assert.strictEqual(hagmaMetAlkBg.estimated_HCO3, 34);
 assert.ok(hagmaMetAlkBg.hagmaStatus.includes('Tahmini Bikarbonat: ~34 mEq/L'));
+
+// 35.7 Kopenhag Ekolü: Siggaard-Andersen Van Slyke Standard Base Excess (SBE)
+const sbeNormal = analyzeBloodGas({ pH: 7.40, pCO2: 40, HCO3: 24 });
+assert.ok(sbeNormal);
+assert.strictEqual(sbeNormal.sbe, -0.8); // 24 - 24.8 = -0.8 mEq/L
+assert.ok(sbeNormal.sbe >= -2 && sbeNormal.sbe <= 2, 'Normal aralık [-2, +2] mEq/L');
+assert.ok(sbeNormal.sbeInterpretation.includes('Normal Tampon Baz Rezervi'));
+
+const sbeAcidosis = analyzeBloodGas({ pH: 7.20, pCO2: 25, HCO3: 10 });
+assert.ok(sbeAcidosis);
+assert.ok(sbeAcidosis.sbe < -10, 'Ağır metabolik asidozda SBE < -10 mEq/L olmalıdır');
+assert.ok(sbeAcidosis.sbeInterpretation.includes('Baz Defisiti'));
+
+// 35.8 Stewart-Fencl Modeli: Görünür İyon Farkı (SIDa), SBE Katkıları ve SIG
+const stewartNorm = analyzeBloodGas({ pH: 7.40, pCO2: 40, HCO3: 24, Na: 140, Cl: 102, Albumin: 4.2 });
+assert.ok(stewartNorm?.stewart);
+assert.strictEqual(stewartNorm.stewart.sida, 38);
+assert.ok(stewartNorm.stewart.sidaInterpretation.includes('Normal Güçlü İyon Farkı'));
+
+const stewartHyperCl = analyzeBloodGas({ pH: 7.25, pCO2: 30, HCO3: 13, Na: 140, Cl: 115, Albumin: 4.0 });
+assert.ok(stewartHyperCl?.stewart);
+assert.strictEqual(stewartHyperCl.stewart.sida, 25);
+assert.ok(stewartHyperCl.stewart.sidaInterpretation.includes('Düşük SIDa'));
+assert.ok(stewartHyperCl.stewart.sbeNaCl! < 0, 'Hiperkloremide SBE_NaCl asidoz yönünde negatif olmalıdır');
+
+// 35.9 Oksijenasyon, A-a Gradyenti ve Berlin ARDS (Horovitz P/F)
+const o2Normal = analyzeBloodGas({ pH: 7.40, pCO2: 40, HCO3: 24, pO2: 95, FiO2: 21, ageInYears: 30 });
+assert.ok(o2Normal?.oxygenation);
+assert.ok(o2Normal.oxygenation.horovitzIndex > 400, 'Normal havada PaO2 95 için P/F > 400 olmalıdır');
+assert.strictEqual(o2Normal.oxygenation.ardsSeverity, 'Normal Akciğer Fonksiyonu (P/F > 300)');
+
+const o2Ards = analyzeBloodGas({ pH: 7.30, pCO2: 45, HCO3: 22, pO2: 80, FiO2: 100, ageInYears: 50 });
+assert.ok(o2Ards?.oxygenation);
+assert.strictEqual(o2Ards.oxygenation.horovitzIndex, 80);
+assert.strictEqual(o2Ards.oxygenation.ardsSeverity, 'Ağır ARDS (P/F ≤ 100 mmHg)');
+assert.ok(o2Ards.oxygenation.aaGradient > o2Ards.oxygenation.expectedAaGradient, 'ARDS hastasında A-a gradiyenti yüksek olmalıdır');
+assert.ok(o2Ards.oxygenation.mechanism.includes('Şant'));
+
+// Saf Alveolar Hipoventilasyon (Opiat / KOAH aşırı sedasyon): Normal A-a, yüksek pCO2, düşük PaO2
+const o2Hypovent = analyzeBloodGas({ pH: 7.25, pCO2: 65, HCO3: 28, pO2: 65, FiO2: 21, ageInYears: 20 });
+assert.ok(o2Hypovent?.oxygenation);
+assert.ok(o2Hypovent.oxygenation.mechanism.includes('Alveolar Hipoventilasyon'));
+
+// 35.10 Sıcaklık Düzeltmesi (Alpha-stat vs pH-stat)
+const tempHypothermia = analyzeBloodGas({ pH: 7.40, pCO2: 40, HCO3: 24, pO2: 100, temperature: 32 });
+assert.ok(tempHypothermia?.temperatureCorrection);
+assert.strictEqual(tempHypothermia.temperatureCorrection.isHypothermic, true);
+assert.ok(tempHypothermia.temperatureCorrection.corrected_pH > 7.40, 'Hipotermide in vivo pH yükselir');
+assert.ok(tempHypothermia.temperatureCorrection.corrected_pCO2 < 40, 'Hipotermide in vivo pCO2 düşer');
+assert.ok(tempHypothermia.temperatureCorrection.alphaStatNote.includes('Alpha-stat'));
+
+// 35.11 Kassirer-Bleich Analitik Kalite ve 8 Basamaklı Sistematik Değerlendirme
+const fullBg = analyzeBloodGas({ pH: 7.40, pCO2: 40, HCO3: 24, pO2: 95, FiO2: 21, Na: 140, Cl: 102, Albumin: 4.0 });
+assert.ok(fullBg?.consistencyDetails);
+assert.strictEqual(fullBg.consistencyDetails.hCalc, 40);
+assert.strictEqual(fullBg.consistencyDetails.hMeas, 39.8);
+assert.strictEqual(fullBg.consistencyDetails.hEst, 40);
+assert.strictEqual(fullBg.isInternallyConsistent, true);
+assert.ok(fullBg.eightStepAnalysis);
+assert.ok(fullBg.eightStepAnalysis.step1_quality.includes('İç Tutarlılık'));
+assert.ok(fullBg.eightStepAnalysis.step8_stewartCopenhagen.includes('Kopenhag Ekolü SBE'));
 
 console.log('✓ Motor 8 Kan Gazı & Asit-Baz Analizi verified (100% healthy)');
 

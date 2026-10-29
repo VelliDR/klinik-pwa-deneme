@@ -27,6 +27,35 @@ const getEl = <T extends HTMLElement = HTMLElement>(id: string): T | null => {
   return document.getElementById(id) as T | null;
 };
 
+let activePrescriptionDrugs: PrintableDrugSchedule[] = [];
+
+export function resetPrescriptionData(): void {
+  activePrescriptionDrugs = [];
+  const containerPreview = getEl('container-prescription-preview');
+  if (containerPreview) containerPreview.innerHTML = '';
+  const printableArea = getEl('printable-prescription-container');
+  if (printableArea) printableArea.innerHTML = '';
+  const inputPatientName = getEl<HTMLInputElement>('input-print-patient-name');
+  if (inputPatientName) inputPatientName.value = '';
+  const inputPrintDiagnosis = getEl<HTMLInputElement>('input-print-diagnosis');
+  if (inputPrintDiagnosis) inputPrintDiagnosis.value = '';
+  const inputPrintRxNumber = getEl<HTMLInputElement>('input-print-rx-number');
+  if (inputPrintRxNumber) inputPrintRxNumber.value = '';
+  const inputPrintAllergy = getEl<HTMLInputElement>('input-print-allergy');
+  if (inputPrintAllergy) inputPrintAllergy.value = 'Bilinen İlaç Alerjisi Yok';
+  const rxDrugsCountBadge = getEl('rx-drugs-count-badge');
+  if (rxDrugsCountBadge) rxDrugsCountBadge.textContent = '0 İlaç';
+  const containerRxEditorList = getEl('container-rx-editor-list');
+  if (containerRxEditorList) {
+    containerRxEditorList.innerHTML = `
+      <div class="p-8 text-center bg-slate-950/40 rounded-xl border border-dashed border-slate-800 text-slate-400 space-y-1.5">
+        <p class="text-xs font-semibold text-slate-300">Reçeteye henüz ilaç eklenmedi.</p>
+        <p class="text-[11px] text-slate-500">Yukarıdaki <strong>"+ İlaç Ekle"</strong> butonunu kullanabilir veya hazır bir reçete paketi seçebilirsiniz.</p>
+      </div>
+    `;
+  }
+}
+
 export function initPrescriptionModalController(): void {
   if (typeof document === 'undefined') return;
 
@@ -50,8 +79,6 @@ export function initPrescriptionModalController(): void {
   const btnAddRxDrug = getEl('btn-add-rx-drug');
   const containerRxEditorList = getEl('container-rx-editor-list');
   const rxDrugsCountBadge = getEl('rx-drugs-count-badge');
-
-  let activePrescriptionDrugs: PrintableDrugSchedule[] = [];
 
   function switchRxTab(tab: 'editor' | 'preview'): void {
     if (!btnTabRxEditor || !btnTabRxPreview || !panelRxEditor || !panelRxPreview) return;
