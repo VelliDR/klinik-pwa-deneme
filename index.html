@@ -1600,8 +1600,28 @@
                     </div>
                     <div id="output-ped-syrup" class="hidden text-[10px] p-2 bg-slate-900/60 border border-slate-700/50 rounded-lg space-y-1 tabular-nums text-cyan-400 mt-2"></div>
                     
-                    <span class="text-[10px] font-bold text-sky-400 block border-t border-slate-700/40 pt-2">Aşı Takvimi</span>
-                    <div id="output-ped-vaccines" class="text-[10px] text-slate-400 tabular-nums">Yaş girildiğinde listelenecektir.</div>
+                    <!-- AŞI TAKVİMİ & DETAY TABLO KÖŞE KUTUCUĞU -->
+                    <div id="card-asi" class="border-t border-slate-700/40 pt-2.5 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0"></span>
+                                <span class="text-[11px] font-bold text-sky-400 uppercase tracking-wide truncate">Aşı Takvimi &amp; Bağışıklama</span>
+                                <span class="text-[9px] bg-sky-950 text-sky-300 border border-sky-800/70 px-1.5 py-0.2 rounded font-mono font-semibold shrink-0">GBP 2026</span>
+                            </div>
+                            <!-- UFAK KÖŞE DETAY TABLO KUTUCUĞU -->
+                            <button type="button" id="btn-open-vaccine-tables" class="group shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-sky-950 via-slate-900 to-cyan-950 hover:from-sky-900 hover:to-cyan-900 border border-sky-500/50 hover:border-cyan-400 rounded-md text-[10px] font-semibold text-sky-200 hover:text-white shadow-sm transition-all active:scale-95 cursor-pointer" title="Tüm Ulusal &amp; Özel Aşı Tabloları, Risk Grupları ve Kontrendikasyonları İncele">
+                                <svg class="w-3.5 h-3.5 text-cyan-400 group-hover:text-cyan-200 shrink-0 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 4h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span>Detay Tablo</span>
+                                <span class="flex h-1.5 w-1.5 relative">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500"></span>
+                                </span>
+                            </button>
+                        </div>
+                        <div id="output-ped-vaccines" class="text-[10px] text-slate-400 tabular-nums">Yaş girildiğinde listelenecektir.</div>
+                    </div>
                 </div>
             </details>
 
@@ -2631,6 +2651,499 @@
                 <button type="button" id="btn-equivalents-batch-to-search" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/70 transition-colors hidden">
                     Bu Grubu Arama Kutusuna Aktar
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. TÜRKİYE ULUSAL VE ÖZEL BAĞIŞIKLAMA PROTOKOLLERİ DETAY TABLOLARI MODALI (GBP 2026) -->
+    <div id="modal-vaccine-tables" role="dialog" aria-modal="true" aria-labelledby="title-vaccine-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-sky-600/60 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Modal Başlığı -->
+            <div class="p-3.5 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-lg bg-sky-950/90 border border-sky-700/60 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 id="title-vaccine-modal" class="text-xs sm:text-sm font-bold text-slate-100 truncate">Türkiye Ulusal ve Özel Bağışıklama Protokolleri</h3>
+                            <span class="text-[9px] bg-sky-950 text-sky-300 border border-sky-800 px-1.5 py-0.2 rounded font-mono font-semibold shrink-0">GBP 2026</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 truncate">14 Nisan 2025 6'lı Karma (DaBT-İPA-Hib-HepB) &amp; 1 Eylül 2026 48. Ay Suçiçeği 2. Doz Resmi Güncellemeleriyle</p>
+                    </div>
+                </div>
+                <button type="button" id="btn-close-vaccine-modal" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-xs leading-none transition-colors cursor-pointer" title="Kapat (Esc)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Toolbar: Arama ve Sekmeler -->
+            <div class="p-2.5 sm:px-4 bg-[#080D18] border-b border-slate-800 space-y-2">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                    <!-- Sekmeler -->
+                    <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                        <button type="button" id="tab-btn-vax-national" class="tab-btn-vax px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-sky-500/20 text-sky-300 border border-sky-500/50 shadow-sm shadow-sky-950/40 flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                            <span>1. Ulusal Takvim (GBP 2026)</span>
+                            <span class="text-[9px] px-1 py-0.2 rounded bg-sky-900/60 text-sky-200">10 Aşı</span>
+                        </button>
+                        <button type="button" id="tab-btn-vax-special" class="tab-btn-vax px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                            <span>2. Özel &amp; İsteğe Bağlı Aşılar</span>
+                            <span class="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400">7 Aşı</span>
+                        </button>
+                        <button type="button" id="tab-btn-vax-risks" class="tab-btn-vax px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                            <span>3. Özel Risk Grupları &amp; Maternal</span>
+                            <span class="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400">7 Grup</span>
+                        </button>
+                        <button type="button" id="tab-btn-vax-contra" class="tab-btn-vax px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+                            <span>4. Kontrendikasyonlar &amp; Güvenlik</span>
+                        </button>
+                    </div>
+
+                    <!-- Canlı Arama Kutusu -->
+                    <div class="relative w-full sm:w-64 shrink-0">
+                        <input type="text" id="input-vaccine-filter" placeholder="Aşı, hastalık, risk veya kontrendikasyon ara..." class="w-full h-8 pl-7 pr-7 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors">
+                        <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <button type="button" id="btn-clear-vaccine-filter" class="absolute right-2 top-2 text-slate-500 hover:text-slate-300 text-xs" title="Aramayı Temizle">✕</button>
+                    </div>
+                </div>
+                <div id="vaccine-filter-counter" class="hidden text-[10px] text-sky-400 font-medium"></div>
+            </div>
+
+            <!-- Modal İçerik Gövdesi -->
+            <div class="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
+
+                <!-- 1. SEKME: ULUSAL ÇOCUKLUK DÖNEMİ AŞILAMA TAKVİMİ (GBP 2026) -->
+                <div id="tab-panel-vax-national" class="space-y-3">
+                    <!-- Reform Bilgi Kutucuğu -->
+                    <div class="p-3 rounded-xl bg-gradient-to-r from-sky-950/60 via-slate-900 to-cyan-950/60 border border-sky-800/70 text-xs space-y-1.5 leading-relaxed">
+                        <div class="flex items-center gap-2 font-bold text-sky-300">
+                            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                            <span>T.C. Sağlık Bakanlığı GBP 2025/2026 Yapısal Reformları:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-300 text-[11px] list-disc pl-4">
+                            <li><strong class="text-white">14 Nisan 2025 Reformu:</strong> Beş bileşenli karma aşının yerini altı bileşenli heksavalan aşı (<strong class="text-cyan-300">DaBT-İPA-Hib-HepB</strong>) almıştır. 1. ve 6. aylardaki ayrı monovalan Hep-B enjeksiyonları kaldırılmış; 2, 4, 6 ve 18. aylarda 3+1 şemasıyla tek enjektörde birleştirilerek enjeksiyon travması azaltılmıştır.</li>
+                            <li><strong class="text-white">1 Eylül 2026 Reformu:</strong> Suçiçeği aşısında tek dozun neden olduğu "breakthrough varisella" koruyuculuk kaybını gidermek amacıyla <strong class="text-cyan-300">48. aya rutin 2. doz</strong> entegre edilmiş; 49–72 ay arasındaki çocuklara da zorunlu tek dozluk yakalama protokolü başlatılmıştır.</li>
+                            <li><strong class="text-white">2 Nisan 2025 Reformu:</strong> Yenidoğan boğmaca apnelerine karşı maternal bağışıklama kapsamında gebelere 18–24 veya 27–36. haftalarda rutin <strong class="text-cyan-300">Tdab</strong> aşılaması başlatılmıştır.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Ulusal Takvim Tablosu -->
+                    <div class="overflow-x-auto border border-slate-800 rounded-xl bg-[#070B14]">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950/90 text-slate-300 border-b border-slate-800 text-[11px] uppercase tracking-wider font-semibold">
+                                    <th class="p-2.5 sm:p-3 w-40">Aşı Adı &amp; Kısaltma</th>
+                                    <th class="p-2.5 sm:p-3">Bileşenleri &amp; Koruduğu Hastalıklar</th>
+                                    <th class="p-2.5 sm:p-3 w-48">Rutin Uygulama Zamanı &amp; Doz</th>
+                                    <th class="p-2.5 sm:p-3 w-44">Uygulama Yolu &amp; Bölge</th>
+                                    <th class="p-2.5 sm:p-3">Kritik Klinik Notlar</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/80 text-[11px] text-slate-300">
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>Hep-B (Monovalan)</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Hepatit B yüzey antijeni (HBsAg); akut/kronik hepatit, siroz ve hepatosellüler karsinom profilaksisi.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">Doğumda (ilk 24 saat içinde)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İntramusküler (İ.M.), vastus lateralis (uyluk)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Vertikal perinatal transmisyonu engellemek için doğumdan sonra geciktirilmeden yapılmalıdır. Sonraki dozlar 6'lı karma içine aktarılmıştır.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>BCG (Verem)</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Canlı atenüe Mycobacterium bovis; dissemine tüberküloz, milier TB ve tüberküloz menenjiti profilaksisi.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">2. ayın sonu (Tek doz)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İntradermal (İ.D.), sol deltoid üzeri</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Kesinlikle cilt içine tatbik edilir. 6–12 haftada tipik skar gelişir. 3. aydan sonra ilk kez yapılacaksa PPD kontrolü şarttır; 6 yaşından (72 ay) sonra yapılmaz.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors bg-sky-950/20">
+                                    <td class="p-2.5 sm:p-3 font-bold text-emerald-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>DaBT-İPA-Hib-HepB</span>
+                                        </div>
+                                        <span class="text-[9px] bg-emerald-950 text-emerald-300 px-1 py-0.2 rounded border border-emerald-800 block mt-0.5 w-fit">Heksavalan / 6'lı Karma</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Difteri, asellüler boğmaca, tetanoz, inaktif polio tip 1-2-3, Hib kapsüler polisakkariti ve rekombinant Hepatit B antijenleri.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">2., 4., 6. aylar (primer) ve 18. ay (rapel) [3+1]</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İntramusküler (İ.M.), anterolateral uyluk</td>
+                                    <td class="p-2.5 sm:p-3 text-emerald-300/90 font-medium"><strong>14 Nisan 2025'ten itibaren uygulamadadır.</strong> Ayrı monovalan Hep-B dozlarını tek enjektörde toplayarak enjeksiyon travmasını ve lojistik yükü bertaraf etmiştir.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>KPA13 (Konjuge Pnömokok)</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">S. pneumoniae 13 serotip polisakkarit-protein konjugatı; invaziv pnömokok hastalığı, bakteriyemi, menenjit, pnömoni ve AOM.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">2., 4. aylar ve 12. ay (rapel) [2+1]</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İntramusküler (İ.M.), vastus lateralis</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">T hücresine bağımlı hafıza oluşturur ve mukozal kolonizasyonu/asemptomatik taşıyıcılığı kırar.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>KKK</span>
+                                        </div>
+                                        <span class="text-[9px] text-slate-500 block">Kızamık-Kabakulak-Kızamıkçık</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Canlı atenüe kızamık, kabakulak, kızamıkçık virüsleri; SSPE ve konjenital rubella sendromu profilaksisi.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">12. ay ve 48. ay (4 yaş)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">Subkutan (S.C.), üst kol deltoid</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Bölgesel salgında 9. ayda ek doz yapılabilir; ancak bu erken doz rutin 12. ay dozunun yerine sayılmaz.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors bg-violet-950/20">
+                                    <td class="p-2.5 sm:p-3 font-bold text-violet-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                                            <span>Suçiçeği (Varisella)</span>
+                                        </div>
+                                        <span class="text-[9px] bg-violet-950 text-violet-300 px-1 py-0.2 rounded border border-violet-800 block mt-0.5 w-fit">2 Dozlu Rutin + Yakalama</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Canlı atenüe VZV (Oka suşu); primer suçiçeği ve sekonder deri/viseral enfeksiyon komplikasyonları.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">12. ay (1. doz) ve 48. ay (2. doz)*</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">Subkutan (S.C.), üst kol dış yüzeyi</td>
+                                    <td class="p-2.5 sm:p-3 text-violet-300/90 font-medium"><strong>*1 Eylül 2026'dan itibaren 48. aya 2. doz eklenmiştir.</strong> Ayrıca 49–72 ay arasındaki çocuklara tek dozluk zorunlu yakalama protokolü yürürlüktedir.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>OPA (Oral Polio)</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Canlı atenüe poliovirüs tip 1 ve 3; bağırsak mukozal sekretuvar IgA bağışıklığı.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">6. ve 18. aylar (2'şer oral damla)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">Oral yoldan damla</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Fekal-oral bulaş zincirini kırmak ve toplumda vahşi virüs dolaşımını engellemek için ağızdan verilir.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>Hepatit A</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">İnaktif Hepatit A viral antijeni; fulminan hepatit profilaksisi.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">18. ve 24. aylar (en az 6 ay arayla 2 doz)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İntramusküler (İ.M.), deltoid veya uyluk</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">İki dozluk kür ömür boyu kalıcı hümoral koruma tesis eder. Dozlar arasında minimum 6 ay bırakılmalıdır.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>DaBT-İPA (Dörtlü Karma)</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Difteri, asellüler boğmaca, tetanoz, inaktif çocuk felci; okul öncesi pekiştirme.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">48. ay (4 yaş pekiştirme dozu)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İntramusküler (İ.M.), üst kol deltoid</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Okul öncesi dönemde KKK ve Suçiçeği 2. dozlarıyla eşzamanlı olarak farklı anatomik bölgelerden uygulanır.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                            <span>Td (Erişkin Tipi)</span>
+                                        </div>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Difteri ve tetanoz toksoidleri (erişkin tipi azaltılmış difteri antijeni).</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">13 yaş / 8. sınıf (pekiştirme dozu)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İntramusküler (İ.M.), deltoid kası</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Adölesan pekiştirme; erişkinlik döneminde her 10 yılda bir Td rapeli sürdürülmelidir.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. SEKME: ULUSAL TAKVİM DIŞI ÖZEL VE İSTEĞE BAĞLI AŞILAR -->
+                <div id="tab-panel-vax-special" class="hidden space-y-3">
+                    <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+                        <strong class="text-sky-300">💡 Klinik Kılavuz Konsensüsü:</strong> GBP'de yer almayan ancak Türk Pediatri Kurumu, Çocuk Enfeksiyon Hastalıkları Derneği ve uluslararası otoritelerce evrensel olarak önerilen aşılar; invaziv sepsis, gastroenterit ve onkojenik karsinomlara karşı bireysel ve toplumsal koruma sağlar.
+                    </div>
+
+                    <!-- Özel Aşılar Tablosu -->
+                    <div class="overflow-x-auto border border-slate-800 rounded-xl bg-[#070B14]">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950/90 text-slate-300 border-b border-slate-800 text-[11px] uppercase tracking-wider font-semibold">
+                                    <th class="p-2.5 sm:p-3 w-36">Aşı Adı (Ticari)</th>
+                                    <th class="p-2.5 sm:p-3">Biyolojik Tip &amp; Hedef Suşlar</th>
+                                    <th class="p-2.5 sm:p-3 w-48">Hedef Popülasyon &amp; Yaş</th>
+                                    <th class="p-2.5 sm:p-3 w-44">Rutin Doz Protokolü</th>
+                                    <th class="p-2.5 sm:p-3">Kritik Güvenlik &amp; Uygulama Kuralları</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/80 text-[11px] text-slate-300">
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-amber-300">
+                                        Rotarix
+                                        <span class="text-[9px] text-slate-500 block">Oral Rotavirüs</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Canlı atenüe monovalan (G1P[8]) insan suşu.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">6 haftalık – 24 haftalık süt çocukları</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">2 Doz (Aralarında en az 4 hafta; 2. ve 4. aylar)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Oral uygulanır. İlk doz en geç 14 hafta 6 günlükken verilmelidir. Tüm kür 24. haftadan önce tamamlanmalıdır. İnvajinasyon riski nedeniyle 15. haftadan sonra ilk doz BAŞLANAMAZ.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-amber-300">
+                                        Rotateq
+                                        <span class="text-[9px] text-slate-500 block">Oral Rotavirüs</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Canlı atenüe pentavalan (G1-G4, P1A[8]) insan-sığır suşları.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">6 haftalık – 32 haftalık süt çocukları</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">3 Doz (Aralarında en az 4 hafta; 2., 4., 6. aylar)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Oral uygulanır. İlk doz 6–12. haftada başlanmalı; 3. doz bebek 32 haftayı (8 ay) doldurmadan önce bitirilmelidir. 32 haftadan sonra kesinlikle verilemez.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        MenACWY
+                                        <span class="text-[9px] text-slate-500 block">Nimenrix / Menveo / Menactra / MenQuadfi</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Kapsüler polisakkarit-protein konjugatı (A, C, W-135, Y suşları).</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">6. haftadan itibaren tüm yaş grupları</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">2–6 ayda: 2+1 şeması;<br>≥12 ayda: Tek doz</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">T hücresine bağımlı bağışıklık oluşturur, mukozal kolonizasyonu önler ve sürü bağışıklığı sağlar. Adölesanlarda 11-12 yaşta 1 doz, 16 yaşta rapel önerilir.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        MenB (Bexsero)
+                                        <span class="text-[9px] text-slate-500 block">4 Bileşenli Rekombinant</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">4 bileşenli rekombinant protein (MenB-4C; fHbp, NadA, NHBA, PorA).</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">2. aydan itibaren tüm yaş grupları</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">2–5 ayda: 2+1 şeması;<br>≥2 yaşta: En az 1 ay arayla 2 doz</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">B serogrubu menenjiti hedefler. Otoimmünite riskini engellemek için protein bazlıdır. Enjeksiyon sonrası reaktif ateşe karşı profilaktik parasetamol önerilir.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-rose-300">
+                                        HPV (Gardasil 9)
+                                        <span class="text-[9px] text-slate-500 block">Dokuz Valanlı VLP</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Rekombinant L1 virüs benzeri partikül (Tip 6, 11, 16, 18, 31, 33, 45, 52, 58).</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">9 yaşından itibaren kadın ve erkekler</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">9–14 yaş: 2 Doz (0, 6. ay);<br>≥15 yaş: 3 Doz (0, 2, 6. ay)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Cinsel yönden aktifleşmeden önce maksimum etkinlik. Serviks, anüs, penis, orofarenks kanserleri ve genital siğilleri önler. Aşılanan kadınlar da 30-65 yaş taramaya devam etmelidir.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-indigo-300">
+                                        Zona (Shingrix)
+                                        <span class="text-[9px] text-slate-500 block">Rekombinant Alt Ünite</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Rekombinant glikoprotein E (gE) + AS01B immün adjuvan sistemi.</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">≥50 yaş tüm erişkinler veya ≥19 yaş immün yetmezlikliler</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">2 Doz (0 ve 2–6. aylar, İ.M.)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Canlı virüs İÇERMEZ; immünsüpresif tedavi alanlarda güvenle kullanılır. Herpes zoster ve postherpetik nevraljiyi %90'ın üzerinde engeller.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">
+                                        İnfluenza (IIV4)
+                                        <span class="text-[9px] text-slate-500 block">Mevsimsel Kuadrivalan Grip</span>
+                                    </td>
+                                    <td class="p-2.5 sm:p-3">Parçalanmış inaktif virüs (DSÖ yıllık suşları: 2x A [H1N1, H3N2], 2x B).</td>
+                                    <td class="p-2.5 sm:p-3 font-semibold text-slate-200">≥6 aylık tüm bireyler ve risk grupları</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">Yıllık 1 doz (Sonbahar: Eylül–Kasım)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Yaşamında ilk kez aşılanan &lt;9 yaş çocuklara en az 4 hafta arayla 2 doz verilir. Gebelikte tüm trimesterlerde güvenlidir.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. SEKME: ÖZEL TIBBİ RİSK GRUPLARI & MATERNAL BAĞIŞIKLAMA -->
+                <div id="tab-panel-vax-risks" class="hidden space-y-3">
+                    <!-- Perinatal HepB Akış Şeması Kutusu -->
+                    <div class="vaccine-flow-card p-3 rounded-xl bg-slate-950/80 border border-amber-700/60 text-xs space-y-2">
+                        <div class="flex items-center justify-between text-amber-300 font-bold">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                                <span>Perinatal Hepatit B Maruziyetinde Kritik Yönetim Akışı:</span>
+                            </span>
+                            <span class="text-[10px] bg-amber-950 px-2 py-0.5 rounded border border-amber-800 text-amber-200">%90 Kronikleşme Riski</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px] pt-1">
+                            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                                <div class="text-amber-400 font-bold">1. İlk 12 Saat</div>
+                                <div class="text-slate-300 mt-0.5">Monovalan Hep-B (1. Doz) + HBIG (0.5 mL) farklı bacaklara İ.M.</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                                <div class="text-sky-400 font-bold">2. 1. Ayın Sonu</div>
+                                <div class="text-slate-300 mt-0.5">Monovalan Hep-B (2. Doz) tekli aşı olarak uygulanır.</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                                <div class="text-emerald-400 font-bold">3. 2, 4, 6, 18. Aylar</div>
+                                <div class="text-slate-300 mt-0.5">Ulusal takvimdeki heksavalan aşı (DaBT-İPA-Hib-HepB) ile devam edilir.</div>
+                            </div>
+                            <div class="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                                <div class="text-violet-400 font-bold">4. 9–12. Aylar</div>
+                                <div class="text-slate-300 mt-0.5">HBsAg ve Anti-HBs titrasyonu ile serolojik kontrol yapılır (≥10 mIU/mL).</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Grupları Tablosu -->
+                    <div class="overflow-x-auto border border-slate-800 rounded-xl bg-[#070B14]">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950/90 text-slate-300 border-b border-slate-800 text-[11px] uppercase tracking-wider font-semibold">
+                                    <th class="p-2.5 sm:p-3 w-44">Klinik Durum / Risk Grubu</th>
+                                    <th class="p-2.5 sm:p-3 w-52">Öncelikli &amp; Zorunlu Aşılar</th>
+                                    <th class="p-2.5 sm:p-3">Spesifik Aşı Takvimi ve Doz Şeması</th>
+                                    <th class="p-2.5 sm:p-3">Klinik Gerekçe &amp; Biyolojik Mekanizma</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/80 text-[11px] text-slate-300">
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-amber-300">HBsAg Pozitif Anne Bebeği</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-200">Monovalan Hep-B + HBIG, ardından Heksavalan aşı</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">İlk 12 saatte Hep-B + HBIG, 1. ayda Hep-B, 2, 4, 6, 18. aylarda 6'lı karma</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Vertikal perinatal transmisyonu ve infant hepatik siroz gelişimini önleme.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-rose-300">Anatomik / Fonksiyonel Aspleni (Splenektomi / Orak Hücreli)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-200">Pnömokok (KPA13 + PPA23), MenACWY, MenB, Hib</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">KPA13 → 8 hafta sonra PPA23 (5 yıl sonra tek rapel); MenACWY 2 doz (5 yılda 1 rapel); MenB 2 doz</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Kapsüllü bakterilere bağlı gelişen hiperakut OPSI (ezici sepsis) mortalitesini (%50-70) engelleme.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">BOS Kaçağı ve Koklear İmplant</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-200">Pnömokok (KPA13 + PPA23)</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">1 doz KPA13 → en az 8 hafta sonra 1 doz PPA23</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Nazofarengeal pnömokokların meninkslere doğrudan retrograd yayılımını engelleme.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors bg-pink-950/20">
+                                    <td class="p-2.5 sm:p-3 font-bold text-pink-300">Gebelik (Maternal Bağışıklama)</td>
+                                    <td class="p-2.5 sm:p-3 text-pink-200 font-semibold">Tdab (ve sezonunda İnaktif İnfluenza)</td>
+                                    <td class="p-2.5 sm:p-3 text-pink-300 font-mono"><strong>2 Nisan 2025 Protokolü:</strong> Her gebelikte geçmiş aşıya bakılmaksızın 18–24. veya 27–36. haftalarda 1 doz Tdab</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-300">Plasental antikor transferiyle yenidoğanı ilk 2 ayda (kendi aşıları başlayana kadar) ölümcül boğmaca ve tetanozdan koruma.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-sky-300">Kronik Kalp/Akciğer (KOAH/Astım) ve Karaciğer (Siroz)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-200">İnfluenza, Pnömokok, Hepatit A ve Hepatit B</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">Yıllık IIV4; KPA13 → 1 yıl sonra PPA23; HepA (2 doz), HepB (3 doz)</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Enfeksiyon zemininde organ dekompansasyonu ve akut mortal alevlenmeleri sınırlandırma.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-indigo-300">65 Yaş ve Üzeri Sağlıklı Bireyler</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-200">Pnömokok, İnfluenza, Rekombinant Zoster (Shingrix), Td</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">1 doz KPA13 → 1 yıl sonra PPA23; Yıllık IIV4; Shingrix (0, 2–6. ay); 10 yılda 1 Td</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">İmmünosenesansı aşarak bakteriyemi, pnömoni ve postherpetik nevraljiyi önleme.</td>
+                                </tr>
+                                <tr class="vaccine-table-row hover:bg-slate-800/40 transition-colors">
+                                    <td class="p-2.5 sm:p-3 font-bold text-emerald-300">Sağlık Çalışanları</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-200">Hepatit B, Tdab, KKK, Suçiçeği, İnfluenza</td>
+                                    <td class="p-2.5 sm:p-3 text-cyan-400 font-mono">Anti-HBs negatifse 0, 1, 6. ayda HepB; 1 doz Tdab + 10 yılda bir Td; yıllık IIV4</td>
+                                    <td class="p-2.5 sm:p-3 text-slate-400">Mesleki nozokomiyal maruziyeti ve immünsüpresif hastalara patojen iletimini önleme.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. SEKME: KONTRENDİKASYONLAR & GÜVENLİK KALKANI -->
+                <div id="tab-panel-vax-contra" class="hidden space-y-4">
+                    <!-- Üçlü Kategori Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <!-- Mutlak Kontrendikasyonlar -->
+                        <div class="vaccine-flow-card p-3 rounded-xl bg-rose-950/30 border border-rose-800/60 space-y-2">
+                            <div class="flex items-center gap-1.5 font-bold text-rose-300 text-xs uppercase tracking-wide">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                <span>Kesin (Mutlak) Kontrendikasyonlar</span>
+                            </div>
+                            <ul class="space-y-1.5 text-[11px] text-rose-200/90 leading-relaxed list-disc pl-4">
+                                <li><strong>Anafilaksi:</strong> Aşının önceki dozuna veya bileşenlerine (jelatin, neomisin, maya proteini vb.) belgelenmiş sistemik anafilaksi öyküsü.</li>
+                                <li><strong>Canlı Atenüe Aşılar:</strong> SCID, agamaglobulinemi, aktif lösemi/lenfoma, yüksek doz sistemik kortikosteroid (≥2 mg/kg/gün veya ≥20 mg/gün prednizon eşdeğeri &gt;14 gün), kemoterapi, anti-TNF tedavisi ve gebelik. <em>(Tedavi bitiminden en az 3 ay sonra yapılabilir).</em></li>
+                                <li><strong>Rotavirüs:</strong> İnvajinasyon (bağırsak düğümlenmesi) öyküsü, düzeltilmemiş GİS anatomik malformasyonu veya SCID tanısı.</li>
+                                <li><strong>Boğmaca:</strong> Karma aşı sonrası ilk 7 günde gelişen başka etiyolojiyle açıklanamayan akut ensefalopati <em>(Boğmaca çıkarılır, DT/Td kullanılır).</em></li>
+                            </ul>
+                        </div>
+
+                        <!-- Geçici Kontrendikasyonlar -->
+                        <div class="vaccine-flow-card p-3 rounded-xl bg-amber-950/30 border border-amber-800/60 space-y-2">
+                            <div class="flex items-center gap-1.5 font-bold text-amber-300 text-xs uppercase tracking-wide">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Geçici Erteleme Durumları</span>
+                            </div>
+                            <ul class="space-y-1.5 text-[11px] text-amber-200/90 leading-relaxed list-disc pl-4">
+                                <li><strong>Akut Orta/Ağır Ateşli Hastalık:</strong> Klinik tablo yatışana kadar ertelenir <em>(Aşı yan etkisi ile enfeksiyon seyrinin karışmaması için).</em></li>
+                                <li><strong>Kan &amp; İmmünglobulin Transfüzyonu:</strong> Tam kan, eritrosit veya IVIG alanlarda pasif antikorlar aşı virüs replikasyonunu baskılayacağından KKK ve Suçiçeği gibi canlı aşılar <strong>3 ila 11 ay</strong> ertelenmelidir.</li>
+                                <li><strong>Canlı Aşı İnterferansı:</strong> İki parenteral canlı aşı (KKK, Suçiçeği, BCG) aynı gün yapılmadıysa, aralarında <strong>en az 4 hafta (28 gün)</strong> beklenmelidir.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Yanlış Algılanan Engeller -->
+                        <div class="vaccine-flow-card p-3 rounded-xl bg-emerald-950/30 border border-emerald-800/60 space-y-2">
+                            <div class="flex items-center gap-1.5 font-bold text-emerald-300 text-xs uppercase tracking-wide">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span>Yanlış Engeller (Engel Olmayanlar!)</span>
+                            </div>
+                            <ul class="space-y-1.5 text-[11px] text-emerald-200/90 leading-relaxed list-disc pl-4">
+                                <li><strong>Hafif Enfeksiyonlar:</strong> Ateş &lt; 38.5°C hafif ÜSYE, rinit, farenjit veya hafif ishal aşılamayı engellemez.</li>
+                                <li><strong>Antibiyotik / Antifungal Tedavi:</strong> Aşı immün yanıtını baskılamaz.</li>
+                                <li><strong>Prematüritelik:</strong> Düzeltilmiş yaş değil, <strong class="text-white">kronolojik yaş</strong> esas alınarak günü gününe aşılanır.</li>
+                                <li><strong>Anne Sütü:</strong> Hiçbir aşıya engel değildir, etkinliği bozmaz.</li>
+                                <li><strong>Stabil Nörolojik Durumlar:</strong> Serebral palsi, Down sendromu, kontrollü epilepsi veya ailede konvülsiyon öyküsü.</li>
+                                <li><strong>Alerji / Astım / Egzama:</strong> Aşıya engel değildir.</li>
+                                <li><strong>Düşük Doz / Lokal Steroid:</strong> İnhale, topikal veya kısa süreli fizyolojik steroid tedavileri.</li>
+                                <li><strong>Malnütrisyon:</strong> Kırılgan çocukların aşılanması hayati önemdedir; aşı geciktirilmez.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Aşılama Karar Mekanizması Akış Kartı -->
+                    <div class="vaccine-flow-card p-3 rounded-xl bg-slate-950/90 border border-slate-800 text-xs space-y-2">
+                        <div class="font-bold text-sky-300 flex items-center justify-between">
+                            <span>Aşılama Karar Mekanizması ve Hızlı Triyaj Algoritması</span>
+                            <span class="text-[10px] text-slate-500">T.C. Sağlık Bakanlığı GBP Kılavuzu</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-[#060A12] border border-slate-800 font-mono text-[11px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre">
+[Hasta Başvurusu ve Klinik Değerlendirme]
+       │
+       ├──> Önceki Dozda Sistemik Anafilaksi? ──> (EVET) ──> İlgili Aşı KESİN KONTRENDİKE
+       │
+       ├──> Canlı Aşı Planı + Ağır İmmünsüpresyon / Gebelik? ──> (EVET) ──> Canlı Aşı KONTRENDİKE (İnaktif Aşı Yapılabilir)
+       │
+       ├──> Rotavirüs Planı + İnvajinasyon Öyküsü / &gt;15 Hafta İlk Doz? ──> (EVET) ──> Rotavirüs KESİNLİKLE BAŞLANAMAZ
+       │
+       ├──> Orta / Ağır Akut Ateşli Hastalık? ──> (EVET) ──> Tablo Yatışana Kadar GEÇİCİ ERTELEME
+       │
+       └──> Hafif ÜSYE / Ateş &lt;38.5 / Antibiyotik / Prematürite / Anne Sütü? ──> (EVET) ──> ENGEL YOK (Hemen Aşıla!)</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Alt Bilgi & Kapat -->
+            <div class="p-3 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>Kaynaklar: T.C. Sağlık Bakanlığı GBP, Türk Pediatri Kurumu, ÇEHD, EKMUD, KLİMİK 2025/2026 Konsensüsü.</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" class="btn-print-vax-table text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer" onclick="window.print()">
+                        Yazdır / PDF
+                    </button>
+                    <button type="button" class="text-xs px-3 py-1 rounded bg-sky-950 hover:bg-sky-900 text-sky-200 border border-sky-700 transition-colors font-semibold cursor-pointer" onclick="document.getElementById('modal-vaccine-tables').classList.add('hidden'); document.body.classList.remove('overflow-hidden');">
+                        Kapat
+                    </button>
+                </div>
             </div>
         </div>
     </div>

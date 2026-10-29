@@ -153,12 +153,12 @@ export const QUICK_SWITCHER_ITEMS: QuickSwitcherItem[] = [
   },
   {
     id: 'card-asi',
-    name: 'Aşı Takvimi Sorgulama',
-    shortName: 'Aşı Takvimi',
+    name: 'Aşı Takvimi & Kılavuz Tabloları',
+    shortName: 'Aşı Takvimi (GBP 2026)',
     category: 'pediatri',
     icon: 'stethoscope',
-    desc: 'T.C. Sağlık Bakanlığı Çocukluk Dönemi Ulusal Aşı Takvimi',
-    keywords: ['asi', 'asi takvimi', 'hepatit', 'kpa', 'kizamik', 'bcg', 'dabtt', 'saglik bakanligi']
+    desc: 'T.C. Sağlık Bakanlığı Ulusal (6\'lı Karma & Suçiçeği 2. Doz) ve Özel Aşı Protokolleri Bilgi Bankası',
+    keywords: ['asi', 'asi takvimi', 'hepatit', 'kpa', 'kizamik', 'bcg', 'dabtt', 'saglik bakanligi', '6li karma', 'heksavalan', 'sucicegi', 'rotavirus', 'meningokok', 'bexsero', 'nimenrix', 'hpv', 'shingrix', 'gardasil', 'gebelik', 'tdab']
   },
   {
     id: 'card-antibiyotik',

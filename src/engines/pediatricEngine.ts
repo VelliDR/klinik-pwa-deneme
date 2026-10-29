@@ -964,6 +964,14 @@ export interface ComprehensiveVaccineScheduleResult {
         recommendations: string[];
         details: string;
     };
+    varicellaCatchUp?: {
+        eligible: boolean;
+        details: string;
+    };
+    maternalTdapRule?: {
+        eligible: boolean;
+        details: string;
+    };
     catchUpRules?: string[];
 }
 
@@ -974,22 +982,31 @@ export function getVaccineSchedule(
     if (ageInMonths === null || ageInMonths === undefined || isNaN(ageInMonths) || ageInMonths < 0) return null;
     
     let vaccines: string[] = [];
-    if (ageInMonths < 1 && ageInMonths >= 0) vaccines = ["Hepatit B (1. Doz) - Doğumda"];
-    else if (ageInMonths >= 1 && ageInMonths < 2) vaccines = ["Hepatit B (2. Doz)"];
+    if (ageInMonths < 1 && ageInMonths >= 0) {
+        vaccines = ["Hepatit B (1. Doz) - Doğumda"];
+    }
+    else if (ageInMonths >= 1 && ageInMonths < 2) {
+        // 14 Nisan 2025 GBP reformu ile sağlıklı bebeklerde 1. ve 6. ay monovalan HepB kalkmış, 6'lı karma aşıya entegre edilmiştir.
+        // HBsAg pozitif anne bebeklerinde ise ilk 12 saatte HepB + HBIG ardından 1. ayda HepB 2. doz yapılır.
+        vaccines = [];
+        if (options.includeSpecial) {
+            vaccines.push("HBsAg (+) Anne Bebeğinde: Hepatit B (2. Doz)");
+        }
+    }
     else if (ageInMonths >= 2 && ageInMonths < 4) {
-        vaccines = ["BCG (Verem)", "KPA (1. Doz)", "DaBT-İPA-Hib (1. Doz)"];
+        vaccines = ["BCG (Verem)", "KPA (1. Doz)", "DaBT-İPA-Hib-HepB (1. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("Rotavirüs (1. Doz - Rotarix/RotaTeq: 6-14 hf 6 gün penceresi)", "MenB (1. Doz - Bexsero)", "MenACWY (Erken Doz - Nimenrix)");
         }
     }
     else if (ageInMonths >= 4 && ageInMonths < 6) {
-        vaccines = ["KPA (2. Doz)", "DaBT-İPA-Hib (2. Doz)"];
+        vaccines = ["KPA (2. Doz)", "DaBT-İPA-Hib-HepB (2. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("Rotavirüs (2. Doz)", "MenB (2. Doz)");
         }
     }
     else if (ageInMonths >= 6 && ageInMonths < 9) {
-        vaccines = ["DaBT-İPA-Hib (3. Doz)", "OPA (1. Doz)", "Hepatit B (3. Doz)"];
+        vaccines = ["DaBT-İPA-Hib-HepB (3. Doz)", "OPA (1. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("Rotavirüs (3. Doz - RotaTeq için; en geç 32. haftada/8. ayda tamamlanmalı)", "İnfluenza (Grip - 6 aydan büyüklerde mevsimsel)");
         }
@@ -997,39 +1014,59 @@ export function getVaccineSchedule(
     else if (ageInMonths >= 9 && ageInMonths < 12) {
         vaccines = ["KKK (Ek Doz)"];
         if (options.includeSpecial) {
-            vaccines.push("MenACWY (1. Doz - Menveo/Nimenrix)");
+            vaccines.push("MenACWY (1. Doz - Menveo/Nimenrix/Menactra)");
         }
     }
     else if (ageInMonths >= 12 && ageInMonths < 18) {
-        vaccines = ["KPA (Rapel)", "Suçiçeği", "KKK (1. Doz)"];
+        vaccines = ["KPA (Rapel)", "Suçiçeği (1. Doz)", "KKK (1. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("MenACWY (Rapel)", "MenB (Rapel)");
         }
     }
     else if (ageInMonths >= 18 && ageInMonths < 24) {
-        vaccines = ["DaBT-İPA-Hib (Rapel)", "OPA (2. Doz)", "Hepatit A (1. Doz)"];
+        vaccines = ["DaBT-İPA-Hib-HepB (Rapel)", "OPA (2. Doz)", "Hepatit A (1. Doz)"];
         if (options.includeSpecial) {
             vaccines.push("MenACWY / MenB (Eksik doz tamamlama)");
         }
     }
-    else if (ageInMonths >= 24 && ageInMonths < 48) vaccines = ["Hepatit A (2. Doz)"];
+    else if (ageInMonths >= 24 && ageInMonths < 48) {
+        vaccines = ["Hepatit A (2. Doz)"];
+    }
     else if (ageInMonths >= 48 && ageInMonths < 60) {
-        vaccines = ["KKK (2. Doz)", "DaBT-İPA (Rapel)"];
+        // 1 Eylül 2026 itibarıyla 48. ayda Suçiçeği 2. dozu takvime entegre edilmiştir
+        vaccines = ["KKK (2. Doz)", "DaBT-İPA (Rapel)", "Suçiçeği (2. Doz)"];
     }
     else if (ageInMonths >= 60 && ageInMonths < 156) {
         vaccines = [];
-        if (options.includeSpecial && ageInMonths >= 108) {
-            vaccines.push("HPV (9-14 yaş 2 doz şeması)");
+        if (options.includeSpecial) {
+            if (ageInMonths <= 72) {
+                vaccines.push("Suçiçeği (49-72 ay Tek Doz Yakalama Protokolü - 1 Eylül 2026)");
+            }
+            if (ageInMonths >= 108) {
+                vaccines.push("HPV (9-14 yaş 2 doz şeması - Gardasil 9)");
+            }
         }
     }
     else if (ageInMonths >= 156 && ageInMonths < 216) {
         vaccines = ["Td (Rapel) - 13 Yaş"];
         if (options.includeSpecial) {
-            vaccines.push("MenACWY (Adölesan tek rapel doz)", "HPV (3 doz şeması)");
+            vaccines.push("MenACWY (Adölesan tek rapel doz)", "HPV (3 doz şeması - Gardasil 9)");
         }
     }
-    else if (ageInMonths >= 216 && ageInMonths < 780) vaccines = ["Erişkin Dönemi: Td (Tetanos-Difteri) Rapeli (10 yılda bir)"];
-    else if (ageInMonths >= 780) vaccines = ["65 Yaş ve Üzeri: Pnömokok", "65 Yaş ve Üzeri: Yıllık Grip (İnfluenza)", "Td (Tetanos-Difteri) Rapeli"];
+    else if (ageInMonths >= 216 && ageInMonths < 780) {
+        vaccines = ["Erişkin Dönemi: Td (Tetanos-Difteri) Rapeli (10 yılda bir)"];
+        if (options.includeSpecial) {
+            vaccines.push("Gebelikte Maternal Bağışıklama: Tdab (18-24 veya 27-36. GH tek doz)", "Yıllık İnfluenza (Grip)");
+        }
+    }
+    else if (ageInMonths >= 780) {
+        vaccines = [
+            "65 Yaş ve Üzeri: Pnömokok (1 doz KPA13, 1 yıl sonra 1 doz PPA23)",
+            "65 Yaş ve Üzeri: Yıllık Grip (İnfluenza IIV4)",
+            "Zona (Shingrix - 2 Doz: 0 ve 2-6. aylar)",
+            "Td (Tetanos-Difteri) Rapeli (10 yılda bir)"
+        ];
+    }
 
     return vaccines;
 }
@@ -1038,6 +1075,8 @@ export function getVaccineSchedule(
  * Kapsamlı Pediatrik Aşı ve Yakalama (Catch-Up) Motoru
  * - Rotavirüs zaman pencereleri (ilk doz 6 - 14 hf 6 gün, son doz en geç 32. hafta)
  * - Meningokok (MenACWY ve MenB) özel aşı planlaması
+ * - Suçiçeği 48. ay 2. doz ve 49-72 ay yakalama protokolü (1 Eylül 2026)
+ * - 6'lı karma (DaBT-İPA-Hib-HepB) entegrasyonu (14 Nisan 2025)
  * - Gecikmiş aşı yakalama (Catch-up / CDC & Sağlık Bakanlığı) minimum aralık kuralları
  */
 export function getComprehensiveVaccineSchedule(
@@ -1071,7 +1110,7 @@ export function getComprehensiveVaccineSchedule(
         rotavirusRule = {
             eligible: true,
             windowStatus: 'OPTIMAL_SUBSEQUENT_DOSE',
-            details: 'Eğer 1. doz 15. haftadan önce başlanmışsa 2. ve 3. dozlar uygulanabilir. Son doz en geç 32. haftada (8 ay 0 gün) tamamlanmalıdır.',
+            details: 'Eğer 1. doz 15. haftadan önce başlanmışsa 2. ve 3. dozlar uygulanabilir. Rotarix 24. haftada, RotaTeq en geç 32. haftada (8 ay 0 gün) tamamlanmalıdır.',
             warning: 'DİKKAT: Eğer bebek hiç aşılanmamışsa (1. doz verilmemişse), 15 hafta 0 günden sonra İNVAJİNASYON (barsak düğümlenmesi) riski nedeniyle 1. doz KESİNLİKLE BAŞLANAMAZ!'
         };
         specialVaccines.push('Rotavirüs (Devam Dozları - Yalnızca 1. dozu 15. haftadan önce almış bebekler için)');
@@ -1118,15 +1157,35 @@ export function getComprehensiveVaccineSchedule(
         };
     }
 
-    // 3. Gecikmiş Aşı Yakalama (Catch-Up) Kuralları
+    // 3. Suçiçeği Yakalama Kuralı (1 Eylül 2026)
+    let varicellaCatchUp: ComprehensiveVaccineScheduleResult['varicellaCatchUp'];
+    if (ageInMonths >= 49 && ageInMonths <= 72) {
+        varicellaCatchUp = {
+            eligible: true,
+            details: '1 Eylül 2026 Sağlık Bakanlığı kararı uyarınca 49–72 ay (4-6 yaş) arasındaki çocuklara tek doz Suçiçeği yakalama dozu uygulanmalıdır.'
+        };
+        specialVaccines.push('Suçiçeği (49-72 Ay Yakalama Dozu)');
+    }
+
+    // 4. Maternal Tdab Hatırlatması (Kadın Doğum / Doğurganlık Dönemi)
+    let maternalTdapRule: ComprehensiveVaccineScheduleResult['maternalTdapRule'];
+    if (ageInMonths >= 180 && ageInMonths <= 588) { // 15-49 yaş doğurganlık dönemi
+        maternalTdapRule = {
+            eligible: true,
+            details: 'Gebelikte Maternal Bağışıklama: 2 Nisan 2025 protokolü uyarınca her gebelikte geçmiş aşıya bakılmaksızın 18-24 veya 27-36. haftada 1 doz Tdab aşısı uygulanmalıdır.'
+        };
+    }
+
+    // 5. Gecikmiş Aşı Yakalama (Catch-Up) Kuralları
     const catchUpRules: string[] = [
         '📌 Genel Yakalama Kuralı: Aşı serisi gecikmişse ASLA baştan başlanmaz; kalınan yerden devam edilir (önceki dozlar geçerlidir).',
         '⏱️ Canlı Aşı İnterferans Kuralı: İki canlı virüs/bakteri aşısı (KKK, Suçiçeği, BCG) aynı gün yapılmadıysa, aralarında EN AZ 4 hafta (28 gün) beklenmelidir.',
-        '⏱️ DaBT-İPA-Hib (5\'li Karma): İlk 3 doz arasında minimum 4 hafta (1 ay) ara olmalıdır. 4. pekiştirme dozu ile 3. doz arasında en az 6 ay bulunmalıdır.',
-        '⏱️ Hepatit B: 1. ve 2. doz arası minimum 4 hafta; 2. ve 3. doz arası minimum 8 hafta; 1. ve 3. doz arası minimum 16 hafta ve bebek en az 24 haftalık (6 aylık) olmalıdır.',
-        '⏱️ KKK (Kızamık-Kabakulak-Kızamıkçık): Minimum yaş 12 aydır. İki doz arasında minimum 4 hafta bulunmalıdır.',
-        '⏱️ Hepatit A: Minimum yaş 18 aydır. 1. ve 2. doz arasında en az 6 ay bulunmalıdır.',
-        '⏱️ BCG (Verem): 3. aydan sonra ilk kez yapılacaksa PPD (Tüberkülin Cilt Testi) kontrolü şarttır. 6 yaşını (72 ay) doldurmuş çocuklarda artık BCG aşısı uygulanmaz.'
+        '💉 6\'lı Karma (DaBT-İPA-Hib-HepB): 14 Nisan 2025 reformu ile 5\'li karma yerine 6\'lı karma uygulanmaktadır. Primer dozlar arası minimum 4 hafta (1 ay), 18. ay rapeli ile 3. doz arasında en az 6 ay bulunmalıdır.',
+        '💉 Hepatit B: Doğumda ilk 24 saat içinde başlanır; 2, 4, 6 ve 18. aylarda 6\'lı karma aşı ile tamamlanır. HBsAg (+) annelerde doğumda Hep-B + HBIG ve 1. ayda ek monovalan Hep-B zorunludur.',
+        '💉 KKK (Kızamık-Kabakulak-Kızamıkçık): Minimum yaş 12 aydır. 2. doz 48. ayda uygulanır. İki doz arasında minimum 4 hafta bulunmalıdır.',
+        '💉 Suçiçeği (Varisella): 1 Eylül 2026 itibarıyla 12. ayda 1. doz, 48. ayda 2. doz uygulanır. 49-72 ay çocuklara tek doz yakalama protokolü işletilir.',
+        '💉 Hepatit A: Minimum yaş 18 aydır. 1. ve 2. doz arasında en az 6 ay bulunmalıdır.',
+        '⏱️ BCG (Verem): Sol deltoid İ.D. uygulanır. 3. aydan sonra ilk kez yapılacaksa PPD (Tüberkülin Cilt Testi) kontrolü şarttır. 6 yaşını (72 ay) doldurmuş çocuklarda artık BCG aşısı uygulanmaz.'
     ];
 
     if (options.isDelayed) {
@@ -1139,6 +1198,8 @@ export function getComprehensiveVaccineSchedule(
         specialVaccines,
         rotavirusRule,
         meningococcalSchedule,
+        varicellaCatchUp,
+        maternalTdapRule,
         catchUpRules
     };
 }

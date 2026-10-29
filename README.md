@@ -43,7 +43,7 @@ Projenin temel amacı; yoğun klinik çalışma temposunda sık başvurulan kıl
   - [14. Pediatrik Büyüme Hızı & Kraniyal Tarama (NICE / WHO / Neyzi)](#14-pediatrik-büyüme-hızı--kraniyal-tarama-nice--who--neyzi)
   - [15. Pediatrik Demir Eksikliği & Talasemi Ayrımı (TPHD & Mentzer)](#15-pediatrik-demir-eksikliği--talasemi-ayrımı-tphd--mentzer)
   - [16. Pediatrik Şurup & Süspansiyon Dozlama Motoru](#16-pediatrik-şurup--süspansiyon-dozlama-motoru)
-  - [17. Ulusal Çocukluk Çağı Aşı Takvimi Sorgulama](#17-ulusal-çocukluk-çağı-aşı-takvimi-sorgulama)
+  - [17. Türkiye Ulusal ve Özel Bağışıklama Protokolleri (GBP 2026 & Detay Tablolar)](#17-türkiye-ulusal-ve-özel-bağışıklama-protokolleri-gbp-2026--detay-tablolar)
   - [18. Centor / McIsaac Farenjit Değerlendirmesi](#18-centor--mcisaac-farenjit-değerlendirmesi)
   - [19. Kadın Doğum & Obstetrik Hesaplayıcı (Naegele / Bishop / Preeklampsi)](#19-kadın-doğum--obstetrik-hesaplayıcı-naegele--bishop--preeklampsi)
   - [20. Cerrahi Skorlar & Yanık Sıvı Resüsitasyonu (ATLS 10 / Alvarado / Ranson)](#20-cerrahi-skorlar--yanık-sıvı-resüsitasyonu-atls-10--alvarado--ranson)
@@ -189,12 +189,30 @@ Uygulama standart bir web tarayıcısı üzerinden doğrudan çalıştırılabil
 - **Erişkin Tavan Doz Kısıtlaması (Cap Clamping):** Çocuklarda hesaplanan dozun erişkin maksimum tekil veya günlük dozunu aşmasını önleyen sınırlama.
 - **Pediatrik Obezitede Ağırlık Metriği & IBW:** BMI persantili $>95$ olan obez çocuklarda hidrofilik parasetamol için İdeal Vücut Ağırlığı ($\text{IBW}$), vankomisin için Düzeltilmiş Ağırlık ($\text{AdjBW}$), amoksisilinde gerçek kilo ($\text{TBW}$) ile tavan budaması.
 
-### 17. Çocukluk Çağı Aşı Takvimi & Gecikmiş Yakalama (Catch-Up) Motoru
-- **T.C. Sağlık Bakanlığı Rutin Aşı Takvimi:** Doğumdan 65 yaş üstüne kadar yaşa uygun ulusal rutin aşılar.
-- **Özel Aşı Takvimleri:**
-  - **Rotavirüs (Rotarix / RotaTeq):** İlk doz için 6 hafta ile 14 hafta 6 gün altın standart penceresi ($15\text{ hafta }0\text{ gün}$ ve sonrasında invajinasyon riski nedeniyle ilk doz başlanamaz); son doz en geç 32. haftada (8 ay) tamamlanmalıdır.
-  - **Meningokok (MenACWY & MenB):** İnfant (2-3. aydan itibaren Bexsero / Nimenrix / Menveo), 1-2 yaş pekiştirme ve adölesan rapel rejimleri.
-- **Gecikmiş Aşı Yakalama (Catch-Up) Kuralları:** Seriye asla baştan başlanmadan kalınan yerden devam edilmesi, minimum doz aralıkları (DaBT için min. 4 hafta, KKK için min. 4 hafta, HepB için 0-1-6 ay şeması) ve PPD gereksinimleri.
+### 17. Türkiye Ulusal ve Özel Bağışıklama Protokolleri (GBP 2026 & Detay Tablolar)
+- **T.C. Sağlık Bakanlığı GBP 2025/2026 Reformları (Tam Uyum):**
+  - **14 Nisan 2025 Heksavalan Reformu:** Beş bileşenli karma aşının yerini altı bileşenli karma aşıya (**DaBT-İPA-Hib-HepB**) bırakması. Sağlıklı çocuklarda 1. ve 6. aylardaki ayrı monovalan Hep-B enjeksiyonları kaldırılmış; 2, 4, 6 ve 18. aylarda $3+1$ şemasıyla tek enjektörde toplanarak travma ve soğuk zincir yükü azaltılmıştır.
+  - **1 Eylül 2026 Suçiçeği Reformu:** Tek doz rejiminin ilerleyen yaşlarda yol açtığı koruyuculuk kaybını (*breakthrough varisella*) engellemek amacıyla **48. aya (4 yaş) rutin 2. doz** entegre edilmiş; takvim değişikliğinden önce tek doz almış 49–72 ay arasındaki çocuklara tek dozluk yakalama protokolü tanımlanmıştır.
+  - **2 Nisan 2025 Maternal Tdab Protokolü:** Yenidoğanı ilk 2 aylık savunmasız dönemde boğmaca apnesi ve komplikasyonlarından korumak için her gebelikte geçmiş aşıya bakılmaksızın 18–24 veya 27–36. gebelik haftalarında 1 doz **Tdab** aşılaması başlatılmıştır.
+- **Ulusal Takvim Dışı Özel Aşı Protokolleri:**
+  - **Rotavirüs (Rotarix & RotaTeq):** 6 hafta ile 14 hafta 6 gün altın standart penceresi ($15\text{ hafta }0\text{ gün}$ ve sonrasında invajinasyon riski nedeniyle ilk doz kesinlikle başlanamaz); Rotarix 24. haftada, RotaTeq en geç 32. haftada (8 ay 0 gün) tamamlanmalıdır.
+  - **Meningokok Profilaksisi:** MenACWY (*Nimenrix, Menveo, Menactra, MenQuadfi*) ile 4 bileşenli rekombinant MenB (*Bexsero*, reaktif ateşe karşı profilaktik parasetamol önerili) süt çocukluğu ($2+1$), 2 yaş üstü ve adölesan rapel şemaları.
+  - **HPV (Gardasil 9):** 9 yaşından itibaren cinsiyet ayrımı gözetilmeksizin kız ve erkek çocuklarda onkojenik karsinom ve siğil profilaksisi (9–14 yaş 2 doz: 0, 6. ay; $\ge 15$ yaş 3 doz: 0, 2, 6. ay).
+  - **Rekombinant Zona (Shingrix):** Canlı virüs içermeyen adjuvanlı alt ünite aşısı; $\ge 50$ yaş tüm erişkinlerde ve $\ge 19$ yaş immünsüpresif bireylerde 2 doz ($0$ ve $2-6.$ aylar).
+  - **Kuadrivalan İnfluenza (IIV4):** $\ge 6$ aylık tüm bireylerde yıllık sonbahar aşısı (ilk kez aşılanan $<9$ yaş çocuklarda 4 hafta arayla 2 doz).
+- **Özel Tıbbi Risk Grupları & Karar Destek Algoritması:**
+  - **HBsAg (+) Anne Bebeği:** Doğumda ilk 12 saatte monovalan Hep-B + HBIG $\to$ 1. ayda monovalan Hep-B $\to$ 2, 4, 6, 18. aylarda 6'lı heksavalan aşı $\to$ 9–12. aylarda Anti-HBs ve HBsAg serolojik teyidi.
+  - **Anatomik / Fonksiyonel Aspleni (OPSI Sendromu Kalkanı):** Pnömokok konjuge/polisakkarit ardışık protokolü (KPA13 $\to$ 8 hafta sonra PPA23 [5 yıl sonra 1 rapel]), 2 doz MenACWY, 2 doz MenB ve Hib.
+  - **BOS Kaçağı ve Koklear İmplant:** Retrograd menenjiti engellemek için 1 doz KPA13 $\to$ en az 8 hafta sonra 1 doz PPA23.
+  - **Geriatrik Popülasyon ($\ge 65$ yaş):** 1 doz KPA13 $\to$ 1 yıl sonra PPA23, yıllık IIV4, 2 doz Shingrix ve 10 yılda bir Td pekiştirmesi.
+  - **Sağlık Çalışanları:** Anti-HBs taraması ($<10\text{ mIU/mL}$ ise 3 doz HepB), Tdab/Td, KKK, Suçiçeği ve yıllık grip aşılaması.
+- **Kontrendikasyonlar ve Aşı Güvenlik Kalkanı:**
+  - *Kesin (Mutlak):* Önceki dozda sistemik anafilaksi, canlı aşılarda ağır immün yetmezlik (SCID, lösemi vb.), gebelik, rotavirüste invajinasyon/GİS anomalisi, boğmacada akut ensefalopati.
+  - *Geçici Erteleme:* Akut orta/ağır ateşli hastalık; kan/IVIG transfüzyonundan sonra canlı parenteral aşılar için 3–11 ay erteleme.
+  - *Yanlış Engeller (Aşılamaya Mani Olmayan Haller):* Ateş $<38.5^\circ\text{C}$, hafif ÜSYE, antibiyotik kullanımı, prematürite (düzeltilmiş değil kronolojik yaşla aşılanır), anne sütü, nörolojik stabilite (serebral palsi, kontrollü epilepsi), egzama/alerji, düşük doz steroid ve malnütrisyon.
+- **Kompakt Arayüz & Köşe "Detay Tablo" Kutucuğu:**
+  - Ana pediatrik kart üzerinde arayüz kalabalığı oluşturmamak için aşı bölümünün sağ üst köşesine **`[📋 Detay Tablo]`** butonu konumlandırılmıştır.
+  - Tıklandığında rapordaki 4 ana tabloyu (Ulusal Takvim, Özel Aşılar, Risk Grupları, Kontrendikasyonlar ve Karar Triyaj Akışı) anlık canlı arama destekli olarak sunan **Aşı Bilgi Bankası Modalı** açılır.
 
 ### 18. Centor / McIsaac Farenjit Değerlendirmesi
 - Grup A Streptokok farenjiti olasılığı, hızlı antijen testi gereksinimi ve ampirik antibiyotik kararına destek.

@@ -4826,22 +4826,21 @@ assert.strictEqual(centorNoAge.isAgeUnknown, true, 'Yaş belirtilmediği tespit 
 assert.ok(centorNoAge.guidelineWarning?.includes('yaşı belirtilmediğinden'), 'Yaş eksikliği uyarısı verilmelidir');
 assert.strictEqual(centorNoAge.score, 3, 'Yaş puanı eklenmeden 3 semptom puanı olmalıdır');
 
-// 46.3 HATA-M17-001: T.C. Sağlık Bakanlığı GBP 5'li Karma ve 18. Ay HepB Yokluğu
+// 46.3 GÜNCEL GBP (14 Nisan 2025 & 2026 Protokolü): 6'lı Heksavalan Karma Aşı (DaBT-İPA-Hib-HepB) ve 18. Ay Rapeli
 const vax2Schedule = getVaccineSchedule(2);
-assert.ok(vax2Schedule && vax2Schedule.some(v => v.includes('DaBT-İPA-Hib (1. Doz)')), '2. ayda 5li karma DaBT-İPA-Hib bulunmalıdır');
-assert.ok(!vax2Schedule?.some(v => v.includes('DaBT-İPA-Hib-HepB')), '2. ayda 6li karma adı yer almamalıdır');
+assert.ok(vax2Schedule && vax2Schedule.some(v => v.includes('DaBT-İPA-Hib-HepB (1. Doz)')), '2. ayda güncel 6lı karma DaBT-İPA-Hib-HepB bulunmalıdır');
 
 const vax18Schedule = getVaccineSchedule(18);
-assert.ok(vax18Schedule && vax18Schedule.some(v => v.includes('DaBT-İPA-Hib (Rapel)')), '18. ayda DaBT-İPA-Hib rapeli bulunmalıdır');
-assert.ok(!vax18Schedule?.some(v => v.includes('DaBT-İPA-Hib-HepB') || v.includes('Hepatit B (Rapel)')), '18. ayda HepB rapeli bulunmamalıdır');
+assert.ok(vax18Schedule && vax18Schedule.some(v => v.includes('DaBT-İPA-Hib-HepB (Rapel)')), '18. ayda 6lı karma rapeli bulunmalıdır');
 
 const vax6Schedule = getVaccineSchedule(6);
-assert.ok(vax6Schedule && vax6Schedule.some(v => v.includes('DaBT-İPA-Hib (3. Doz)')), '6. ayda 5li karma 3. doz bulunmalıdır');
-assert.ok(vax6Schedule && vax6Schedule.some(v => v.includes('Hepatit B (3. Doz)')), '6. ayda Hepatit B 3. doz bulunmalıdır');
+assert.ok(vax6Schedule && vax6Schedule.some(v => v.includes('DaBT-İPA-Hib-HepB (3. Doz)')), '6. ayda 6lı karma 3. doz bulunmalıdır');
+assert.ok(vax6Schedule && vax6Schedule.some(v => v.includes('OPA (1. Doz)')), '6. ayda OPA 1. doz bulunmalıdır');
 
-// 46.4 HATA-M17-002: 48. Ay Aşılarının 4-5 Yaşla Sınırlandırılması ve 10 Yaş Rutin Aşı Boşluğu
+// 46.4 GÜNCEL GBP (1 Eylül 2026 Reformu): 48. Ay Aşıları (KKK 2, Dörtlü Karma Rapel, Suçiçeği 2. Doz)
 const vax48Schedule = getVaccineSchedule(48);
 assert.ok(vax48Schedule && vax48Schedule.some(v => v.includes('KKK (2. Doz)')), '48. ayda KKK 2 bulunmalıdır');
+assert.ok(vax48Schedule && vax48Schedule.some(v => v.includes('Suçiçeği (2. Doz)')), '48. ayda Suçiçeği 2. dozu bulunmalıdır');
 const vax120Schedule = getVaccineSchedule(120);
 assert.ok(vax120Schedule && vax120Schedule.length === 0, '10 yaşında (120 ay) rutin GBP planlı aşısı bulunmamalıdır');
 

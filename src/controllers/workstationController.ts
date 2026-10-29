@@ -16,6 +16,7 @@ import { initMonographModalController } from './monographModalController';
 import { initEquivalentsModalController } from './equivalentsModalController';
 import { initPrescriptionModalController } from './prescriptionModalController';
 import { initEcgUiController } from './ecgUiController';
+import { initVaccineModalController } from './vaccineModalController';
 import {
     WorkstationPackage,
     ClinicalMotorDefinition,
@@ -1465,6 +1466,7 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
         onUpdateLiveSOAP: updateLiveSOAP
     });
     initEcgUiController(onTabsUpdateCallback);
+    initVaccineModalController();
 
     // ========================================================================
     // SOAP AKILLI ŞABLONLARI & NOKTA KISAYOLLARI (DOT PHRASES)

@@ -24,7 +24,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
     const totalMonths = (y === null && m === null) ? null : (m !== null ? m : (y !== null ? y * 12 : null));
     const isPreterm = getChk('chk-preterm');
 
-    // 1. AŞI TAKVİMİ (HATA-M17-003: getComprehensiveVaccineSchedule entegrasyonu, Rotavirüs & MenACWY/MenB)
+    // 1. AŞI TAKVİMİ (GBP 2026 Revizyonu: 6'lı Karma, 48. Ay Suçiçeği 2. Doz ve Detay Tablo Kalkanı)
     if (totalMonths !== null) {
         const compVax = getComprehensiveVaccineSchedule(totalMonths);
         appState.pediatrics.vaccines = compVax ? compVax.routineVaccines : null;
@@ -32,28 +32,70 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
         if (vaxEl && compVax) {
             let html = '';
             
+            // Yaş Başlığı
+            const ageDisplay = totalMonths < 12 
+                ? `${totalMonths} Aylık Bebek` 
+                : `${(totalMonths / 12).toFixed(1)} Yaş (${totalMonths} Ay)`;
+
+            html += `<div class="flex items-center justify-between mb-1.5 pb-1 border-b border-slate-800">
+                <span class="text-[10px] font-bold text-slate-300 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    <span>${ageDisplay} İçin Bağışıklama:</span>
+                </span>
+                <span class="text-[9px] text-slate-500 font-mono">T.C. SB GBP 2026</span>
+            </div>`;
+
             // Rutin GBP (Sağlık Bakanlığı)
-            html += `<div class="font-bold text-slate-200 mb-1 text-[10px]">Rutin GBP (Sağlık Bakanlığı):</div>`;
             if (compVax.routineVaccines && compVax.routineVaccines.length > 0) {
-                html += `<ul class="list-disc pl-4 text-slate-300 space-y-0.5">${compVax.routineVaccines.map((v: string) => `<li>${v}</li>`).join('')}</ul>`;
+                html += `<div class="space-y-1">
+                    <div class="flex items-center justify-between text-[10px] font-bold text-emerald-400">
+                        <span>✅ Rutin GBP (Sağlık Bakanlığı):</span>
+                        <span class="text-[9px] text-emerald-500/80 font-normal">ASM / Ücretsiz</span>
+                    </div>
+                    <ul class="space-y-1">
+                        ${compVax.routineVaccines.map((v: string) => `
+                            <li class="flex items-center justify-between gap-2 px-2 py-1 rounded bg-slate-900/80 border border-slate-800/90 text-slate-200 text-[11px]">
+                                <span class="flex items-center gap-1.5 min-w-0">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                    <span class="font-medium truncate">${v}</span>
+                                </span>
+                                <span class="text-[9px] text-slate-500 shrink-0 font-mono">GBP</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>`;
             } else {
-                html += `<div class="text-slate-400 italic text-[10px]">Bu ay için rutin planlı aşı bulunmamaktadır.</div>`;
+                html += `<div class="p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-400 text-[10px] leading-relaxed">
+                    ℹ️ Bu yaş için rutin takvimde planlı aşı bulunmamaktadır. <em>(Not: HBsAg pozitif anne bebeklerinde 1. ayda monovalan Hep-B 2. dozu uygulanır).</em>
+                </div>`;
+            }
+
+            // Suçiçeği 49-72 Ay Yakalama Uyarısı (1 Eylül 2026)
+            if (compVax.varicellaCatchUp && compVax.varicellaCatchUp.eligible) {
+                html += `<div class="mt-2 p-2 rounded-lg bg-violet-950/40 border border-violet-700/60 text-violet-300 text-[10px] leading-relaxed">
+                    <div class="font-bold flex items-center gap-1 text-violet-200">
+                        <span>💉 Suçiçeği Yakalama Protokolü (1 Eylül 2026):</span>
+                    </div>
+                    <div class="mt-0.5 text-violet-300/90">${compVax.varicellaCatchUp.details}</div>
+                </div>`;
             }
 
             // Rotavirüs Güvenlik Penceresi & İnvajinasyon Kalkanı
             if (compVax.rotavirusRule) {
                 const rr = compVax.rotavirusRule;
                 if (rr.windowStatus === 'OPTIMAL_FIRST_DOSE') {
-                    html += `<div class="mt-2 p-1.5 rounded bg-emerald-950/40 border border-emerald-700/60 text-emerald-300 text-[10px]">
-                        <strong>Rotavirüs (Özel):</strong> ${rr.details}
+                    html += `<div class="mt-2 p-2 rounded-lg bg-emerald-950/30 border border-emerald-700/50 text-emerald-300 text-[10px] leading-relaxed">
+                        <div class="font-bold text-emerald-200">🟢 Rotavirüs 1. Doz Penceresi (Özel Aşı):</div>
+                        <div class="text-emerald-300/90 mt-0.5">${rr.details}</div>
                     </div>`;
                 } else if (rr.windowStatus === 'OPTIMAL_SUBSEQUENT_DOSE') {
-                    html += `<div class="mt-2 p-1.5 rounded bg-amber-950/40 border border-amber-700/60 text-amber-300 text-[10px]">
-                        <strong>Rotavirüs (Özel):</strong> ${rr.details}
-                        ${rr.warning ? `<div class="text-rose-400 font-bold mt-1">${rr.warning}</div>` : ''}
+                    html += `<div class="mt-2 p-2 rounded-lg bg-amber-950/30 border border-amber-700/50 text-amber-300 text-[10px] leading-relaxed">
+                        <div class="font-bold text-amber-200">⚠️ Rotavirüs Devam Dozları:</div>
+                        <div class="text-amber-300/90 mt-0.5">${rr.details}</div>
+                        ${rr.warning ? `<div class="text-rose-400 font-bold mt-1 bg-rose-950/40 p-1 rounded border border-rose-800/60">${rr.warning}</div>` : ''}
                     </div>`;
                 } else if (rr.windowStatus === 'EXPIRED_CONTRAINDICATED') {
-                    html += `<div class="mt-2 p-1.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[10px]">
+                    html += `<div class="mt-2 p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 text-[10px]">
                         <strong>Rotavirüs:</strong> ${rr.details}
                     </div>`;
                 }
@@ -61,13 +103,31 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
 
             // Meningokok (MenACWY & MenB)
             if (compVax.meningococcalSchedule && compVax.meningococcalSchedule.eligible) {
-                html += `<div class="mt-2 p-1.5 rounded bg-sky-950/40 border border-sky-700/60 text-sky-300 text-[10px]">
-                    <strong>Meningokok Özel Takvimi:</strong>
-                    <ul class="list-disc pl-4 mt-0.5 space-y-0.5 text-sky-200">
+                html += `<div class="mt-2 p-2 rounded-lg bg-sky-950/30 border border-sky-700/50 text-sky-300 text-[10px] leading-relaxed">
+                    <div class="font-bold text-sky-200 flex items-center justify-between">
+                        <span>🛡️ Meningokok Özel Takvimi (MenB &amp; MenACWY):</span>
+                        <span class="text-[9px] text-sky-400 font-normal">Reçeteli</span>
+                    </div>
+                    <ul class="list-disc pl-4 mt-1 space-y-0.5 text-sky-200/90">
                         ${compVax.meningococcalSchedule.recommendations.map(r => `<li>${r}</li>`).join('')}
                     </ul>
                 </div>`;
             }
+
+            // Maternal Tdab Bilgisi (Doğurganlık çağındaki kadınlarda)
+            if (compVax.maternalTdapRule && compVax.maternalTdapRule.eligible) {
+                html += `<div class="mt-2 p-1.5 rounded bg-pink-950/30 border border-pink-700/50 text-pink-300 text-[10px]">
+                    <strong>🤰 Gebelikte Maternal Tdab (2 Nisan 2025):</strong> 18-24 veya 27-36. GH her gebelikte 1 doz Tdab aşısı önerilir.
+                </div>`;
+            }
+
+            // Detay Kılavuz Bağlantısı
+            html += `<div class="flex items-center justify-between pt-2 mt-2 border-t border-slate-800 text-[10px] text-slate-400">
+                <span class="truncate">Risk grupları, aspleni, doz şemaları ve kontrendikasyonlar:</span>
+                <button type="button" class="btn-trigger-vax-modal shrink-0 text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-0.5 ml-2 cursor-pointer transition-colors">
+                    Detay Tabloları Aç →
+                </button>
+            </div>`;
 
             vaxEl.innerHTML = html;
         } else if (vaxEl) {
@@ -77,7 +137,14 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
         appState.pediatrics.vaccines = null;
         const vaxEl = getEl('output-ped-vaccines');
         if (vaxEl) {
-            vaxEl.innerHTML = '<span class="text-slate-500 italic text-xs">Aşı takvimi için lütfen yaş giriniz.</span>';
+            vaxEl.innerHTML = `
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-900/50 border border-slate-800/80 text-[11px] text-slate-400">
+                    <span>💡 Aşı takvimi için lütfen yaş giriniz veya tüm kılavuz tabloları için köşe kutucuğuna tıklayınız.</span>
+                    <button type="button" class="btn-trigger-vax-modal shrink-0 px-2 py-1 rounded bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-700/70 text-[10px] font-semibold transition-colors cursor-pointer">
+                        Aşı Tabloları (GBP 2026) →
+                    </button>
+                </div>
+            `;
         }
     }
 
