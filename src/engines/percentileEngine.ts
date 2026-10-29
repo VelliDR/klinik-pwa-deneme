@@ -74,6 +74,143 @@ export function formatPercentileDisplay(
 }
 
 /**
+ * STANDART SAPMA BANDI VE KLİNİK İZLEM DEĞERLENDİRMESİ
+ * Referans: Pediatrik Antropometride Persentil ve Z-Skoru Hesaplamaları Raporu (Tablo 1).
+ * Z < -3.00 SD: Belirgin Sapma (P < 0.13) -> Ağır patolojik gerilik
+ * -3.00 <= Z < -1.88 SD: Çizili Bandın Dışı (P0.13 - P3) -> Normal aralığın altı (boy kısalığı, malnütrisyon)
+ * -1.88 <= Z < -1.04 SD: Normal Bant İçi (P3 - P15) -> Düşük-normal aralık
+ * -1.04 <= Z <= +1.04 SD: Normal Bant İçi (P15 - P85) -> Optimal/normal fizyolojik büyüme aralığı
+ * +1.04 < Z <= +1.88 SD: Normal Bant İçi (P85 - P97) -> Yüksek-normal aralık
+ * +1.88 < Z <= +3.00 SD: Çizili Bandın Dışı (P97 - P99.87) -> Normal aralığın üstü (obezite, makrosefali)
+ * Z > +3.00 SD: Belirgin Sapma (P > 99.87) -> Morbid obezite, jigantizm veya ağır makrosefali
+ */
+export type DeviationBandCategory = 
+    | 'MARKED_LOW'          // Z < -3.00 SD, P < 0.13
+    | 'OUTSIDE_LOW'         // -3.00 SD <= Z < -1.88 SD, P0.13 – P3 (or Z < -2.0 SD)
+    | 'WITHIN_LOW_NORMAL'   // -1.88 SD <= Z < -1.04 SD, P3 – P15
+    | 'WITHIN_OPTIMAL'      // -1.04 SD <= Z <= +1.04 SD, P15 – P85 (Z = 0 -> P50, Z = +1 -> P84)
+    | 'WITHIN_HIGH_NORMAL'  // +1.04 SD < Z <= +1.88 SD, P85 – P97
+    | 'OUTSIDE_HIGH'        // +1.88 SD < Z <= +3.00 SD, P97 – P99.87 (or Z > +2.0 SD)
+    | 'MARKED_HIGH';        // Z > +3.00 SD, P > 99.87
+
+export interface DeviationBandAssessment {
+    zScore: number;
+    percentile: number;
+    percentileExact: number;
+    bandCategory: DeviationBandCategory;
+    bandLabel: string;
+    deviationBandShort: string;
+    percentileRangeText: string;
+    clinicalComment: string;
+    alertClass: 'danger' | 'warning' | 'success' | 'info';
+    badgeClass: string;
+}
+
+export function getDeviationBandAssessment(zScore: number | null | undefined): DeviationBandAssessment | null {
+    if (zScore === null || zScore === undefined || isNaN(zScore)) return null;
+    const pExact = zToExactPercentile(zScore, 2) ?? 50;
+    const p = zToPercentile(zScore) ?? 50;
+    const zNum = Number(zScore.toFixed(2));
+    
+    if (zNum < -3.00) {
+        return {
+            zScore: zNum,
+            percentile: p,
+            percentileExact: pExact,
+            bandCategory: 'MARKED_LOW',
+            bandLabel: 'Belirgin Sapma (Marked)',
+            deviationBandShort: 'Belirgin Sapma',
+            percentileRangeText: 'P < 0.13',
+            clinicalComment: 'Ağır patolojik gerilik (ağır bodurluk, ağır kavrukluk veya ağır mikrosefali); acil ileri tetkik ve müdahale',
+            alertClass: 'danger',
+            badgeClass: 'bg-rose-950/80 border border-rose-800 text-rose-300'
+        };
+    }
+    if (zNum < -1.88) {
+        return {
+            zScore: zNum,
+            percentile: p,
+            percentileExact: pExact,
+            bandCategory: 'OUTSIDE_LOW',
+            bandLabel: 'Çizili Bandın Dışı (Outside)',
+            deviationBandShort: 'Çizili Bandın Dışı',
+            percentileRangeText: 'P0.13 – P3 (Z < -2.0 SD ≈ P2.3)',
+            clinicalComment: 'Normal aralığın altı (boy kısalığı, orta derecede malnütrisyon); pediatrik/endokrinolojik değerlendirme',
+            alertClass: 'warning',
+            badgeClass: 'bg-amber-950/80 border border-amber-800 text-amber-300'
+        };
+    }
+    if (zNum < -1.04) {
+        return {
+            zScore: zNum,
+            percentile: p,
+            percentileExact: pExact,
+            bandCategory: 'WITHIN_LOW_NORMAL',
+            bandLabel: 'Normal Bant İçi (Within)',
+            deviationBandShort: 'Normal Bant İçi',
+            percentileRangeText: 'P3 – P15',
+            clinicalComment: 'Düşük-normal aralık; ardışık ölçümlerde persentil kaybı açısından yakın izlem gerektirebilir',
+            alertClass: 'info',
+            badgeClass: 'bg-blue-950/80 border border-blue-800 text-blue-300'
+        };
+    }
+    if (zNum <= 1.04) {
+        return {
+            zScore: zNum,
+            percentile: p,
+            percentileExact: pExact,
+            bandCategory: 'WITHIN_OPTIMAL',
+            bandLabel: 'Normal Bant İçi (Within)',
+            deviationBandShort: 'Normal Bant İçi',
+            percentileRangeText: 'P15 – P85 (Optimal)',
+            clinicalComment: 'Optimal / normal fizyolojik büyüme aralığı (Z = 0 → P50, Z = +1 → P84)',
+            alertClass: 'success',
+            badgeClass: 'bg-emerald-950/80 border border-emerald-800 text-emerald-300'
+        };
+    }
+    if (zNum <= 1.88) {
+        return {
+            zScore: zNum,
+            percentile: p,
+            percentileExact: pExact,
+            bandCategory: 'WITHIN_HIGH_NORMAL',
+            bandLabel: 'Normal Bant İçi (Within)',
+            deviationBandShort: 'Normal Bant İçi',
+            percentileRangeText: 'P85 – P97',
+            clinicalComment: 'Yüksek-normal aralık; ağırlık ve VKİ için fazla kiloluluk (overweight) eğilimi açısından izlem',
+            alertClass: 'info',
+            badgeClass: 'bg-cyan-950/80 border border-cyan-800 text-cyan-300'
+        };
+    }
+    if (zNum <= 3.00) {
+        return {
+            zScore: zNum,
+            percentile: p,
+            percentileExact: pExact,
+            bandCategory: 'OUTSIDE_HIGH',
+            bandLabel: 'Çizili Bandın Dışı (Outside)',
+            deviationBandShort: 'Çizili Bandın Dışı',
+            percentileRangeText: 'P97 – P99.87 (Z > +2.0 SD ≈ P97.7)',
+            clinicalComment: 'Normal aralığın üstü; VKİ/ağırlık için obezite, baş çevresi için makrosefali/hidrosefali tarama eşiği',
+            alertClass: 'warning',
+            badgeClass: 'bg-amber-950/80 border border-amber-800 text-amber-300'
+        };
+    }
+    return {
+        zScore: zNum,
+        percentile: p,
+        percentileExact: pExact,
+        bandCategory: 'MARKED_HIGH',
+        bandLabel: 'Belirgin Sapma (Marked)',
+        deviationBandShort: 'Belirgin Sapma',
+        percentileRangeText: 'P > 99.87',
+        clinicalComment: 'Morbid obezite, patolojik aşırı büyüme (jigantizm) veya ağır makrosefali',
+        alertClass: 'danger',
+        badgeClass: 'bg-rose-950/80 border border-rose-800 text-rose-300'
+    };
+}
+
+/**
  * Standart Cole ve Green LMS Z-skor formülü:
  * Z = ((X / M)^L - 1) / (L * S) (L != 0)
  * Z = ln(X / M) / S (L == 0)
@@ -420,6 +557,229 @@ export function getGrowthNorms(
     };
 }
 
+export interface PercentileCurveValues {
+    sdMinus3: number;  // Z = -3.00 (P0.13)
+    sdMinus2: number;  // Z = -2.00 (P2.3)
+    p3: number;        // Z = -1.8808 (P3)
+    p10: number;       // Z = -1.2816 (P10)
+    p15: number;       // Z = -1.0364 (P15)
+    p25: number;       // Z = -0.6745 (P25)
+    p50: number;       // Z = 0.0000 (P50 - Medyan M)
+    p75: number;       // Z = +0.6745 (P75)
+    p85: number;       // Z = +1.0364 (P85)
+    p90: number;       // Z = +1.2816 (P90)
+    p97: number;       // Z = +1.8808 (P97)
+    sdPlus2: number;   // Z = +2.00 (P97.7)
+    sdPlus3: number;   // Z = +3.00 (P99.87)
+}
+
+export interface PercentileCurveRow {
+    parameter: 'height' | 'weight' | 'bmi' | 'headCirc';
+    label: string;
+    unit: string;
+    l: number;
+    m: number;
+    s: number;
+    values: PercentileCurveValues;
+    currentValue: number | null;
+    currentZ: number | null;
+    currentPercentile: number | null;
+    currentPercentileDisplay: string;
+    deviationBand: DeviationBandAssessment | null;
+}
+
+export interface PercentileCurvesTableResult {
+    ageMonths: number;
+    gender: 'male' | 'female';
+    standard: GrowthStandard;
+    standardLabel: string;
+    measurementPosition: 'recumbent' | 'standing';
+    rows: {
+        height: PercentileCurveRow;
+        weight: PercentileCurveRow;
+        bmi: PercentileCurveRow;
+        headCirc: PercentileCurveRow;
+    };
+    clinicalSummaryAlerts: string[];
+}
+
+/**
+ * Persentil Dağılım Yüzdeleri Cetveli (P3, P10, P25, P50, P75, P90, P97 ve ±3 SD)
+ * Cole ve Green LMS formülleriyle tam dinamik hesaplama.
+ */
+export function getPercentileCurvesTable(
+    ageMonths: number,
+    gender: 'male' | 'female' | string,
+    standard: GrowthStandard = 'neyzi_2015',
+    measurements?: {
+        heightCm?: number | null;
+        weightKg?: number | null;
+        bmiValue?: number | null;
+        headCircCm?: number | null;
+        heightZ?: number | null;
+        weightZ?: number | null;
+        bmiZ?: number | null;
+        headCircZ?: number | null;
+        heightP?: number | null;
+        weightP?: number | null;
+        bmiP?: number | null;
+        headCircP?: number | null;
+        heightExactP?: number | null;
+        weightExactP?: number | null;
+        bmiExactP?: number | null;
+        headCircExactP?: number | null;
+    }
+): PercentileCurvesTableResult {
+    const sex: 'male' | 'female' = (gender === 'female' || gender === 'F') ? 'female' : 'male';
+    const mAge = Math.min(216, Math.max(0, ageMonths));
+    const norms = getGrowthNorms(mAge, sex, standard);
+
+    const Z_MAP = {
+        sdMinus3: -3.00,
+        sdMinus2: -2.00,
+        p3: -1.8808,
+        p10: -1.2816,
+        p15: -1.0364,
+        p25: -0.6745,
+        p50: 0.00,
+        p75: 0.6745,
+        p85: 1.0364,
+        p90: 1.2816,
+        p97: 1.8808,
+        sdPlus2: 2.00,
+        sdPlus3: 3.00
+    };
+
+    function buildRow(
+        param: 'height' | 'weight' | 'bmi' | 'headCirc',
+        label: string,
+        unit: string,
+        lms: { l: number; m: number; s: number },
+        isRestricted: boolean,
+        curVal: number | null | undefined,
+        curZ: number | null | undefined,
+        curP: number | null | undefined,
+        curExactP: number | null | undefined,
+        decimals: number = 1
+    ): PercentileCurveRow {
+        const roundVal = (v: number | null) => (v !== null ? Number(v.toFixed(decimals)) : 0);
+
+        const values: PercentileCurveValues = {
+            sdMinus3: roundVal(calculateValueFromLMS(Z_MAP.sdMinus3, lms.l, lms.m, lms.s, isRestricted)),
+            sdMinus2: roundVal(calculateValueFromLMS(Z_MAP.sdMinus2, lms.l, lms.m, lms.s, isRestricted)),
+            p3: roundVal(calculateValueFromLMS(Z_MAP.p3, lms.l, lms.m, lms.s, isRestricted)),
+            p10: roundVal(calculateValueFromLMS(Z_MAP.p10, lms.l, lms.m, lms.s, isRestricted)),
+            p15: roundVal(calculateValueFromLMS(Z_MAP.p15, lms.l, lms.m, lms.s, isRestricted)),
+            p25: roundVal(calculateValueFromLMS(Z_MAP.p25, lms.l, lms.m, lms.s, isRestricted)),
+            p50: roundVal(lms.m),
+            p75: roundVal(calculateValueFromLMS(Z_MAP.p75, lms.l, lms.m, lms.s, isRestricted)),
+            p85: roundVal(calculateValueFromLMS(Z_MAP.p85, lms.l, lms.m, lms.s, isRestricted)),
+            p90: roundVal(calculateValueFromLMS(Z_MAP.p90, lms.l, lms.m, lms.s, isRestricted)),
+            p97: roundVal(calculateValueFromLMS(Z_MAP.p97, lms.l, lms.m, lms.s, isRestricted)),
+            sdPlus2: roundVal(calculateValueFromLMS(Z_MAP.sdPlus2, lms.l, lms.m, lms.s, isRestricted)),
+            sdPlus3: roundVal(calculateValueFromLMS(Z_MAP.sdPlus3, lms.l, lms.m, lms.s, isRestricted))
+        };
+
+        const devBand = (curZ !== null && curZ !== undefined) ? getDeviationBandAssessment(curZ) : null;
+        const currentPercentileDisplay = formatPercentileDisplay(curP, curExactP, curZ);
+
+        return {
+            parameter: param,
+            label,
+            unit,
+            l: Number(lms.l.toFixed(3)),
+            m: Number(lms.m.toFixed(2)),
+            s: Number(lms.s.toFixed(4)),
+            values,
+            currentValue: curVal ?? null,
+            currentZ: curZ !== null && curZ !== undefined ? Number(curZ.toFixed(2)) : null,
+            currentPercentile: curP ?? null,
+            currentPercentileDisplay,
+            deviationBand: devBand
+        };
+    }
+
+    const weightDecimals = (measurements?.weightKg && measurements.weightKg < 10) || mAge < 12 ? 2 : 1;
+
+    const heightRow = buildRow(
+        'height',
+        'Boy Uzunluğu',
+        'cm',
+        norms.height,
+        false,
+        measurements?.heightCm,
+        measurements?.heightZ,
+        measurements?.heightP,
+        measurements?.heightExactP,
+        1
+    );
+
+    const weightRow = buildRow(
+        'weight',
+        'Vücut Ağırlığı',
+        'kg',
+        norms.weight,
+        true,
+        measurements?.weightKg,
+        measurements?.weightZ,
+        measurements?.weightP,
+        measurements?.weightExactP,
+        weightDecimals
+    );
+
+    const bmiRow = buildRow(
+        'bmi',
+        'Vücut Kitle İndeksi (VKİ)',
+        'kg/m²',
+        norms.bmi,
+        true,
+        measurements?.bmiValue,
+        measurements?.bmiZ,
+        measurements?.bmiP,
+        measurements?.bmiExactP,
+        1
+    );
+
+    const headCircRow = buildRow(
+        'headCirc',
+        'Baş Çevresi',
+        'cm',
+        norms.headCirc,
+        false,
+        measurements?.headCircCm,
+        measurements?.headCircZ,
+        measurements?.headCircP,
+        measurements?.headCircExactP,
+        1
+    );
+
+    const clinicalSummaryAlerts: string[] = [];
+    [heightRow, weightRow, bmiRow, headCircRow].forEach(row => {
+        if (row.currentValue !== null && row.deviationBand) {
+            if (row.deviationBand.bandCategory === 'MARKED_LOW' || row.deviationBand.bandCategory === 'MARKED_HIGH') {
+                clinicalSummaryAlerts.push(`🚨 ${row.label}: ${row.deviationBand.bandLabel} (${row.deviationBand.percentileRangeText}, Z: ${row.currentZ}) — ${row.deviationBand.clinicalComment}`);
+            } else if (row.deviationBand.bandCategory === 'OUTSIDE_LOW' || row.deviationBand.bandCategory === 'OUTSIDE_HIGH') {
+                clinicalSummaryAlerts.push(`⚠️ ${row.label}: ${row.deviationBand.bandLabel} (${row.deviationBand.percentileRangeText}, Z: ${row.currentZ}) — ${row.deviationBand.clinicalComment}`);
+            }
+        }
+    });
+
+    return {
+        ageMonths: mAge,
+        gender: sex,
+        standard,
+        standardLabel: standard === 'who_2022' ? 'DSÖ 2022 (WHO Child Growth Standards)' : 'Neyzi 2015 (Türk Çocukları Ulusal Referansı)',
+        measurementPosition: standard === 'who_2022' ? (mAge < 24 ? 'recumbent' : 'standing') : (mAge <= 36 ? 'recumbent' : 'standing'),
+        rows: {
+            height: heightRow,
+            weight: weightRow,
+            bmi: bmiRow,
+            headCirc: headCircRow
+        },
+        clinicalSummaryAlerts
+    };
+}
+
 export interface StandardComparisonResult {
     alternativeStandard: GrowthStandard;
     alternativeStandardLabel: string;
@@ -674,6 +1034,11 @@ export interface PercentilesResult {
     headCircCategory: string | null;
     cranialScreening?: CranialScreeningResult | null;
     malnutritionAssessment?: MalnutritionAssessment | null;
+    heightDeviationBand?: DeviationBandAssessment | null;
+    weightDeviationBand?: DeviationBandAssessment | null;
+    bmiDeviationBand?: DeviationBandAssessment | null;
+    headCircDeviationBand?: DeviationBandAssessment | null;
+    percentileCurvesTable?: PercentileCurvesTableResult | null;
     weight: number | null;
     height: number | null;
     bmi: number | null;
@@ -890,6 +1255,37 @@ export function calculatePercentiles({
         });
     }
 
+    // Tablo 1: Standart Sapma Bandı ve Klinik İzlem Yorumları (Deviation Bands)
+    const heightDeviationBand = heightZ !== null ? getDeviationBandAssessment(heightZ) : null;
+    const weightDeviationBand = weightZ !== null ? getDeviationBandAssessment(weightZ) : null;
+    const bmiDeviationBand = bmiZ !== null ? getDeviationBandAssessment(bmiZ) : null;
+    const headCircDeviationBand = headCircZ !== null ? getDeviationBandAssessment(headCircZ) : null;
+
+    // Cole-Green LMS Persentil Dağılım Yüzdeleri Cetveli (P3, P10, P25, P50, P75, P90, P97)
+    const percentileCurvesTable = getPercentileCurvesTable(
+        effectiveMonths,
+        sex,
+        standard,
+        {
+            heightCm: effectiveHeight,
+            weightKg,
+            bmiValue,
+            headCircCm: effectiveHeadCircCm,
+            heightZ,
+            weightZ,
+            bmiZ,
+            headCircZ,
+            heightP,
+            weightP,
+            bmiP,
+            headCircP,
+            heightExactP,
+            weightExactP,
+            bmiExactP,
+            headCircExactP
+        }
+    );
+
     return { 
         heightZ: heightZ !== null ? Number(heightZ.toFixed(2)) : null,
         weightZ: weightZ !== null ? Number(weightZ.toFixed(2)) : null,
@@ -927,6 +1323,11 @@ export function calculatePercentiles({
         headCircCategory,
         cranialScreening,
         malnutritionAssessment,
+        heightDeviationBand,
+        weightDeviationBand,
+        bmiDeviationBand,
+        headCircDeviationBand,
+        percentileCurvesTable,
         weight: weightP,
         height: heightP,
         bmi: bmiP

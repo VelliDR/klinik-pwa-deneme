@@ -15,8 +15,12 @@ import {
     calculateCorrectedAge, 
     calculateGrowthVelocity,
     calculateCranialScreening,
+    calculateValueFromLMS,
     type GrowthStandard,
-    type MeasurementPosition 
+    type MeasurementPosition,
+    type DeviationBandAssessment,
+    type PercentileCurvesTableResult,
+    type PercentilesResult
 } from '../engines/percentileEngine';
 import { calculateNeonatalWeightLoss } from '../engines/neonatologyEngine';
 import { calculateDevineIBW, calculateAdjustedBodyWeight } from '../engines/renalDoseEngine';
@@ -307,6 +311,395 @@ export function renderClinicalCardResult(el: HTMLElement | null, options: Clinic
         ${subtitle ? `<div class="text-[10px] font-semibold">${subtitle}</div>` : ''}
         ${recs ? `<div class="text-[10px] text-slate-300 leading-relaxed">${recs}</div>` : ''}
         ${extraHtml || ''}
+    `;
+}
+
+let currentPercentileTableMode: 'percentiles' | 'zscore' = 'percentiles';
+let percentileTableButtonsBound = false;
+
+function bindPercentileTableButtons(): void {
+    if (percentileTableButtonsBound) return;
+    const btnPerc = getEl<HTMLButtonElement>('btn-toggle-perc-mode-percentiles');
+    const btnZ = getEl<HTMLButtonElement>('btn-toggle-perc-mode-zscore');
+    if (!btnPerc || !btnZ) return;
+
+    const activeClass = 'px-2 py-0.5 rounded bg-cyan-900 text-cyan-200 border border-cyan-700 font-semibold transition-colors';
+    const inactiveClass = 'px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-medium hover:text-slate-200 transition-colors';
+
+    btnPerc.addEventListener('click', () => {
+        if (currentPercentileTableMode === 'percentiles') return;
+        currentPercentileTableMode = 'percentiles';
+        btnPerc.className = activeClass;
+        btnZ.className = inactiveClass;
+        const outPercCurvesTable = getEl('output-percentile-curves-table');
+        if (outPercCurvesTable && appState.pediatrics.percentiles) {
+            outPercCurvesTable.innerHTML = renderPercentileCurvesTableHtml(appState.pediatrics.percentiles, currentPercentileTableMode);
+        }
+    });
+
+    btnZ.addEventListener('click', () => {
+        if (currentPercentileTableMode === 'zscore') return;
+        currentPercentileTableMode = 'zscore';
+        btnZ.className = activeClass;
+        btnPerc.className = inactiveClass;
+        const outPercCurvesTable = getEl('output-percentile-curves-table');
+        if (outPercCurvesTable && appState.pediatrics.percentiles) {
+            outPercCurvesTable.innerHTML = renderPercentileCurvesTableHtml(appState.pediatrics.percentiles, currentPercentileTableMode);
+        }
+    });
+
+    percentileTableButtonsBound = true;
+}
+
+function calculateGaugePinPosition(percentile: number | null, z: number | null): number {
+    if (percentile === null && (z === null || z === undefined)) return 50;
+    let p = percentile ?? 50;
+    if (z !== null && z !== undefined && !isNaN(z)) {
+        if (z < -3) p = 0.1;
+        else if (z > 3) p = 99.9;
+    }
+    // Parçalı doğrusal (piecewise) dağılım:
+    // < 3p   -> 0% ila 10%
+    // 3-15p  -> 10% ila 25%
+    // 15-85p -> 25% ila 75%
+    // 85-97p -> 75% ila 90%
+    // > 97p  -> 90% ila 98.5%
+    if (p <= 3) {
+        return Math.max(1.5, Math.min(10, (Math.max(0, p) / 3) * 10));
+    }
+    if (p <= 15) {
+        return 10 + ((p - 3) / 12) * 15;
+    }
+    if (p <= 85) {
+        return 25 + ((p - 15) / 70) * 50;
+    }
+    if (p <= 97) {
+        return 75 + ((p - 85) / 12) * 15;
+    }
+    return Math.min(98.5, 90 + ((Math.min(100, p) - 97) / 3) * 8.5);
+}
+
+function renderPercentileGaugesHtml(p: PercentilesResult): string {
+    const items: Array<{
+        label: string;
+        val: number | null;
+        unit: string;
+        z: number | null;
+        pVal: number | null;
+        exactP: number | null;
+        display: string;
+        band: DeviationBandAssessment | null;
+    }> = [];
+
+    const headCirc = getNum('input-head-circ');
+
+    if (p.heightZ !== null && p.heightZ !== undefined) {
+        items.push({
+            label: 'Boy Uzunluğu',
+            val: appState.biometry.heightCm ?? null,
+            unit: 'cm',
+            z: p.heightZ,
+            pVal: p.heightPercentile,
+            exactP: p.heightExactPercentile ?? null,
+            display: p.heightPercentileDisplay || (p.heightPercentile !== null ? `%${p.heightPercentile}` : '--'),
+            band: p.heightDeviationBand ?? null
+        });
+    }
+
+    if (p.weightZ !== null && p.weightZ !== undefined) {
+        items.push({
+            label: 'Vücut Ağırlığı',
+            val: appState.biometry.weightKg ?? null,
+            unit: 'kg',
+            z: p.weightZ,
+            pVal: p.weightPercentile,
+            exactP: p.weightExactPercentile ?? null,
+            display: p.weightPercentileDisplay || (p.weightPercentile !== null ? `%${p.weightPercentile}` : '--'),
+            band: p.weightDeviationBand ?? null
+        });
+    }
+
+    if (p.bmiZ !== null && p.bmiZ !== undefined) {
+        items.push({
+            label: 'Beden Kitle İndeksi (VKİ)',
+            val: appState.biometry.bmi ?? null,
+            unit: 'kg/m²',
+            z: p.bmiZ,
+            pVal: p.bmiPercentile,
+            exactP: p.bmiExactPercentile ?? null,
+            display: p.bmiPercentileDisplay || (p.bmiPercentile !== null ? `%${p.bmiPercentile}` : '--'),
+            band: p.bmiDeviationBand ?? null
+        });
+    }
+
+    if (p.headCircZ !== null && p.headCircZ !== undefined && headCirc) {
+        items.push({
+            label: 'Baş Çevresi',
+            val: headCirc,
+            unit: 'cm',
+            z: p.headCircZ,
+            pVal: p.headCircumferencePercentile,
+            exactP: p.headCircumferenceExactPercentile ?? null,
+            display: p.headCircumferencePercentileDisplay || (p.headCircumferencePercentile !== null ? `%${p.headCircumferencePercentile}` : '--'),
+            band: p.headCircDeviationBand ?? null
+        });
+    }
+
+    if (items.length === 0) return '';
+
+    return items.map(item => {
+        const pinPos = calculateGaugePinPosition(item.exactP ?? item.pVal, item.z);
+        const zFormatted = item.z !== null ? (item.z >= 0 ? `+${item.z.toFixed(2)}` : item.z.toFixed(2)) : '--';
+        return `
+            <div class="space-y-1 p-1.5 rounded bg-slate-900/50 border border-slate-800">
+                <div class="flex justify-between items-center text-[10px]">
+                    <span class="font-medium text-slate-200">${item.label}: <strong class="text-cyan-300 font-mono">${item.val !== null ? item.val : '--'} ${item.unit}</strong></span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sky-300 font-semibold font-mono">${item.display}</span>
+                        ${item.band ? `<span class="text-[8px] px-1 py-0.2 rounded font-semibold ${item.band.badgeClass}">${item.band.deviationBandShort}</span>` : ''}
+                        <span class="text-[8.5px] text-slate-500 font-mono">Z: ${zFormatted}</span>
+                    </div>
+                </div>
+                <div class="relative w-full h-2.5 rounded overflow-hidden flex bg-slate-800/80 border border-slate-700/60 select-none">
+                    <div class="h-full bg-rose-500/70" style="width: 10%;" title="< P3 (Belirgin Sapma / Dışı)"></div>
+                    <div class="h-full bg-sky-500/60" style="width: 15%;" title="P3 - P15 (Düşük Normal)"></div>
+                    <div class="h-full bg-emerald-500/70" style="width: 50%;" title="P15 - P85 (Optimal Normal)"></div>
+                    <div class="h-full bg-cyan-500/60" style="width: 15%;" title="P85 - P97 (Yüksek Normal)"></div>
+                    <div class="h-full bg-rose-500/70" style="width: 10%;" title="> P97 (Belirgin Sapma / Dışı)"></div>
+                    <div class="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_6px_rgba(255,255,255,0.95)] transform -translate-x-1/2 rounded-full" style="left: ${pinPos.toFixed(1)}%;"></div>
+                </div>
+                <div class="flex justify-between text-[7.5px] text-slate-500 px-0.5 font-mono">
+                    <span>&lt;P3</span>
+                    <span>P15</span>
+                    <span class="text-emerald-400 font-bold">P50</span>
+                    <span>P85</span>
+                    <span>&gt;P97</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function renderDeviationBandsListHtml(p: PercentilesResult): string {
+    const items: Array<{
+        label: string;
+        val: string;
+        display: string;
+        band: DeviationBandAssessment;
+    }> = [];
+
+    const headCirc = getNum('input-head-circ');
+
+    if (p.heightDeviationBand) {
+        items.push({
+            label: 'Boy Uzunluğu',
+            val: appState.biometry.heightCm ? `${appState.biometry.heightCm} cm` : '',
+            display: p.heightPercentileDisplay || (p.heightPercentile !== null ? `%${p.heightPercentile}` : ''),
+            band: p.heightDeviationBand
+        });
+    }
+
+    if (p.weightDeviationBand) {
+        items.push({
+            label: 'Vücut Ağırlığı',
+            val: appState.biometry.weightKg ? `${appState.biometry.weightKg} kg` : '',
+            display: p.weightPercentileDisplay || (p.weightPercentile !== null ? `%${p.weightPercentile}` : ''),
+            band: p.weightDeviationBand
+        });
+    }
+
+    if (p.bmiDeviationBand) {
+        items.push({
+            label: 'Beden Kitle İndeksi (VKİ)',
+            val: appState.biometry.bmi ? `${appState.biometry.bmi} kg/m²` : '',
+            display: p.bmiPercentileDisplay || (p.bmiPercentile !== null ? `%${p.bmiPercentile}` : ''),
+            band: p.bmiDeviationBand
+        });
+    }
+
+    if (p.headCircDeviationBand && headCirc) {
+        items.push({
+            label: 'Baş Çevresi',
+            val: `${headCirc} cm`,
+            display: p.headCircumferencePercentileDisplay || (p.headCircumferencePercentile !== null ? `%${p.headCircumferencePercentile}` : ''),
+            band: p.headCircDeviationBand
+        });
+    }
+
+    if (items.length === 0) return '';
+
+    const cardsHtml = items.map(item => {
+        const zSign = item.band.zScore >= 0 ? `+${item.band.zScore.toFixed(2)}` : item.band.zScore.toFixed(2);
+        return `
+            <div class="p-1.5 rounded bg-slate-900/60 border border-slate-800 space-y-0.5">
+                <div class="flex items-center justify-between gap-1">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-medium text-slate-200">${item.label}</span>
+                        <span class="text-[8px] px-1 py-0.2 rounded font-semibold ${item.band.badgeClass}">${item.band.bandLabel}</span>
+                    </div>
+                    <span class="text-cyan-300 font-mono text-[9px] font-semibold">${item.val}</span>
+                </div>
+                <div class="flex items-center justify-between text-[8px] text-slate-400">
+                    <span>Aralık: <strong class="text-slate-300">${item.band.percentileRangeText}</strong></span>
+                    <span class="font-mono">Z: ${zSign} (${item.display})</span>
+                </div>
+                <div class="text-[8.5px] text-slate-300 leading-snug pt-0.5 border-t border-slate-800/60">${item.band.clinicalComment}</div>
+            </div>
+        `;
+    }).join('');
+
+    const alertsHtml = (p.percentileCurvesTable?.clinicalSummaryAlerts || []).map(al => `
+        <div class="p-1 rounded bg-amber-950/40 border border-amber-800/60 text-[8.5px] text-amber-300 font-sans leading-tight">
+            ${al}
+        </div>
+    `).join('');
+
+    return alertsHtml + cardsHtml;
+}
+
+function renderPercentileCurvesTableHtml(p: PercentilesResult, mode: 'percentiles' | 'zscore'): string {
+    const tableData = p.percentileCurvesTable;
+    if (!tableData || !tableData.rows) {
+        return '<div class="text-slate-500 text-center py-2">Persentil cetveli verisi bulunamadı.</div>';
+    }
+
+    const rows = [
+        tableData.rows.height,
+        tableData.rows.weight,
+        tableData.rows.bmi,
+        tableData.rows.headCirc
+    ].filter(Boolean);
+
+    if (mode === 'zscore') {
+        const thead = `
+            <thead>
+                <tr class="border-b border-slate-800 text-slate-400 text-[8px] uppercase tracking-wider">
+                    <th class="py-1 px-1.5 font-semibold text-slate-300">Ölçüm</th>
+                    <th class="py-1 px-1 text-right text-rose-400">-3 SD</th>
+                    <th class="py-1 px-1 text-right text-amber-400">-2 SD</th>
+                    <th class="py-1 px-1 text-right text-sky-400">-1 SD</th>
+                    <th class="py-1 px-1 text-right text-emerald-400 font-bold bg-emerald-950/20">0 SD (M)</th>
+                    <th class="py-1 px-1 text-right text-cyan-400">+1 SD</th>
+                    <th class="py-1 px-1 text-right text-amber-400">+2 SD</th>
+                    <th class="py-1 px-1 text-right text-rose-400">+3 SD</th>
+                    <th class="py-1 px-1.5 text-right font-bold text-amber-300 bg-amber-950/20">Hasta (Z)</th>
+                </tr>
+            </thead>
+        `;
+
+        const tbodyRows = rows.map(r => {
+            const isRestricted = (r.parameter === 'weight' || r.parameter === 'bmi') && tableData.standard === 'who_2022';
+            const decimals = (r.parameter === 'weight' && r.values.p50 < 10) ? 2 : 1;
+            const minus1Val = calculateValueFromLMS(-1, r.l, r.m, r.s, isRestricted);
+            const plus1Val = calculateValueFromLMS(1, r.l, r.m, r.s, isRestricted);
+            const m1Str = minus1Val !== null ? minus1Val.toFixed(decimals) : '--';
+            const p1Str = plus1Val !== null ? plus1Val.toFixed(decimals) : '--';
+
+            let patientCell = '<span class="text-slate-600">--</span>';
+            if (r.currentValue !== null && r.currentZ !== null) {
+                const zSign = r.currentZ >= 0 ? `+${r.currentZ.toFixed(2)}` : r.currentZ.toFixed(2);
+                patientCell = `
+                    <div class="flex flex-col items-end leading-none space-y-0.5">
+                        <span class="font-bold text-amber-300">${r.currentValue}</span>
+                        <span class="text-[7.5px] px-1 py-0.2 rounded font-sans font-semibold ${r.deviationBand?.badgeClass || 'text-slate-400'}">Z: ${zSign}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <tr class="hover:bg-slate-900/40 transition-colors">
+                    <td class="py-1 px-1.5 font-sans font-medium text-slate-200 whitespace-nowrap">
+                        ${r.label} <span class="text-slate-500 text-[7.5px]">(${r.unit})</span>
+                    </td>
+                    <td class="py-1 px-1 text-right text-rose-300 font-mono">${r.values.sdMinus3}</td>
+                    <td class="py-1 px-1 text-right text-amber-300 font-mono">${r.values.sdMinus2}</td>
+                    <td class="py-1 px-1 text-right text-sky-300 font-mono">${m1Str}</td>
+                    <td class="py-1 px-1 text-right text-emerald-300 font-bold font-mono bg-emerald-950/20">${r.values.p50}</td>
+                    <td class="py-1 px-1 text-right text-cyan-300 font-mono">${p1Str}</td>
+                    <td class="py-1 px-1 text-right text-amber-300 font-mono">${r.values.sdPlus2}</td>
+                    <td class="py-1 px-1 text-right text-rose-300 font-mono">${r.values.sdPlus3}</td>
+                    <td class="py-1 px-1.5 text-right bg-amber-950/20 whitespace-nowrap">
+                        ${patientCell}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <table class="w-full text-left border-collapse tabular-nums">
+                ${thead}
+                <tbody class="divide-y divide-slate-800/60 font-mono text-[8.5px]">
+                    ${tbodyRows}
+                </tbody>
+            </table>
+            <div class="mt-1.5 flex flex-wrap gap-2 text-[8px] text-slate-500 font-mono">
+                <span>-3 SD: Ağır Patolojik Gerilik</span>
+                <span>±2 SD: Normal Klinik Sınır</span>
+                <span>0 SD: Medyan Büyüme Değeri</span>
+                <span>+3 SD: Patolojik Aşırı Büyüme / Obezite</span>
+            </div>
+        `;
+    }
+
+    // Default: percentiles mode (P3, P10, P25, P50, P75, P90, P97)
+    const thead = `
+        <thead>
+            <tr class="border-b border-slate-800 text-slate-400 text-[8px] uppercase tracking-wider">
+                <th class="py-1 px-1.5 font-semibold text-slate-300">Ölçüm</th>
+                <th class="py-1 px-1 text-right text-rose-400">P3</th>
+                <th class="py-1 px-1 text-right text-sky-400">P10</th>
+                <th class="py-1 px-1 text-right text-slate-300">P25</th>
+                <th class="py-1 px-1 text-right text-emerald-400 font-bold bg-emerald-950/20">P50 (M)</th>
+                <th class="py-1 px-1 text-right text-slate-300">P75</th>
+                <th class="py-1 px-1 text-right text-cyan-400">P90</th>
+                <th class="py-1 px-1 text-right text-rose-400">P97</th>
+                <th class="py-1 px-1.5 text-right font-bold text-amber-300 bg-amber-950/20">Hasta Değeri</th>
+            </tr>
+        </thead>
+    `;
+
+    const tbodyRows = rows.map(r => {
+        let patientCell = '<span class="text-slate-600">--</span>';
+        if (r.currentValue !== null) {
+            patientCell = `
+                <div class="flex flex-col items-end leading-none space-y-0.5">
+                    <span class="font-bold text-amber-300">${r.currentValue}</span>
+                    <span class="text-[7.5px] px-1 py-0.2 rounded font-sans font-semibold ${r.deviationBand?.badgeClass || 'text-slate-400'}">${r.currentPercentileDisplay}</span>
+                </div>
+            `;
+        }
+
+        return `
+            <tr class="hover:bg-slate-900/40 transition-colors">
+                <td class="py-1 px-1.5 font-sans font-medium text-slate-200 whitespace-nowrap">
+                    ${r.label} <span class="text-slate-500 text-[7.5px]">(${r.unit})</span>
+                </td>
+                <td class="py-1 px-1 text-right text-rose-300 font-mono">${r.values.p3}</td>
+                <td class="py-1 px-1 text-right text-sky-300 font-mono">${r.values.p10}</td>
+                <td class="py-1 px-1 text-right text-slate-300 font-mono">${r.values.p25}</td>
+                <td class="py-1 px-1 text-right text-emerald-300 font-bold font-mono bg-emerald-950/20">${r.values.p50}</td>
+                <td class="py-1 px-1 text-right text-slate-300 font-mono">${r.values.p75}</td>
+                <td class="py-1 px-1 text-right text-cyan-300 font-mono">${r.values.p90}</td>
+                <td class="py-1 px-1 text-right text-rose-300 font-mono">${r.values.p97}</td>
+                <td class="py-1 px-1.5 text-right bg-amber-950/20 whitespace-nowrap">
+                    ${patientCell}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <table class="w-full text-left border-collapse tabular-nums">
+            ${thead}
+            <tbody class="divide-y divide-slate-800/60 font-mono text-[8.5px]">
+                ${tbodyRows}
+            </tbody>
+        </table>
+        <div class="mt-1.5 flex flex-wrap justify-between gap-1 text-[8px] text-slate-500 font-mono">
+            <span>P3: %3 alt sınır (Z: -1.88)</span>
+            <span>P50: Medyan (Z: 0.00)</span>
+            <span>P97: %97 üst sınır (Z: +1.88)</span>
+        </div>
     `;
 }
 
@@ -637,11 +1030,26 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             const stdBadge = p.standardUsed === 'who_2022' ? 'DSÖ' : 'Neyzi';
             if (outPWeight) {
                 const wDisp = p.weightPercentileDisplay || (p.weightPercentile !== null ? `%${p.weightPercentile}` : '--');
-                outPWeight.innerHTML = p.weightPercentile !== null ? `${wDisp} <span class="text-[9px] text-slate-500">(Z: ${p.weightZ}) [${stdBadge}]</span>` : '--';
+                const wBand = p.weightDeviationBand ? `<span class="text-[8.5px] px-1 py-0.2 rounded font-semibold ${p.weightDeviationBand.badgeClass}">${p.weightDeviationBand.deviationBandShort}</span>` : '';
+                outPWeight.innerHTML = p.weightPercentile !== null ? `<div class="flex items-center gap-1.5 justify-end"><span>${wDisp}</span> ${wBand} <span class="text-[9px] text-slate-500">(Z: ${p.weightZ}) [${stdBadge}]</span></div>` : '--';
             }
             if (outPHeight) {
                 const hDisp = p.heightPercentileDisplay || (p.heightPercentile !== null ? `%${p.heightPercentile}` : '--');
-                outPHeight.innerHTML = p.heightPercentile !== null ? `${hDisp} <span class="text-[9px] text-slate-500">(Z: ${p.heightZ}) [${stdBadge}]</span>` : '--';
+                const hBand = p.heightDeviationBand ? `<span class="text-[8.5px] px-1 py-0.2 rounded font-semibold ${p.heightDeviationBand.badgeClass}">${p.heightDeviationBand.deviationBandShort}</span>` : '';
+                outPHeight.innerHTML = p.heightPercentile !== null ? `<div class="flex items-center gap-1.5 justify-end"><span>${hDisp}</span> ${hBand} <span class="text-[9px] text-slate-500">(Z: ${p.heightZ}) [${stdBadge}]</span></div>` : '--';
+            }
+
+            // VKİ (BMI) Persentili & Rozeti
+            const rowPBmi = getEl('row-p-bmi');
+            const outPBmi = getEl('output-p-bmi');
+            if (p.bmiPercentile !== null && rowPBmi && outPBmi) {
+                rowPBmi.classList.remove('hidden');
+                const bDisp = p.bmiPercentileDisplay || `%${p.bmiPercentile}`;
+                const bBand = p.bmiDeviationBand ? `<span class="text-[8.5px] px-1 py-0.2 rounded font-semibold ${p.bmiDeviationBand.badgeClass}">${p.bmiDeviationBand.deviationBandShort}</span>` : '';
+                const bCat = p.category ? `<span class="text-[8.5px] text-slate-400 font-normal">(${p.category})</span>` : '';
+                outPBmi.innerHTML = `<div class="flex items-center gap-1.5 justify-end"><span>${bDisp}</span> ${bBand} ${bCat} <span class="text-[9px] text-slate-500">(Z: ${p.bmiZ}) [${stdBadge}]</span></div>`;
+            } else if (rowPBmi) {
+                rowPBmi.classList.add('hidden');
             }
 
             const rowCranialAlert = getEl('row-cranial-alert');
@@ -651,7 +1059,8 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             if (p.headCircumferencePercentile !== null && rowHeadCirc && outputHeadCirc) {
                 rowHeadCirc.classList.remove('hidden');
                 const hcDisp = p.headCircumferencePercentileDisplay || `%${p.headCircumferencePercentile}`;
-                outputHeadCirc.innerHTML = `${hcDisp} <span class="text-[9px] text-slate-500">(Z: ${p.headCircZ}) [${stdBadge}]</span>`;
+                const hcBand = p.headCircDeviationBand ? `<span class="text-[8.5px] px-1 py-0.2 rounded font-semibold ${p.headCircDeviationBand.badgeClass}">${p.headCircDeviationBand.deviationBandShort}</span>` : '';
+                outputHeadCirc.innerHTML = `<div class="flex items-center gap-1.5 justify-end"><span>${hcDisp}</span> ${hcBand} <span class="text-[9px] text-slate-500">(Z: ${p.headCircZ}) [${stdBadge}]</span></div>`;
 
                 if (p.cranialScreening && p.cranialScreening.hydrocephalusRisk !== 'SAFE' && rowCranialAlert && outCranialAlertTitle && outCranialAlertBody) {
                     rowCranialAlert.classList.remove('hidden');
@@ -665,6 +1074,43 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             } else {
                 if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
                 if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
+            }
+
+            // Görsel Persentil Spektrum Çubukları
+            const containerGauges = getEl('container-percentile-gauges');
+            const outGaugesBars = getEl('output-percentile-gauges-bars');
+            if (containerGauges && outGaugesBars) {
+                const gaugesHtml = renderPercentileGaugesHtml(p);
+                if (gaugesHtml) {
+                    containerGauges.classList.remove('hidden');
+                    outGaugesBars.innerHTML = gaugesHtml;
+                } else {
+                    containerGauges.classList.add('hidden');
+                }
+            }
+
+            // Standart Sapma Bandı Klinik İzlem Yorumları (Table 1 Normları)
+            const containerDevBands = getEl('container-deviation-bands');
+            const outDevBandsList = getEl('output-deviation-bands-list');
+            if (containerDevBands && outDevBandsList) {
+                const devBandsHtml = renderDeviationBandsListHtml(p);
+                if (devBandsHtml) {
+                    containerDevBands.classList.remove('hidden');
+                    outDevBandsList.innerHTML = devBandsHtml;
+                } else {
+                    containerDevBands.classList.add('hidden');
+                }
+            }
+
+            // Dinamik Persentil Dağılım Yüzdeleri Cetveli (P3-P97)
+            bindPercentileTableButtons();
+            const textPercTableMeta = getEl('text-percentile-table-meta');
+            const outPercCurvesTable = getEl('output-percentile-curves-table');
+            if (textPercTableMeta) {
+                textPercTableMeta.textContent = `${p.standardLabel} • ${growthMonths} Ay (${p.measurementPosition === 'recumbent' ? 'Yatarak' : 'Ayakta'})`;
+            }
+            if (outPercCurvesTable) {
+                outPercCurvesTable.innerHTML = renderPercentileCurvesTableHtml(p, currentPercentileTableMode);
             }
 
             // HATA-M14-001: İlk vizitte kesitsel akut malnütrisyon (SAM/MAM) alarmı
@@ -699,6 +1145,12 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
         } else if (percContainer) {
             percContainer.classList.add('hidden');
             if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
+            const rowPBmi = getEl('row-p-bmi');
+            if (rowPBmi) rowPBmi.classList.add('hidden');
+            const containerGauges = getEl('container-percentile-gauges');
+            if (containerGauges) containerGauges.classList.add('hidden');
+            const containerDevBands = getEl('container-deviation-bands');
+            if (containerDevBands) containerDevBands.classList.add('hidden');
             const rowCranialAlert = getEl('row-cranial-alert');
             if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
             const rowMalAlert = getEl('row-malnutrition-alert');
@@ -710,6 +1162,12 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
         appState.pediatrics.percentiles = null;
         if (percContainer) percContainer.classList.add('hidden');
         if (rowHeadCirc) rowHeadCirc.classList.add('hidden');
+        const rowPBmi = getEl('row-p-bmi');
+        if (rowPBmi) rowPBmi.classList.add('hidden');
+        const containerGauges = getEl('container-percentile-gauges');
+        if (containerGauges) containerGauges.classList.add('hidden');
+        const containerDevBands = getEl('container-deviation-bands');
+        if (containerDevBands) containerDevBands.classList.add('hidden');
         const rowCranialAlert = getEl('row-cranial-alert');
         if (rowCranialAlert) rowCranialAlert.classList.add('hidden');
         const rowMalAlert = getEl('row-malnutrition-alert');

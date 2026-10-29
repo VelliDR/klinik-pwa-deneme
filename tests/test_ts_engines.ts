@@ -45,6 +45,8 @@ import {
   WHO_2022_DATA,
   zToExactPercentile,
   formatPercentileDisplay,
+  getDeviationBandAssessment,
+  getPercentileCurvesTable,
   evaluateMalnutrition,
   standardNormalCDF,
   calculateNeonatalFluid,
@@ -4589,6 +4591,92 @@ const openFontanelle = calculateCranialScreening({
   daysBetween: 30
 });
 assert.ok(openFontanelle.clinicalRecommendations.some(r => r.includes('Transfontanel USG')), 'Küçük süt çocuğunda TFUS önerilmelidir');
+
+// 43.7 Tablo 1 Standart Sapma Bandı (Standard Deviation Band) ve Klinik İzlem Sınıflandırması (Rapor Normları)
+const bandMarkedLow = getDeviationBandAssessment(-3.2);
+assert.strictEqual(bandMarkedLow.bandCategory, 'MARKED_LOW');
+assert.strictEqual(bandMarkedLow.deviationBandShort, 'Belirgin Sapma');
+assert.strictEqual(bandMarkedLow.alertClass, 'danger');
+assert.ok(bandMarkedLow.clinicalComment.includes('Ağır patolojik gerilik'));
+
+const bandOutsideLow = getDeviationBandAssessment(-2.2);
+assert.strictEqual(bandOutsideLow.bandCategory, 'OUTSIDE_LOW');
+assert.strictEqual(bandOutsideLow.deviationBandShort, 'Çizili Bandın Dışı');
+assert.strictEqual(bandOutsideLow.alertClass, 'warning');
+
+const bandWithinLowNormal = getDeviationBandAssessment(-1.2);
+assert.strictEqual(bandWithinLowNormal.bandCategory, 'WITHIN_LOW_NORMAL');
+assert.strictEqual(bandWithinLowNormal.deviationBandShort, 'Normal Bant İçi');
+assert.strictEqual(bandWithinLowNormal.alertClass, 'info');
+
+const bandWithinOptimal = getDeviationBandAssessment(0.0);
+assert.strictEqual(bandWithinOptimal.bandCategory, 'WITHIN_OPTIMAL');
+assert.strictEqual(bandWithinOptimal.deviationBandShort, 'Normal Bant İçi');
+assert.strictEqual(bandWithinOptimal.alertClass, 'success');
+assert.strictEqual(bandWithinOptimal.percentile, 50);
+
+const bandWithinHighNormal = getDeviationBandAssessment(1.2);
+assert.strictEqual(bandWithinHighNormal.bandCategory, 'WITHIN_HIGH_NORMAL');
+assert.strictEqual(bandWithinHighNormal.deviationBandShort, 'Normal Bant İçi');
+assert.strictEqual(bandWithinHighNormal.alertClass, 'info');
+
+const bandOutsideHigh = getDeviationBandAssessment(2.2);
+assert.strictEqual(bandOutsideHigh.bandCategory, 'OUTSIDE_HIGH');
+assert.strictEqual(bandOutsideHigh.deviationBandShort, 'Çizili Bandın Dışı');
+assert.strictEqual(bandOutsideHigh.alertClass, 'warning');
+
+const bandMarkedHigh = getDeviationBandAssessment(3.5);
+assert.strictEqual(bandMarkedHigh.bandCategory, 'MARKED_HIGH');
+assert.strictEqual(bandMarkedHigh.deviationBandShort, 'Belirgin Sapma');
+assert.strictEqual(bandMarkedHigh.alertClass, 'danger');
+assert.ok(bandMarkedHigh.clinicalComment.includes('Morbid obezite'));
+
+// 43.8 Dinamik Persentil Dağılım Yüzdeleri Cetveli (Cole-Green LMS P3 - P97 ve ±3 SD) Doğrulaması
+const table18yNeyzi = getPercentileCurvesTable(216, 'male', 'neyzi_2015', {
+  heightCm: 175.8,
+  weightKg: 67.5,
+  bmiValue: 21.8,
+  heightZ: 0.0,
+  weightZ: 0.0,
+  bmiZ: 0.0,
+  heightP: 50,
+  weightP: 50,
+  bmiP: 50
+});
+assert.ok(table18yNeyzi && table18yNeyzi.rows, '18 yaş Neyzi persentil cetveli oluşturulmalıdır');
+assert.strictEqual(table18yNeyzi.rows.height.values.p50, 176.2, '18 yaş erkek Neyzi boy medyanı 176.2 cm olmalıdır');
+assert.ok(table18yNeyzi.rows.height.values.p3 < table18yNeyzi.rows.height.values.p10);
+assert.ok(table18yNeyzi.rows.height.values.p10 < table18yNeyzi.rows.height.values.p25);
+assert.ok(table18yNeyzi.rows.height.values.p25 < table18yNeyzi.rows.height.values.p50);
+assert.ok(table18yNeyzi.rows.height.values.p50 < table18yNeyzi.rows.height.values.p75);
+assert.ok(table18yNeyzi.rows.height.values.p75 < table18yNeyzi.rows.height.values.p90);
+assert.ok(table18yNeyzi.rows.height.values.p90 < table18yNeyzi.rows.height.values.p97);
+assert.ok(table18yNeyzi.rows.height.values.sdMinus3 < table18yNeyzi.rows.height.values.sdMinus2);
+assert.ok(table18yNeyzi.rows.height.values.sdPlus2 < table18yNeyzi.rows.height.values.sdPlus3);
+
+assert.strictEqual(table18yNeyzi.rows.height.currentPercentileDisplay, '%50');
+assert.strictEqual(table18yNeyzi.rows.height.deviationBand?.bandCategory, 'WITHIN_OPTIMAL');
+
+const table0mWho = getPercentileCurvesTable(0, 'male', 'who_2022');
+assert.ok(table0mWho && table0mWho.rows);
+assert.strictEqual(table0mWho.rows.height.values.p50, 49.9, 'WHO 2022 0 ay erkek medyan boy 49.9 cm olmalıdır');
+assert.strictEqual(table0mWho.rows.headCirc.values.p50, 34.5, 'WHO 2022 0 ay erkek medyan baş çevresi 34.5 cm olmalıdır');
+
+// 43.9 calculatePercentiles tam entegrasyon kontrolü (Bantlar ve Cetvel sonucu)
+const fullPercResult = calculatePercentiles({
+  gender: 'female',
+  ageMonths: 72, // 6 yaş kız
+  heightCm: 115.0,
+  weightKg: 20.0,
+  headCircumferenceCm: 50.5,
+  standard: 'neyzi_2015'
+});
+assert.ok(fullPercResult.heightDeviationBand, 'Boy sapma bandı üretilmelidir');
+assert.ok(fullPercResult.weightDeviationBand, 'Kilo sapma bandı üretilmelidir');
+assert.ok(fullPercResult.bmiDeviationBand, 'VKİ sapma bandı üretilmelidir');
+assert.ok(fullPercResult.headCircDeviationBand, 'Baş çevresi sapma bandı üretilmelidir');
+assert.ok(fullPercResult.percentileCurvesTable, 'Persentil eğrileri cetveli calculatePercentiles içinde üretilmelidir');
+assert.strictEqual(fullPercResult.percentileCurvesTable.rows.height.parameter, 'height');
 
 console.log('✓ Motor 14 Pediatrik Büyüme & Persentil Motoru verified (100% healthy)');
 

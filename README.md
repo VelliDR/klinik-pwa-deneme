@@ -6,7 +6,7 @@
 [![Lisans: AGPL v3](https://img.shields.io/badge/Lisans-GNU_AGPLv3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![TİTCK Data](https://img.shields.io/badge/TİTCK-18%2C212_İlaç_%2B_135_Monograf-E11D48)](https://www.titck.gov.tr/)
 [![Clinical Motors](https://img.shields.io/badge/Klinik_Motor-21_Modül-8B5CF6)](https://github.com/VelliDR/klinik-pwa-deneme)
-[![Tests](https://img.shields.io/badge/Test_Suite-42_Bölüm_Doğrulandı-10B981)](https://github.com/VelliDR/klinik-pwa-deneme)
+[![Tests](https://img.shields.io/badge/Test_Suite-51_Bölüm_Doğrulandı-10B981)](https://github.com/VelliDR/klinik-pwa-deneme)
 [![Privacy](https://img.shields.io/badge/Veri_Gizliliği-İstemci_Taraflı_(Client--Side)-blue)](https://kvkk.gov.tr/)
 
 Klinik Karar Destek Asistanı, acil servis, poliklinik ve yataklı servislerde görev yapan hekimler ve sağlık çalışanları için tasarlanmış, açık kaynaklı ve çevrimdışı öncelikli (offline-first) bir klinik hesaplama ve dokümantasyon aracıdır.
@@ -152,11 +152,30 @@ Uygulama standart bir web tarayıcısı üzerinden doğrudan çalıştırılabil
 - **İlaç Perfüzörü:** $\mu\text{g/kg/dk}$, $\mu\text{g/dk}$ veya $\text{mg/kg/saat}$ hedef dozlarından $\text{mL/saat}$ pompa hızı hesabı.
 - **Glukoz İnfüzyon Hızı (GIR):** Dekstroz yüzdesi ve infüzyon hızından yenidoğanda $\text{mg/kg/dk}$ glukoz akış hesabı.
 
-### 14. Pediatrik Büyüme Hızı & Kraniyal Tarama (NICE / WHO / Neyzi)
-- **Cole & Green Kısıtlı LMS Persentilleri:** WHO Child Growth Standards (0-5 yaş) ve Neyzi 2015 (0-18 yaş) standartları; persentil ve SDS (Z-skoru) hesabı.
-- **10-Kanallı Centile Yapısı & Büyüme Hızı:** NICE/WHO kılavuzları doğrultusunda $\text{cm/yıl}$ büyüme hızı ve kanal düşüşü (growth faltering) tespiti.
+### 14. Pediatrik Büyüme, Persentil & Kraniyal Tarama (NICE / WHO / Neyzi 2015)
+- **Cole & Green Kısıtlı LMS Persentil Motoru:**
+  - **Z-Skoru Hesabı:** $Z = \frac{(X/M)^L - 1}{L \cdot S}$ ($L \ne 0$) ve $Z = \frac{\ln(X/M)}{S}$ ($L = 0$). Sağa çarpık dağılımlarda (özellikle kilo ve VKİ) $|Z| > 3\text{ SD}$ bölgesinde Box-Cox patlamasını önleyen kısıtlı doğrusal ekstrapolasyon (WHO Restricted LMS).
+  - **LMS Ters Dönüşüm (Eşik Değerleri):** $X_c = M \cdot (1 + L \cdot S \cdot Z)^{1/L}$ formülüyle hastanın yaşına ve cinsiyetine özel fiziksel persentil eğrisi ölçüm değerleri.
+  - **Hassas Normal Dağılım Dönüşümü:** Abramowitz & Stegun Eq. 26.2.19 polinom yaklaşımı ile maksimum mutlak hata $<7.5 \times 10^{-8}$ olacak şekilde kesin persentil hesabı ($P_{0.13}, P_3, P_{50}, P_{97}, P_{99.87}$).
+- **Standart Sapma Bandı & Klinik İzlem Sınıflandırması (Tablo 1 Normları):**
+  - **$Z < -3.00\text{ SD}$ ($P < 0.13$ — Belirgin Sapma / Marked):** Ağır patolojik gerilik (ağır bodurluk, ağır kavrukluk veya mikrosefali); acil ileri tetkik ve müdahale.
+  - **$-3.00 \le Z < -1.88\text{ SD}$ ($P_{0.13} - P_3$ — Çizili Bandın Dışı / Outside):** Normal aralığın altı (boy kısalığı, malnütrisyon); pediatrik/endokrinolojik izlem.
+  - **$-1.88 \le Z < -1.04\text{ SD}$ ($P_3 - P_{15}$ — Normal Bant İçi / Within):** Düşük-normal aralık; persentil kaybı açısından yakın takip.
+  - **$-1.04 \le Z \le +1.04\text{ SD}$ ($P_{15} - P_{85}$ — Normal Bant İçi / Within):** Optimal fizyolojik büyüme aralığı ($Z = 0 \to P_{50}$).
+  - **$+1.04 < Z \le +1.88\text{ SD}$ ($P_{85} - P_{97}$ — Normal Bant İçi / Within):** Yüksek-normal aralık; ağırlık ve VKİ için fazla kiloluluk eğilimi izlemi.
+  - **$+1.88 < Z \le +3.00\text{ SD}$ ($P_{97} - P_{99.87}$ — Çizili Bandın Dışı / Outside):** Normal aralığın üstü; VKİ için obezite, baş çevresi için makrosefali/hidrosefali eşiği.
+  - **$Z > +3.00\text{ SD}$ ($P > 99.87$ — Belirgin Sapma / Marked):** Morbid obezite, jigantizm veya patolojik aşırı büyüme.
+- **İnteraktif Persentil Yüzdeleri Cetveli:**
+  - Boy, Ağırlık, VKİ ve Baş Çevresi için `Persentil (P3, P10, P25, P50, P75, P90, P97)` ve `Z-Skor (-3 SD, -2 SD, -1 SD, 0 SD, +1 SD, +2 SD, +3 SD)` anlık geçiş düğmeleri.
+  - Hastanın mevcut ölçüm değerinin cetvel üzerinde dinamik vurgulanması ve sapma rozetiyle birlikte sunumu.
+- **Görsel Persentil Spektrum Çubukları:**
+  - Her antropometrik parametre için 5 klinik aralığı ($<3p$, $3-15p$, $15-85p$, $85-97p$, $>97p$) renk kodlu bloklarla gösteren ve hastanın konumunu yansıtan hassas iğne göstergesi.
+- **VKİ Persentili & Çift Standart Karşılaştırması:**
+  - Boy ve kilo girildiğinde VKİ Z-skoru, persentili ve DSÖ vs Neyzi 2015 ulusal referansı arası diskordans uyarısı.
+- **10-Kanallı Centile Yapısı & Büyüme Hızı (NICE Kılavuzu):**
+  - Yaşa göre beklenen $\text{cm/yıl}$ büyüme hızı ve doğum persentiline göre $\ge 2$ kanal düşüşü (growth faltering) uyarısı.
 - **WHO 2022/2023 Akut Malnütrisyon:** Boya göre ağırlık Z-skoruna dayalı SAM (Ağır Akut Malnütrisyon) ve MAM (Orta Akut Malnütrisyon) sınıflandırması ve beslenme protokolü uyarıları.
-- **Kraniyal Tarama (0-18 yaş):** Baş çevresi persentil analizi, mikrosefali ve hidrosefali risk tabakalandırması.
+- **Kraniyal Tarama & Hidrosefali Güvenlik Kalkanı (0-18 yaş):** Baş çevresi persentil analizi, fontanel kapanma yaşına duyarlı tetkik önerisi ($<24$ ay Transfontanel USG, $\ge 24$ ay MRG).
 
 ### 15. Pediatrik Demir Eksikliği & Talasemi Ayrımı (TPHD & Mentzer)
 - **TPHD & T.C. Sağlık Bakanlığı Protokolü:** Term ve preterm bebeklerde profilaktik demir takvimi ($1-2\text{ mg/kg/gün}$).

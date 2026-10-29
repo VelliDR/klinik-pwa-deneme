@@ -141,6 +141,11 @@ export { PEDIATRIC_SYRUPS, calculateIdealBodyWeight } from '../engines/pediatric
 export type {
   PercentilesInput,
   PercentilesResult,
+  DeviationBandCategory,
+  DeviationBandAssessment,
+  PercentileCurveValues,
+  PercentileCurveRow,
+  PercentileCurvesTableResult,
   TargetHeightInput,
   TargetHeightResult,
   CorrectedAgeInput,
@@ -150,6 +155,10 @@ export type {
   CentileChannel,
   CranialScreeningInput,
   CranialScreeningResult
+} from '../engines/percentileEngine';
+export {
+  getDeviationBandAssessment,
+  getPercentileCurvesTable
 } from '../engines/percentileEngine';
 
 export type {
