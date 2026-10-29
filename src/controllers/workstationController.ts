@@ -493,6 +493,8 @@ export function initWorkstationPackages(): void {
         if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
             cardShortcuts.classList.add('hidden');
         }
+        const backdropPackages = getEl('backdrop-packages');
+        if (backdropPackages) backdropPackages.classList.add('hidden');
 
         // Birincil karta yumuşak geçiş ve nabız animasyonu
         const targetCard = (primaryId ? getEl<HTMLDetailsElement>(primaryId) : null) || getEl<HTMLDetailsElement>(motors[0]);
@@ -509,11 +511,11 @@ export function initWorkstationPackages(): void {
             containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
                 const bId = btn.getAttribute('data-pack-id');
                 if (bId && bId === currentActivePackId) {
-                    btn.classList.add('bg-sky-500/20', 'text-sky-300', 'border-sky-500/40', 'shadow-sm');
-                    btn.classList.remove('bg-slate-800', 'text-slate-200');
+                    btn.classList.add('border-cyan-500/60', 'bg-cyan-950/30', 'text-cyan-300');
+                    btn.classList.remove('border-slate-800', 'bg-[#0B111E]', 'text-slate-200');
                 } else {
-                    btn.classList.remove('bg-sky-500/20', 'text-sky-300', 'border-sky-500/40', 'shadow-sm');
-                    btn.classList.add('bg-slate-800', 'text-slate-200');
+                    btn.classList.remove('border-cyan-500/60', 'bg-cyan-950/30', 'text-cyan-300');
+                    btn.classList.add('border-slate-800', 'bg-[#0B111E]', 'text-slate-200');
                 }
             });
         }
@@ -522,7 +524,7 @@ export function initWorkstationPackages(): void {
         if (badgeActive) {
             const cleanTitle = title.replace(/^[^\w\sğüşöçıİĞÜŞÖÇ]+/, '').trim();
             badgeActive.textContent = `${cleanTitle} (${motors.length} Motor Aktif)`;
-            badgeActive.className = 'text-[10px] px-2.5 py-0.5 rounded-full tabular-nums font-medium bg-sky-950/80 text-sky-300 border border-sky-800/60';
+            badgeActive.className = 'text-[10px] px-2.5 py-0.5 rounded-full tabular-nums font-medium bg-cyan-950/80 text-cyan-300 border border-cyan-800/60';
         }
 
         // Aktif Paket Bilgi Şeridini Doldur
@@ -540,8 +542,8 @@ export function initWorkstationPackages(): void {
                     if (!mDef) return;
                     const pill = document.createElement('button');
                     pill.type = 'button';
-                    pill.className = 'btn-jump-motor px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750 text-[10px] flex items-center gap-1 transition-colors';
-                    pill.innerHTML = `<span class="text-sky-400">${getSvgIcon(mDef.icon, 'w-3 h-3')}</span><span>${mDef.shortName}</span>`;
+                    pill.className = 'btn-jump-motor px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-750 text-[10px] flex items-center gap-1 transition-colors';
+                    pill.innerHTML = `<span class="text-cyan-400">${getSvgIcon(mDef.icon, 'w-3 h-3')}</span><span>${mDef.shortName}</span>`;
                     pill.title = `${mDef.name} motoruna git`;
                     pill.addEventListener('click', () => {
                         const targetEl = getEl<HTMLDetailsElement>(mId);
@@ -571,11 +573,13 @@ export function initWorkstationPackages(): void {
         if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
             cardShortcuts.classList.add('hidden');
         }
+        const backdropPackages = getEl('backdrop-packages');
+        if (backdropPackages) backdropPackages.classList.add('hidden');
 
         if (containerButtons) {
             containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
-                btn.classList.remove('bg-sky-500/20', 'text-sky-300', 'border-sky-500/40', 'shadow-sm', 'bg-rose-600', 'text-white', 'border-rose-500');
-                btn.classList.add('bg-slate-800', 'text-slate-200');
+                btn.classList.remove('border-cyan-500/60', 'bg-cyan-950/30', 'text-cyan-300');
+                btn.classList.add('border-slate-800', 'bg-[#0B111E]', 'text-slate-200');
             });
         }
 
@@ -592,11 +596,11 @@ export function initWorkstationPackages(): void {
         const pills = document.querySelectorAll('.cat-pill');
         pills.forEach(p => {
             if (p.getAttribute('data-cat') === 'all') {
-                p.classList.add('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30');
-                p.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700/80', 'bg-rose-600', 'text-white');
+                p.classList.add('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60');
+                p.classList.remove('bg-slate-900/90', 'text-slate-300', 'border-slate-800', 'bg-slate-800', 'bg-sky-500/15', 'text-sky-400');
             } else {
-                p.classList.remove('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30', 'bg-rose-600', 'text-white');
-                p.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700/80');
+                p.classList.remove('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60', 'bg-sky-500/15', 'text-sky-400');
+                p.classList.add('bg-slate-900/90', 'text-slate-300', 'border-slate-800');
             }
         });
     }
@@ -605,7 +609,7 @@ export function initWorkstationPackages(): void {
         btnShowAll.addEventListener('click', showAllMotors);
     }
 
-    // C. Paket Butonlarını Render Et
+    // C. Paket Butonlarını Render Et (2-Sütunlu Kompakt Izgara)
     function renderPackageButtons(): void {
         if (!containerButtons) return;
         containerButtons.innerHTML = '';
@@ -616,14 +620,14 @@ export function initWorkstationPackages(): void {
         allPacks.forEach(pack => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'btn-workstation-pack px-2.5 sm:px-3 py-1.5 rounded-xl font-medium text-[11px] sm:text-xs flex items-center gap-1.5 transition-all bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 shadow-sm whitespace-nowrap';
+            btn.className = 'btn-workstation-pack w-full flex items-center gap-2 px-2.5 py-2 rounded-md bg-[#0B111E] hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 text-left transition';
             btn.setAttribute('data-pack-id', pack.id);
             btn.title = pack.desc || pack.badge || pack.name;
 
             btn.innerHTML = `
-                <span class="text-sky-400">${getSvgIcon(pack.icon)}</span>
-                <span>${escapeHtml(pack.name)}</span>
-                ${pack.isCustom ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full font-mono">Özel</span>' : ''}
+                <span class="text-cyan-400 shrink-0">${getSvgIcon(pack.icon, 'w-3.5 h-3.5')}</span>
+                <span class="truncate flex-1 font-medium">${escapeHtml(pack.name)}</span>
+                ${pack.isCustom ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.5 rounded font-mono shrink-0">Özel</span>' : ''}
             `;
 
             btn.addEventListener('click', () => {
@@ -847,10 +851,25 @@ export function initWorkstationPackages(): void {
 
     // Header Paketler Dropdown Butonu ve Dışarı Tıklama Dinleyicisi
     const btnHeaderDropdown = getEl('btn-header-packages-dropdown');
+    const backdropPackages = getEl('backdrop-packages');
     if (btnHeaderDropdown && cardShortcuts) {
         btnHeaderDropdown.addEventListener('click', (e) => {
             e.stopPropagation();
-            cardShortcuts.classList.toggle('hidden');
+            const isHidden = cardShortcuts.classList.toggle('hidden');
+            if (backdropPackages) {
+                if (isHidden) {
+                    backdropPackages.classList.add('hidden');
+                } else {
+                    backdropPackages.classList.remove('hidden');
+                }
+            }
+        });
+    }
+
+    if (backdropPackages && cardShortcuts) {
+        backdropPackages.addEventListener('click', () => {
+            cardShortcuts.classList.add('hidden');
+            backdropPackages.classList.add('hidden');
         });
     }
 
@@ -861,6 +880,7 @@ export function initWorkstationPackages(): void {
                 const headerContainer = getEl('header-packages-container');
                 if (headerContainer && !headerContainer.contains(target)) {
                     cardShortcuts.classList.add('hidden');
+                    if (backdropPackages) backdropPackages.classList.add('hidden');
                 }
             }
         });
@@ -886,11 +906,11 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
     pills.forEach(pill => {
         pill.addEventListener('click', () => {
             pills.forEach(p => {
-                p.classList.remove('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30', 'bg-rose-600', 'text-white');
-                p.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700/80');
+                p.classList.remove('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60', 'bg-sky-500/15', 'text-sky-400');
+                p.classList.add('bg-slate-900/90', 'text-slate-300', 'border-slate-800');
             });
-            pill.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700/80');
-            pill.classList.add('active', 'bg-sky-500/15', 'text-sky-400', 'border-sky-500/30');
+            pill.classList.remove('bg-slate-900/90', 'text-slate-300', 'border-slate-800');
+            pill.classList.add('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60');
 
             const cat = pill.getAttribute('data-cat');
             const cards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
