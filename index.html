@@ -2102,20 +2102,144 @@
 
             <details id="card-idame" data-category="lab" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                    <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">İdame Sıvı Hesabı</span></span>
+                    <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100">
+                        <span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span>
+                        <span class="truncate">İdame Sıvı &amp; Elektrolit Yönetimi (5R Kuralı &amp; Kılavuzlar)</span>
+                    </span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
                 </summary>
                 <div class="card-body px-3.5 lg:px-4 pt-3 pb-3.5 lg:pb-4 space-y-3 border-t border-slate-800/80">
-                    <div class="grid grid-cols-2 gap-2 pt-2">
+                    
+                    <!-- 1. TEMEL SONUÇ KARTLARI (2x2 / ÖZET) -->
+                    <div class="grid grid-cols-2 gap-2 pt-1">
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-700/50">
-                            <span class="block text-[11px] font-medium text-slate-400 mb-1 tracking-tight">Günlük Toplam</span>
-                            <span id="output-daily-fluid" class="text-xs font-bold tabular-nums text-sky-400">--</span>
+                            <div class="flex items-center justify-between">
+                                <span class="block text-[11px] font-medium text-slate-400 tracking-tight">Günlük Toplam</span>
+                                <span id="output-fluid-rate-per-kg" class="text-[9px] text-slate-400 tabular-nums">--</span>
+                            </div>
+                            <span id="output-daily-fluid" class="text-sm font-bold tabular-nums text-sky-400 block mt-0.5">--</span>
                         </div>
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-700/50">
-                            <span class="block text-[11px] font-medium text-slate-400 mb-1 tracking-tight">İnfüzyon Hızı</span>
-                            <span id="output-hourly-fluid" class="text-xs font-bold tabular-nums text-emerald-400">--</span>
+                            <div class="flex items-center justify-between">
+                                <span class="block text-[11px] font-medium text-slate-400 tracking-tight">İnfüzyon Hızı</span>
+                                <span id="output-fluid-method-badge" class="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-emerald-400 border border-slate-700/50 font-medium truncate max-w-[110px]">Holliday-Segar</span>
+                            </div>
+                            <span id="output-hourly-fluid" class="text-sm font-bold tabular-nums text-emerald-400 block mt-0.5">--</span>
+                        </div>
+
+                        <!-- 24 Saatlik Elektrolit & Glukoz İhtiyacı Çubuğu -->
+                        <div class="col-span-2 bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-[10px] tabular-nums">
+                            <div class="text-[9px] font-semibold text-slate-400 mb-1 flex items-center justify-between">
+                                <span>24s Günlük İdame Elektrolit &amp; Enerji Hedefleri</span>
+                                <span class="text-slate-500 font-normal">NICE CG174 / AAP</span>
+                            </div>
+                            <div class="grid grid-cols-4 gap-1.5 text-center">
+                                <div class="bg-slate-950/60 p-1 rounded border border-slate-800/80">
+                                    <span class="text-slate-400 block text-[9px]">Na⁺</span>
+                                    <span id="output-daily-na" class="font-bold text-cyan-300">--</span>
+                                </div>
+                                <div class="bg-slate-950/60 p-1 rounded border border-slate-800/80">
+                                    <span class="text-slate-400 block text-[9px]">K⁺</span>
+                                    <span id="output-daily-k" class="font-bold text-amber-300">--</span>
+                                </div>
+                                <div class="bg-slate-950/60 p-1 rounded border border-slate-800/80">
+                                    <span class="text-slate-400 block text-[9px]">Cl⁻</span>
+                                    <span id="output-daily-cl" class="font-bold text-slate-300">--</span>
+                                </div>
+                                <div class="bg-slate-950/60 p-1 rounded border border-slate-800/80">
+                                    <span class="text-slate-400 block text-[9px]">Glukoz (Kcal)</span>
+                                    <span id="output-daily-glu" class="font-bold text-emerald-300">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Önerilen Solüsyon Satırı -->
+                        <div class="col-span-2 bg-slate-900/60 p-2 rounded-lg border border-slate-800/80 text-[10px] space-y-0.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-400 font-medium">Rehber Solüsyon Önerisi:</span>
+                                <span id="text-fluid-solution-badge" class="px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-800/60 text-[9px] font-semibold">İzotonik Kristaloid</span>
+                            </div>
+                            <div id="output-fluid-recommendation" class="text-slate-200 font-medium leading-tight text-[11px] pt-0.5">--</div>
                         </div>
                     </div>
+
+                    <!-- 2. KLİNİK DURUM & KISITLAMA SEÇİCİ -->
+                    <div class="space-y-2 pt-1 border-t border-slate-800/60">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-400 mb-1 tracking-tight">Klinik Durum &amp; Kısıtlama Protokolü (Organ Kalkanı)</label>
+                            <select id="select-fluid-condition" class="w-full h-8 bg-[#060A12] border border-slate-800 rounded-md px-2 text-xs text-slate-200 focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none transition-colors">
+                                <option value="standard">Standart İdame (NICE CG174 / AAP 2018)</option>
+                                <option value="heart_failure">Kalp Yetersizliği (20-25 mL/kg veya İdrar + 500 mL)</option>
+                                <option value="renal_failure">Akut Böbrek Hasarı / KBY (KDIGO: Hissolunmayan + İdrar | K⁺ YASAK)</option>
+                                <option value="cirrhosis_ascites">Karaciğer Sirozu &amp; Assit (EASL: Na 80-120 mmol | Kısıtlama &lt;125 Na)</option>
+                                <option value="siadh">SIADH / Yüksek ADH Riski (NICE NG29: %50-80 Kısıtlama | İzotonik Şart)</option>
+                                <option value="elderly_frail">Yaşlı / Kırılgan Hasta (NICE CG174: 20-25 mL/kg/gün)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-medium text-slate-400 mb-0.5" title="Antibiyotik, analjezik ve diğer ilaç sulandırıcılarından gelen günlük fazladan hacim">Gizli Sıvı / Fluid Creep (mL/gün)</label>
+                                <input type="number" id="input-fluid-creep" placeholder="Örn: 500 mL" class="w-full h-7 bg-[#060A12] border border-slate-800 rounded px-2 text-xs tabular-nums text-slate-200 placeholder-slate-600 focus:border-cyan-500/80 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-medium text-slate-400 mb-0.5" title="Kalp yetersizliği veya anürik/oligürik böbrek yetmezliğinde formülasyon için">24s İdrar Çıkışı (mL/gün)</label>
+                                <input type="number" id="input-fluid-urine" placeholder="Örn: 800 mL" class="w-full h-7 bg-[#060A12] border border-slate-800 rounded px-2 text-xs tabular-nums text-slate-200 placeholder-slate-600 focus:border-cyan-500/80 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-0.5">
+                            <label class="flex items-center gap-1.5 text-[10px] text-amber-300 cursor-pointer select-none">
+                                <input type="checkbox" id="chk-fluid-oral" class="rounded bg-slate-900 border-slate-700 text-amber-500 focus:ring-0">
+                                <span>Oral / Enteral alım tolere edilebiliyor mu?</span>
+                            </label>
+                            <span id="text-fluid-oral-warning" class="hidden text-[9px] text-rose-400 font-semibold">IV İdameyi Azalt ve Kes!</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. BALONCUK DETAY KONU KARTLARI (KNOWLEDGE BUBBLE CHIPS) -->
+                    <div class="pt-1 border-t border-slate-800/60 space-y-1.5">
+                        <div class="flex items-center justify-between text-[10px] text-slate-400">
+                            <span class="font-medium flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5 text-cyan-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Rehber Bilgi Baloncukları (Tıkla &amp; İncele):
+                            </span>
+                            <span class="text-[9px] text-slate-500">Klinik Kılavuz Özeti</span>
+                        </div>
+
+                        <div id="container-fluid-topic-bubbles" class="flex flex-wrap gap-1.5">
+                            <button type="button" class="btn-fluid-bubble px-2 py-1 rounded-full bg-slate-900 border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800 text-[10px] text-slate-300 font-medium transition-colors flex items-center gap-1" data-fluid-topic="5r_rule">
+                                <span>🛡️</span> <span>5R Kuralı</span>
+                            </button>
+                            <button type="button" class="btn-fluid-bubble px-2 py-1 rounded-full bg-slate-900 border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800 text-[10px] text-slate-300 font-medium transition-colors flex items-center gap-1" data-fluid-topic="aap_paradigm">
+                                <span>⚡</span> <span>AAP Paradigma Değişimi</span>
+                            </button>
+                            <button type="button" class="btn-fluid-bubble px-2 py-1 rounded-full bg-slate-900 border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800 text-[10px] text-slate-300 font-medium transition-colors flex items-center gap-1" data-fluid-topic="dextrose_paradox">
+                                <span>🧪</span> <span>Dekstroz Paradoksu</span>
+                            </button>
+                            <button type="button" class="btn-fluid-bubble px-2 py-1 rounded-full bg-slate-900 border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800 text-[10px] text-slate-300 font-medium transition-colors flex items-center gap-1" data-fluid-topic="potassium_safety">
+                                <span>⚠️</span> <span>Potasyum Güvenliği</span>
+                            </button>
+                            <button type="button" class="btn-fluid-bubble px-2 py-1 rounded-full bg-slate-900 border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800 text-[10px] text-slate-300 font-medium transition-colors flex items-center gap-1" data-fluid-topic="fluid_creep">
+                                <span>💧</span> <span>Fluid Creep (Gizli Sıvı)</span>
+                            </button>
+                            <button type="button" class="btn-fluid-bubble px-2 py-1 rounded-full bg-slate-900 border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800 text-[10px] text-slate-300 font-medium transition-colors flex items-center gap-1" data-fluid-topic="organ_restrictions">
+                                <span>🫀</span> <span>Organ Kısıtlamaları</span>
+                            </button>
+                            <button type="button" class="btn-fluid-bubble px-2 py-1 rounded-full bg-slate-900 border border-slate-700/60 hover:border-cyan-500/60 hover:bg-slate-800 text-[10px] text-slate-300 font-medium transition-colors flex items-center gap-1" data-fluid-topic="complications">
+                                <span>🚨</span> <span>Komplikasyon Kalkanı</span>
+                            </button>
+                        </div>
+
+                        <!-- Baloncuk Detay Konu Kartı Gösterim Alanı (Açılır/Kapanır) -->
+                        <div id="container-fluid-bubble-topic-detail" class="hidden p-3 rounded-lg bg-slate-900/95 border border-cyan-500/40 text-xs space-y-2 shadow-lg transition-all duration-200">
+                        </div>
+                    </div>
+
+                    <!-- 4. UYARI & GÜVENLİK ALARMLARI -->
+                    <div id="container-fluid-warnings" class="hidden space-y-1.5 text-[10px]"></div>
+
+                    <!-- Yenidoğan TND Sıvı Kademesi Banner'ı -->
                     <div id="container-neonatal-fluid-banner" class="hidden p-2.5 rounded-lg bg-sky-950/40 border border-sky-800/60 text-[10px] space-y-1">
                         <div class="flex items-center justify-between font-bold text-sky-300">
                             <span id="text-neonatal-fluid-day">TND Yenidoğan Sıvı Kademesi</span>
@@ -2123,6 +2247,242 @@
                         </div>
                         <div id="text-neonatal-fluid-desc" class="text-slate-300 text-[9px] leading-tight">--</div>
                     </div>
+
+                    <!-- 5. AÇILIR KAPANIR DETAY KARTLARI (COLLAPSIBLE ACCORDION DETAILS) -->
+                    <div class="pt-2 border-t border-slate-800/60 space-y-2">
+                        
+                        <!-- Detay Kartı 1: Kristaloid Solüsyon Karşılaştırma & Farmakoloji Tablosu -->
+                        <details id="details-fluid-solutions" class="group/sub rounded-lg border border-slate-800/80 bg-slate-900/40 overflow-hidden text-[11px]">
+                            <summary class="flex items-center justify-between px-3 py-2 select-none cursor-pointer hover:bg-slate-800/50 text-slate-300 font-semibold list-none [&::-webkit-details-marker]:hidden transition-colors">
+                                <span class="flex items-center gap-1.5 text-xs">
+                                    <span>🧪</span>
+                                    <span>Kristaloid Solüsyon Karşılaştırma &amp; Farmakoloji Tablosu</span>
+                                </span>
+                                <svg class="w-3.5 h-3.5 text-slate-400 group-open/sub:rotate-180 transition-transform duration-150 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </summary>
+                            <div class="p-3 border-t border-slate-800/60 overflow-x-auto space-y-2">
+                                <table class="w-full text-[10px] tabular-nums text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-800 text-slate-400 font-semibold">
+                                            <th class="py-1 px-1">Solüsyon</th>
+                                            <th class="py-1 px-1">Na⁺</th>
+                                            <th class="py-1 px-1">Cl⁻</th>
+                                            <th class="py-1 px-1">K⁺</th>
+                                            <th class="py-1 px-1">Glukoz</th>
+                                            <th class="py-1 px-1">Tampon</th>
+                                            <th class="py-1 px-1">Ozm.</th>
+                                            <th class="py-1 px-1">Biyolojik Tonisite</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                                        <tr class="hover:bg-slate-800/20">
+                                            <td class="py-1 px-1 font-semibold text-slate-100">%0.9 NaCl (SF)</td>
+                                            <td class="py-1 px-1">154</td>
+                                            <td class="py-1 px-1 text-amber-300">154</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1 text-slate-500">Yok</td>
+                                            <td class="py-1 px-1">308</td>
+                                            <td class="py-1 px-1 text-cyan-300">İzotonik</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/20">
+                                            <td class="py-1 px-1 font-semibold text-slate-100">Ringer Laktat (RL)</td>
+                                            <td class="py-1 px-1">131</td>
+                                            <td class="py-1 px-1">111</td>
+                                            <td class="py-1 px-1">5</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1 text-emerald-400">Laktat 29</td>
+                                            <td class="py-1 px-1">278</td>
+                                            <td class="py-1 px-1 text-emerald-300">Dengeli / Hafif Hipotonik</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/20">
+                                            <td class="py-1 px-1 font-semibold text-slate-100">Plasma-Lyte 148 / İzoleks</td>
+                                            <td class="py-1 px-1">140</td>
+                                            <td class="py-1 px-1">98</td>
+                                            <td class="py-1 px-1">5</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1 text-emerald-400">Asetat 27 + Glukonat 23</td>
+                                            <td class="py-1 px-1">294</td>
+                                            <td class="py-1 px-1 text-cyan-300">Dengeli / İzotonik</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/20">
+                                            <td class="py-1 px-1 font-semibold text-slate-100">%5 Dekstroz + %0.9 NaCl</td>
+                                            <td class="py-1 px-1">154</td>
+                                            <td class="py-1 px-1">154</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1 text-emerald-300">50 g/L</td>
+                                            <td class="py-1 px-1 text-slate-500">Yok</td>
+                                            <td class="py-1 px-1">560</td>
+                                            <td class="py-1 px-1 text-cyan-300">İn vivo İzotonik (AAP/NICE)</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/20">
+                                            <td class="py-1 px-1 font-semibold text-slate-100">%5 Dekstroz + %0.45 NaCl</td>
+                                            <td class="py-1 px-1">77</td>
+                                            <td class="py-1 px-1">77</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1 text-emerald-300">50 g/L</td>
+                                            <td class="py-1 px-1 text-slate-500">Yok</td>
+                                            <td class="py-1 px-1">406</td>
+                                            <td class="py-1 px-1 text-amber-400">İn vivo Hipotonik</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/20">
+                                            <td class="py-1 px-1 font-semibold text-rose-300">%4 Dekstroz + %0.18 NaCl</td>
+                                            <td class="py-1 px-1">31</td>
+                                            <td class="py-1 px-1">31</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1 text-emerald-300">40 g/L</td>
+                                            <td class="py-1 px-1 text-slate-500">Yok</td>
+                                            <td class="py-1 px-1">284</td>
+                                            <td class="py-1 px-1 text-rose-400 font-bold">Derin Hipotonik (YASAK!)</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-800/20">
+                                            <td class="py-1 px-1 font-semibold text-slate-100">%5 Dekstroz (Sudaki)</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1">0</td>
+                                            <td class="py-1 px-1 text-emerald-300">50 g/L</td>
+                                            <td class="py-1 px-1 text-slate-500">Yok</td>
+                                            <td class="py-1 px-1">278</td>
+                                            <td class="py-1 px-1 text-rose-300">İn vivo Saf Serbest Su</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="text-[9px] text-slate-400 italic leading-snug">
+                                    * Kural: Dekstroz damara verildiğinde glukoz hızla hücre içine alınarak metabolize edilir. Biyolojik tonisiteyi glukoz değil, sodyum konsantrasyonu belirler.
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- Detay Kartı 2: 24 Saatlik Elektrolit, Glukoz & Kalori Dağılımı -->
+                        <details id="details-fluid-electrolytes" class="group/sub rounded-lg border border-slate-800/80 bg-slate-900/40 overflow-hidden text-[11px]">
+                            <summary class="flex items-center justify-between px-3 py-2 select-none cursor-pointer hover:bg-slate-800/50 text-slate-300 font-semibold list-none [&::-webkit-details-marker]:hidden transition-colors">
+                                <span class="flex items-center gap-1.5 text-xs">
+                                    <span>⚡</span>
+                                    <span>24 Saatlik Elektrolit, Glukoz &amp; Potasyum Güvenlik Kuralları</span>
+                                </span>
+                                <svg class="w-3.5 h-3.5 text-slate-400 group-open/sub:rotate-180 transition-transform duration-150 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </summary>
+                            <div class="p-3 border-t border-slate-800/60 space-y-2 text-[10px] leading-relaxed text-slate-300">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                        <div class="font-bold text-cyan-300 mb-0.5">Sodyum (Na⁺) &amp; Klorür (Cl⁻):</div>
+                                        <div>• Yetişkin: ~1 mmol/kg/gün (50-100 mmol/gün)</div>
+                                        <div>• Pediatri: 2-3 mmol/kg/gün</div>
+                                        <div class="text-slate-400 text-[9px] mt-0.5">Aşırı sodyum/klorür verilmesi renal vazokonstriksiyon ve hiperkloremik asidoza yol açar.</div>
+                                    </div>
+                                    <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+                                        <div class="font-bold text-emerald-300 mb-0.5">Glukoz &amp; Enerji Kalkanı:</div>
+                                        <div>• Yetişkin: 50-100 g/gün (%5 Dekstroz ile ~200-400 kcal)</div>
+                                        <div>• Pediatri: Günlük idame hacminin %5'i kadar dekstroz</div>
+                                        <div class="text-slate-400 text-[9px] mt-0.5">Açlık ketozisini ve endojen protein katabolizmasını güvenle baskılar.</div>
+                                    </div>
+                                </div>
+                                <div class="bg-rose-950/30 p-2.5 rounded border border-rose-900/50 space-y-1 text-rose-200">
+                                    <div class="font-bold text-rose-300 flex items-center gap-1">
+                                        <span>⚠️</span> <span>Hayati Potasyum (KCl) Güvenlik Kuralları (NICE &amp; EMed):</span>
+                                    </div>
+                                    <div>1. Periferik venöz infüzyonda potasyum konsantrasyonu KESİNLİKLE &gt;40 mmol/L olamaz (kimyasal flebit ve şiddetli ağrı).</div>
+                                    <div>2. İnfüzyon hızı kardiyak elektrofizyolojik güvenlik için saatte 10-20 mmol sınırını aşamaz.</div>
+                                    <div>3. <strong>HAYATİ YASAK:</strong> Asılı durumdaki esnek infüzyon torbalarına manuel enjektörle konsantre KCl ampulü enjekte etmek KESİNLİKLE YASAKTIR! Potasyum tabana çökerek ani letal bolus asistoli yapabilir. Fabrikasyon hazır premiks torbalar zorunludur.</div>
+                                    <div>4. İdrar çıkışı teyit edilmeden ve serum K⁺ düzeyi kontrol edilmeden idameye potasyum eklenemez.</div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- Detay Kartı 3: Rehber Yapılması ve Yapılmaması Gerekenler Tablosu -->
+                        <details id="details-fluid-dos-donts" class="group/sub rounded-lg border border-slate-800/80 bg-slate-900/40 overflow-hidden text-[11px]">
+                            <summary class="flex items-center justify-between px-3 py-2 select-none cursor-pointer hover:bg-slate-800/50 text-slate-300 font-semibold list-none [&::-webkit-details-marker]:hidden transition-colors">
+                                <span class="flex items-center gap-1.5 text-xs">
+                                    <span>📋</span>
+                                    <span>Klinik Kılavuz İlkeleri (Yapılması ve Yapılmaması Gerekenler)</span>
+                                </span>
+                                <svg class="w-3.5 h-3.5 text-slate-400 group-open/sub:rotate-180 transition-transform duration-150 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </summary>
+                            <div class="p-3 border-t border-slate-800/60 overflow-x-auto space-y-1.5">
+                                <table class="w-full text-[10px] text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-800 text-slate-400 font-semibold">
+                                            <th class="py-1 px-1 w-24">Klinik Alan</th>
+                                            <th class="py-1 px-1 text-emerald-400">Yapılması Gerekenler (Kılavuz Önerisi)</th>
+                                            <th class="py-1 px-1 text-rose-400">Yapılmaması Gerekenler (Hatalı Uygulama)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                                        <tr>
+                                            <td class="py-1 px-1 font-semibold text-slate-200">Reçeteleme</td>
+                                            <td class="py-1 px-1 text-emerald-200">Sıvı tipi, net hacim, infüzyon hızı ve elektrolit içeriği net yazılmalı; 24 saatte bir gözden geçirilmeli.</td>
+                                            <td class="py-1 px-1 text-rose-200">"Açık kalsın", "damar yolu açık tutulsun" gibi ucu açık, hacmi belirsiz istemler yazılmamalı.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-1 px-1 font-semibold text-slate-200">Sıvı Seçimi</td>
+                                            <td class="py-1 px-1 text-emerald-200">Pediatrik ve yetişkin başlangıç idamesinde plazmaya yakın izotonik kristalloidler (%0.9 NaCl/dengeli) seçilmeli.</td>
+                                            <td class="py-1 px-1 text-rose-200">Rutin idame amacıyla kontrolsüz serbest su oluşturan hipotonik sıvılar (%0.18, %0.2 NaCl) başlanmamalı.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-1 px-1 font-semibold text-slate-200">İzlem &amp; Denge</td>
+                                            <td class="py-1 px-1 text-emerald-200">Saatlik girdi-çıktı, 12s ara toplam ve 24s kümülatif denge çıkarılmalı; hastalar düzenli tartılmalı.</td>
+                                            <td class="py-1 px-1 text-rose-200">Sıvı takibinde sadece idrar miktarına güvenilmemeli; kilo artışları ve pozitif balans göz ardı edilmemeli.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-1 px-1 font-semibold text-slate-200">Laboratuvar</td>
+                                            <td class="py-1 px-1 text-emerald-200">Başlangıçta ve en az 24 saatte bir üre, kreatinin, Na⁺, K⁺, Cl⁻ ve kan glukozu ölçülmeli.</td>
+                                            <td class="py-1 px-1 text-rose-200">Biyokimyasal kontrol yapılmaksızın 48 saatten uzun süre körlemesine potasyumlu infüzyon sürdürülmemeli.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-1 px-1 font-semibold text-slate-200">Hiperkloremi</td>
+                                            <td class="py-1 px-1 text-emerald-200">Klor &gt;110 mmol/L ise klor ve asit-baz durumu izlenmeli, asidozda dengeli kristalloidlere geçilmeli.</td>
+                                            <td class="py-1 px-1 text-rose-200">Serum kloru yükselen veya baz açığı derinleşen hastada ısrarla %0.9 NaCl verilmemeli.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-1 px-1 font-semibold text-slate-200">Gizli Sıvı</td>
+                                            <td class="py-1 px-1 text-emerald-200">Antibiyotik ve analjezik sulandırma hacmi (500-1000 mL) toplam idame hesabından düşülmeli.</td>
+                                            <td class="py-1 px-1 text-rose-200">İlaç sulandırmalarından gelen gizli su ve 50-150 mmol sodyum yükü göz ardı edilmemeli.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-1 px-1 font-semibold text-slate-200">Enteral Geçiş</td>
+                                            <td class="py-1 px-1 text-emerald-200">Oral/enteral alım başladığı anda intravenöz sıvı hızı kademeli azaltılarak derhal kesilmeli.</td>
+                                            <td class="py-1 px-1 text-rose-200">Hasta oral beslenirken eşzamanlı olarak tam doz IV idame sürdürülmemeli.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+
+                        <!-- Detay Kartı 4: Gizli Sıvı (Fluid Creep) & Kümülatif Balans Takibi -->
+                        <details id="details-fluid-creep-tracker" class="group/sub rounded-lg border border-slate-800/80 bg-slate-900/40 overflow-hidden text-[11px]">
+                            <summary class="flex items-center justify-between px-3 py-2 select-none cursor-pointer hover:bg-slate-800/50 text-slate-300 font-semibold list-none [&::-webkit-details-marker]:hidden transition-colors">
+                                <span class="flex items-center gap-1.5 text-xs">
+                                    <span>💧</span>
+                                    <span>Gizli Sıvı (Fluid Creep) ve Kümülatif Sıvı Dengesi Hesabı</span>
+                                </span>
+                                <svg class="w-3.5 h-3.5 text-slate-400 group-open/sub:rotate-180 transition-transform duration-150 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </summary>
+                            <div class="p-3 border-t border-slate-800/60 space-y-2 text-[10px] leading-relaxed text-slate-300">
+                                <div>
+                                    Yatan hastalarda intravenöz antibiyotikler (piperasilin/tazobaktam, vankomisin, meropenem), analjezikler (parasetamol), sedasyon infüzyonları ve damar yolu yıkama sıvıları günde <strong>500 - 1000 mL</strong> fazladan gizli sıvı hacmi ve <strong>50 - 150 mmol</strong> gizli sodyum yükler.
+                                </div>
+                                <div id="container-fluid-creep-calc-preview" class="p-2 rounded bg-slate-950/80 border border-slate-800 space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-400">Hesaplanan Baz İdame:</span>
+                                        <span id="text-creep-base-vol" class="font-bold text-sky-400">-- mL/gün</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-amber-300">
+                                        <span>Düşülen Gizli Sıvı (Fluid Creep):</span>
+                                        <span id="text-creep-deducted-vol" class="font-bold">-0 mL/gün</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-t border-slate-800 pt-1 text-emerald-400 font-bold">
+                                        <span>Reçete Edilecek Net IV İdame Hızı:</span>
+                                        <span id="text-creep-net-rate">-- mL/saat</span>
+                                    </div>
+                                </div>
+                                <div class="text-slate-400 text-[9px]">
+                                    * Kümülatif aşırı hidrasyon (Fluid Overload &gt;%10), kılcal endotelyal glikokaliks tabakasını yırtarak akciğer ödemi, paralitik ileus ve doku hipoperfüzyonunu şiddetlendirir.
+                                </div>
+                            </div>
+                        </details>
+
+                    </div>
+
                 </div>
             </details>
                 </div>

@@ -12,7 +12,12 @@ import type { PatientAgeResult } from './biometryController';
 import { renderClinicalCardResult } from './biometryController';
 import { analyzeBloodGas } from '../engines/bloodGasEngine';
 import { calculateCorrectedCalcium } from '../engines/calciumEngine';
-import { calculateMaintenanceFluid, calculateSodiumCorrection } from '../engines/fluidEngine';
+import { 
+    calculateMaintenanceFluid, 
+    calculateSodiumCorrection, 
+    FLUID_KNOWLEDGE_TOPICS, 
+    ClinicalFluidCondition 
+} from '../engines/fluidEngine';
 import { calculateInfusionRate, calculateGIR } from '../engines/infusionEngine';
 import { calculateQTc, calculateAxis } from '../engines/cardiacEngine';
 import { convertSteroids, calculateHOMAIR } from '../engines/endocrineEngine';
@@ -26,7 +31,84 @@ import {
     evaluateRumackMatthew, 
     calculateCURB65 
 } from '../engines/nephroToxEngine';
-import { getEl, getVal, getNum, getChk, parseNum } from '../utils/domUtils';
+import { getEl, getVal, getNum, getChk, parseNum, escapeHtml } from '../utils/domUtils';
+
+let activeFluidTopicId: string | null = null;
+
+function toggleFluidKnowledgeTopic(topicId: string): void {
+    const container = getEl('container-fluid-bubble-topic-detail');
+    if (!container) return;
+
+    if (activeFluidTopicId === topicId && !container.classList.contains('hidden')) {
+        container.classList.add('hidden');
+        activeFluidTopicId = null;
+        updateFluidTopicButtons();
+        return;
+    }
+
+    const topic = FLUID_KNOWLEDGE_TOPICS.find(t => t.id === topicId);
+    if (!topic) return;
+
+    activeFluidTopicId = topicId;
+    container.innerHTML = `
+        <div class="flex items-start justify-between gap-2 border-b border-cyan-800/60 pb-1.5">
+            <div class="flex items-center gap-2">
+                <span class="text-base">${topic.icon}</span>
+                <div>
+                    <span class="font-bold text-slate-100">${escapeHtml(topic.title)}</span>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 ml-2 font-normal">${escapeHtml(topic.badgeText)}</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close-fluid-bubble p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors" title="Kapat">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <p class="text-[11px] text-cyan-100/90 leading-relaxed font-medium">${escapeHtml(topic.summary)}</p>
+        <ul class="space-y-1 text-[10px] text-slate-300">
+            ${topic.bullets.map(b => `<li class="flex items-start gap-1.5 leading-snug"><span class="text-cyan-400 shrink-0 mt-0.5">•</span><span>${escapeHtml(b)}</span></li>`).join('')}
+        </ul>
+        <div class="text-[9px] text-slate-500 pt-1 border-t border-slate-800/60 flex items-center justify-between">
+            <span>Kılavuz / Kaynak: <strong class="text-slate-400">${escapeHtml(topic.guidelineRef)}</strong></span>
+            <span class="text-cyan-400 font-mono text-[8px]">5R CLINICAL ENGINE</span>
+        </div>
+    `;
+    container.classList.remove('hidden');
+    updateFluidTopicButtons();
+}
+
+function updateFluidTopicButtons(): void {
+    if (typeof document === 'undefined') return;
+    const buttons = document.querySelectorAll<HTMLButtonElement>('.btn-fluid-bubble');
+    buttons.forEach(btn => {
+        const id = btn.getAttribute('data-fluid-topic');
+        if (id === activeFluidTopicId) {
+            btn.classList.add('bg-cyan-950/70', 'border-cyan-500/80', 'text-cyan-200', 'ring-1', 'ring-cyan-500/30');
+            btn.classList.remove('bg-slate-900', 'border-slate-700/60', 'text-slate-300');
+        } else {
+            btn.classList.remove('bg-cyan-950/70', 'border-cyan-500/80', 'text-cyan-200', 'ring-1', 'ring-cyan-500/30');
+            btn.classList.add('bg-slate-900', 'border-slate-700/60', 'text-slate-300');
+        }
+    });
+}
+
+if (typeof document !== 'undefined') {
+    document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        if (target.closest('.btn-close-fluid-bubble')) {
+            const container = getEl('container-fluid-bubble-topic-detail');
+            if (container) container.classList.add('hidden');
+            activeFluidTopicId = null;
+            updateFluidTopicButtons();
+            return;
+        }
+        const bubbleBtn = target.closest('.btn-fluid-bubble') as HTMLElement | null;
+        if (bubbleBtn) {
+            const topicId = bubbleBtn.getAttribute('data-fluid-topic');
+            if (topicId) toggleFluidKnowledgeTopic(topicId);
+        }
+    });
+}
 
 export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     const y = ageData.y;
@@ -34,30 +116,154 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     const totalMonths = (y === null && m === null) ? null : (m !== null ? m : (y !== null ? y * 12 : null));
     const isNeonate = (ageData.days !== null && ageData.days !== undefined && ageData.days <= 28);
 
-    // 1. İDAME SIVI (Yenidoğan Olmayan Hastalar İçin Holliday-Segar)
+    // 1. İDAME SIVI (NICE CG174, AAP 2018, KDIGO, EASL & Holliday-Segar)
     const fTemp = getNum('input-temp');
     const neoFluidBanner = getEl('container-neonatal-fluid-banner');
     const outDailyFluid = getEl('output-daily-fluid');
     const outHourlyFluid = getEl('output-hourly-fluid');
+    const outRatePerKg = getEl('output-fluid-rate-per-kg');
+    const outMethodBadge = getEl('output-fluid-method-badge');
+    const outDailyNa = getEl('output-daily-na');
+    const outDailyK = getEl('output-daily-k');
+    const outDailyCl = getEl('output-daily-cl');
+    const outDailyGlu = getEl('output-daily-glu');
+    const outSolutionRec = getEl('output-fluid-recommendation');
+    const containerFluidWarnings = getEl('container-fluid-warnings');
+    const textOralWarning = getEl('text-fluid-oral-warning');
+    const textCreepBase = getEl('text-creep-base-vol');
+    const textCreepDeducted = getEl('text-creep-deducted-vol');
+    const textCreepNetRate = getEl('text-creep-net-rate');
+
+    const fluidCondition = (getVal('select-fluid-condition') as ClinicalFluidCondition) || 'standard';
+    const fluidCreep = getNum('input-fluid-creep');
+    const urineOutput = getNum('input-fluid-urine');
+    const isOralTol = getChk('chk-fluid-oral');
+
+    if (textOralWarning) {
+        if (isOralTol) textOralWarning.classList.remove('hidden');
+        else textOralWarning.classList.add('hidden');
+    }
 
     if (!appState.biometry.weightKg) {
         if (!isNeonate && neoFluidBanner) neoFluidBanner.classList.add('hidden');
         appState.medicine.fluid = null;
         if (outDailyFluid) outDailyFluid.textContent = '--';
         if (outHourlyFluid) outHourlyFluid.textContent = '--';
+        if (outRatePerKg) outRatePerKg.textContent = '--';
+        if (outDailyNa) outDailyNa.textContent = '--';
+        if (outDailyK) outDailyK.textContent = '--';
+        if (outDailyCl) outDailyCl.textContent = '--';
+        if (outDailyGlu) outDailyGlu.textContent = '--';
+        if (outSolutionRec) outSolutionRec.textContent = '--';
+        if (containerFluidWarnings) {
+            containerFluidWarnings.innerHTML = '';
+            containerFluidWarnings.classList.add('hidden');
+        }
     } else if (!isNeonate) {
         if (neoFluidBanner) neoFluidBanner.classList.add('hidden');
         appState.medicine.neonatalFluid = null;
         const maintFluid = calculateMaintenanceFluid(appState.biometry.weightKg, fTemp || undefined, {
             ibwKg: appState.biometry.ibwKg,
             ageYears: appState.biometry.ageYears,
-            isObese: appState.biometry.isObese
+            isObese: appState.biometry.isObese,
+            gender: appState.biometry.gender,
+            heightCm: appState.biometry.heightCm,
+            clinicalCondition: fluidCondition,
+            urineOutputMl24h: urineOutput,
+            fluidCreepMl24h: fluidCreep,
+            bsaM2: appState.biometry.bsa,
+            serumSodium: getNum('input-serum-na') || undefined,
+            hasOralIntake: isOralTol
         });
         appState.medicine.fluid = maintFluid;
         if (maintFluid) {
-            const ibwSuffix = maintFluid.isIbwUsed ? ' (İdeal Kilo)' : '';
-            if (outDailyFluid) outDailyFluid.textContent = `${maintFluid.dailyVolume} mL${ibwSuffix}`;
-            if (outHourlyFluid) outHourlyFluid.textContent = `${maintFluid.hourlyRate} mL/s`;
+            const ibwSuffix = maintFluid.isIbwUsed ? ' (İdeal/DVA)' : '';
+            if (outDailyFluid) {
+                if (maintFluid.fluidCreepDeduction) {
+                    outDailyFluid.textContent = `${maintFluid.fluidCreepDeduction.netDailyVolume} mL (Net)`;
+                } else {
+                    outDailyFluid.textContent = `${maintFluid.dailyVolume} mL${ibwSuffix}`;
+                }
+            }
+            if (outHourlyFluid) {
+                if (maintFluid.fluidCreepDeduction) {
+                    outHourlyFluid.textContent = `${maintFluid.fluidCreepDeduction.netHourlyRate} mL/s`;
+                } else {
+                    outHourlyFluid.textContent = `${maintFluid.hourlyRate} mL/s`;
+                }
+            }
+            if (outRatePerKg) {
+                const perKg = (maintFluid.dailyVolume / (maintFluid.effectiveWeightKg || appState.biometry.weightKg)).toFixed(0);
+                outRatePerKg.textContent = `~${perKg} mL/kg/gün`;
+            }
+            if (outMethodBadge) {
+                if (maintFluid.methodUsed === 'ORGAN_RESTRICTION_HF') {
+                    outMethodBadge.textContent = 'Kalp Yetersizliği';
+                    outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800/60 font-medium truncate max-w-[110px]';
+                } else if (maintFluid.methodUsed === 'ORGAN_RESTRICTION_AKI') {
+                    outMethodBadge.textContent = 'KDIGO AKI (K⁺ Yasak)';
+                    outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-800/60 font-medium truncate max-w-[110px]';
+                } else if (maintFluid.methodUsed === 'ORGAN_RESTRICTION_CIRRHOSIS') {
+                    outMethodBadge.textContent = 'EASL Siroz Assiti';
+                    outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-800/60 font-medium truncate max-w-[110px]';
+                } else if (maintFluid.methodUsed === 'ORGAN_RESTRICTION_SIADH') {
+                    outMethodBadge.textContent = 'SIADH Kısıtlaması';
+                    outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-medium truncate max-w-[110px]';
+                } else if (maintFluid.methodUsed === 'ADULT_OBESITY_ABW') {
+                    outMethodBadge.textContent = 'DVA Devine Obezite';
+                    outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-800/60 font-medium truncate max-w-[110px]';
+                } else if (maintFluid.methodUsed === 'ELDERLY_FRAIL') {
+                    outMethodBadge.textContent = 'Yaşlı / Kırılgan 22mL/kg';
+                    outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700 font-medium truncate max-w-[110px]';
+                } else {
+                    outMethodBadge.textContent = 'Holliday-Segar / 4-2-1';
+                    outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-emerald-400 border border-slate-700/50 font-medium truncate max-w-[110px]';
+                }
+            }
+
+            if (maintFluid.electrolytes) {
+                if (outDailyNa) outDailyNa.textContent = `~${maintFluid.electrolytes.sodiumMmolDaily.target} mmol`;
+                if (outDailyK) {
+                    if (maintFluid.electrolytes.potassiumMmolDaily.target === 0) {
+                        outDailyK.textContent = '0 (YASAK)';
+                        outDailyK.className = 'font-bold text-rose-400';
+                    } else {
+                        outDailyK.textContent = `~${maintFluid.electrolytes.potassiumMmolDaily.target} mmol`;
+                        outDailyK.className = 'font-bold text-amber-300';
+                    }
+                }
+                if (outDailyCl) outDailyCl.textContent = `~${maintFluid.electrolytes.chlorideMmolDaily.target} mmol`;
+                if (outDailyGlu) outDailyGlu.textContent = `${maintFluid.electrolytes.glucoseGramsDaily.target}g (${maintFluid.electrolytes.glucoseGramsDaily.kcal} kcal)`;
+            }
+
+            if (outSolutionRec) {
+                outSolutionRec.textContent = maintFluid.fluidTypeRecommendation;
+            }
+
+            if (textCreepBase) textCreepBase.textContent = `${maintFluid.dailyVolume} mL/gün`;
+            if (textCreepDeducted) {
+                const deducted = maintFluid.fluidCreepDeduction?.fluidCreepMl || 0;
+                textCreepDeducted.textContent = `-${deducted} mL/gün`;
+            }
+            if (textCreepNetRate) {
+                const netRate = maintFluid.fluidCreepDeduction?.netHourlyRate || maintFluid.hourlyRate;
+                textCreepNetRate.textContent = `${netRate} mL/saat (${maintFluid.fluidCreepDeduction ? maintFluid.fluidCreepDeduction.netDailyVolume : maintFluid.dailyVolume} mL/gün)`;
+            }
+
+            if (containerFluidWarnings) {
+                if (maintFluid.warnings && maintFluid.warnings.length > 0) {
+                    containerFluidWarnings.innerHTML = maintFluid.warnings.map(w => {
+                        const isDanger = w.includes('🚨');
+                        const isWarning = w.includes('⚠️');
+                        const bgClass = isDanger ? 'bg-rose-950/40 border-rose-800/60 text-rose-200' : (isWarning ? 'bg-amber-950/40 border-amber-800/60 text-amber-200' : 'bg-slate-900 border-slate-700/60 text-slate-300');
+                        return `<div class="p-2 rounded-lg border ${bgClass} leading-tight">${escapeHtml(w)}</div>`;
+                    }).join('');
+                    containerFluidWarnings.classList.remove('hidden');
+                } else {
+                    containerFluidWarnings.innerHTML = '';
+                    containerFluidWarnings.classList.add('hidden');
+                }
+            }
         }
     }
 

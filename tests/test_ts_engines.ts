@@ -51,6 +51,9 @@ import {
   standardNormalCDF,
   calculateNeonatalFluid,
   calculateMaintenanceFluid,
+  calculateDevineWeight,
+  IV_SOLUTIONS_CATALOG,
+  FLUID_KNOWLEDGE_TOPICS,
   calculateSodiumCorrection,
   calculateQTc,
   calculateAxis,
@@ -4123,6 +4126,67 @@ assert.ok(burnChild);
 assert.strictEqual(burnChild.requiresDextroseMaintenance, true);
 assert.strictEqual(burnChild.maintenanceDailyMl, 1500); // 20 kg = 1000 + 10*50 = 1500 mL
 assert.strictEqual(burnChild.maintenanceHourlyMl, 60); // 4-2-1 kuralı: 40 + 20 = 60 mL/s
+
+// 36.6 NICE CG174 & GIFTASUP: 24s Elektrolit & Glukoz İhtiyaçları
+const standardAdultFluid = calculateMaintenanceFluid(70, null, { ageYears: 35 });
+assert.ok(standardAdultFluid);
+assert.ok(standardAdultFluid.electrolytes);
+assert.strictEqual(standardAdultFluid.electrolytes.sodiumMmolDaily.target, 70); // ~1 mmol/kg/gün
+assert.strictEqual(standardAdultFluid.electrolytes.potassiumMmolDaily.target, 70); // ~1 mmol/kg/gün
+assert.strictEqual(standardAdultFluid.electrolytes.glucoseGramsDaily.target, 75); // 50-100 g/gün
+assert.strictEqual(standardAdultFluid.electrolytes.glucoseGramsDaily.kcal, 300); // 75 * 4 = 300 kcal
+assert.ok(standardAdultFluid.potassiumSafetyRules.manualInjectionForbidden, 'Asılı torbaya manuel KCl eklenmesi yasak olmalıdır');
+
+// 36.7 Kalp Yetersizliği Sıvı Kısıtlama Protokolü (Önceki gün idrarı + 500 mL)
+const hfFluidWithUrine = calculateMaintenanceFluid(70, null, { clinicalCondition: 'heart_failure', urineOutputMl24h: 900 });
+assert.ok(hfFluidWithUrine);
+assert.strictEqual(hfFluidWithUrine.dailyVolume, 1400); // 900 + 500 = 1400 mL
+assert.strictEqual(hfFluidWithUrine.hourlyRate, 58); // 1400 / 24 = 58 mL/s
+assert.ok(hfFluidWithUrine.warnings?.some(w => w.includes('Kalp Yetersizliği Kısıtlaması')));
+
+// 36.8 KDIGO Akut Böbrek Hasarı / KBY: Potasyum Kontrendikasyonu & Oligürik Hacim
+const akiFluid = calculateMaintenanceFluid(60, null, { clinicalCondition: 'renal_failure', urineOutputMl24h: 300 });
+assert.ok(akiFluid);
+assert.strictEqual(akiFluid.dailyVolume, 750); // 300 + 450 = 750 mL
+assert.strictEqual(akiFluid.electrolytes?.potassiumMmolDaily.target, 0, 'Böbrek yetmezliğinde potasyum 0 olmalıdır');
+assert.ok(akiFluid.warnings?.some(w => w.includes('TAMAMEN ÇIKARILMALIDIR')));
+assert.ok(akiFluid.warnings?.some(w => w.includes('Renal Kortikal Vazokonstriksiyon Kalkanı')));
+
+// 36.9 EASL Karaciğer Sirozu Assiti: Sodyum 80-120 mmol & Dilüsyonel Hiponatremi Kısıtlaması (<125 Na)
+const cirrhosisHypoNa = calculateMaintenanceFluid(70, null, { clinicalCondition: 'cirrhosis_ascites', serumSodium: 121 });
+assert.ok(cirrhosisHypoNa);
+assert.strictEqual(cirrhosisHypoNa.dailyVolume, 1200, 'Dilüsyonel hiponatremide sıvı 1000-1500 mL aralığına kısıtlanmalıdır');
+assert.strictEqual(cirrhosisHypoNa.electrolytes?.sodiumMmolDaily.target, 100); // 80-120 mmol/gün hedefi
+assert.ok(cirrhosisHypoNa.warnings?.some(w => w.includes('Dilüsyonel hiponatremi')));
+
+// 36.10 SIADH / Non-Ozmotik ADH Kısıtlaması (%65 Hacim & Hipotonik Yasağı)
+const siadhFluid = calculateMaintenanceFluid(30, null, { ageYears: 10, clinicalCondition: 'siadh' });
+assert.ok(siadhFluid);
+// 30 kg için standart Holliday-Segar: 1500 + 10*20 = 1700 mL -> %65'i = 1105 mL
+assert.strictEqual(siadhFluid.dailyVolume, 1105);
+assert.ok(siadhFluid.warnings?.some(w => w.includes('Hipotonik sıvılar KESİNLİKLE KONTRENDİKEDİR')));
+
+// 36.11 Gizli Sıvı (Fluid Creep) Düşümü
+const creepFluid = calculateMaintenanceFluid(70, null, { fluidCreepMl24h: 600 });
+assert.ok(creepFluid);
+assert.ok(creepFluid.fluidCreepDeduction);
+assert.strictEqual(creepFluid.dailyVolume, 2500); // Baz hacim
+assert.strictEqual(creepFluid.fluidCreepDeduction.fluidCreepMl, 600);
+assert.strictEqual(creepFluid.fluidCreepDeduction.netDailyVolume, 1900); // 2500 - 600 = 1900 mL
+assert.strictEqual(creepFluid.fluidCreepDeduction.netHourlyRate, 79); // 1900 / 24 = 79.2 -> 79 mL/s
+
+// 36.12 Devine Formülü & DVA (Düzeltilmiş Vücut Ağırlığı)
+const devineCalc = calculateDevineWeight(175, 110, 'male');
+assert.ok(devineCalc);
+assert.strictEqual(devineCalc.ibwKg, 70.7); // 50 + 0.9 * (175 - 152) = 70.7 kg
+assert.strictEqual(devineCalc.abwKg, 86.4); // 70.7 + 0.4 * (110 - 70.7) = 86.42 -> 86.4 kg
+assert.strictEqual(devineCalc.bmi, 35.9);
+
+// 36.13 Kristaloid Katalog & Konu Baloncukları Veri Bütünlüğü
+assert.strictEqual(IV_SOLUTIONS_CATALOG.length, 7, '7 temel kristaloid katalogda bulunmalıdır');
+assert.strictEqual(FLUID_KNOWLEDGE_TOPICS.length, 7, '7 rehber konu baloncuk kartı tanımlanmalıdır');
+assert.ok(IV_SOLUTIONS_CATALOG.some(s => s.id === 'ns' && s.naMeqL === 154 && s.clMeqL === 154));
+assert.ok(IV_SOLUTIONS_CATALOG.some(s => s.id === 'd4_fifth_ns' && s.inVivoTonicity.toLowerCase().includes('derin hipotonik')));
 
 console.log('✓ Motor 9 İdame Sıvı Motoru verified (100% healthy)');
 
