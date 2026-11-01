@@ -82,6 +82,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
                 <option value="2">2: Huzursuz inleme / anlamsız sesler</option>
                 <option value="1">1: Yanıtsız</option>
                 <option value="1T">1T: Entübe / Trakeostomi</option>
+                <option value="NT">NT: Değerlendirilemez (Yüz travması / Sedasyon)</option>
             `;
         } else {
             selectV.innerHTML = `
@@ -92,6 +93,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
                 <option value="2">2: Anlamsız sesler</option>
                 <option value="1">1: Yanıtsız</option>
                 <option value="1T">1T: Entübe / Trakeostomi</option>
+                <option value="NT">NT: Değerlendirilemez (Yüz travması / Afazi / Sedasyon)</option>
             `;
         }
         if (curV) selectV.value = curV;
@@ -144,10 +146,10 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
             const isSevere = gcsVal.total <= 8;
             const isModerate = gcsVal.total >= 9 && gcsVal.total <= 12;
             
-            // Renk ve stil ataması (HATA-M4-004)
-            if (isSevere && !gcsVal.isEntubated) {
+            // Renk ve stil ataması (HATA-M4-004 & HATA-GCS-001)
+            if (isSevere && !gcsVal.isEntubated && !gcsVal.isNotTestable) {
                 gRes.className = 'text-[10px] p-2.5 border rounded-lg space-y-1 bg-rose-950/40 border-rose-600/50 text-rose-200';
-            } else if (isModerate || (isSevere && gcsVal.isEntubated)) {
+            } else if (isModerate || (isSevere && (gcsVal.isEntubated || gcsVal.isNotTestable))) {
                 gRes.className = 'text-[10px] p-2.5 border rounded-lg space-y-1 bg-amber-950/40 border-amber-600/50 text-amber-200';
             } else {
                 gRes.className = 'text-[10px] p-2.5 border rounded-lg space-y-1 bg-emerald-950/40 border-emerald-600/50 text-emerald-200';
@@ -157,7 +159,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
             const scoreStr = gcsVal.formattedScore || `${gcsVal.total}`;
             let html = `<div class="font-bold text-xs">${title}: ${scoreStr} (${gcsVal.interpretation})</div>`;
             if (gcsVal.airwayRisk) {
-                const alertColor = gcsVal.isEntubated ? 'text-amber-400 font-semibold' : 'text-rose-400 font-bold';
+                const alertColor = (gcsVal.isEntubated || gcsVal.isNotTestable) ? 'text-amber-400 font-semibold' : 'text-rose-400 font-bold';
                 html += `<div class="${alertColor}">${gcsVal.airwayRisk}</div>`;
             }
             gRes.innerHTML = html;

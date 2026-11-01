@@ -139,7 +139,7 @@ export function calculatePatientAge(): PatientAgeResult {
             weeks = Math.round(ageVal * 52.14);
             hours = days * 24;
             formatted = `${y} Yaş`;
-            ageGroupTag = y < 1 ? 'Süt Çocuğu' : (y < 6 ? 'Oyun Çocuğu' : (y < 12 ? 'Okul Çocuğu' : (y < 18 ? 'Ergen' : (y < 65 ? 'Erişkin' : 'Geriatrik (65Y+)'))));
+            ageGroupTag = y < 1 ? 'Süt Çocuğu' : (y < 3 ? 'Oyun Çocuğu (1-3Y)' : (y < 6 ? 'Okul Öncesi (3-5Y)' : (y < 12 ? 'Okul Çocuğu' : (y < 18 ? 'Ergen' : (y < 65 ? 'Erişkin' : 'Geriatrik (65Y+)')))));
         } else if (unit === 'months') {
             y = +(ageVal / 12).toFixed(2);
             m = ageVal;
@@ -147,7 +147,7 @@ export function calculatePatientAge(): PatientAgeResult {
             weeks = +(days / 7).toFixed(1);
             hours = days * 24;
             formatted = `${m} Aylık`;
-            ageGroupTag = ageVal <= 1 ? 'Yenidoğan / Süt Çocuğu' : (ageVal <= 12 ? 'Süt Çocuğu (1-12A)' : 'Oyun Çocuğu');
+            ageGroupTag = ageVal <= 1 ? 'Yenidoğan / Süt Çocuğu' : (ageVal <= 12 ? 'Süt Çocuğu (1-12A)' : (ageVal < 36 ? 'Oyun Çocuğu (1-3Y)' : 'Okul Öncesi (3-5Y)'));
         } else if (unit === 'weeks') {
             weeks = ageVal;
             days = Math.round(ageVal * 7);
@@ -209,8 +209,12 @@ export function calculatePatientAge(): PatientAgeResult {
             } else if (days < 365) {
                 ageGroupTag = 'Süt Çocuğu (1-12A)';
                 formatted = `${Math.floor(m)} Aylık (${weeks} Hf / ${days}G)`;
+            } else if (y < 3) {
+                ageGroupTag = 'Oyun Çocuğu (1-3Y)';
+                const remM = Math.floor((days % 365.25) / 30.4375);
+                formatted = `${Math.floor(y)} Yaş ${remM ? remM + ' Ay' : ''}`;
             } else if (y < 6) {
-                ageGroupTag = 'Oyun Çocuğu (1-5Y)';
+                ageGroupTag = 'Okul Öncesi (3-5Y)';
                 const remM = Math.floor((days % 365.25) / 30.4375);
                 formatted = `${Math.floor(y)} Yaş ${remM ? remM + ' Ay' : ''}`;
             } else if (y < 12) {

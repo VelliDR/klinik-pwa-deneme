@@ -63,9 +63,19 @@ export function initEcgUiController(onUpdateAllTabs: () => void): void {
     const msBox = speed === 50 ? 20 : 40;
     const smallBoxes = largeBoxes * 5;
     const rrMs = smallBoxes * msBox;
-    if (ecgRrBoxesInput) ecgRrBoxesInput.value = String(smallBoxes);
-    if (ecgRrInput) ecgRrInput.value = String(rrMs);
-    if (ecgHrInput) ecgHrInput.value = String(Math.round(60000 / rrMs));
+    if (ecgRrBoxesInput) {
+      ecgRrBoxesInput.value = String(smallBoxes);
+      ecgRrBoxesInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (ecgRrInput) {
+      ecgRrInput.value = String(rrMs);
+      ecgRrInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (ecgHrInput) {
+      ecgHrInput.value = String(Math.round(60000 / rrMs));
+      ecgHrInput.dispatchEvent(new Event('input', { bubbles: true }));
+      ecgHrInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     onUpdateAllTabs();
   };
 

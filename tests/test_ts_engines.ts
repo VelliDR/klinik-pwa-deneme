@@ -5432,7 +5432,240 @@ assert.strictEqual(typeof isCacheWarm, 'boolean', 'isCacheWarm boolean durumu me
 
 console.log('✓ Motor 25 Dinamik SOAP, Akıllı Reçete & PWA Çevrimdışı Güvenlik Motoru verified (100% healthy)');
 
-console.log('\n🎉 ALL 51 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
+console.log('\n--- Section 52: Düşük Değerlikli Hatalar & Eksen Doğrulamaları (Adım 1-35 Hatalar) ---');
+// 52.1 EKSİK-STEROID-001: Steroid Mineralokortikoid Geçiş Uyarısı
+const dexNoTarget = convertSteroids({ sourceDrug: 'dexamethasone', doseMg: 4 });
+assert.ok(dexNoTarget?.mineralocorticoidWarning?.includes('düşük/sıfır mineralokortikoid'), 'Deksametazon mineralokortikoid geçiş notu içermelidir');
+
+const dexToHydro = convertSteroids({ sourceDrug: 'dexamethasone', doseMg: 4, targetDrug: 'hydrocortisone' });
+assert.ok(dexToHydro?.mineralocorticoidWarning?.includes('Hedef steroid (Hidrokortizon) yüksek mineralokortikoid'), 'Hedef Hidrokortizon mineralokortikoid uyarısı vermelidir');
+
+// 52.2 UYUM-SURG-001: Ranson Skoru Sayısal vs Checkbox Mantıksal VEYA (OR) Kontrolü
+const ransonManualAge = calculateRanson({
+  etiology: 'non_biliary',
+  ageYears: 50, // 50 < 55 ancak hekim kutuyu el ile işaretledi
+  ageO55: true,
+  wbcCount: 14000,
+  wbcO16: true
+});
+assert.strictEqual(ransonManualAge?.admissionScore, 2, 'ageYears < 55 olsa dahi ageO55 checkbox puanı eklenmelidir');
+
+// 52.3 HATA-EMERG-001 & UYUM-EMERG-001: 3 kg Yenidoğan Adrenalin & 35 kg Çocuk Sıvı Bolusu
+const neonateAnaph = calculateAnaphylaxisDoses(3, false);
+assert.strictEqual(neonateAnaph.adrenaline.doseMg, 0.03, '3 kg bebek için 0.01 mg/kg adrenaline 0.03 mg olmalıdır (0.05 ile 2 katına çıkmamalıdır)');
+assert.strictEqual(neonateAnaph.adrenaline.volumeMl, 0.03, '3 kg bebek için adrenalin hacmi 0.03 mL olmalıdır');
+
+const adolescentAnaph = calculateAnaphylaxisDoses(35, false);
+assert.strictEqual(adolescentAnaph.fluidBolus.volumeMl, 700, '35 kg çocuk için 20 mL/kg sıvı 700 mL olmalıdır (500 mL ile kısıtlanmamalıdır)');
+
+// 52.4 EKSİK-EMERG-001: Fenitoin İnfüzyonunda İn-line Filtre Uyarısı
+const statusChild = calculateStatusEpilepticusDoses(20, false);
+assert.ok(statusChild.phase3EstablishedStatus.phenytoin.instruction.includes('0.22–1.2 mikron in-line filtre'), 'Fenitoin aktif talimatında in-line filtre uyarısı bulunmalıdır');
+
+const statusLocked = calculateStatusEpilepticusDoses(0, false);
+assert.ok(statusLocked.phase3EstablishedStatus.phenytoin.instruction.includes('0.22–1.2 mikron in-line filtre'), 'Fenitoin kilitli talimatında in-line filtre uyarısı bulunmalıdır');
+
+// 52.5 EKSİK-NEWS-001: NEWS2 SpO2 Scale 2 (KOAH / Hiperkapnik Solunum Yetmezliği)
+const newsScale1 = calculateNEWS2(75, 120, 16, 36.8, 90, false, 'A', false);
+assert.strictEqual(newsScale1?.score, 3, 'Scale 1 standardında SpO2 %90 için 3 puan verilmelidir');
+
+const newsScale2Air = calculateNEWS2(75, 120, 16, 36.8, 90, false, 'A', true);
+assert.strictEqual(newsScale2Air?.score, 0, 'Scale 2 hiperkapnik modda %88-92 oda havasında hedef aralıktır (0 puan)');
+assert.strictEqual(newsScale2Air?.scale, 'Scale 2');
+
+const newsScale2Oxygen = calculateNEWS2(75, 120, 16, 36.8, 96, true, 'A', true);
+assert.strictEqual(newsScale2Oxygen?.score, 4, 'Scale 2 oksijenli %96 için SpO2 2 puan + O2 2 puan = 4 puan');
+
+// 52.6 EKSİK-DVT-001: Wells DVT İki Kademeli (Two-Tier) Risk Nesnesi
+const dvtTwoTierUnlikely = calculateWellsDVT({ activeCancer: true });
+assert.strictEqual(dvtTwoTierUnlikely.score, 1);
+assert.strictEqual(dvtTwoTierUnlikely.twoTierRisk.isLikely, false);
+assert.ok(dvtTwoTierUnlikely.twoTierRisk.risk.includes('Olası Değil'));
+
+const dvtTwoTierLikely = calculateWellsDVT({ activeCancer: true, calfSwelling: true });
+assert.strictEqual(dvtTwoTierLikely.score, 2);
+assert.strictEqual(dvtTwoTierLikely.twoTierRisk.isLikely, true);
+assert.ok(dvtTwoTierLikely.twoTierRisk.risk.includes('DVT Olası'));
+
+// 52.7 EKSİK-NEO-001: Preterm <35 Hafta B/A Oranı Eşikleri (Ahlfors & TND)
+const baPreterm33Normal = evaluateBilirubinAlbuminRatio({ tsbMgDl: 15.0, albuminGPerDl: 2.5, gestationalWeeks: 33, hasRiskFactors: false });
+assert.strictEqual(baPreterm33Normal?.threshold, 6.5, '33 hafta risksiz bebek için B/A eşiği 6.5 mg/g olmalıdır');
+
+const baPreterm33Risk = evaluateBilirubinAlbuminRatio({ tsbMgDl: 15.0, albuminGPerDl: 2.5, gestationalWeeks: 33, hasRiskFactors: true });
+assert.strictEqual(baPreterm33Risk?.threshold, 6.0, '33 hafta riskli bebek için B/A eşiği 6.0 mg/g olmalıdır');
+
+const baPreterm30Risk = evaluateBilirubinAlbuminRatio({ tsbMgDl: 12.0, albuminGPerDl: 2.5, gestationalWeeks: 30, hasRiskFactors: true });
+assert.strictEqual(baPreterm30Risk?.threshold, 5.5, '<32 hafta riskli bebek için B/A eşiği 5.5 mg/g olmalıdır');
+
+// 52.8 UYUM-BG-001 & EKSİK-VBG-001: Alveolar Gaz Denklemi Rakım (Barometrik Basınç) & VBG ΔpCO2
+const bgSeaLevel = analyzeBloodGas({ pH: 7.40, pCO2: 40, HCO3: 24, pO2: 90, FiO2: 21, barometricPressure: 760 });
+const bgAltitude = analyzeBloodGas({ pH: 7.40, pCO2: 40, HCO3: 24, pO2: 90, FiO2: 21, barometricPressure: 680 }); // Yüksek rakım
+assert.ok(bgSeaLevel?.oxygenation && bgAltitude?.oxygenation);
+assert.ok(bgAltitude.oxygenation.pao2Alveolar < bgSeaLevel.oxygenation.pao2Alveolar, 'Yüksek rakımda PAO2 deniz seviyesinden düşük olmalıdır');
+assert.strictEqual(bgAltitude.oxygenation.barometricPressure, 680);
+
+const bgVbgGradient = analyzeBloodGas({ pH: 7.32, pCO2: 52, HCO3: 26, sampleType: 'VBG', arterialPCO2: 40 });
+assert.ok(bgVbgGradient?.deltaPCO2);
+assert.strictEqual(bgVbgGradient.deltaPCO2.gradient, 12, '52 - 40 = 12 mmHg ΔpCO2 olmalıdır');
+assert.strictEqual(bgVbgGradient.deltaPCO2.isWidened, true, 'ΔpCO2 > 6 mmHg için isWidened true olmalıdır');
+
+// 52.9 UYUM-PRINT-001: Reçete Tablosunda break-inside: avoid Stili
+const sampleHtml = generatePrescriptionHTML(
+  { patientName: 'Ahmet Yılmaz', age: '45 Yaş', weightKg: 70 },
+  [{ name: 'Parol 500 mg Tablet', form: 'Tablet', dosage: '1 Tablet', morning: true, noon: true, evening: true, mealTiming: 'TOK', instructions: 'Tok karnına' }]
+);
+assert.ok(sampleHtml.includes('break-inside: avoid'), 'Reçete tablo satırında break-inside avoid stili bulunmalıdır');
+
+console.log('✓ Section 52: Düşük Değerlikli Hatalar & Eksen Doğrulamaları passed (100% healthy)');
+
+console.log('\n--- Section 53: Orta Değerlikli Hatalar & Eksen Doğrulamaları (HATA-INF-001 & HATA-CURB-001) ---');
+// 53.1 HATA-INF-001: Dopamin / Dobutamin Standart Dozlarında (5-20 mcg/kg/dk) Yanlış Aşırı Doz Alarmının Engellenmesi
+const dopamineStandard = calculateInfusionRate({
+  drugAmountMg: 200,
+  totalVolumeMl: 50,
+  weightKg: 70,
+  targetDose: 5.0,
+  doseUnit: 'mcg_kg_min'
+});
+assert.ok(dopamineStandard);
+assert.strictEqual(dopamineStandard.isExtremeDoseAlert, false, 'Dopamin 5 mcg/kg/dk standart başlangıç dozu için aşırı doz alarmı verilmemelidir');
+
+const dopamineUpperNormal = calculateInfusionRate({
+  drugAmountMg: 200,
+  totalVolumeMl: 50,
+  weightKg: 70,
+  targetDose: 15.0,
+  doseUnit: 'mcg_kg_min',
+  drugName: 'dopamin'
+});
+assert.ok(dopamineUpperNormal);
+assert.strictEqual(dopamineUpperNormal.isExtremeDoseAlert, false, 'Dopamin 15 mcg/kg/dk için aşırı doz alarmı verilmemelidir');
+
+const dopamineExtreme = calculateInfusionRate({
+  drugAmountMg: 200,
+  totalVolumeMl: 50,
+  weightKg: 70,
+  targetDose: 25.0,
+  doseUnit: 'mcg_kg_min',
+  drugName: 'dopamine'
+});
+assert.ok(dopamineExtreme);
+assert.strictEqual(dopamineExtreme.isExtremeDoseAlert, true, 'Dopamin >20 mcg/kg/dk için aşırı doz alarmı aktif olmalıdır');
+assert.ok(dopamineExtreme.extremeDoseWarning?.includes('Dopamin/Dobutamin'), 'Dopamin/Dobutamin özel uyarısı içermelidir');
+
+// 53.2 Noradrenalin / Adrenalin Potent Vazopressörlerde >2 mcg/kg/dk Kalkanı
+const noradStandard = calculateInfusionRate({
+  drugAmountMg: 4,
+  totalVolumeMl: 50,
+  weightKg: 70,
+  targetDose: 0.5,
+  doseUnit: 'mcg_kg_min',
+  drugName: 'noradrenalin'
+});
+assert.ok(noradStandard);
+assert.strictEqual(noradStandard.isExtremeDoseAlert, false, 'Noradrenalin 0.5 mcg/kg/dk normal aralıkta alarm vermemelidir');
+
+const noradExtreme = calculateInfusionRate({
+  drugAmountMg: 4,
+  totalVolumeMl: 50,
+  weightKg: 70,
+  targetDose: 3.0,
+  doseUnit: 'mcg_kg_min',
+  drugName: 'noradrenalin'
+});
+assert.ok(noradExtreme);
+assert.strictEqual(noradExtreme.isExtremeDoseAlert, true, 'Noradrenalin >2 mcg/kg/dk için aşırı doz alarmı aktif olmalıdır');
+
+// 53.3 HATA-CURB-001: 65 Yaş ve Üzeri Hastalarda CURB-65 / CRB-65 Puanlama ve Görünürlük Kalkanı
+const curbElderlyOnly = calculateCURB65({
+  ageYears: 70,
+  ageGte65: true,
+  confusion: false,
+  bunOver19: false,
+  respiratoryRateGte30: false,
+  hypotension: false
+});
+assert.strictEqual(curbElderlyOnly.score, 1, '70 yaşındaki hasta yalnızca yaştan 1 puan almalıdır');
+assert.strictEqual(curbElderlyOnly.crbScore, 1, 'CRB-65 skoru da 1 olmalıdır');
+assert.ok(curbElderlyOnly.mortalityPercent > 0, 'Mortalite yüzdesi hesaplanmalıdır');
+
+console.log('✓ Section 53: Orta Değerlikli Hatalar & Eksen Doğrulamaları passed (100% healthy)');
+
+// ============================================================================
+// BÖLÜM 54: YÜKSEK RİSKLİ HATALAR & GENİŞ ÇEVRELİ KLİNİK DOĞRULAMALAR
+// ============================================================================
+console.log('--- 54. TESTING HIGH-RISK CLINICAL CORRECTIONS & WIDE-ORBIT LOGIC ---');
+
+// 54.1 HATA-GCS-001: Verbal 'NT' (Not Testable) vs Entübe ('1T') Ayrımı
+const gcsNT = calculateGCS(4, 'NT', 6);
+assert.ok(gcsNT);
+assert.strictEqual(gcsNT.isNotTestable, true, 'Sözel NT için isNotTestable true olmalıdır');
+assert.strictEqual(gcsNT.isEntubated, false, 'Sözel NT için isEntubated false olmalıdır (entübe sanılmamalıdır)');
+assert.strictEqual(gcsNT.formattedScore, '11NT', 'Formatlı skor 11NT olmalıdır');
+assert.strictEqual(gcsNT.v, 'NT', 'v değeri NT olmalıdır');
+assert.ok(gcsNT.interpretation.includes('değerlendirilemedi'), 'Yorum NT sözel değerlendirilemedi içermelidir');
+assert.ok(gcsNT.airwayRisk?.includes('değerlendirilemedi'), 'Havayolu riski NT uyarısı içermelidir');
+
+const gcsT = calculateGCS(4, '1T', 6);
+assert.ok(gcsT);
+assert.strictEqual(gcsT.isEntubated, true, '1T için isEntubated true olmalıdır');
+assert.strictEqual(gcsT.isNotTestable, false, '1T için isNotTestable false olmalıdır');
+assert.strictEqual(gcsT.formattedScore, '11T', 'Formatlı skor 11T olmalıdır');
+assert.strictEqual(gcsT.v, '1T', 'v değeri 1T olmalıdır');
+
+// 54.2 HATA-HEART-001: HEART Skoru ageYears Entegrasyonu & Yaş Puanı Doğrulaması
+const heartYoung = calculateHEART({ ageYears: 30 });
+assert.strictEqual(heartYoung.score, 0, '30 yaşındaki hasta yaştan 0 puan almalıdır (varsayılan 50 yaş/1 puan verilmemelidir)');
+assert.strictEqual(heartYoung.riskLevel, 'Düşük Risk', '30 yaşında semptomsuz hasta düşük risk olmalıdır');
+
+const heartMiddle = calculateHEART({ ageYears: 50 });
+assert.strictEqual(heartMiddle.score, 1, '50 yaşındaki hasta yaştan 1 puan almalıdır');
+
+const heartElderly = calculateHEART({ ageYears: 70 });
+assert.strictEqual(heartElderly.score, 2, '70 yaşındaki hasta yaştan 2 puan almalıdır');
+
+const heartPed = calculateHEART({ ageYears: 14 });
+assert.strictEqual(heartPed.score, 0, '14 yaşındaki çocuk yaştan 0 puan almalıdır');
+assert.strictEqual(heartPed.isPediatricWarning, true, 'Pediatrik hastada pediatrik uyarı aktif olmalıdır');
+assert.ok(heartPed.recommendations.some(r => r.toLowerCase().includes('pediatrik')), 'Önerilerde pediatrik kılavuz uyarısı bulunmalıdır');
+
+// 54.3 HATA-CRAN-001: Dinamik Baş Büyüme Hızı & Yavaş Baş Büyümesi Taraması
+// 5 aylık süt çocuğu, 90 günde baş çevresi 41.0'dan 41.5'e (delta 0.5 cm, 0.17 cm/ay < min 0.6 cm/ay)
+const depressedCranialVelocity = calculateCranialScreening({
+  currentHeadCircCm: 41.5,
+  previousHeadCircCm: 41.0,
+  daysBetween: 90,
+  ageMonths: 5,
+  gender: 'male'
+});
+assert.strictEqual(depressedCranialVelocity.dynamicVelocity?.isVelocityDepressed, true, 'Aylık artış hızı min altındaysa delta >= 0.2 olsa bile isVelocityDepressed true olmalıdır');
+assert.strictEqual(depressedCranialVelocity.hydrocephalusRisk, 'WARNING', 'Yavaş büyüme hidrosefali/kraniyal riskini WARNING yapmalıdır');
+assert.ok(depressedCranialVelocity.riskTitle.includes('YAVAŞ BAŞ BÜYÜMESİ'), 'Risk başlığı Yavaş Baş Büyümesi içermelidir');
+assert.ok(depressedCranialVelocity.clinicalRecommendations.some(r => r.includes('Kraniyosinostoz')), 'Öneriler kraniyosinostoz uyarısı içermelidir');
+
+// 54.4 HATA-GIR-002: Obez/Ağır Çocukta Hipoglisemi Bolusu %10 Dekstroz Kalkanı
+const girPedHeavy = calculateGIR({
+  dextrosePercent: 10,
+  rateMlHr: 20,
+  weightKg: 45,
+  ageYears: 11
+});
+assert.ok(girPedHeavy);
+assert.strictEqual(girPedHeavy.hypoglycemiaBolus.solution, '%10 Dekstroz', '11 yaşında 45 kg çocuk hastada %10 Dekstroz önerilmelidir');
+assert.ok(!girPedHeavy.hypoglycemiaBolus.solution.includes('%50'), 'Pediatrik hastaya asla %50 Dekstroz önerilmemelidir');
+
+const girAdultPatient = calculateGIR({
+  dextrosePercent: 10,
+  rateMlHr: 80,
+  weightKg: 75,
+  ageYears: 45
+});
+assert.ok(girAdultPatient);
+assert.ok(girAdultPatient.hypoglycemiaBolus.solution.includes('%20') || girAdultPatient.hypoglycemiaBolus.solution.includes('%50'), 'Erişkinde %20/%50 Dekstroz önerilmelidir');
+
+console.log('✓ Section 54: Yüksek Riskli Hatalar & Geniş Çevreli Klinik Doğrulamalar passed (100% healthy)');
+
+console.log('\n🎉 ALL 54 TYPESCRIPT CLINICAL ENGINES & WORKSTATION MODULES FULLY VERIFIED (100% PARITY)! 🎉\n');
 
 
 

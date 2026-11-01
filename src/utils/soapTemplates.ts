@@ -152,7 +152,3 @@ export function appendTemplateToText(currentText: string, templateKey: string): 
   }
   return `${trimmed}\n${tmpl.text}`;
 }
-
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

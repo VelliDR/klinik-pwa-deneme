@@ -6,6 +6,7 @@ export interface InfusionRateInput {
     weightKg?: number | null | undefined;
     targetDose: number | null | undefined;
     doseUnit: InfusionDoseUnit | string;
+    drugName?: string | null | undefined;
 }
 
 export interface InfusionRateResult {
@@ -21,7 +22,8 @@ export function calculateInfusionRate({
     totalVolumeMl,
     weightKg,
     targetDose,
-    doseUnit
+    doseUnit,
+    drugName
 }: InfusionRateInput): InfusionRateResult | null {
     if (!drugAmountMg || !totalVolumeMl || drugAmountMg <= 0 || totalVolumeMl <= 0) return null;
     if (!targetDose || targetDose <= 0) return null;
@@ -41,14 +43,32 @@ export function calculateInfusionRate({
     } else if (doseUnit === 'mg_kg_hr') {
         if (!weightKg || weightKg <= 0) return null;
         rateMlHr = (targetDose * weightKg) / mgPerMl;
+    } else {
+        return null;
     }
 
-    // HATA-M13-003: İnotrop / Vazopressör İnfüzyon Hesabında (ISMP High-Alert) Toksik Aşırı Doz Tavan Kalkanı
+    // HATA-M13-003 & HATA-INF-001: İnotrop / Vazopressör İnfüzyon Hesabında Toksik Aşırı Doz Tavan Kalkanı
     let isExtremeDoseAlert = false;
     let extremeDoseWarning: string | undefined;
-    if (doseUnit === 'mcg_kg_min' && targetDose > 2.0) {
-        isExtremeDoseAlert = true;
-        extremeDoseWarning = '⚠️ AŞIRI YÜKSEK İNOTROP DOZU: Girilen doz (>2 mcg/kg/dk) toksik aralıktadır. Lütfen dozu ve ondalık basamağı teyit ediniz.';
+
+    const normDrug = String(drugName || '').toLowerCase().trim();
+    const isDopamineDobutamine = normDrug.includes('dopamin') || normDrug.includes('dobutamin') || normDrug.includes('dopamine') || normDrug.includes('dobutamine');
+    const isPotentVaso = normDrug.includes('adrenalin') || normDrug.includes('noradrenalin') || normDrug.includes('epinephrine') || normDrug.includes('norepinephrine') || normDrug.includes('levophed');
+
+    if (doseUnit === 'mcg_kg_min') {
+        if (isDopamineDobutamine || (!isPotentVaso && mgPerMl >= 1.0)) {
+            // Dopamin / Dobutamin standardı: 2–20 mcg/kg/dk
+            if (targetDose > 20.0) {
+                isExtremeDoseAlert = true;
+                extremeDoseWarning = '⚠️ AŞIRI YÜKSEK İNOTROP DOZU (Dopamin/Dobutamin): Girilen doz (>20 mcg/kg/dk) standart tavan sınırın üzerindedir. Taşiaritmi riski nedeniyle dozu teyit ediniz.';
+            }
+        } else {
+            // Adrenalin / Noradrenalin / Genel vazopressör standardı: ≤1–2 mcg/kg/dk
+            if (targetDose > 2.0) {
+                isExtremeDoseAlert = true;
+                extremeDoseWarning = '⚠️ AŞIRI YÜKSEK İNOTROP DOZU: Girilen doz (>2 mcg/kg/dk) toksik aralıktadır. Lütfen dozu ve ondalık basamağı teyit ediniz.';
+            }
+        }
     }
 
     return {
@@ -93,13 +113,17 @@ export function calculateGIR({ dextrosePercent, rateMlHr, weightKg, ageYears }: 
     let interpretation = '';
     let alertClass = 'text-emerald-400';
 
+    const isNeonatalOrInfant = (ageYears !== null && ageYears !== undefined) ? ageYears < 1 : weightKg < 10;
+
     if (girValue < 4.0) {
         status = 'LOW';
         interpretation = '🔴 Yetersiz Glukoz İdamesi (GIR < 4 mg/kg/dk): Hipoglisemi riski! İnfüzyon hızı veya dekstroz konsantrasyonu artırılmalıdır.';
         alertClass = 'text-rose-400';
     } else if (girValue <= 8.0) {
         status = 'OPTIMAL';
-        interpretation = '🟢 Normal / Optimal Yenidoğan Glukoz Hızı (4 - 8 mg/kg/dk).';
+        interpretation = isNeonatalOrInfant
+            ? '🟢 Normal / Optimal Yenidoğan / Süt Çocuğu Glukoz Hızı (4 - 8 mg/kg/dk).'
+            : '🟢 Normal / Optimal Glukoz İnfüzyon Hızı (4 - 8 mg/kg/dk).';
         alertClass = 'text-emerald-400';
     } else if (girValue <= 12.0) {
         status = 'HIGH';
@@ -120,7 +144,7 @@ export function calculateGIR({ dextrosePercent, rateMlHr, weightKg, ageYears }: 
     }
 
     // HATA-M13-002: Hipoglisemi acil bolusunda yaş ve kilo ayrımı (Erişkin vs İnfant)
-    const isAdult = (ageYears !== null && ageYears !== undefined && ageYears >= 18) || weightKg >= 40;
+    const isAdult = (ageYears !== null && ageYears !== undefined) ? ageYears >= 18 : weightKg >= 40;
     let hypoglycemiaBolus: GIRResult['hypoglycemiaBolus'];
 
     if (isAdult) {

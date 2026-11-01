@@ -29,6 +29,8 @@ export interface WellsDVTResult {
     recommendation: string;
     recommendations: string[];
     alertClass: string;
+    twoTierRisk: { risk: string; tier: string; isLikely: boolean };
+    threeTierRisk: { risk: string; tier: string };
 }
 
 export function calculateWellsDVT(params: WellsDVTParams = {}): WellsDVTResult {
@@ -87,6 +89,17 @@ export function calculateWellsDVT(params: WellsDVTParams = {}): WellsDVTResult {
         }
     }
 
+    const isDVTLikely = score >= 2;
+    const twoTierRisk = {
+        risk: isDVTLikely ? 'DVT Olası (Likely)' : 'DVT Olası Değil (Unlikely)',
+        tier: isDVTLikely ? 'DVT Olası (~%28 - %40)' : 'DVT Olası Değil (~%5.5)',
+        isLikely: isDVTLikely
+    };
+    const threeTierRisk = {
+        risk,
+        tier: `${risk} (${probability})`
+    };
+
     return {
         isValid: true,
         score,
@@ -95,7 +108,9 @@ export function calculateWellsDVT(params: WellsDVTParams = {}): WellsDVTResult {
         probability,
         recommendation,
         recommendations,
-        alertClass
+        alertClass,
+        twoTierRisk,
+        threeTierRisk
     };
 }
 
@@ -504,22 +519,27 @@ export interface HEARTResult {
 export function calculateHEART(params: HEARTParams = {}): HEARTResult {
     const history = Number(params.history ?? params.historyPoints ?? 0);
     const ecg = Number(params.ecg ?? params.ecgPoints ?? 0);
-    const age = Number(params.age ?? params.agePoints ?? 50);
     const riskFactors = Number(params.riskFactors ?? params.riskFactorsPoints ?? 0);
     const troponin = Number(params.troponin ?? params.troponinPoints ?? 0);
 
-    const hasNumericAge = params.ageYears !== undefined && params.ageYears !== null;
-    const isPediatric = hasNumericAge && Number(params.ageYears) < 18;
-
     let ageScore = 0;
+    const actualAge = params.ageYears !== undefined && params.ageYears !== null
+        ? Number(params.ageYears)
+        : (params.age !== undefined && Number(params.age) > 2 ? Number(params.age) : null);
+
     if (params.agePoints !== undefined) {
         ageScore = Math.max(0, Math.min(2, params.agePoints));
-    } else if (params.age !== undefined && age >= 0 && age <= 2) {
-        ageScore = Math.round(age);
+    } else if (actualAge !== null) {
+        if (actualAge >= 65) ageScore = 2;
+        else if (actualAge >= 45) ageScore = 1;
+        else ageScore = 0;
+    } else if (params.age !== undefined && Number(params.age) >= 0 && Number(params.age) <= 2) {
+        ageScore = Math.round(Number(params.age));
     } else {
-        if (age >= 65) ageScore = 2;
-        else if (age >= 45) ageScore = 1;
+        ageScore = 0;
     }
+
+    const isPediatric = actualAge !== null && actualAge < 18;
 
     const totalScore = Math.max(0, Math.min(2, history)) +
                        Math.max(0, Math.min(2, ecg)) +
@@ -558,7 +578,7 @@ export function calculateHEART(params: HEARTParams = {}): HEARTResult {
         recommendations.push('🚨 Troponin belirgin pozitif (>3x URL): Yüksek riskli AKS / NSTEMI açısından acil kardiyoloji konsültasyonu ve koroner anjiyografi değerlendirmesi gerekir.');
     }
     if (isPediatric) {
-        recommendations.unshift('⚠️ DİKKAT: HEART skoru erişkin AKS için geliştirilmiştir; pediatrik popülasyonda (<18 yaş) göğüs ağrısı için valide edilmemiştir.');
+        recommendations.unshift('⚠️ DİKKAT (Pediatrik Hasta): HEART skoru erişkin AKS için geliştirilmiştir; pediatrik popülasyonda (<18 yaş) göğüs ağrısı için valide edilmemiştir.');
     }
 
     return {

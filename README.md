@@ -152,7 +152,7 @@ Uygulama standart bir web tarayıcısı üzerinden doğrudan çalıştırılabil
 
 ### 9. İdame Sıvı Tedavisi (Holliday-Segar & TND Yenidoğan)
 - **Holliday-Segar (4-2-1 Kuralı):** Günlük toplam sıvı hacmi ve saatlik infüzyon hızı.
-- **Ateş Kaybı Ayarlaması:** 37°C üzerindeki her 1°C artış için hidrasyon ekleme seçeneği.
+- **Ateş Kaybı Ayarlaması:** 37.5°C üzerindeki her 1°C artış için hidrasyon ekleme seçeneği.
 - **TND Kademeli Yenidoğan Sıvısı:** Yaşam gününe göre dinamik sıvı önerisi.
 
 ### 10. Sıvı-Elektrolit Dengesi (Adrogué-Madias Sodyum & Kalsiyum)

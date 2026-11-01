@@ -36,7 +36,7 @@ export interface SteroidConversionResult {
     mineralocorticoidWarning?: string;
 }
 
-export function convertSteroids({ sourceDrug, doseMg }: { sourceDrug: string; doseMg: number | null | undefined }): SteroidConversionResult | null {
+export function convertSteroids({ sourceDrug, doseMg, targetDrug }: { sourceDrug: string; doseMg: number | null | undefined; targetDrug?: string }): SteroidConversionResult | null {
     if (!sourceDrug || doseMg === undefined || doseMg === null || doseMg <= 0 || isNaN(doseMg)) {
         return null;
     }
@@ -71,10 +71,17 @@ export function convertSteroids({ sourceDrug, doseMg }: { sourceDrug: string; do
         hpaSuppressionWarning = '⚠️ HPA Aksı Baskılanma Uyarısı (Eşdeğer Doz ≥20 mg Prednizon): >3 hafta süreli kullanımda HPA aksı belirgin baskılanır. İlaç aniden kesilemez; akut adrenal krizi önlemek için kademeli doz azaltımı (tapering) uygulanmalıdır.';
     }
 
-    // HATA-M12-002: Mineralokortikoid Potansiyeli Uyarısı
+    // HATA-M12-002 & EKSİK-STEROID-001: Mineralokortikoid Potansiyeli Uyarısı
     let mineralocorticoidWarning: string | undefined;
+    const targetKey = targetDrug ? String(targetDrug).toLowerCase().trim() : null;
+    const targetInfo = targetKey ? STEROID_EQUIVALENTS[targetKey] : null;
+
     if (sourceInfo.mineralo >= 0.8) {
         mineralocorticoidWarning = 'ℹ️ Mineralokortikoid Etki Uyarısı: Seçilen steroidin mineralokortikoid potansiyeli yüksektir. Sodyum/su tutulumu ve hipokalemi riski nedeniyle kalp yetmezliği, hipertansiyon ve siroz hastalarında dikkatli olunmalıdır.';
+    } else if (targetInfo && targetInfo.mineralo >= 0.8) {
+        mineralocorticoidWarning = `ℹ️ Mineralokortikoid Etki Uyarısı: Hedef steroid (${targetInfo.name}) yüksek mineralokortikoid potansiyeline sahiptir (${targetInfo.mineralo}x). ${sourceInfo.name} mineralokortikoid içermezken/düşükken, geçişte sodyum/su tutulumu ve hipokalemi riski göz önünde bulundurulmalıdır.`;
+    } else if (sourceInfo.mineralo < 0.8) {
+        mineralocorticoidWarning = `ℹ️ Mineralokortikoid Notu: ${sourceInfo.name} düşük/sıfır mineralokortikoid etkilidir. Hidrokortizon (1.0x) veya Prednizolon (0.8x) eşdeğerine geçişte sodyum/su tutulumu ve hipokalemi riski dikkate alınmalıdır.`;
     }
 
     return {

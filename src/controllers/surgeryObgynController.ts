@@ -304,9 +304,10 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     const prePro = getChk('chk-pre-pro');
     const preSym = getChk('chk-pre-sym');
     const preRes = getEl('output-pre');
-    const isFemalePatient = appState.biometry.gender === 'female' || appState.biometry.gender === 'F';
+    const isExplicitMale = appState.biometry.gender === 'male' || appState.biometry.gender === 'M';
+    const isFemaleOrUnspecified = !isExplicitMale;
     const hasObgynContext = Boolean(appState.obgyn.eddData) || prePro || preSym;
-    if (preSbp !== null && preDbp !== null && isFemalePatient && hasObgynContext && preRes) {
+    if (preSbp !== null && preDbp !== null && isFemaleOrUnspecified && hasObgynContext && preRes) {
         const symptoms = preSym ? ['symptom'] : [];
         const gestWeeks = appState.obgyn.eddData?.weeks;
         appState.obgyn.preeclampsia = calculatePreeclampsia(preSbp, preDbp, prePro, symptoms, gestWeeks);

@@ -134,18 +134,18 @@ export function calculateQTc(params: QTcInput = {}): QTcResult {
         return result;
     }
 
-    // ── 2. QT PHYSIOLOGICAL RANGE GUARD ──
-    if (qt < 200 || qt > 800) {
-        result.status = 'OUT_OF_RANGE';
-        result.interpretation = `Fizyolojik aralık dışı QT değeri (${qt} ms). Ölçümü doğrulayınız.`;
+    // ── 2. QRS >= QT ANATOMICAL BARRIER ──
+    if (qrs !== null && !isNaN(qrs) && qrs >= qt) {
+        result.status = 'INVALID_INPUT';
+        result.interpretation = `Hatalı Ölçüm: QRS süresi (${qrs} ms) QT süresinden (${qt} ms) büyük veya eşit olamaz (QT = QRS + JT).`;
         result.colorCode = 'danger';
         return result;
     }
 
-    // ── 3. QRS >= QT ANATOMICAL BARRIER ──
-    if (qrs !== null && !isNaN(qrs) && qrs >= qt) {
-        result.status = 'INVALID_INPUT';
-        result.interpretation = `Hatalı Ölçüm: QRS süresi (${qrs} ms) QT süresinden (${qt} ms) büyük veya eşit olamaz (QT = QRS + JT).`;
+    // ── 3. QT PHYSIOLOGICAL RANGE GUARD ──
+    if (qt < 200 || qt > 800) {
+        result.status = 'OUT_OF_RANGE';
+        result.interpretation = `Fizyolojik aralık dışı QT değeri (${qt} ms). Ölçümü doğrulayınız.`;
         result.colorCode = 'danger';
         return result;
     }
@@ -235,7 +235,7 @@ export function calculateQTc(params: QTcInput = {}): QTcResult {
     // ── 7. TISDALE RISK SCORE ──
     const isPediatric = patientAgeYears !== null && patientAgeYears < 18;
     let tisdale = 0;
-    if (age !== null && age >= 68) tisdale += 1;
+    if (patientAgeYears !== null && patientAgeYears >= 68) tisdale += 1;
     // HATA-M11-005: Pediatrik kız çocuklarında erişkin YBÜ kadın puanı verilmez
     if (isFemale && !isPediatric) tisdale += 1;
     if (k_level !== null && k_level <= 3.5) tisdale += 2;

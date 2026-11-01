@@ -7,6 +7,7 @@ export interface NEWS2Result {
     hasRedScore?: boolean;
     isPartial?: boolean;
     missingParams?: string[];
+    scale?: 'Scale 1' | 'Scale 2';
 }
 
 export function calculateNEWS2(
@@ -16,7 +17,8 @@ export function calculateNEWS2(
     temp: number | null | undefined, 
     spo2: number | null | undefined, 
     oxygen: boolean | null | undefined, 
-    avpu: string | null | undefined
+    avpu: string | null | undefined,
+    isHypercapnicScale2: boolean = false
 ): NEWS2Result | null {
     const hasValidNumeric = [hr, sbp, rr, temp, spo2].some(v => v != null && !isNaN(v));
     if (!hasValidNumeric) return null;
@@ -38,11 +40,25 @@ export function calculateNEWS2(
         else addScore(3);
     }
 
-    // SpO2 (Scale 1 for simplicity)
+    // SpO2 (Scale 1 Standard vs Scale 2 Hypercapnic Respiratory Failure)
     if (spo2 != null && !isNaN(spo2)) {
-        if (spo2 < 92) addScore(3);
-        else if (spo2 < 94) addScore(2);
-        else if (spo2 < 96) addScore(1);
+        if (isHypercapnicScale2) {
+            if (spo2 <= 83) addScore(3);
+            else if (spo2 <= 85) addScore(2);
+            else if (spo2 <= 87) addScore(1);
+            else if (spo2 <= 92) { /* Target: 88-92% -> 0 puan */ }
+            else if (spo2 <= 94) {
+                if (oxygen) addScore(1);
+            } else if (spo2 <= 96) {
+                if (oxygen) addScore(2);
+            } else {
+                if (oxygen) addScore(3);
+            }
+        } else {
+            if (spo2 < 92) addScore(3);
+            else if (spo2 < 94) addScore(2);
+            else if (spo2 < 96) addScore(1);
+        }
     }
 
     // Oxygen supplemental
@@ -107,7 +123,7 @@ export function calculateNEWS2(
         recommendation = 'Rutin takip. 12 saatte bir vital kontrol.';
     }
 
-    return { score, risk, recommendation, hasRedScore, isPartial, missingParams };
+    return { score, risk, recommendation, hasRedScore, isPartial, missingParams, scale: isHypercapnicScale2 ? 'Scale 2' : 'Scale 1' };
 }
 
 export interface PEWSResult {
@@ -175,11 +191,11 @@ export function calculateGCS(
 
     if (typeof verbal === 'string') {
         const vTrim = verbal.trim().toUpperCase();
-        if (vTrim === '1T' || vTrim === 'T' || vTrim.includes('ENTUBE') || vTrim.includes('T')) {
-            isEntubated = true;
-            rawVNum = 1;
-        } else if (vTrim === 'NT') {
+        if (vTrim === 'NT' || vTrim === '1NT' || vTrim.includes('NOT TESTABLE') || vTrim.includes('DEĞERLENDİRİLEMEZ') || vTrim.includes('DEGERLENDIRILEMEZ')) {
             isNotTestable = true;
+            rawVNum = 1;
+        } else if (vTrim === '1T' || vTrim === 'T' || vTrim.includes('ENTUBE') || vTrim.includes('ENTÜBE') || (vTrim.endsWith('T') && !vTrim.includes('NT'))) {
+            isEntubated = true;
             rawVNum = 1;
         } else {
             rawVNum = parseInt(vTrim, 10);
@@ -194,16 +210,20 @@ export function calculateGCS(
     if (isNaN(rawE) || isNaN(rawVNum) || isNaN(rawM)) return null;
 
     const e = Math.min(4, Math.max(1, rawE));
-    const vVal = isEntubated ? '1T' : Math.min(5, Math.max(1, rawVNum));
+    const vVal = isEntubated ? '1T' : (isNotTestable ? 'NT' : Math.min(5, Math.max(1, rawVNum)));
     const m = Math.min(6, Math.max(1, rawM));
-    const numV = isEntubated ? 1 : (typeof vVal === 'number' ? vVal : 1);
+    const numV = (isEntubated || isNotTestable) ? 1 : (typeof vVal === 'number' ? vVal : 1);
 
     const total = e + numV + m;
     const isPediatric = !!options?.isPediatric;
-    const formattedScore = isEntubated ? `${total}T` : `${total}`;
+    const formattedScore = isEntubated ? `${total}T` : (isNotTestable ? `${total}NT` : `${total}`);
     
     let interpretation = '';
-    if (isPediatric) {
+    if (isNotTestable) {
+        interpretation = isPediatric
+            ? 'Pediatrik sözel yanıt değerlendirilemedi (NT: Yüz travması/entübasyon dışı sedasyon).'
+            : 'Sözel yanıt değerlendirilemedi (NT: Yüz travması/afazi/sedasyon).';
+    } else if (isPediatric) {
         if (total === 15) interpretation = 'Pediatrik bilinç açık (Normal / Yaşına uygun).';
         else if (total >= 13) interpretation = 'Hafif pediatrik kafa travması / bilinç bozukluğu.';
         else if (total >= 9) interpretation = 'Orta derece pediatrik kafa travması / bilinç bozukluğu.';
@@ -218,6 +238,8 @@ export function calculateGCS(
     let airwayRisk: string | null = null;
     if (isEntubated) {
         airwayRisk = 'Hasta endotrakeal entübedir (Havayolu emniyettedir).';
+    } else if (isNotTestable) {
+        airwayRisk = 'Sözel yanıt değerlendirilemedi (NT) - Havayolu ve bilinç yakından izlenmelidir.';
     } else if (total <= 8) {
         airwayRisk = 'Entübasyon / Havayolu güvenliği sağlanmalı.';
     }

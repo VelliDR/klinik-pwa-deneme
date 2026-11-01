@@ -269,7 +269,13 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
 
     // 2. ELEKTROLİTLER: KALSİYUM & SODYUM (ADROGUÉ-MADİAS)
     const ionCa = getNum('input-serum-ca');
-    const ionAlb = getNum('input-albumin');
+    const rawAlb = getNum('input-albumin');
+    const bgAlbVal = getNum('input-bg-alb');
+    const ionAlb = rawAlb ?? bgAlbVal;
+    const albEl = getEl<HTMLInputElement>('input-albumin');
+    if (albEl && !rawAlb && bgAlbVal) {
+        albEl.placeholder = `Global: ${bgAlbVal}`;
+    }
     const ionWarn = getEl('container-ion-warnings');
     const warnings: string[] = [];
 
@@ -389,7 +395,13 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     const fio2 = getNum('input-bg-fio2');
     const bgNa = getNum('input-bg-na') ?? getNum('input-serum-na') ?? undefined;
     const bgCl = getNum('input-bg-cl') ?? undefined;
-    const bgAlb = getNum('input-bg-alb') ?? getNum('input-albumin') ?? undefined;
+    const rawBgAlb = getNum('input-bg-alb');
+    const rawGlobalAlb = getNum('input-albumin');
+    const bgAlb = rawBgAlb ?? rawGlobalAlb ?? undefined;
+    const bgAlbEl = getEl<HTMLInputElement>('input-bg-alb');
+    if (bgAlbEl && !rawBgAlb && rawGlobalAlb) {
+        bgAlbEl.placeholder = `Global: ${rawGlobalAlb}`;
+    }
     const bgLactate = getNum('input-bg-lactate') ?? undefined;
     const bgK = getNum('input-bg-k') ?? getNum('input-serum-k') ?? undefined;
     const bgTemp = getNum('input-bg-temp') ?? undefined;
@@ -628,6 +640,33 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     }
 
     // 4. İNFÜZYON HIZI
+    const infDrugEl = getEl<HTMLSelectElement>('select-inf-drug');
+    const infDrug = infDrugEl?.value || '';
+    const infMgEl = getEl<HTMLInputElement>('input-inf-mg');
+    const infVolEl = getEl<HTMLInputElement>('input-inf-vol');
+    const infUnitEl = getEl<HTMLSelectElement>('select-inf-unit');
+
+    // Preset seçildiğinde ve kullanıcı o an bu kutularda yazmıyorsa otomatik doldur
+    if (infDrug && typeof document !== 'undefined' && document.activeElement === infDrugEl) {
+        if (infDrug === 'noradrenaline' || infDrug === 'adrenaline') {
+            if (infMgEl) infMgEl.value = '4';
+            if (infVolEl) infVolEl.value = '50';
+            if (infUnitEl) infUnitEl.value = 'mcg_kg_min';
+        } else if (infDrug === 'dopamine') {
+            if (infMgEl) infMgEl.value = '200';
+            if (infVolEl) infVolEl.value = '50';
+            if (infUnitEl) infUnitEl.value = 'mcg_kg_min';
+        } else if (infDrug === 'dobutamine') {
+            if (infMgEl) infMgEl.value = '250';
+            if (infVolEl) infVolEl.value = '50';
+            if (infUnitEl) infUnitEl.value = 'mcg_kg_min';
+        } else if (infDrug === 'milrinone') {
+            if (infMgEl) infMgEl.value = '10';
+            if (infVolEl) infVolEl.value = '50';
+            if (infUnitEl) infUnitEl.value = 'mcg_kg_min';
+        }
+    }
+
     const infDose = getNum('input-inf-dose');
     const infMg = getNum('input-inf-mg');
     const infVol = getNum('input-inf-vol');
@@ -640,7 +679,8 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             totalVolumeMl: infVol,
             weightKg: appState.biometry.weightKg,
             targetDose: infDose,
-            doseUnit: infUnit
+            doseUnit: infUnit,
+            drugName: infDrug || undefined
         });
         appState.medicine.infusion = infObj;
         const infWarnEl = getEl('warning-infusion-rate');
@@ -670,9 +710,15 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
 
     // 5. GLUKOZ İNFÜZYON HIZI (GIR)
     const dextrosePct = getNum('select-gir-dextrose');
+    const girRateInput = getEl<HTMLInputElement>('input-gir-rate');
     let girRate = getNum('input-gir-rate');
-    if (girRate === null && appState.medicine.fluid && appState.medicine.fluid.hourlyRate) {
-        girRate = appState.medicine.fluid.hourlyRate;
+    if (appState.medicine.fluid && appState.medicine.fluid.hourlyRate) {
+        if (girRateInput && !girRateInput.value) {
+            girRateInput.placeholder = `İdame: ${appState.medicine.fluid.hourlyRate} mL/saat`;
+        }
+        if (girRate === null) {
+            girRate = appState.medicine.fluid.hourlyRate;
+        }
     }
     const girContainer = getEl('output-gir-result');
     if (dextrosePct && girRate && appState.biometry.weightKg && girContainer) {
@@ -976,7 +1022,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             homaRes.innerHTML = `
                 <div class="flex justify-between items-center font-bold">
                     <span>HOMA-IR: ${hm.homaIR}</span>
-                    <span>Eşik: &gt; ${hm.cutoff} (${hm.tannerStage})</span>
+                    <span>Eşik: &ge; ${hm.cutoff} (${hm.tannerStage})</span>
                 </div>
                 <div class="text-[10px] leading-relaxed">${hm.interpretation}</div>
                 ${hm.unitWarning ? `
@@ -1299,9 +1345,9 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     const curbB = getChk('chk-curb-b');
     const curb65 = getChk('chk-curb-65');
     const curbOut = getEl('output-curb65');
-    const hasClinicalCurbFindings = curbC || curbU || curbR || curbB;
+    const hasCurbFindings = curbC || curbU || curbR || curbB || curb65;
 
-    if (hasClinicalCurbFindings) {
+    if (hasCurbFindings) {
         const hasBunLab = feureaSBun !== null || curbU;
         const curbRes = calculateCURB65({
             confusion: curbC,

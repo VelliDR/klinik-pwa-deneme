@@ -71,9 +71,32 @@ export function syncVitalsAndEcg(): void {
                 appState.biometry.heartRate = calculatedHr;
             }
         }
+    } else if (rrInput && rrInput.value) {
+        const rVal = Number(rrInput.value);
+        if (!isNaN(rVal) && rVal > 0) {
+            if (rrBoxesInput && document.activeElement !== rrBoxesInput) {
+                rrBoxesInput.value = String(Math.round(rVal / msPerBox));
+            }
+            if (hrInput && document.activeElement !== hrInput) {
+                const calculatedHr = Math.round(60000 / rVal);
+                hrInput.value = String(calculatedHr);
+                appState.biometry.heartRate = calculatedHr;
+            }
+        }
     } else if (hrInput && hrInput.value) {
         const numHr = Number(hrInput.value);
-        appState.biometry.heartRate = !isNaN(numHr) ? numHr : null;
+        if (!isNaN(numHr) && numHr > 0) {
+            appState.biometry.heartRate = numHr;
+            const calculatedRr = Math.round(60000 / numHr);
+            if (rrInput && !rrInput.value && document.activeElement !== rrInput) {
+                rrInput.value = String(calculatedRr);
+            }
+            if (rrBoxesInput && !rrBoxesInput.value && document.activeElement !== rrBoxesInput) {
+                rrBoxesInput.value = String(Math.round(calculatedRr / msPerBox));
+            }
+        } else {
+            appState.biometry.heartRate = null;
+        }
     } else {
         appState.biometry.heartRate = null;
     }
@@ -140,8 +163,9 @@ function handleFormEvent(e: Event): void {
     if (targetId && NON_CLINICAL_INPUT_IDS.has(targetId)) return;
 
     const now = Date.now();
-    // HATA-M24-006: 50 ms içinde aynı hedef elemandan gelen mükerrer input/change olaylarını filtrele
+    // HATA-M24-006 & UYUM-REACT-001: 50 ms içinde aynı hedef elemandan gelen mükerrer input/change olaylarını birleştir
     if (lastEventTarget === e.target && (now - lastEventTimestamp) < 50) {
+        scheduleUpdate(updateAllTabs);
         return;
     }
     lastEventTarget = e.target;

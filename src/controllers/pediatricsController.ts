@@ -22,7 +22,8 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
     const y = ageData.y;
     const m = ageData.m;
     const totalMonths = (y === null && m === null) ? null : (m !== null ? m : (y !== null ? y * 12 : null));
-    const isPreterm = getChk('chk-preterm');
+    const gestWeeks = getNum('input-gestational-weeks') ?? (appState.biometry as any)?.gestationalWeeks;
+    const isPreterm = getChk('chk-preterm') || (gestWeeks !== null && gestWeeks !== undefined && gestWeeks > 0 && gestWeeks < 37);
 
     // 1. AŞI TAKVİMİ (GBP 2026 Revizyonu: 6'lı Karma, 48. Ay Suçiçeği 2. Doz ve Detay Tablo Kalkanı)
     if (totalMonths !== null) {

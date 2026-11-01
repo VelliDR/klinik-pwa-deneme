@@ -251,7 +251,12 @@ export function searchQuickSwitcher(query: string): QuickSwitcherItem[] {
 const MOTOR_DOM_ID_ALIASES: Record<string, string> = {
   'card-nefrotox': 'card-nefro',
   'card-faranjit': 'card-antibiyotik',
-  'card-asi': 'card-pediatri-surup'
+  'card-asi': 'card-pediatri-surup',
+  'card-yanik': 'card-cerrahi',
+  'card-parkland': 'card-cerrahi',
+  'card-alvarado': 'card-cerrahi',
+  'card-ranson': 'card-cerrahi',
+  'card-sutur': 'card-cerrahi'
 };
 
 export function jumpToMotor(motorId: string): boolean {

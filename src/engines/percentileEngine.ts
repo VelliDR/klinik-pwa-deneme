@@ -1875,7 +1875,7 @@ export function calculateCranialScreening(input: CranialScreeningInput): Cranial
         }
 
         isVelocityElevated = monthlyRateCm > max;
-        isVelocityDepressed = monthlyRateCm < min && deltaCm < 0.2;
+        isVelocityDepressed = monthlyRateCm < min;
 
         let velocityStatusText = `Normal Baş Büyüme Hızı (${monthlyRateCm} cm/ay)`;
         if (isVelocityElevated) {
@@ -1985,7 +1985,13 @@ export function calculateCranialScreening(input: CranialScreeningInput): Cranial
         alertClass = 'warning';
         urgencyLevel = 'ROUTINE_FOLLOWUP';
         clinicalRecommendations.push('Baş büyüme hızı ve nöromotor gelişim basamakları (baş kontrolü, takip, kavrama) yakından izlenmelidir.');
-        clinicalRecommendations.push('Sütür hatlarında kenar kabarıklığı/sırtlanma (palpable ridge) muayene edilmelidir.');
+    } else if (isVelocityDepressed) {
+        hydrocephalusRisk = 'WARNING';
+        riskTitle = '🟡 YAVAŞ BAŞ BÜYÜMESİ: Dinamik Gelişim Duraklaması / Kraniyosinostoz Riski';
+        alertClass = 'warning';
+        urgencyLevel = 'ROUTINE_FOLLOWUP';
+        clinicalRecommendations.push(`Baş çevresi artış hızı (${dynamicVelocity?.monthlyRateCm} cm/ay) yaşa göre beklenen asgari sınırın (${dynamicVelocity?.expectedMonthlyRange.min} cm/ay) altındadır.`);
+        clinicalRecommendations.push('Kraniyosinostoz (erken sütür kapanması), mikrosefali gelişimi veya nörogelişimsel duraklama açısından kraniyal sütür muayenesi ve yakın baş çevresi izlemi önerilir.');
     } else {
         clinicalRecommendations.push('Baş çevresi yaş ve cinsiyete göre normal persentil aralığındadır (3 - 97. persentil).');
     }

@@ -852,6 +852,7 @@
                                 <option value="2">2: Anlamsız sesler</option>
                                 <option value="1">1: Yanıtsız</option>
                                 <option value="1T">1T: Entübe / Trakeostomi</option>
+                                <option value="NT">NT: Değerlendirilemez (Yüz travması / Afazi / Sedasyon)</option>
                             </select>
                         </div>
                         <div>
@@ -2057,7 +2058,18 @@
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
                 </summary>
                 <div class="card-body px-3.5 lg:px-4 pt-3 pb-3.5 lg:pb-4 space-y-3 border-t border-slate-800/80">
-                    <div class="grid grid-cols-2 gap-2 pt-2">
+                    <div class="pt-2">
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1 tracking-tight">Klinik Protokol / İlaç Seçimi (Opsiyonel)</label>
+                        <select id="select-inf-drug" class="w-full h-9 bg-[#060A12] border border-slate-800 rounded-md px-2.5 text-sm tabular-nums text-slate-200 placeholder-slate-600 focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none transition-colors">
+                            <option value="">-- Özel / Manuel İlaç Girişi --</option>
+                            <option value="noradrenaline">Noradrenalin (4 mg / 50 mL SF • 0.01-2 mcg/kg/dk)</option>
+                            <option value="adrenaline">Adrenalin (4 mg / 50 mL SF • 0.01-1.5 mcg/kg/dk)</option>
+                            <option value="dopamine">Dopamin (200 mg / 50 mL SF • 2-20 mcg/kg/dk)</option>
+                            <option value="dobutamine">Dobutamin (250 mg / 50 mL SF • 2-20 mcg/kg/dk)</option>
+                            <option value="milrinone">Milrinon (10 mg / 50 mL SF • 0.25-0.75 mcg/kg/dk)</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
                         <div><label class="block text-[11px] font-medium text-slate-400 mb-1 tracking-tight">İlaç Miktarı (mg)</label><input type="number" id="input-inf-mg" placeholder="4" class="w-full h-9 bg-[#060A12] border border-slate-800 rounded-md px-2.5 text-sm tabular-nums text-slate-200 placeholder-slate-600 focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none transition-colors" inputmode="decimal"></div>
                         <div><label class="block text-[11px] font-medium text-slate-400 mb-1 tracking-tight">Hacim (ml)</label><input type="number" id="input-inf-vol" value="50" class="w-full h-9 bg-[#060A12] border border-slate-800 rounded-md px-2.5 text-sm tabular-nums text-slate-200 placeholder-slate-600 focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none transition-colors" inputmode="decimal"></div>
                     </div>

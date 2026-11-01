@@ -34,6 +34,8 @@ export interface BloodGasInput {
     ageInDays?: number | null | undefined;
     ageInYears?: number | null | undefined;
     isNeonate?: boolean;
+    barometricPressure?: number | null | undefined; // Atmosferik basınç (mmHg, varsayılan: 760 mmHg)
+    arterialPCO2?: number | null | undefined; // VBG ile eşzamanlı PaCO2 (mmHg) - Venoarteriyel pCO2 gradiyenti (ΔpCO2) için
 }
 
 export interface BloodGasOxygenation {
@@ -47,6 +49,7 @@ export interface BloodGasOxygenation {
     hypoxemiaSeverity: string;
     mechanism: string;
     ardsSeverity: string;
+    barometricPressure?: number;
 }
 
 export interface BloodGasStewart {
@@ -135,6 +138,11 @@ export interface BloodGasResult {
     warnings: string[];
     hasAlbumin: boolean;
     isNeonatalNorms?: boolean;
+    deltaPCO2?: {
+        gradient: number;
+        isWidened: boolean;
+        interpretation: string;
+    };
 }
 
 export function analyzeBloodGas({ 
@@ -152,7 +160,9 @@ export function analyzeBloodGas({
     sampleType, 
     ageInDays, 
     ageInYears, 
-    isNeonate 
+    isNeonate,
+    barometricPressure,
+    arterialPCO2
 }: BloodGasInput): BloodGasResult | null {
     if (!pH || !pCO2 || !HCO3 || pH <= 0 || pCO2 <= 0 || HCO3 <= 0) return null;
 
@@ -176,6 +186,19 @@ export function analyzeBloodGas({
         if (calc_pO2 !== null) {
             warnings.push('ℹ️ Venöz pO2 (PvO2) doku oksijen ekstraksiyonunu gösterir; doğrudan arteriyel oksijenasyonu (PaO2) yansıtmaz.');
         }
+    }
+
+    // Venoarteriyel pCO2 Gradyenti (ΔpCO2) Analizi
+    let deltaPCO2: { gradient: number; isWidened: boolean; interpretation: string } | undefined;
+    if (isVBG && arterialPCO2 !== undefined && arterialPCO2 !== null && arterialPCO2 > 0) {
+        const rawVenousPCO2 = Number(pCO2);
+        const grad = Number((rawVenousPCO2 - arterialPCO2).toFixed(1));
+        const isWidened = grad > 6.0;
+        const interpretation = isWidened
+            ? `⚠️ Genişlemiş Veno-Arteriyel pCO2 Gradiyenti (ΔpCO2 = ${grad} mmHg > 6.0 mmHg): Mikrovasküler hipoperfüzyon, yetersiz kardiyak debi veya doku stazı lehinedir. Sıvı/inotropik resüsitasyon yanıtı değerlendirilmelidir.`
+            : `🟢 Normal Veno-Arteriyel pCO2 Gradiyenti (ΔpCO2 = ${grad} mmHg ≤ 6.0 mmHg): Doku kan akımı ve mikrovasküler perfüzyon yeterli düzeydedir.`;
+        deltaPCO2 = { gradient: grad, isWidened, interpretation };
+        warnings.push(interpretation);
     }
 
     // =========================================================================
@@ -496,7 +519,10 @@ export function analyzeBloodGas({
         const ptAge = ageInYears ?? (ageInDays ? ageInDays / 365.25 : 40);
 
         // Alveolar Gaz Denklemi (Deniz seviyesi PB = 760 mmHg, PH2O = 47 mmHg, R = 0.8)
-        const pao2Alveolar = Number((fiO2Fraction * (760 - 47) - (calc_pCO2 / 0.8)).toFixed(1));
+        const pb = (barometricPressure !== undefined && barometricPressure !== null && barometricPressure > 300)
+            ? barometricPressure
+            : 760;
+        const pao2Alveolar = Number((fiO2Fraction * (pb - 47) - (calc_pCO2 / 0.8)).toFixed(1));
         const aaGradient = Number((pao2Alveolar - calc_pO2).toFixed(1));
         const expectedAaGradient = Number(((ptAge / 4) + 4).toFixed(1));
         const expectedPaO2 = Number((100 - (0.3 * ptAge)).toFixed(1));
@@ -538,7 +564,8 @@ export function analyzeBloodGas({
             horovitzIndex,
             hypoxemiaSeverity,
             mechanism,
-            ardsSeverity
+            ardsSeverity,
+            barometricPressure: pb
         };
     }
 
@@ -620,6 +647,7 @@ export function analyzeBloodGas({
         warnings,
         hasAlbumin: (Albumin !== undefined && Albumin !== null && Albumin > 0),
         isNeonatalNorms: isNeonatePt,
+        deltaPCO2,
         isInternallyConsistent,
         consistencyDetails: {
             hCalc: Math.round(hCalc * 10) / 10,

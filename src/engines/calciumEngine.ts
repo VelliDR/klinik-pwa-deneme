@@ -44,14 +44,14 @@ export function calculateCorrectedCalcium({
     let alertMsg = '';
 
     // HATA-M10-005: Yaşa ve Preterm Durumuna Göre Referans Aralıkları
-    const isNeonate = (ageDays !== undefined && ageDays !== null && ageDays <= 28) || isPreterm;
-    const isChild = !isNeonate && ((ageDays !== undefined && ageDays !== null && ageDays > 28) || (ageYears !== undefined && ageYears !== null && ageYears < 12));
+    const isNeonate = Boolean((ageDays !== undefined && ageDays !== null && ageDays <= 28) || isPreterm);
+    const isChild = !isNeonate && Boolean((ageDays !== undefined && ageDays !== null && ageDays > 28) || (ageYears !== undefined && ageYears !== null && ageYears < 12));
 
     let lowerLimit = 8.5;
     let upperLimit = 10.5;
     let referenceRange = '8.5 - 10.5 mg/dL (Erişkin)';
 
-    if (isPreterm) {
+    if (Boolean(isPreterm)) {
         lowerLimit = 7.0;
         upperLimit = 10.0;
         referenceRange = '7.0 - 10.0 mg/dL (Preterm Yenidoğan)';

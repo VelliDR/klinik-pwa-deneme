@@ -163,14 +163,14 @@ export function calculateAnaphylaxisDoses(weightKg: number, isAdult: boolean = f
   const safeWeight = isMissing ? (isAdult ? 70 : 15) : weightKg;
   const maxAdrenaline = isAdult ? 0.50 : 0.30;
   
-  // 0.01 mg/kg (min 0.05 mg/mL, max 0.3/0.5 mg/mL)
+  // 0.01 mg/kg (min 0.01 mg/mL, max 0.3/0.5 mg/mL)
   let calculatedAdrenaline = safeWeight * 0.01;
-  if (calculatedAdrenaline < 0.05) calculatedAdrenaline = 0.05;
+  if (calculatedAdrenaline < 0.01) calculatedAdrenaline = 0.01;
   if (calculatedAdrenaline > maxAdrenaline) calculatedAdrenaline = maxAdrenaline;
   const adrMg = Math.round(calculatedAdrenaline * 100) / 100;
 
-  // Sıvı Bolusu: 20 mL/kg SF (Erişkin maks 1000-2000 mL)
-  const fluidVol = Math.min(Math.round(safeWeight * 20), isAdult ? 1000 : 500);
+  // Sıvı Bolusu: 20 mL/kg SF (Maks 1000 mL)
+  const fluidVol = Math.min(Math.round(safeWeight * 20), 1000);
 
   // Feniramin: 1 mg/kg (maks 50 mg)
   const feniraminMg = Math.min(Math.round(safeWeight * 1.0), 50);
@@ -283,7 +283,7 @@ export function calculateStatusEpilepticusDoses(weightKg: number, isAdult: boole
           rateWarning: isAdult
             ? 'Hız ≤ 50 mg/dk (Kardiyak monitörizasyon ve EKG takibi şarttır; hipotansiyon/asistoli riski)'
             : 'Hız: 1–3 mg/kg/dk (maks 50 mg/dk) — Kardiyak monitörizasyon ve EKG takibi şarttır',
-          instruction: 'KİLO GİRİNİZ: Fenitoin (Epanutin): 20 mg/kg IV (maks 1500 mg; YALNIZCA %0.9 SF içinde sulandırılır; dekstrozda çöker!).'
+          instruction: 'KİLO GİRİNİZ: Fenitoin (Epanutin): 20 mg/kg IV (maks 1500 mg; YALNIZCA %0.9 SF içinde sulandırılır; dekstrozda çöker! Mikrokristal presipitasyonunu ve flebiti önlemek için 0.22–1.2 mikron in-line filtre kullanılmalıdır).'
         },
         valproate: {
           doseMg: 0,
@@ -372,7 +372,7 @@ export function calculateStatusEpilepticusDoses(weightKg: number, isAdult: boole
         rateWarning: isAdult
           ? 'Hız ≤ 50 mg/dk (Kardiyak monitörizasyon ve EKG takibi şarttır; hipotansiyon/asistoli riski)'
           : `Hız: 1–3 mg/kg/dk (maks ${Math.min(Math.round(safeWeight * 3), 50)} mg/dk; üst sınır 50 mg/dk) — Kardiyak monitörizasyon ve EKG takibi şarttır`,
-        instruction: `Fenitoin (Epanutin): ${phenytoinDose} mg IV (YALNIZCA %0.9 SF içinde sulandırılır; dekstrozda çöker!).${isEstimated ? ' (Tahmini Kilo)' : ''}`
+        instruction: `Fenitoin (Epanutin): ${phenytoinDose} mg IV (YALNIZCA %0.9 SF içinde sulandırılır; dekstrozda çöker! Mikrokristal presipitasyonunu ve flebiti önlemek için 0.22–1.2 mikron in-line filtre kullanılmalıdır).${isEstimated ? ' (Tahmini Kilo)' : ''}`
       },
       valproate: {
         doseMg: valproateDose,

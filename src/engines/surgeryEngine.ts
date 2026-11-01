@@ -268,23 +268,17 @@ export function calculateRanson(params: RansonParams | null | undefined): Ranson
     
     // 1. Admission (0. Saat)
     // Age: Non-biliary > 55, Biliary > 70
-    if (params.ageYears !== undefined && params.ageYears !== null) {
-        if (params.ageYears > (isBiliary ? 70 : 55)) admissionScore += 1;
-    } else if (params.ageO55) {
+    if (Boolean(params.ageO55) || (params.ageYears !== undefined && params.ageYears !== null && params.ageYears > (isBiliary ? 70 : 55))) {
         admissionScore += 1;
     }
 
     // WBC: Non-biliary > 16.000, Biliary > 18.000
-    if (params.wbcCount !== undefined && params.wbcCount !== null) {
-        if (params.wbcCount > (isBiliary ? 18000 : 16000)) admissionScore += 1;
-    } else if (params.wbcO16) {
+    if (Boolean(params.wbcO16) || (params.wbcCount !== undefined && params.wbcCount !== null && params.wbcCount > (isBiliary ? 18000 : 16000))) {
         admissionScore += 1;
     }
 
     // Glucose: Non-biliary > 200, Biliary > 220
-    if (params.glucoseMgDl !== undefined && params.glucoseMgDl !== null) {
-        if (params.glucoseMgDl > (isBiliary ? 220 : 200)) admissionScore += 1;
-    } else if (params.gluO200) {
+    if (Boolean(params.gluO200) || (params.glucoseMgDl !== undefined && params.glucoseMgDl !== null && params.glucoseMgDl > (isBiliary ? 220 : 200))) {
         admissionScore += 1;
     }
 
@@ -292,9 +286,7 @@ export function calculateRanson(params: RansonParams | null | undefined): Ranson
     if (params.astO250) admissionScore += 1;
 
     // LDH: Non-biliary > 350, Biliary > 400
-    if (params.ldhUPerL !== undefined && params.ldhUPerL !== null) {
-        if (params.ldhUPerL > (isBiliary ? 400 : 350)) admissionScore += 1;
-    } else if (params.ldhO350) {
+    if (Boolean(params.ldhO350) || (params.ldhUPerL !== undefined && params.ldhUPerL !== null && params.ldhUPerL > (isBiliary ? 400 : 350))) {
         admissionScore += 1;
     }
     
@@ -303,9 +295,7 @@ export function calculateRanson(params: RansonParams | null | undefined): Ranson
     if (params.hctDrop10) hour48Score += 1;
 
     // BUN rise: Non-biliary > 5 mg/dL, Biliary > 2 mg/dL
-    if (params.bunRiseMgDl !== undefined && params.bunRiseMgDl !== null) {
-        if (params.bunRiseMgDl > (isBiliary ? 2 : 5)) hour48Score += 1;
-    } else if (params.bunRise5) {
+    if (Boolean(params.bunRise5) || (params.bunRiseMgDl !== undefined && params.bunRiseMgDl !== null && params.bunRiseMgDl > (isBiliary ? 2 : 5))) {
         hour48Score += 1;
     }
 
@@ -316,16 +306,12 @@ export function calculateRanson(params: RansonParams | null | undefined): Ranson
     if (!isBiliary && params.pO2U60) hour48Score += 1;
 
     // Base deficit: Non-biliary > 4 mEq/L, Biliary > 5 mEq/L
-    if (params.baseDeficitMEqL !== undefined && params.baseDeficitMEqL !== null) {
-        if (params.baseDeficitMEqL > (isBiliary ? 5 : 4)) hour48Score += 1;
-    } else if (params.baseDefO4) {
+    if (Boolean(params.baseDefO4) || (params.baseDeficitMEqL !== undefined && params.baseDeficitMEqL !== null && params.baseDeficitMEqL > (isBiliary ? 5 : 4))) {
         hour48Score += 1;
     }
 
     // Fluid sequestration: Non-biliary > 6 L, Biliary > 4 L
-    if (params.fluidSequestrationLiters !== undefined && params.fluidSequestrationLiters !== null) {
-        if (params.fluidSequestrationLiters > (isBiliary ? 4 : 6)) hour48Score += 1;
-    } else if (params.fluidSecO6) {
+    if (Boolean(params.fluidSecO6) || (params.fluidSequestrationLiters !== undefined && params.fluidSequestrationLiters !== null && params.fluidSequestrationLiters > (isBiliary ? 4 : 6))) {
         hour48Score += 1;
     }
 

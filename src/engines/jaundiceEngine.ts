@@ -991,13 +991,18 @@ export function evaluateBilirubinAlbuminRatio(params: {
     threshold = 7.2;
   } else if (ga >= 35 && ga < 38 && hasRiskFactors) {
     threshold = 6.8;
+  } else if (ga >= 32 && ga < 35) {
+    // Preterm 32-34 hafta (Ahlfors & TND 2023)
+    threshold = hasRiskFactors ? 6.0 : 6.5;
   } else {
-    threshold = 6.8;
+    // Preterm <32 hafta (Çok Düşük Doğum Ağırlıklı / VLBW)
+    threshold = hasRiskFactors ? 5.5 : 6.0;
   }
 
   const isExceeded = ratio >= threshold;
+  const guidanceRef = ga < 35 ? 'Ahlfors / TND Preterm Rehberi' : 'AAP 2022 KAS 18';
   const interpretation = isExceeded
-    ? `B/A Oranı (${ratio} mg/g) kan değişimi sınırını (${threshold}) AŞMIŞTIR! TSB eşik altında olsa dahi bu oran kan değişimi kararını güçlendirir (AAP 2022 KAS 18).`
+    ? `B/A Oranı (${ratio} mg/g) kan değişimi sınırını (${threshold}) AŞMIŞTIR! TSB eşik altında olsa dahi bu oran kan değişimi kararını güçlendirir (${guidanceRef}).`
     : `B/A Oranı: ${ratio} mg/g (Eşik: ${threshold} mg/g — Güvenli aralıkta).`;
 
   return {

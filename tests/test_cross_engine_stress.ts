@@ -258,6 +258,68 @@ assert.doesNotThrow(() => {
 }, 'updateAllTabs re-entrancy guard must prevent call stack overflow');
 console.log('✓ Pipeline I: Re-entrancy guard & loop shield verified.');
 
+// J. Demographics Age -> HEART Score Dynamic Auto-Sync (HATA-HEART-001)
+(document.getElementById('input-age') as any).value = '70';
+(document.getElementById('select-age-unit') as any).value = 'years';
+const heartAgeSelect = document.getElementById('select-heart-age') as any;
+heartAgeSelect.dataset.userModified = ''; // not manually modified
+(document.getElementById('select-heart-history') as any).value = '1';
+(document.getElementById('select-heart-ecg') as any).value = '1';
+(document.getElementById('select-heart-risk') as any).value = '1';
+(document.getElementById('select-heart-troponin') as any).value = '0';
+const trombozCard = document.getElementById('card-tromboz') as any;
+trombozCard.open = true;
+
+appModule.updateAllTabs();
+
+assert.strictEqual(heartAgeSelect.value, '2', 'HEART age select must auto-sync to 2 for age 70');
+assert.ok(appState.thrombosis.heart, 'HEART result should be generated');
+assert.strictEqual(appState.thrombosis.heart.score, 5, 'Score should be 1(hist) + 1(ecg) + 2(age) + 1(risk) + 0(trop) = 5');
+console.log('✓ Pipeline J: Demographics Age -> HEART Score Auto-sync verified.');
+
+// K. GCS Verbal 'NT' vs '1T' Disambiguation (HATA-GCS-001)
+(document.getElementById('select-gcs-e') as any).value = '4';
+(document.getElementById('select-gcs-v') as any).value = 'NT';
+(document.getElementById('select-gcs-m') as any).value = '6';
+
+appModule.updateAllTabs();
+
+assert.ok(appState.medicine.gcs, 'GCS result should be calculated');
+assert.strictEqual(appState.medicine.gcs.isNotTestable, true, 'isNotTestable must be true for NT');
+assert.strictEqual(appState.medicine.gcs.isEntubated, false, 'isEntubated must be false for NT');
+assert.strictEqual(appState.medicine.gcs.formattedScore, '11NT', 'Score must be formatted as 11NT');
+
+(document.getElementById('select-gcs-v') as any).value = '1T';
+appModule.updateAllTabs();
+assert.strictEqual(appState.medicine.gcs.isEntubated, true, 'isEntubated must be true for 1T');
+assert.strictEqual(appState.medicine.gcs.isNotTestable, false, 'isNotTestable must be false for 1T');
+assert.strictEqual(appState.medicine.gcs.formattedScore, '11T', 'Score must be formatted as 11T');
+console.log('✓ Pipeline K: GCS Verbal NT vs 1T Disambiguation verified.');
+
+// L. Bidirectional EKG RR ms -> HR & Vitals Sync
+(document.getElementById('input-ecg-rr-boxes') as any).value = ''; // clear boxes
+(document.getElementById('input-ecg-rr') as any).value = '600'; // 600 ms -> 100 bpm
+(document.getElementById('input-hr') as any).value = '';
+
+appModule.updateAllTabs();
+
+assert.strictEqual(appState.biometry.heartRate, 100, 'RR 600ms must sync biometry heartRate to 100');
+assert.strictEqual((document.getElementById('input-hr') as any).value, '100', 'input-hr must be updated to 100');
+assert.strictEqual((document.getElementById('input-ecg-rr-boxes') as any).value, '15', 'RR boxes must be updated to 15 (600/40)');
+console.log('✓ Pipeline L: Bidirectional EKG RR ms -> HR & Vitals Sync verified.');
+
+// M. Fluid Hourly Rate -> GIR Rate Placeholder Sync
+(document.getElementById('input-weight') as any).value = '20'; // 20 kg
+(document.getElementById('select-gir-dextrose') as any).value = '10';
+(document.getElementById('input-gir-rate') as any).value = '';
+
+appModule.updateAllTabs();
+
+const girRateInput = document.getElementById('input-gir-rate') as any;
+assert.ok(appState.medicine.fluid?.hourlyRate, 'Fluid hourly rate should be calculated');
+assert.strictEqual(girRateInput.placeholder, `İdame: ${appState.medicine.fluid.hourlyRate} mL/saat`, 'GIR rate placeholder must dynamically reflect fluid hourlyRate');
+console.log('✓ Pipeline M: Fluid Hourly Rate -> GIR Rate Placeholder Sync verified.');
+
 // ----------------------------------------------------------------------------
 // TEST 4: MOTOR BAĞIMLILIK ÇÖZÜCÜ SONSUZ DÖNGÜ VE PERFORMANS TESTİ
 // ----------------------------------------------------------------------------

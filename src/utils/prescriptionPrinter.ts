@@ -424,7 +424,7 @@ export function generatePrescriptionHTML(
     }
 
     return `
-      <tr class="border-b border-slate-300 hover:bg-slate-50/50">
+      <tr class="border-b border-slate-300 hover:bg-slate-50/50" style="break-inside: avoid; page-break-inside: avoid;">
         <td class="p-2 text-xs font-semibold text-slate-900 border-r border-slate-200">
           <div class="font-bold text-slate-900">${idx + 1}. ${escapeHtml(item.name)}</div>
           <div class="text-[10px] text-slate-500 font-mono flex items-center gap-1.5">
