@@ -23,6 +23,7 @@ import {
     calculatePreeclampsia 
 } from '../engines/obgynEngine';
 import { getEl, getVal, getNum, getChk, escapeHtml } from '../utils/domUtils';
+import { getSvgIcon, replaceEmojisWithSvg } from '../utils/icons';
 
 export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     const y = ageData.y;
@@ -67,7 +68,7 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             if (alvVal.gynecologicWarning) {
                 alvHtml += `<div class="mt-1 text-[9px] text-amber-300 font-sans font-normal leading-tight">${escapeHtml(alvVal.gynecologicWarning)}</div>`;
             }
-            alvRes.innerHTML = alvHtml;
+            alvRes.innerHTML = replaceEmojisWithSvg(alvHtml);
         } else {
             alvRes.classList.add('hidden');
         }
@@ -111,7 +112,7 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             if (pkVal.clinicalNote) {
                 pkHtml += `<div class="mt-1 text-[9px] text-slate-300 leading-snug">${escapeHtml(pkVal.clinicalNote)}</div>`;
             }
-            pkRes.innerHTML = pkHtml;
+            pkRes.innerHTML = replaceEmojisWithSvg(pkHtml);
         } else {
             pkRes.classList.add('hidden');
         }
@@ -242,7 +243,7 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             appState.obgyn.trimester = null;
             appState.medicine.pregnancyTrimester = null;
             eddRes.classList.remove('hidden');
-            eddRes.innerHTML = `<span class="text-rose-400 text-xs font-semibold">${escapeHtml(eddVal.error || '⚠️ Hatalı SAT: Son adet tarihi gelecekte olamaz (veya >44 hafta olamaz).')}</span>`;
+            eddRes.innerHTML = replaceEmojisWithSvg(`<span class="text-rose-400 text-xs font-semibold">${escapeHtml(eddVal.error || 'Hatalı SAT: Son adet tarihi gelecekte olamaz (veya >44 hafta olamaz).')}</span>`);
         } else if (eddVal) {
             appState.obgyn.eddData = eddVal;
             appState.obgyn.trimester = eddVal.trimester;
@@ -259,17 +260,17 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             if (eddVal.recommendations && eddVal.recommendations.length > 0) {
                 recHtml = `
                     <div class="mt-1.5 p-2 rounded bg-cyan-950/40 border border-cyan-800/60 text-cyan-200 text-[11px] space-y-1">
-                        <div class="font-bold text-cyan-300">🔍 Gestasyonel Hafta Takip Önerileri:</div>
+                        <div class="font-bold text-cyan-300 flex items-center gap-1.5">${getSvgIcon('calendar', 'w-3.5 h-3.5 text-cyan-400 shrink-0')}<span>Gestasyonel Hafta Takip Önerileri:</span></div>
                         ${eddVal.recommendations.map(r => `<div>• ${escapeHtml(r)}</div>`).join('')}
                     </div>
                 `;
             }
-            eddRes.innerHTML = `
+            eddRes.innerHTML = replaceEmojisWithSvg(`
                 <div class="text-xs text-slate-200 font-medium">
                     GH: <span class="text-amber-300 font-bold">${escapeHtml(eddVal.gestationalAge)}</span> | TDT: <span class="text-emerald-300 font-bold">${escapeHtml(eddVal.edd)}</span>
                 </div>
                 ${recHtml}
-            `;
+            `);
         } else {
             appState.obgyn.eddData = null;
             appState.obgyn.trimester = null;
@@ -318,7 +319,7 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
         if (appState.obgyn.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
             preRes.classList.remove('hidden');
             const alertText = appState.obgyn.preeclampsia.alert ? `<div class="mt-1 text-xs text-rose-200 font-normal leading-relaxed bg-rose-950/40 p-2 rounded border border-rose-800/50">${escapeHtml(appState.obgyn.preeclampsia.alert)}</div>` : '';
-            preRes.innerHTML = `<div class="font-bold text-xs ${appState.obgyn.preeclampsia.isSevere ? 'text-rose-400' : 'text-amber-300'}">${escapeHtml(appState.obgyn.preeclampsia.diagnosis)}</div>${alertText}`;
+            preRes.innerHTML = replaceEmojisWithSvg(`<div class="font-bold text-xs ${appState.obgyn.preeclampsia.isSevere ? 'text-rose-400' : 'text-amber-300'}">${escapeHtml(appState.obgyn.preeclampsia.diagnosis)}</div>${alertText}`);
         } else {
             preRes.classList.add('hidden');
         }

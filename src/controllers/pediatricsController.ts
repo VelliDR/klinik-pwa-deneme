@@ -17,6 +17,8 @@ import {
 import { calculatePediatricIron } from '../engines/ironEngine';
 import { calculatePEWS, calculateNEWS2 } from '../engines/triageEngine';
 import { getEl, getVal, getNum, getChk } from '../utils/domUtils';
+import { getSvgIcon, formatClinicalAlertHTML, replaceEmojisWithSvg } from '../utils/icons';
+
 
 export function updatePediatricCard(ageData: PatientAgeResult): void {
     const y = ageData.y;
@@ -50,7 +52,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
             if (compVax.routineVaccines && compVax.routineVaccines.length > 0) {
                 html += `<div class="space-y-1">
                     <div class="flex items-center justify-between text-[10px] font-bold text-emerald-400">
-                        <span>✅ Rutin GBP (Sağlık Bakanlığı):</span>
+                        <span class="flex items-center gap-1.5">${getSvgIcon('checkCircle', 'w-3.5 h-3.5 text-emerald-400 shrink-0')}<span>Rutin GBP (Sağlık Bakanlığı):</span></span>
                         <span class="text-[9px] text-emerald-500/80 font-normal">ASM / Ücretsiz</span>
                     </div>
                     <ul class="space-y-1">
@@ -66,16 +68,18 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                     </ul>
                 </div>`;
             } else {
-                html += `<div class="p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-400 text-[10px] leading-relaxed">
-                    ℹ️ Bu yaş için rutin takvimde planlı aşı bulunmamaktadır. <em>(Not: HBsAg pozitif anne bebeklerinde 1. ayda monovalan Hep-B 2. dozu uygulanır).</em>
+                html += `<div class="p-2 rounded bg-slate-900/60 border border-slate-800 text-slate-400 text-[10px] leading-relaxed flex items-center gap-1.5">
+                    ${getSvgIcon('info', 'w-3.5 h-3.5 text-slate-400 shrink-0')}
+                    <span>Bu yaş için rutin takvimde planlı aşı bulunmamaktadır. <em>(Not: HBsAg pozitif anne bebeklerinde 1. ayda monovalan Hep-B 2. dozu uygulanır).</em></span>
                 </div>`;
             }
 
             // Suçiçeği 49-72 Ay Yakalama Uyarısı (1 Eylül 2026)
             if (compVax.varicellaCatchUp && compVax.varicellaCatchUp.eligible) {
                 html += `<div class="mt-2 p-2 rounded-lg bg-violet-950/40 border border-violet-700/60 text-violet-300 text-[10px] leading-relaxed">
-                    <div class="font-bold flex items-center gap-1 text-violet-200">
-                        <span>💉 Suçiçeği Yakalama Protokolü (1 Eylül 2026):</span>
+                    <div class="font-bold flex items-center gap-1.5 text-violet-200">
+                        ${getSvgIcon('syringe', 'w-3.5 h-3.5 text-violet-300 shrink-0')}
+                        <span>Suçiçeği Yakalama Protokolü (1 Eylül 2026):</span>
                     </div>
                     <div class="mt-0.5 text-violet-300/90">${compVax.varicellaCatchUp.details}</div>
                 </div>`;
@@ -86,12 +90,12 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                 const rr = compVax.rotavirusRule;
                 if (rr.windowStatus === 'OPTIMAL_FIRST_DOSE') {
                     html += `<div class="mt-2 p-2 rounded-lg bg-emerald-950/30 border border-emerald-700/50 text-emerald-300 text-[10px] leading-relaxed">
-                        <div class="font-bold text-emerald-200">🟢 Rotavirüs 1. Doz Penceresi (Özel Aşı):</div>
+                        <div class="font-bold text-emerald-200 flex items-center gap-1.5">${getSvgIcon('checkCircle', 'w-3.5 h-3.5 text-emerald-400 shrink-0')}<span>Rotavirüs 1. Doz Penceresi (Özel Aşı):</span></div>
                         <div class="text-emerald-300/90 mt-0.5">${rr.details}</div>
                     </div>`;
                 } else if (rr.windowStatus === 'OPTIMAL_SUBSEQUENT_DOSE') {
                     html += `<div class="mt-2 p-2 rounded-lg bg-amber-950/30 border border-amber-700/50 text-amber-300 text-[10px] leading-relaxed">
-                        <div class="font-bold text-amber-200">⚠️ Rotavirüs Devam Dozları:</div>
+                        <div class="font-bold text-amber-200 flex items-center gap-1.5">${getSvgIcon('alertTriangle', 'w-3.5 h-3.5 text-amber-400 shrink-0')}<span>Rotavirüs Devam Dozları:</span></div>
                         <div class="text-amber-300/90 mt-0.5">${rr.details}</div>
                         ${rr.warning ? `<div class="text-rose-400 font-bold mt-1 bg-rose-950/40 p-1 rounded border border-rose-800/60">${rr.warning}</div>` : ''}
                     </div>`;
@@ -106,7 +110,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
             if (compVax.meningococcalSchedule && compVax.meningococcalSchedule.eligible) {
                 html += `<div class="mt-2 p-2 rounded-lg bg-sky-950/30 border border-sky-700/50 text-sky-300 text-[10px] leading-relaxed">
                     <div class="font-bold text-sky-200 flex items-center justify-between">
-                        <span>🛡️ Meningokok Özel Takvimi (MenB &amp; MenACWY):</span>
+                        <span class="flex items-center gap-1.5">${getSvgIcon('shield', 'w-3.5 h-3.5 text-sky-400 shrink-0')}<span>Meningokok Özel Takvimi (MenB &amp; MenACWY):</span></span>
                         <span class="text-[9px] text-sky-400 font-normal">Reçeteli</span>
                     </div>
                     <ul class="list-disc pl-4 mt-1 space-y-0.5 text-sky-200/90">
@@ -117,8 +121,9 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
 
             // Maternal Tdab Bilgisi (Doğurganlık çağındaki kadınlarda)
             if (compVax.maternalTdapRule && compVax.maternalTdapRule.eligible) {
-                html += `<div class="mt-2 p-1.5 rounded bg-pink-950/30 border border-pink-700/50 text-pink-300 text-[10px]">
-                    <strong>🤰 Gebelikte Maternal Tdab (2 Nisan 2025):</strong> 18-24 veya 27-36. GH her gebelikte 1 doz Tdab aşısı önerilir.
+                html += `<div class="mt-2 p-1.5 rounded bg-pink-950/30 border border-pink-700/50 text-pink-300 text-[10px] flex items-center gap-1.5">
+                    ${getSvgIcon('pregnant', 'w-3.5 h-3.5 text-pink-400 shrink-0')}
+                    <span><strong>Gebelikte Maternal Tdab (2 Nisan 2025):</strong> 18-24 veya 27-36. GH her gebelikte 1 doz Tdab aşısı önerilir.</span>
                 </div>`;
             }
 
@@ -130,7 +135,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                 </button>
             </div>`;
 
-            vaxEl.innerHTML = html;
+            vaxEl.innerHTML = replaceEmojisWithSvg(html);
         } else if (vaxEl) {
             vaxEl.innerHTML = 'Bu ay için planlı aşı bulunamadı.';
         }
@@ -140,7 +145,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
         if (vaxEl) {
             vaxEl.innerHTML = `
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-900/50 border border-slate-800/80 text-[11px] text-slate-400">
-                    <span>💡 Aşı takvimi için lütfen yaş giriniz veya tüm kılavuz tabloları için köşe kutucuğuna tıklayınız.</span>
+                    <span class="flex items-center gap-1.5">${getSvgIcon('info', 'w-3.5 h-3.5 text-cyan-400 shrink-0')}<span>Aşı takvimi için lütfen yaş giriniz veya tüm kılavuz tabloları için köşe kutucuğuna tıklayınız.</span></span>
                     <button type="button" class="btn-trigger-vax-modal shrink-0 px-2 py-1 rounded bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-700/70 text-[10px] font-semibold transition-colors cursor-pointer">
                         Aşı Tabloları (GBP 2026) →
                     </button>
@@ -238,10 +243,10 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                 ironHtml += `<div class="mt-1 text-[10px] text-slate-400">${ir.treatment.text}</div>`;
             }
 
-            ironRes.innerHTML = ironHtml;
+            ironRes.innerHTML = replaceEmojisWithSvg(ironHtml);
         } else if (ir && ir.status === 'INCOMPLETE' && ironRes) {
             ironRes.classList.remove('hidden');
-            ironRes.innerHTML = `<div class="text-amber-400 text-xs">${ir.hbEvaluation.text}</div>`;
+            ironRes.innerHTML = replaceEmojisWithSvg(`<div class="text-amber-400 text-xs">${ir.hbEvaluation.text}</div>`);
         } else if (ironRes) {
             ironRes.classList.add('hidden');
         }
@@ -285,7 +290,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
             if (syrupDose) {
                 syrupRes.classList.remove('hidden');
                 if (syrupDose.isBlocked) {
-                    syrupRes.innerHTML = `
+                    syrupRes.innerHTML = replaceEmojisWithSvg(`
                         <div class="space-y-1.5 tabular-nums text-xs">
                             <div class="flex items-center justify-between pb-1 border-b border-rose-800">
                                 <span class="font-bold text-rose-300">${syrupDose.name}</span>
@@ -311,9 +316,9 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                                 ${syrupDose.syringeWarning}
                             </div>
                         </div>
-                    `;
+                    `);
                 } else {
-                    syrupRes.innerHTML = `
+                    syrupRes.innerHTML = replaceEmojisWithSvg(`
                         <div class="space-y-1.5 tabular-nums text-xs">
                             <div class="flex items-center justify-between pb-1 border-b border-slate-700/50">
                                 <span class="font-bold text-slate-200">${syrupDose.name}</span>
@@ -343,7 +348,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                             ` : ''}
                             ${syrupDose.ratioNotice ? `
                                 <div class="p-1.5 rounded ${syrupDose.ratio === '14:1' ? (syrupDose.ratioNotice.includes('⚠️') ? 'bg-amber-950/40 border border-amber-700/70 text-amber-300' : 'bg-emerald-950/40 border border-emerald-700/70 text-emerald-300') : 'bg-amber-950/40 border border-amber-700/70 text-amber-300'} text-[10px]">
-                                    ${syrupDose.ratioNotice}
+                                    ${formatClinicalAlertHTML(syrupDose.ratioNotice)}
                                 </div>
                             ` : ''}
                             ${syrupDose.negativeGuidelineWarning ? `
@@ -413,7 +418,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                                 ${syrupDose.syringeWarning}
                             </div>
                         </div>
-                    `;
+                    `);
                 }
             } else {
                 syrupRes.classList.add('hidden');
@@ -472,8 +477,8 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
         if (appState.pediatrics.bp && pedBpContainer) {
             pedBpContainer.classList.remove('hidden');
             pedBpContainer.className = `col-span-2 p-2 rounded-lg border text-xs tabular-nums space-y-0.5 ${appState.pediatrics.bp.alertClass}`;
-            pedBpContainer.innerHTML = `<div class="font-bold">AAP 2017 / PALS Tansiyon: ${appState.pediatrics.bp.stage}</div>
-                ${appState.pediatrics.bp.thresholds ? `<div class="text-xs text-slate-300 opacity-90">${appState.pediatrics.bp.thresholds}</div>` : ''}`;
+            pedBpContainer.innerHTML = replaceEmojisWithSvg(`<div class="font-bold">AAP 2017 / PALS Tansiyon: ${appState.pediatrics.bp.stage}</div>
+                ${appState.pediatrics.bp.thresholds ? `<div class="text-xs text-slate-300 opacity-90">${appState.pediatrics.bp.thresholds}</div>` : ''}`);
         } else if (pedBpContainer) {
             pedBpContainer.classList.add('hidden');
         }
@@ -493,7 +498,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                 badgeRiskType.textContent = 'PEWS';
                 badgeRiskType.className = `text-xs font-bold tabular-nums ${pewsRes.score >= 3 ? 'text-rose-400' : 'text-emerald-400'}`;
                 textRiskScore.textContent = `Skor: ${pewsRes.score}`;
-                flagContainer.innerHTML = pewsRes.recommendation;
+                flagContainer.innerHTML = replaceEmojisWithSvg(pewsRes.recommendation);
             }
             appState.medicine.news2 = null;
         } else {
@@ -534,7 +539,7 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
                 if (news2Res.isPartial && news2Res.missingParams && news2Res.missingParams.length > 0) {
                     recText = `[Kısmi Triyaj Skoru] (Eksik: ${news2Res.missingParams.join(', ')}). ${recText}`;
                 }
-                flagContainer.innerHTML = recText;
+                flagContainer.innerHTML = replaceEmojisWithSvg(recText);
             }
             appState.pediatrics.pews = null;
         } else {
@@ -544,3 +549,4 @@ export function updatePediatricCard(ageData: PatientAgeResult): void {
         }
     }
 }
+

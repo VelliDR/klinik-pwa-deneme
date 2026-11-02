@@ -18,6 +18,7 @@ import {
     calculateHASBLED 
 } from '../engines/thrombosisEngine';
 import { getEl, getNum, getChk } from '../utils/domUtils';
+import { replaceEmojisWithSvg } from '../utils/icons';
 
 if (typeof document !== 'undefined') {
     document.addEventListener('change', (e: Event) => {
@@ -162,7 +163,7 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
                 const alertColor = (gcsVal.isEntubated || gcsVal.isNotTestable) ? 'text-amber-400 font-semibold' : 'text-rose-400 font-bold';
                 html += `<div class="${alertColor}">${gcsVal.airwayRisk}</div>`;
             }
-            gRes.innerHTML = html;
+            gRes.innerHTML = replaceEmojisWithSvg(html);
 
             // HATA-M4-005: AVPU ile Çapraz Senkronizasyon ve Güvenlik Kalkanı
             const avpuSelect = getEl('input-avpu') as HTMLSelectElement | null;

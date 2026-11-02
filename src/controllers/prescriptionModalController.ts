@@ -10,6 +10,7 @@ import {
 import { sanitizeForHbys } from '../utils/soapGenerator';
 import { evaluatePrescriptionInteractions } from '../engines/interactionTierEngine';
 import { copyToClipboardWithFallback, updateLiveSOAP } from './workstationController';
+import { getSvgIcon } from '../utils/icons';
 
 
 const escapeHtml = (val: unknown): string => {
@@ -257,7 +258,7 @@ export function initPrescriptionModalController(): void {
               <option value="Saşe" ${d.form === 'Saşe' ? 'selected' : ''}>Saşe</option>
               <option value="Fitil" ${d.form === 'Fitil' ? 'selected' : ''}>Fitil</option>
             </select>
-            <button type="button" class="rx-btn-delete text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 text-xs font-bold transition-colors" title="İlacı Kaldır">✕</button>
+            <button type="button" class="rx-btn-delete text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 transition-colors flex items-center justify-center" title="İlacı Kaldır">${getSvgIcon('close', 'w-3.5 h-3.5')}</button>
           </div>
         </div>
 

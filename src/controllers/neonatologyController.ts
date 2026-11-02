@@ -19,6 +19,7 @@ import { evaluateAap2022Jaundice } from '../engines/jaundiceEngine';
 import { calculateNeonatalFluid } from '../engines/fluidEngine';
 import type { BhutaniGuideline, BilirubinMeasurementType } from '../types/engines';
 import { getEl, getVal, getNum, getChk, escapeHtml } from '../utils/domUtils';
+import { replaceEmojisWithSvg } from '../utils/icons';
 
 export function updateNeonatologyCard(ageData: PatientAgeResult): void {
     const isNeonate = (ageData.days !== null && ageData.days !== undefined && ageData.days <= 28);
@@ -442,7 +443,7 @@ export function updateNeonatologyCard(ageData: PatientAgeResult): void {
                     bannerHtml += `<span class="text-rose-400 font-bold block mt-0.5">${escapeHtml(neoFluid.weightLossAnalysis.warning)}</span>`;
                 }
                 bannerHtml += `<span class="text-rose-400 font-semibold block mt-0.5">${neoFluid.contraindicationNotice}</span>`;
-                if (neoFluidDescText) neoFluidDescText.innerHTML = bannerHtml;
+                if (neoFluidDescText) neoFluidDescText.innerHTML = replaceEmojisWithSvg(bannerHtml);
             }
         }
     } else if (isNeonate) {

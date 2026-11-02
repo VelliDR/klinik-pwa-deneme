@@ -32,6 +32,8 @@ import {
     calculateCURB65 
 } from '../engines/nephroToxEngine';
 import { getEl, getVal, getNum, getChk, parseNum, escapeHtml } from '../utils/domUtils';
+import { getSvgIcon, formatClinicalAlertHTML, replaceEmojisWithSvg } from '../utils/icons';
+
 
 let activeFluidTopicId: string | null = null;
 
@@ -49,11 +51,21 @@ function toggleFluidKnowledgeTopic(topicId: string): void {
     const topic = FLUID_KNOWLEDGE_TOPICS.find(t => t.id === topicId);
     if (!topic) return;
 
+    const topicIconSvg = getSvgIcon(
+        topic.id === '5r_rule' ? 'shield' :
+        topic.id === 'aap_paradigm' ? 'zap' :
+        topic.id === 'dextrose_paradox' ? 'flask' :
+        topic.id === 'potassium_safety' ? 'alertTriangle' :
+        topic.id === 'fluid_creep' ? 'droplet' :
+        topic.id === 'organ_restrictions' ? 'heart' : 'alertCircle',
+        'w-5 h-5 text-cyan-400 shrink-0'
+    );
+
     activeFluidTopicId = topicId;
     container.innerHTML = `
         <div class="flex items-start justify-between gap-2 border-b border-cyan-800/60 pb-1.5">
             <div class="flex items-center gap-2">
-                <span class="text-base">${topic.icon}</span>
+                ${topicIconSvg}
                 <div>
                     <span class="font-bold text-slate-100">${escapeHtml(topic.title)}</span>
                     <span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 ml-2 font-normal">${escapeHtml(topic.badgeText)}</span>
@@ -237,7 +249,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             }
 
             if (outSolutionRec) {
-                outSolutionRec.textContent = maintFluid.fluidTypeRecommendation;
+                outSolutionRec.innerHTML = replaceEmojisWithSvg(escapeHtml(maintFluid.fluidTypeRecommendation));
             }
 
             if (textCreepBase) textCreepBase.textContent = `${maintFluid.dailyVolume} mL/gün`;
@@ -256,7 +268,9 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                         const isDanger = w.includes('🚨');
                         const isWarning = w.includes('⚠️');
                         const bgClass = isDanger ? 'bg-rose-950/40 border-rose-800/60 text-rose-200' : (isWarning ? 'bg-amber-950/40 border-amber-800/60 text-amber-200' : 'bg-slate-900 border-slate-700/60 text-slate-300');
-                        return `<div class="p-2 rounded-lg border ${bgClass} leading-tight">${escapeHtml(w)}</div>`;
+                        const cleanText = w.replace(/(?:🚨|⚠️|⚠\uFE0F?)/gu, '').trim();
+                        const iconSvg = getSvgIcon(isDanger ? 'alertCircle' : (isWarning ? 'alertTriangle' : 'info'), `w-3.5 h-3.5 ${isDanger ? 'text-rose-400' : 'text-amber-400'} shrink-0 mt-0.5`);
+                        return `<div class="p-2 rounded-lg border ${bgClass} leading-tight flex items-start gap-1.5">${iconSvg}<span>${replaceEmojisWithSvg(escapeHtml(cleanText))}</span></div>`;
                     }).join('');
                     containerFluidWarnings.classList.remove('hidden');
                 } else {
@@ -291,16 +305,17 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                 outDailyGlu.textContent = `GIR: ${neoFluid.girMgKgMin} mg/kg/dk`;
             }
             if (outSolutionRec) {
-                outSolutionRec.textContent = neoFluid.soluteAdvice;
+                outSolutionRec.innerHTML = replaceEmojisWithSvg(escapeHtml(neoFluid.soluteAdvice));
             }
             if (containerFluidWarnings) {
-                let warnHtml = `<div class="p-2 rounded-lg border bg-amber-950/40 border-amber-800/60 text-amber-200 leading-tight">${escapeHtml(neoFluid.contraindicationNotice)}</div>`;
+                let warnHtml = `<div class="p-2 rounded-lg border bg-amber-950/40 border-amber-800/60 text-amber-200 leading-tight">${replaceEmojisWithSvg(escapeHtml(neoFluid.contraindicationNotice))}</div>`;
                 if (neoFluid.weightLossAnalysis?.warning) {
-                    warnHtml += `<div class="p-2 rounded-lg border bg-rose-950/40 border-rose-800/60 text-rose-200 leading-tight mt-1">${escapeHtml(neoFluid.weightLossAnalysis.warning)}</div>`;
+                    warnHtml += `<div class="p-2 rounded-lg border bg-rose-950/40 border-rose-800/60 text-rose-200 leading-tight mt-1">${replaceEmojisWithSvg(escapeHtml(neoFluid.weightLossAnalysis.warning))}</div>`;
                 }
                 containerFluidWarnings.innerHTML = warnHtml;
                 containerFluidWarnings.classList.remove('hidden');
             }
+
         } else {
             if (outRatePerKg) outRatePerKg.textContent = '--';
             if (outDailyNa) outDailyNa.textContent = '--';
@@ -429,7 +444,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     if (ionWarn) {
         if (warnings.length > 0) {
             ionWarn.classList.remove('hidden');
-            ionWarn.innerHTML = warnings.join('<br>');
+            ionWarn.innerHTML = replaceEmojisWithSvg(warnings.join('<br>'));
         } else {
             ionWarn.classList.add('hidden');
         }
@@ -488,7 +503,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             outputHtml += `
             <div class="flex items-center justify-between gap-2 pb-1 border-b border-slate-700/60">
                 <div class="${headingColor} font-bold text-xs flex items-center gap-1.5">
-                    <span>${isAbnormal ? '⚠️' : '✅'}</span>
+                    ${getSvgIcon(isAbnormal ? 'alertTriangle' : 'checkCircle', `w-3.5 h-3.5 ${isAbnormal ? 'text-rose-400' : 'text-emerald-400'} shrink-0`)}
                     <span>${bgAnalysis.primaryDisorder}</span>
                 </div>
                 <span class="text-[9px] px-2 py-0.5 rounded font-mono font-semibold border ${badgeBg}">
@@ -559,14 +574,20 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                 outputHtml += `
                 <div class="text-[9px] text-sky-300 bg-sky-950/30 border border-sky-800/40 rounded p-1.5 space-y-0.5">
                     <div><b>VBG Dönüşümü:</b> Hesaplanan arteriyel eşdeğer: pH ${bgAnalysis.pH.toFixed(3)}, pCO2 ${bgAnalysis.pCO2.toFixed(1)} mmHg, HCO3 ${bgAnalysis.HCO3.toFixed(1)} mEq/L</div>
-                    <div class="text-sky-400/90 text-[8.5px]">⚠️ Veno-arteriyel pCO2 farkı (ΔpCO2) >6 mmHg ise kardiyak debi azlığı, şok ve doku hipoperfüzyonunu gösterir.</div>
+                    <div class="text-sky-400/90 text-[8.5px] flex items-center gap-1.5">
+                        ${getSvgIcon('alertTriangle', 'w-3 h-3 text-sky-400 shrink-0')}
+                        <span>Veno-arteriyel pCO2 farkı (ΔpCO2) >6 mmHg ise kardiyak debi azlığı, şok ve doku hipoperfüzyonunu gösterir.</span>
+                    </div>
                 </div>`;
             }
 
             if (bgAnalysis.isInternallyConsistent === false) {
                 outputHtml += `
-                <div class="text-[9px] text-rose-300 bg-rose-950/40 border border-rose-700/60 rounded p-1.5">
-                    <b>⚠️ Analitik Tutarsızlık (Kassirer-Bleich):</b> Ölçülen pH ile pCO2/HCO3 oranından hesaplanan [H+] arasında %${bgAnalysis.consistencyDetails?.diffPercent.toFixed(1)} sapma tespit edildi. Pıhtı, hava kabarcığı veya beklemiş numune olasılığını kontrol ediniz.
+                <div class="text-[9px] text-rose-300 bg-rose-950/40 border border-rose-700/60 rounded p-1.5 flex items-start gap-1.5">
+                    ${getSvgIcon('alertTriangle', 'w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5')}
+                    <div>
+                        <b>Analitik Tutarsızlık (Kassirer-Bleich):</b> Ölçülen pH ile pCO2/HCO3 oranından hesaplanan [H+] arasında %${bgAnalysis.consistencyDetails?.diffPercent.toFixed(1)} sapma tespit edildi. Pıhtı, hava kabarcığı veya beklemiş numune olasılığını kontrol ediniz.
+                    </div>
                 </div>`;
             }
 
@@ -590,7 +611,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             <details id="box-bg-deep-details" ${wasDetailOpen ? 'open' : ''} class="group/deep mt-2 rounded-lg border border-cyan-700/50 bg-[#060A12] p-2 transition-all">
                 <summary class="cursor-pointer select-none flex items-center justify-between text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 list-none [&::-webkit-details-marker]:hidden">
                     <span class="flex items-center gap-1.5">
-                        <span class="text-xs">🔬</span>
+                        ${getSvgIcon('microscope', 'w-3.5 h-3.5 text-cyan-400 shrink-0')}
                         <span>Fizyopatolojik Detay & Ekol Karşılaştırma Kutusu</span>
                     </span>
                     <span class="text-[9px] text-cyan-400 group-open/deep:rotate-180 transition-transform">▼ Detay</span>
@@ -679,7 +700,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                 </div>
             </details>`;
 
-            bgRes.innerHTML = outputHtml;
+            bgRes.innerHTML = replaceEmojisWithSvg(outputHtml);
             bgRes.className = `text-[10px] p-2.5 rounded-lg space-y-2 border ${isAbnormal ? 'bg-rose-950/40 border-rose-600/50 text-rose-200' : 'bg-slate-900/60 border-slate-700/50 text-slate-200'}`;
         }
     } else {
@@ -737,7 +758,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
             if (infWarnEl) {
                 if (infObj.isExtremeDoseAlert && infObj.extremeDoseWarning) {
                     infWarnEl.classList.remove('hidden');
-                    infWarnEl.textContent = infObj.extremeDoseWarning;
+                    infWarnEl.innerHTML = replaceEmojisWithSvg(escapeHtml(infObj.extremeDoseWarning));
                 } else {
                     infWarnEl.classList.add('hidden');
                 }
@@ -795,7 +816,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                     [ACİL] Hipoglisemi Acil Bolus: ${g.hypoglycemiaBolus.instructions}
                 </div>`;
             }
-            girContainer.innerHTML = gHtml;
+            girContainer.innerHTML = replaceEmojisWithSvg(gHtml);
         }
     } else {
         appState.medicine.gir = null;
@@ -945,11 +966,11 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         if (c.status === 'BLOCKED' || c.status === 'INVALID_INPUT' || c.status === 'OUT_OF_RANGE') {
             qtcHtml = `<div class="text-rose-400 font-semibold">${c.interpretation}</div>`;
             qtRes.className = 'p-2 rounded-lg space-y-1 tabular-nums mt-2 border bg-rose-950/40 border-rose-600/50';
-            qtRes.innerHTML = qtcHtml;
+            qtRes.innerHTML = replaceEmojisWithSvg(qtcHtml);
         } else if (c.status === 'INCOMPLETE') {
             qtcHtml = `<div class="text-slate-400 text-xs">${c.interpretation}</div>`;
             qtRes.className = 'p-2 rounded-lg space-y-1 tabular-nums mt-2 border bg-slate-900/60 border-slate-700/50';
-            qtRes.innerHTML = qtcHtml;
+            qtRes.innerHTML = replaceEmojisWithSvg(qtcHtml);
         } else {
             qtcHtml += `<div class="text-slate-300"><strong>Nabız / RR:</strong> ${c.hr} bpm <span class="text-slate-400">(${c.rrMs} ms)</span></div>`;
             qtcHtml += `<div><strong>QT / QRS:</strong> ${c.qt} ms / ${c.qrs ? c.qrs + ' ms' : 'Normal'}`;
@@ -984,7 +1005,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                 qtcHtml += `<div class="text-fuchsia-400 text-[9px] mt-1 space-y-0.5 font-bold">${c.drugFlags.map((f: string) => `<div>${f}</div>`).join('')}</div>`;
             }
 
-            qtRes.innerHTML = qtcHtml;
+            qtRes.innerHTML = replaceEmojisWithSvg(qtcHtml);
             const isDanger = c.colorCode === 'danger' || c.colorCode === 'orange';
             qtRes.className = `p-2 rounded-lg space-y-1 tabular-nums mt-2 border ${isDanger ? 'bg-rose-950/40 border-rose-600/50' : c.colorCode === 'warning' ? 'bg-amber-950/40 border-amber-600/50' : 'bg-slate-900/60 border-slate-700/50'}`;
         }
@@ -1024,7 +1045,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         const st = appState.medicine.steroid;
         if (st) {
             steroidTable.classList.remove('hidden');
-            steroidTable.innerHTML = `
+            steroidTable.innerHTML = replaceEmojisWithSvg(`
                 <div class="text-sky-300 font-bold mb-1 border-b border-slate-700/50 pb-1">
                     ${st.sourceDrug} ${st.inputDoseMg} mg Eşdeğerlikleri:
                 </div>
@@ -1046,7 +1067,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                         ${st.mineralocorticoidWarning}
                     </div>
                 ` : ''}
-            `;
+            `);
         }
     } else {
         appState.medicine.steroid = null;
@@ -1067,7 +1088,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         if (hm) {
             homaRes.classList.remove('hidden');
             homaRes.className = `p-2 rounded-lg border tabular-nums space-y-1 text-xs ${hm.alertClass}`;
-            homaRes.innerHTML = `
+            homaRes.innerHTML = replaceEmojisWithSvg(`
                 <div class="flex justify-between items-center font-bold">
                     <span>HOMA-IR: ${hm.homaIR}</span>
                     <span>Eşik: &ge; ${hm.cutoff} (${hm.tannerStage})</span>
@@ -1083,7 +1104,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                         ${hm.validityWarning}
                     </div>
                 ` : ''}
-            `;
+            `);
         }
     } else {
         appState.medicine.homaIR = null;
@@ -1246,7 +1267,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
 
         if (fenaOut) {
             fenaOut.classList.remove('hidden');
-            fenaOut.innerHTML = resHtml;
+            fenaOut.innerHTML = replaceEmojisWithSvg(resHtml);
         }
     } else {
         appState.nephroTox.fena = null;
@@ -1286,7 +1307,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
         }
         if (corrRes && corrNaOut) {
             corrNaOut.classList.remove('hidden');
-            corrNaOut.innerHTML = `
+            corrNaOut.innerHTML = replaceEmojisWithSvg(`
                 <div class="flex justify-between items-center font-bold">
                     <span>${corrRes.formulaNotes?.includes('Hillier 2.4 standardı') ? 'Hillier' : 'Katz'} Düzeltilmiş Na: ${corrRes.correctedSodium} mEq/L</span>
                     <span class="text-slate-400 text-[10px]">Ölçülen: ${corrRes.measuredSodium}</span>
@@ -1310,7 +1331,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                         ` : ''}
                     </div>
                 ` : ''}
-            `;
+            `);
         }
     } else {
         appState.nephroTox.correctedSodium = null;
@@ -1360,14 +1381,14 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                     </div>
                 `;
             }
-            apapOut.innerHTML = `
+            apapOut.innerHTML = replaceEmojisWithSvg(`
                 <div class="flex justify-between items-center font-bold">
                     <span>${apapRes.hoursPostIngestion}. Saat: ${apapRes.levelMcgMl} µg/mL (Eşik: ${apapRes.threshold ?? '--'} µg/mL)</span>
                     <span>${apapRes.status === 'LATE_PRESENTATION' ? '[GEÇ BAŞVURU - TOKSİK]' : (apapRes.isToxic ? '[TOKSİK SEVİYE]' : 'Tedavi Çizgisi Altında')}</span>
                 </div>
                 <div class="text-[10px] leading-relaxed">${apapRes.interpretation}</div>
                 ${nacHtml}
-            `;
+            `);
         }
     } else {
         appState.nephroTox.paracetamol = null;

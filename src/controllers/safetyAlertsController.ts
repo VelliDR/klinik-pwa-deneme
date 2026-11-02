@@ -4,6 +4,7 @@
 // ============================================================================
 import { appState } from '../state';
 import { escapeHtml, getEl, getNum, getVal } from '../utils/domUtils';
+import { getSvgIcon, replaceEmojisWithSvg } from '../utils/icons';
 import type { PatientAgeResult } from './biometryController';
 import {
     detectTripleWhammy,
@@ -88,14 +89,14 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             const importantAlerts = (interactionsRes?.alerts || []).filter((a: any) => a.tier === 1 || a.tier === 2);
             if (importantAlerts.length > 0) {
                 outInteractions.classList.remove('hidden');
-                outInteractions.innerHTML = `
+                outInteractions.innerHTML = replaceEmojisWithSvg(`
                     <div class="space-y-2">
                         ${importantAlerts.map((a: any) => {
                             if (a.tier === 1) {
                                 return `
                                     <div class="p-2.5 rounded-lg bg-rose-950/70 border-2 border-rose-600 text-rose-200 text-xs space-y-1">
                                         <div class="flex items-center justify-between font-bold text-rose-300">
-                                            <span class="flex items-center gap-1.5">[🚨 TIER 1 - ÖLÜMCÜL KONTRENDİKASYON / HARD STOP]</span>
+                                            <span class="flex items-center gap-1.5">${getSvgIcon('alertCircle', 'w-4 h-4 text-rose-400 shrink-0')}<span>TIER 1 - ÖLÜMCÜL KONTRENDİKASYON (HARD STOP)</span></span>
                                             <span class="text-[10px] font-mono uppercase bg-rose-900/80 px-2 py-0.5 rounded border border-rose-500">${escapeHtml(a.ruleId)}</span>
                                         </div>
                                         <div class="font-semibold text-white">${escapeHtml(a.alertTitle)}</div>
@@ -107,7 +108,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                                 return `
                                     <div class="p-2.5 rounded-lg bg-amber-950/60 border border-amber-600 text-amber-200 text-xs space-y-1">
                                         <div class="flex items-center justify-between font-bold text-amber-300">
-                                            <span class="flex items-center gap-1.5">[⚠️ TIER 2 - YÜKSEK RİSK / SOFT STOP]</span>
+                                            <span class="flex items-center gap-1.5">${getSvgIcon('alertTriangle', 'w-4 h-4 text-amber-400 shrink-0')}<span>TIER 2 - YÜKSEK RİSK (SOFT STOP)</span></span>
                                             <span class="text-[10px] font-mono uppercase bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">${escapeHtml(a.ruleId)}</span>
                                         </div>
                                         <div class="font-semibold text-white">${escapeHtml(a.alertTitle)}</div>
@@ -117,7 +118,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                             }
                         }).join('')}
                     </div>
-                `;
+                `);
             } else {
                 outInteractions.classList.add('hidden');
                 outInteractions.innerHTML = '';
@@ -131,11 +132,11 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             if (outWhammy) {
                 outWhammy.classList.remove('hidden');
                 outWhammy.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${whammyRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
-                outWhammy.innerHTML = `
+                outWhammy.innerHTML = replaceEmojisWithSvg(`
                     <div class="font-bold text-xs">${whammyRes.title}</div>
                     <div class="text-xs leading-relaxed">${whammyRes.mechanism || ''}</div>
                     <div class="text-xs">${(whammyRes.recommendations || []).join(' ')}</div>
-                `;
+                `);
             }
         } else if (outWhammy) {
             outWhammy.classList.add('hidden');
@@ -148,12 +149,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             if (outSerotonin) {
                 outSerotonin.classList.remove('hidden');
                 outSerotonin.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${seroRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
-                outSerotonin.innerHTML = `
+                outSerotonin.innerHTML = replaceEmojisWithSvg(`
                     <div class="font-bold text-xs">${seroRes.title}</div>
                     <div class="text-xs leading-relaxed">${seroRes.mechanism || ''}</div>
                     <div class="text-xs text-slate-300 italic">${seroRes.hunterCriteriaInfo || ''}</div>
                     <div class="text-xs">• <strong>Öneriler:</strong> ${(seroRes.recommendations || []).join(' ')}</div>
-                `;
+                `);
             }
         } else if (outSerotonin) {
             outSerotonin.classList.add('hidden');
@@ -170,12 +171,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             if (outHyperkalemia) {
                 outHyperkalemia.classList.remove('hidden');
                 outHyperkalemia.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${hyperKRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
-                outHyperkalemia.innerHTML = `
+                outHyperkalemia.innerHTML = replaceEmojisWithSvg(`
                     <div class="font-bold text-xs">${hyperKRes.title}</div>
                     <div class="text-xs leading-relaxed">${hyperKRes.mechanism || ''}</div>
                     ${hyperKRes.riskFactorsIdentified.length > 0 ? `<div class="text-xs text-amber-300 font-semibold">• Tespit Edilen Riskler: ${hyperKRes.riskFactorsIdentified.join(' | ')}</div>` : ''}
                     <div class="text-xs">• <strong>Klinik Eylem:</strong> ${(hyperKRes.recommendations || []).join(' ')}</div>
-                `;
+                `);
             }
         } else if (outHyperkalemia) {
             outHyperkalemia.classList.add('hidden');
@@ -188,12 +189,12 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             if (outCypStatin) {
                 outCypStatin.classList.remove('hidden');
                 outCypStatin.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${cypStatinRes.alertClass === 'danger' ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
-                outCypStatin.innerHTML = `
+                outCypStatin.innerHTML = replaceEmojisWithSvg(`
                     <div class="font-bold text-xs">${cypStatinRes.title}</div>
                     <div class="text-xs leading-relaxed">${cypStatinRes.mechanism || ''}</div>
                     <div class="text-xs text-emerald-300">• <strong>Güvenli Alternatif:</strong> ${[...cypStatinRes.safeAlternatives.antibiotics, ...cypStatinRes.safeAlternatives.statins].join(' | ')}</div>
                     <div class="text-xs">• <strong>Öneriler:</strong> ${(cypStatinRes.recommendations || []).join(' ')}</div>
-                `;
+                `);
             }
         } else if (outCypStatin) {
             outCypStatin.classList.add('hidden');
@@ -234,7 +235,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                         .map((a: any) => `<div class="p-1.5 rounded bg-red-900/40 border border-red-700/60 text-red-200 font-sans font-bold text-xs">${escapeHtml(a.title)}: ${escapeHtml(a.message)}</div>`)
                         .join('');
 
-                    outRenal.innerHTML = `
+                    outRenal.innerHTML = replaceEmojisWithSvg(`
                         <div class="font-bold text-xs">${headerTitle}</div>
                         ${alertsHtml}
                         ${(renalRes.warnings || []).map((w: any) => {
@@ -243,7 +244,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                             const tdmHtml = tdmGuide ? `<div class="mt-0.5 text-[11px] text-purple-300 font-semibold">• <strong>TDM Kılavuzu:</strong> ${escapeHtml(tdmGuide)}</div>` : '';
                             return `<div class="text-xs leading-relaxed">• ${tdmBadge}<strong>${escapeHtml(w.drug)}</strong>: ${escapeHtml(w.message)}${tdmHtml}</div>`;
                         }).join('')}
-                    `;
+                    `);
                 }
             } else if (outRenal) {
                 outRenal.classList.add('hidden');
@@ -257,7 +258,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                     outRenal.classList.remove('hidden');
                     outRenal.className = 'p-2.5 rounded-lg border tabular-nums space-y-1 text-xs bg-rose-950/60 border-rose-600 text-rose-200';
                     outRenal.innerHTML = `
-                        <div class="font-bold text-xs uppercase tracking-wide text-rose-300">🚫 DOAC RENAL GÜVENLİK KİLİDİ</div>
+                        <div class="font-bold text-xs uppercase tracking-wide text-rose-300 flex items-center gap-1.5">${getSvgIcon('ban', 'w-4 h-4 text-rose-400 shrink-0')}<span>DOAC RENAL GÜVENLİK KİLİDİ</span></div>
                         <div class="text-xs leading-relaxed font-semibold text-rose-300">DOAC (Apiksaban/Rivaroksaban/Dabigatran/Edoksaban) reçetelerinde Cockcroft-Gault CrCl kontrolü zorunludur. Lütfen kreatinin giriniz! Obez veya renal riskli hastalarda eGFR ile doz tayini majör fatal kanama riski oluşturur.</div>
                     `;
                 } else if (isPediatric && scrVal !== null && scrVal > 1.2 && !appState.biometry.heightCm) {
@@ -285,10 +286,10 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                 if (outPreg) {
                     outPreg.classList.remove('hidden');
                     outPreg.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${pregRes.hasSevereFetalRisk ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
-                    outPreg.innerHTML = `
+                    outPreg.innerHTML = replaceEmojisWithSvg(`
                         <div class="font-bold text-xs">Gebelik ve Fetotoksisite Uyarısı (${escapeHtml(safetyTrim || (gestationalWeeks ? Math.ceil(gestationalWeeks / 13) : ''))}. Trimester${gestationalWeeks ? ` - ${gestationalWeeks}. Hafta` : ''})</div>
                         ${pregRes.alerts.map((a: any) => `<div class="text-xs leading-relaxed">• <strong>${escapeHtml(a.drugName)} (Kategori ${escapeHtml(a.category)})</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
-                    `;
+                    `);
                 }
             } else if (outPreg) {
                 outPreg.classList.add('hidden');
@@ -307,10 +308,10 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                 if (outNeoDrug) {
                     outNeoDrug.classList.remove('hidden');
                     outNeoDrug.className = `p-2.5 rounded-lg border tabular-nums space-y-1 text-xs ${neoDrugRes.hasContraindication ? 'bg-rose-950/50 border-rose-600/70 text-rose-200' : 'bg-amber-950/50 border-amber-600/70 text-amber-200'}`;
-                    outNeoDrug.innerHTML = `
+                    outNeoDrug.innerHTML = replaceEmojisWithSvg(`
                         <div class="font-bold text-xs">Yenidoğan İlaç Güvenlik Kalkanı</div>
                         ${neoDrugRes.alerts.map((a: any) => `<div class="text-xs leading-relaxed">• <strong>${escapeHtml(a.drugName)}</strong>: ${escapeHtml(a.warning)}</div>`).join('')}
-                    `;
+                    `);
                 }
             } else if (outNeoDrug) {
                 outNeoDrug.classList.add('hidden');
@@ -430,7 +431,7 @@ export function renderSelectedDrugs(): void {
                     `}
                 </div>
             </div>
-            <button class="text-slate-500 hover:text-rose-500 text-xs px-2 py-1 rounded hover:bg-slate-800 transition-colors" onclick="window.removeDrug(${index})" title="İlacı Kaldır">✕</button>
+            <button class="text-slate-500 hover:text-rose-400 p-1.5 rounded hover:bg-slate-800 transition-colors flex items-center justify-center" onclick="window.removeDrug(${index})" title="İlacı Kaldır">${getSvgIcon('close', 'w-3.5 h-3.5')}</button>
         </div>
         `;
     }).join('');

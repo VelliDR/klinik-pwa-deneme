@@ -7,6 +7,7 @@
 
 import { findEquivalents, getDrugBadgesHTML, type DrugInputForEquivalents } from '../drugEngine';
 import type { NormalizedDrugRecord } from '../db/titckIndexedDB';
+import { getSvgIcon } from '../utils/icons';
 
 function escapeHtmlSafe(str: string): string {
   return String(str || '')
@@ -327,7 +328,7 @@ export function initEquivalentsModalController(callbacks?: {
         }
 
         // Görsel geri bildirim
-        btn.innerHTML = '<span>✓ Eklendi!</span>';
+        btn.innerHTML = `<span class="flex items-center gap-1">${getSvgIcon('check', 'w-3.5 h-3.5')}<span>Eklendi!</span></span>`;
         btn.classList.remove('bg-emerald-950', 'text-emerald-300', 'border-emerald-700');
         btn.classList.add('bg-cyan-950', 'text-cyan-300', 'border-cyan-600');
         setTimeout(() => {

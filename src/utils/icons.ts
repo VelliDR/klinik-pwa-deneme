@@ -3,6 +3,7 @@
  * 
  * Saf TypeScript / Vanilla SVG ikon yardımcıları.
  * Dış bağımlılık (React, Lucide-React, harici CDN) içermez, %100 çevrimdışıdır.
+ * 1.5px / 2px homojen çizgi kalınlığı, fill="none", stroke="currentColor".
  */
 
 export type IconName =
@@ -11,6 +12,7 @@ export type IconName =
   | 'user'
   | 'stethoscope'
   | 'flask'
+  | 'beaker'
   | 'lungs'
   | 'microscope'
   | 'scalpel'
@@ -26,6 +28,7 @@ export type IconName =
   | 'alertCircle'
   | 'lock'
   | 'check'
+  | 'checkCircle'
   | 'search'
   | 'copy'
   | 'print'
@@ -39,7 +42,21 @@ export type IconName =
   | 'moon'
   | 'sun'
   | 'package'
-  | 'star';
+  | 'star'
+  | 'syringe'
+  | 'thermometer'
+  | 'snowflake'
+  | 'ban'
+  | 'info'
+  | 'clipboard'
+  | 'close'
+  | 'x'
+  | 'pregnant'
+  | 'statusDot'
+  | 'chevronDown'
+  | 'chevronUp'
+  | 'chevronRight'
+  | 'externalLink';
 
 const ICONS: Record<IconName, string> = {
   // Ay (Karanlık Mod)
@@ -68,6 +85,7 @@ const ICONS: Record<IconName, string> = {
 
   // Lab / Sıvı / Beaker
   flask: `<path d="M10 2v7.31a2 2 0 01-.5 1.34L3.2 18.9A2 2 0 004.7 22h14.6a2 2 0 001.5-3.1l-6.3-8.25a2 2 0 01-.5-1.34V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><path d="M7 16h10"/>`,
+  beaker: `<path d="M10 2v7.31a2 2 0 01-.5 1.34L3.2 18.9A2 2 0 004.7 22h14.6a2 2 0 001.5-3.1l-6.3-8.25a2 2 0 01-.5-1.34V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><path d="M7 16h10"/>`,
 
   // Akciğer / Solunum / Kan Gazı
   lungs: `<path d="M12 4v8"/><path d="M7 6.5C4 8 3 11 3 14c0 3.5 2.5 6 6 6 1.5 0 2.5-.5 3-1.5"/><path d="M17 6.5C20 8 21 11 21 14c0 3.5-2.5 6-6 6-1.5 0-2.5-.5-3-1.5"/>`,
@@ -105,7 +123,7 @@ const ICONS: Record<IconName, string> = {
   // Uyarı Üçgeni (⚠️)
   alertTriangle: `<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
 
-  // Uyarı Dairesi (🛑)
+  // Uyarı Dairesi (🛑 / 🚨)
   alertCircle: `<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`,
 
   // Kilit (🔒)
@@ -113,6 +131,9 @@ const ICONS: Record<IconName, string> = {
 
   // Onay (✓)
   check: `<polyline points="20 6 9 17 4 12"/>`,
+
+  // Yuvarlak Onay (✅)
+  checkCircle: `<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`,
 
   // Arama
   search: `<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>`,
@@ -141,8 +162,44 @@ const ICONS: Record<IconName, string> = {
   // Saat / Kronometre
   clock: `<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`,
 
-  // Akıllı / Parlaklık
-  sparkles: `<path d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.364-6.364l-2.121 2.121M7.757 16.243l-2.121 2.121m12.728 0l-2.121-2.121M7.757 7.757L5.636 5.636"/>`
+  // Akıllı / Parlaklık / İnci
+  sparkles: `<path d="M12 3v3m0 12v3m9-9h-3M6 12H3m15.364-6.364l-2.121 2.121M7.757 16.243l-2.121 2.121m12.728 0l-2.121-2.121M7.757 7.757L5.636 5.636"/>`,
+
+  // Şırınga / Aşı / Enjeksiyon (💉)
+  syringe: `<path d="M18 2l4 4"/><path d="M17 7l3-3"/><path d="M19 9l-4.5 4.5"/><path d="M10 8L7 5l-1.5 1.5 3 3L3 15v3h3l5.5-5.5 3 3 1.5-1.5-3-3 4-4z"/><line x1="8" y1="16" x2="2" y2="22"/>`,
+
+  // Termometre / Ateş (🌡️)
+  thermometer: `<path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/>`,
+
+  // Kar Tanesi / Soğuk Zincir (🧊)
+  snowflake: `<line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"/>`,
+
+  // Yasak / Kontrendike (🚫 / 🛑)
+  ban: `<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>`,
+
+  // Bilgi / İnci (💡 / ℹ️)
+  info: `<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>`,
+
+  // Pano / Dosya / Monograf (📋)
+  clipboard: `<path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>`,
+
+  // Kapat / Çarpı (✕)
+  close: `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`,
+  x: `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`,
+
+  // Gebelik / Maternal (🤰)
+  pregnant: `<circle cx="12" cy="4" r="2"/><path d="M9 8h4a3 3 0 013 3v2a4 4 0 01-4 4h-1v5H9v-7a4 4 0 014-4H9V8z"/>`,
+
+  // Durum Noktası (🟢 / 🔴 / 🟡)
+  statusDot: `<circle cx="12" cy="12" r="4" fill="currentColor"/>`,
+
+  // Chevron Yönleri
+  chevronDown: `<polyline points="6 9 12 15 18 9"/>`,
+  chevronUp: `<polyline points="18 15 12 9 6 15"/>`,
+  chevronRight: `<polyline points="9 18 15 12 9 6"/>`,
+
+  // Dış Bağlantı
+  externalLink: `<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>`
 };
 
 /**
@@ -150,7 +207,7 @@ const ICONS: Record<IconName, string> = {
  */
 export function getSvgIcon(name: IconName | string, className: string = 'w-4 h-4 shrink-0'): string {
   const inner = ICONS[name as IconName] || ICONS.sparkles;
-  return `<svg class="${className}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+  return `<svg class="${className}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
 }
 
 /**
@@ -162,15 +219,109 @@ export function getSeverityIcon(
 ): string {
   switch (severity) {
     case 'critical':
-      return getSvgIcon('alertCircle', className || 'w-4 h-4 text-rose-500 shrink-0');
+      return getSvgIcon('alertCircle', className || 'w-4 h-4 text-rose-400 shrink-0');
     case 'warning':
-      return getSvgIcon('alertTriangle', className || 'w-4 h-4 text-amber-500 shrink-0');
+      return getSvgIcon('alertTriangle', className || 'w-4 h-4 text-amber-400 shrink-0');
     case 'locked':
       return getSvgIcon('lock', className || 'w-4 h-4 text-slate-400 shrink-0');
     case 'success':
-      return getSvgIcon('check', className || 'w-4 h-4 text-emerald-500 shrink-0');
+      return getSvgIcon('check', className || 'w-4 h-4 text-emerald-400 shrink-0');
     case 'info':
     default:
       return getSvgIcon('shield', className || 'w-4 h-4 text-sky-400 shrink-0');
   }
 }
+
+/**
+ * Metin içindeki emojileri (⚠️, 🚨, 🛑, ✅, 💡 vb.) tespit edip saf SVG ikonlu profesyonel
+ * klinik rozet veya temizlenmiş HTML çıktısına dönüştürür.
+ * Testler motor çıktısını string olarak kontrol ettiğinde etkilenmez, yalnızca ekrana basılırken çağrılır.
+ */
+export function formatClinicalAlertHTML(
+  rawText: string,
+  options: {
+    badge?: boolean;
+    customIcon?: IconName;
+    className?: string;
+  } = {}
+): string {
+  if (!rawText) return '';
+  
+  let cleaned = rawText;
+  let detectedType: 'critical' | 'warning' | 'info' | 'success' | 'locked' = 'info';
+
+  if (cleaned.includes('🚨') || cleaned.includes('🛑')) {
+    detectedType = 'critical';
+  } else if (cleaned.includes('⚠️') || cleaned.includes('⚠')) {
+    detectedType = 'warning';
+  } else if (cleaned.includes('✅') || cleaned.includes('✓')) {
+    detectedType = 'success';
+  } else if (cleaned.includes('🔒')) {
+    detectedType = 'locked';
+  }
+
+  // Emojileri Unicode-güvenli (/gu) olarak temizle
+  cleaned = cleaned
+    .replace(/(?:⚠️|⚠|🚨|🛑|✅|✓|💡|💉|💧|🫀|🧪|🛡️|🛡|🧊|🌡️|🌡|🚫|⛔|🔬|📋|🔍|🤰|🟢|🔴|🟡|📌|🔒|❄️|❄|\p{Extended_Pictographic}|\uFE0F)/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const iconName: IconName = options.customIcon || (
+    detectedType === 'critical' ? 'alertCircle' :
+    detectedType === 'warning' ? 'alertTriangle' :
+    detectedType === 'success' ? 'check' :
+    detectedType === 'locked' ? 'lock' : 'info'
+  );
+
+  const iconColor =
+    detectedType === 'critical' ? 'text-rose-400' :
+    detectedType === 'warning' ? 'text-amber-400' :
+    detectedType === 'success' ? 'text-emerald-400' :
+    detectedType === 'locked' ? 'text-slate-400' : 'text-sky-400';
+
+  const iconSvg = getSvgIcon(iconName, `w-3.5 h-3.5 ${iconColor} shrink-0`);
+
+  if (options.badge) {
+    const badgeBg =
+      detectedType === 'critical' ? 'bg-rose-950/40 border-rose-800/60 text-rose-200' :
+      detectedType === 'warning' ? 'bg-amber-950/40 border-amber-800/60 text-amber-200' :
+      detectedType === 'success' ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-200' :
+      detectedType === 'locked' ? 'bg-slate-900 border-slate-700 text-slate-300' :
+      'bg-slate-900/80 border-slate-700/60 text-slate-200';
+
+    return `<div class="p-2 rounded-lg border ${badgeBg} flex items-start gap-2 ${options.className || ''}">${iconSvg}<span class="leading-tight">${cleaned}</span></div>`;
+  }
+
+  return `<span class="inline-flex items-center gap-1.5 ${options.className || ''}">${iconSvg}<span>${cleaned}</span></span>`;
+}
+
+/**
+ * Motor çıktılarındaki satır içi emojileri (⚠️, 🚨, 🟢, 💉, 💧 vb.) doğrudan
+ * satır içi (inline) monokrom/klinik SVG ikonlara dönüştürür.
+ * Ham motor verilerini bozmaz; yalnızca DOM render katmanında kullanılır.
+ */
+export function replaceEmojisWithSvg(htmlOrText: string): string {
+  if (!htmlOrText) return '';
+  return htmlOrText
+    .replace(/🚨|🛑/gu, () => getSvgIcon('alertCircle', 'inline-block w-3.5 h-3.5 text-rose-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/⚠️|⚠\uFE0F?/gu, () => getSvgIcon('alertTriangle', 'inline-block w-3.5 h-3.5 text-amber-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/✅|✓/gu, () => getSvgIcon('check', 'inline-block w-3.5 h-3.5 text-emerald-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🟢/gu, () => getSvgIcon('statusDot', 'inline-block w-3 h-3 text-emerald-400 align-[-1px] mr-1 shrink-0'))
+    .replace(/🟡/gu, () => getSvgIcon('statusDot', 'inline-block w-3 h-3 text-amber-400 align-[-1px] mr-1 shrink-0'))
+    .replace(/🔴/gu, () => getSvgIcon('statusDot', 'inline-block w-3 h-3 text-rose-400 align-[-1px] mr-1 shrink-0'))
+    .replace(/🔒/gu, () => getSvgIcon('lock', 'inline-block w-3.5 h-3.5 text-slate-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/💉/gu, () => getSvgIcon('syringe', 'inline-block w-3.5 h-3.5 text-sky-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/💧/gu, () => getSvgIcon('droplet', 'inline-block w-3.5 h-3.5 text-cyan-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🥛|🧪/gu, () => getSvgIcon('beaker', 'inline-block w-3.5 h-3.5 text-indigo-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/❄️|❄\uFE0F?|🧊/gu, () => getSvgIcon('snowflake', 'inline-block w-3.5 h-3.5 text-sky-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🌡️|🌡\uFE0F?/gu, () => getSvgIcon('thermometer', 'inline-block w-3.5 h-3.5 text-amber-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🛡️|🛡\uFE0F?/gu, () => getSvgIcon('shield', 'inline-block w-3.5 h-3.5 text-cyan-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🚫|⛔|❌/gu, () => getSvgIcon('ban', 'inline-block w-3.5 h-3.5 text-rose-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/💡|ℹ️|ℹ\uFE0F?|📌/gu, () => getSvgIcon('info', 'inline-block w-3.5 h-3.5 text-sky-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/📋/gu, () => getSvgIcon('clipboard', 'inline-block w-3.5 h-3.5 text-cyan-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🔬/gu, () => getSvgIcon('microscope', 'inline-block w-3.5 h-3.5 text-cyan-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🫀/gu, () => getSvgIcon('heart', 'inline-block w-3.5 h-3.5 text-rose-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/🤰/gu, () => getSvgIcon('pregnant', 'inline-block w-3.5 h-3.5 text-pink-400 align-[-2px] mr-1 shrink-0'))
+    .replace(/\p{Extended_Pictographic}|\uFE0F/gu, '');
+}
+

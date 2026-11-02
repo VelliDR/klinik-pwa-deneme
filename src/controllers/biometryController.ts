@@ -26,6 +26,8 @@ import { calculateNeonatalWeightLoss } from '../engines/neonatologyEngine';
 import { calculateDevineIBW, calculateAdjustedBodyWeight } from '../engines/renalDoseEngine';
 import { calculateIdealBodyWeight } from '../engines/pediatricEngine';
 import { getEl, getVal, getNum, getChk, escapeHtml, parseNum } from '../utils/domUtils';
+import { getSvgIcon, replaceEmojisWithSvg } from '../utils/icons';
+
 
 export interface PatientAgeResult {
     y: number | null;
@@ -307,7 +309,7 @@ export function renderClinicalCardResult(el: HTMLElement | null, options: Clinic
     const recs = Array.isArray(recommendations) ? recommendations.join(' ') : (recommendations || '');
 
     el.className = `p-2 rounded-lg border tabular-nums space-y-1 text-xs ${bgStyle}`;
-    el.innerHTML = `
+    el.innerHTML = replaceEmojisWithSvg(`
         <div class="flex justify-between items-center font-bold">
             <span>${title}</span>
             <span>${riskText}</span>
@@ -315,8 +317,9 @@ export function renderClinicalCardResult(el: HTMLElement | null, options: Clinic
         ${subtitle ? `<div class="text-[10px] font-semibold">${subtitle}</div>` : ''}
         ${recs ? `<div class="text-[10px] text-slate-300 leading-relaxed">${recs}</div>` : ''}
         ${extraHtml || ''}
-    `;
+    `);
 }
+
 
 let currentPercentileTableMode: 'percentiles' | 'zscore' = 'percentiles';
 let percentileTableButtonsBound = false;
@@ -558,8 +561,9 @@ function renderDeviationBandsListHtml(p: PercentilesResult): string {
         </div>
     `).join('');
 
-    return alertsHtml + cardsHtml;
+    return replaceEmojisWithSvg(alertsHtml + cardsHtml);
 }
+
 
 function renderPercentileCurvesTableHtml(p: PercentilesResult, mode: 'percentiles' | 'zscore'): string {
     const tableData = p.percentileCurvesTable;
@@ -959,13 +963,14 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
                     ? 'bg-amber-950/50 border-amber-600/70 text-amber-200'
                     : 'bg-emerald-950/40 border-emerald-700/50 text-emerald-300');
             weightLossEl.className = `text-xs tabular-nums p-2 rounded-lg border space-y-0.5 ${alertBg}`;
-            weightLossEl.innerHTML = `
+            weightLossEl.innerHTML = replaceEmojisWithSvg(`
                 <div class="flex items-center justify-between font-bold">
                     <span>${wl.interpretation}</span>
                     <span class="text-[9px] px-1.5 py-0.5 rounded bg-black/40 font-sans">${(wl.percentLoss ?? 0) > 0 ? '%' + wl.percentLoss + ' Kayıp' : 'Kazanç'}</span>
                 </div>
                 <div class="text-[9px] text-slate-300 leading-tight pt-0.5">${wl.recommendations?.[0] || ''}</div>
-            `;
+            `);
+
         } else if (weightLossEl) {
             weightLossEl.classList.add('hidden');
         }
@@ -1070,8 +1075,8 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
                     rowCranialAlert.classList.remove('hidden');
                     const isDanger = p.cranialScreening.alertClass === 'danger';
                     rowCranialAlert.className = `p-1.5 rounded text-[10px] leading-tight space-y-0.5 ${isDanger ? 'bg-rose-950/80 border border-rose-800 text-rose-300' : 'bg-amber-950/80 border border-amber-800 text-amber-300'}`;
-                    outCranialAlertTitle.innerText = p.cranialScreening.riskTitle;
-                    outCranialAlertBody.innerText = p.cranialScreening.clinicalRecommendations[0] || '';
+                    outCranialAlertTitle.innerHTML = replaceEmojisWithSvg(escapeHtml(p.cranialScreening.riskTitle));
+                    outCranialAlertBody.innerHTML = replaceEmojisWithSvg(escapeHtml(p.cranialScreening.clinicalRecommendations[0] || ''));
                 } else if (rowCranialAlert) {
                     rowCranialAlert.classList.add('hidden');
                 }
@@ -1126,15 +1131,15 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
                 rowMalAlert.classList.remove('hidden');
                 const isDanger = p.malnutritionAssessment.alertClass === 'danger';
                 rowMalAlert.className = `p-1.5 rounded text-[10px] leading-tight space-y-0.5 ${isDanger ? 'bg-rose-950/80 border border-rose-800 text-rose-300' : 'bg-amber-950/80 border border-amber-800 text-amber-300'}`;
-                outMalTitle.innerText = `🚨 ${p.malnutritionAssessment.categoryText} (${p.malnutritionAssessment.treatmentProtocol.setting === 'INPATIENT' ? 'YATARAK İZLEM' : 'Ayaktan'})`;
-                outMalBody.innerText = `Kriter: ${p.malnutritionAssessment.criteriaMet.join(' • ')} | Hedef: ${p.malnutritionAssessment.treatmentProtocol.caloricTargetKcalKgDay}`;
+                outMalTitle.innerHTML = `<span class="flex items-center gap-1.5">${getSvgIcon(isDanger ? 'alertCircle' : 'alertTriangle', 'w-3.5 h-3.5 shrink-0')}<span>${replaceEmojisWithSvg(escapeHtml(p.malnutritionAssessment.categoryText))} (${p.malnutritionAssessment.treatmentProtocol.setting === 'INPATIENT' ? 'YATARAK İZLEM' : 'Ayaktan'})</span></span>`;
+                outMalBody.innerHTML = replaceEmojisWithSvg(escapeHtml(`Kriter: ${p.malnutritionAssessment.criteriaMet.join(' • ')} | Hedef: ${p.malnutritionAssessment.treatmentProtocol.caloricTargetKcalKgDay}`));
             } else if (rowMalAlert) {
                 rowMalAlert.classList.add('hidden');
             }
 
             if (p.positionCorrectionApplied && rowPosAlert && outPosAlert && p.positionCorrectionNote) {
                 rowPosAlert.classList.remove('hidden');
-                outPosAlert.innerText = p.positionCorrectionNote;
+                outPosAlert.innerHTML = replaceEmojisWithSvg(escapeHtml(p.positionCorrectionNote));
             } else if (rowPosAlert) {
                 rowPosAlert.classList.add('hidden');
             }
@@ -1142,7 +1147,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             const discordance = p.comparisonWithAlternative?.heightDiscordanceAlert || p.comparisonWithAlternative?.weightDiscordanceAlert;
             if (discordance && rowDiscAlert && outDiscAlert) {
                 rowDiscAlert.classList.remove('hidden');
-                outDiscAlert.innerText = discordance;
+                outDiscAlert.innerHTML = replaceEmojisWithSvg(escapeHtml(discordance));
             } else if (rowDiscAlert) {
                 rowDiscAlert.classList.add('hidden');
             }
@@ -1200,7 +1205,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
             if (th.deviationAlert) {
                 thHtml += `<div class="${(th.deviationValue ?? 0) < -1.5 ? 'text-rose-400 font-bold' : 'text-sky-400'} pt-1 border-t border-slate-800">${th.deviationAlert}</div>`;
             }
-            targetHContainer.innerHTML = thHtml;
+            targetHContainer.innerHTML = replaceEmojisWithSvg(thHtml);
         } else if (targetHContainer) {
             targetHContainer.classList.add('hidden');
         }
@@ -1275,7 +1280,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
                 </div>`;
             }
 
-            gvContainer.innerHTML = gvHtml;
+            gvContainer.innerHTML = replaceEmojisWithSvg(gvHtml);
         } else if (gvContainer) {
             gvContainer.classList.add('hidden');
         }
@@ -1340,7 +1345,7 @@ export function updateBiometryAndGrowth(ageData: PatientAgeResult): void {
                 </div>
             </div>`;
 
-            csContainer.innerHTML = csHtml;
+            csContainer.innerHTML = replaceEmojisWithSvg(csHtml);
         } else if (csContainer) {
             csContainer.classList.add('hidden');
         }
