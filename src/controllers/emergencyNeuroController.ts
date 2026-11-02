@@ -176,7 +176,6 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
                 // Eğer derin komada (GCS <= 8) hasta AVPU'da hala 'A' (Alert) ise veya AVPU seçilmemişse
                 if ((gcsVal.total <= 8 && avpuSelect.value === 'A') || avpuSelect.value === '') {
                     avpuSelect.value = mappedAvpu;
-                    avpuSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
         } else {
@@ -359,8 +358,9 @@ export function updateEmergencyNeuroCard(ageData: PatientAgeResult): void {
         selectHeartTrop?.dataset.userModified
     );
 
-    // HATA-M5-006: card-tromboz açıkken veya kullanıcı kutulara dokunduğunda 0 puanda dahi yeşil dışlama kartı basılmalıdır.
-    const shouldEvalHeart = Boolean(cardTromboz?.open || heartHasPoints || heartUserTouched || !cardTromboz);
+    // HATA-M5-006: card-tromboz görünür ve açıkken veya kullanıcı kutulara dokunduğunda 0 puanda dahi yeşil dışlama kartı basılmalıdır.
+    const isTrombozVisibleOpen = Boolean(cardTromboz?.open && !cardTromboz.classList.contains('hidden'));
+    const shouldEvalHeart = Boolean(isTrombozVisibleOpen || heartHasPoints || heartUserTouched || !cardTromboz);
 
     if (shouldEvalHeart && selectHeartHist) {
         const heartRes = calculateHEART({

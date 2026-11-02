@@ -65,16 +65,12 @@ export function initEcgUiController(onUpdateAllTabs: () => void): void {
     const rrMs = smallBoxes * msBox;
     if (ecgRrBoxesInput) {
       ecgRrBoxesInput.value = String(smallBoxes);
-      ecgRrBoxesInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     if (ecgRrInput) {
       ecgRrInput.value = String(rrMs);
-      ecgRrInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     if (ecgHrInput) {
       ecgHrInput.value = String(Math.round(60000 / rrMs));
-      ecgHrInput.dispatchEvent(new Event('input', { bubbles: true }));
-      ecgHrInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     onUpdateAllTabs();
   };

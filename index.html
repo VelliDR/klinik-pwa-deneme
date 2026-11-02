@@ -59,32 +59,29 @@
                     <!-- Tam Ekran Karartma Katmanı (Backdrop Overlay) -->
                     <div id="backdrop-packages" class="fixed inset-0 bg-black/75 backdrop-blur-[2px] z-40 hidden transition-opacity duration-150"></div>
 
-                    <!-- Popover Dropdown Panel (#card-custom-shortcuts içeriği) -->
+                    <!-- Popover Dropdown Panel (#card-custom-shortcuts içeriği - Hazır & Özel Paket Seçici) -->
                     <div id="card-custom-shortcuts" class="hidden fixed inset-x-3 top-14 md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:w-96 z-50 bg-[#111827] border border-slate-700 rounded-xl shadow-2xl p-3.5 text-left max-h-[80vh] overflow-y-auto no-scrollbar">
-                        <!-- Üst Bar: Başlık, Durum Rozeti ve Aksiyon Butonları -->
+                        <!-- Üst Bar: Başlık, Durum Rozeti ve Tümü Butonu -->
                         <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-800">
                             <div class="flex items-center gap-2">
                                 <h2 class="text-xs font-bold text-white tracking-wide">Akıllı Motor Paketleri</h2>
-                                <span id="badge-active-pack" class="text-[9px] px-2 py-0.5 rounded-full tabular-nums font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">Tüm Motorlar Açık (21/21)</span>
+                                <span id="badge-active-pack" class="text-[9px] px-2 py-0.5 rounded-full tabular-nums font-medium bg-cyan-950/80 text-cyan-300 border border-cyan-800/60">Demografi & Biyometri (3 Motor)</span>
                             </div>
                             <div class="flex items-center gap-1.5 ml-auto">
                                 <button type="button" id="btn-show-all-motors" class="h-6 px-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-[10px] font-medium flex items-center gap-1 transition-all" title="Tüm klinik motorları göster">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     <span>Tümü</span>
                                 </button>
-                                <button type="button" id="btn-toggle-custom-pack" class="h-6 px-2 rounded-md bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-medium flex items-center gap-1 transition-all">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 4v16m8-8H4"/></svg>
-                                    <span>Özelleştir</span>
-                                </button>
                             </div>
                         </div>
 
                         <!-- Hızlı Paket Seçim Butonları (2 Sütunlu Kompakt Izgara) -->
                         <div class="pt-2">
-                            <div class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                                KLİNİK PAKETLER
+                            <div class="flex items-center justify-between text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                                <span>KLİNİK PAKETLER</span>
+                                <span class="text-[9px] font-normal normal-case text-slate-500">Özelleştirme sol menüdedir</span>
                             </div>
-                            <div id="container-package-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2.5">
+                            <div id="container-package-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
                                 <!-- Paket Butonları JS tarafından doldurulur -->
                             </div>
                         </div>
@@ -103,53 +100,6 @@
                                     </div>
                                 </div>
                                 <div id="pack-info-pills" class="flex flex-wrap items-center gap-1 ml-auto"></div>
-                            </div>
-                        </div>
-
-                        <!-- Özelleştirme Çekmecesi (Drawer / Collapsible) -->
-                        <div id="drawer-custom-pack" class="hidden mt-2.5 pt-2.5 border-t border-slate-800 space-y-2">
-                            <div class="bg-[#0B111E] border border-slate-800 rounded-lg p-2.5 space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <h3 class="text-xs font-bold text-white">Yeni Motor Paketi Oluştur</h3>
-                                    <span class="text-[9px] text-amber-400 bg-amber-950/60 border border-amber-800/50 px-1.5 py-0.5 rounded">
-                                        Otomatik Bağımlılık
-                                    </span>
-                                </div>
-
-                                <div class="space-y-1.5">
-                                    <input type="text" id="input-custom-pack-name" placeholder="Örn: Nöbetçi Pediatri Paketi" class="w-full h-9 bg-[#060A12] border border-slate-800 rounded-md px-2.5 text-sm tabular-nums text-slate-200 placeholder-slate-600 focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none transition-colors">
-                                    <button type="button" id="btn-save-custom-pack" class="w-full h-8 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-all">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                        <span>Kaydet & Ekle</span>
-                                    </button>
-                                </div>
-
-                                <div>
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-[9px] font-semibold text-slate-400 uppercase">Dahil Edilecek Motorlar:</span>
-                                        <span id="label-resolved-count" class="text-[9px] text-slate-400">0 motor</span>
-                                    </div>
-                                    <div id="container-motor-checklist" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1"></div>
-                                </div>
-
-                                <div id="box-resolved-summary" class="bg-[#060A12] border border-slate-800 rounded-md p-2 text-[10px] text-slate-300 hidden">
-                                    <span class="font-bold text-amber-300">Pakete Gelecek Motorlar: </span>
-                                    <span id="text-resolved-list" class="text-slate-300"></span>
-                                </div>
-
-                                <div class="flex items-center justify-between pt-1 border-t border-slate-800">
-                                    <button type="button" id="btn-clear-selection" class="px-2 py-0.5 text-[10px] text-slate-400 hover:text-slate-200 transition-colors">
-                                        Temizle
-                                    </button>
-                                    <button type="button" id="btn-apply-custom-pack-now" class="px-2.5 py-1 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-semibold flex items-center gap-1 transition-all">
-                                        <span>Ekrana Getir</span>
-                                    </button>
-                                </div>
-
-                                <div id="section-saved-packs" class="pt-1.5 border-t border-slate-800 hidden">
-                                    <div class="text-[9px] font-semibold text-slate-400 uppercase mb-1">Özel Paketleriniz</div>
-                                    <div id="container-saved-packs-list" class="space-y-1 text-xs"></div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -200,101 +150,177 @@
         </div>
     </header>
 
-    <!-- 2. MOBİL YATAY KATEGORİ NAVİGASYONU (Masaüstünde lg:hidden ile gizli, mobilde görünür) -->
+    <!-- 2. MOBİL YATAY GRUP NAVİGASYONU (Masaüstünde lg:hidden ile gizli, mobilde 13 grup + Tümü) -->
     <nav id="category-pills" class="flex items-center justify-start gap-1.5 overflow-x-auto px-3 py-2 no-scrollbar border-b border-slate-800/60 bg-[#060911] lg:hidden select-none">
-        <button type="button" data-cat="all" class="cat-pill active h-7 px-2.5 rounded-md font-medium text-[11px] bg-cyan-950/60 text-cyan-300 border border-cyan-500/60 shadow-sm transition-all whitespace-nowrap shrink-0">Tümü</button>
-        <button type="button" data-cat="acil" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Acil & Tromboz</button>
-        <button type="button" data-cat="demografi" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Demografi & Vitaller</button>
-        <button type="button" data-cat="lab" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Lab & Sıvı</button>
-        <button type="button" data-cat="pediatri" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Pediatri & Neonatoloji</button>
-        <button type="button" data-cat="ilac" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">İlaç & TİTCK</button>
-        <button type="button" data-cat="dahiliye" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Dahiliye & Endokrin</button>
-        <button type="button" data-cat="cerrahi" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Cerrahi & OBGYN</button>
+        <button type="button" data-group="demografi" class="cat-pill active h-7 px-2.5 rounded-md font-medium text-[11px] bg-cyan-950/60 text-cyan-300 border border-cyan-500/60 shadow-sm transition-all whitespace-nowrap shrink-0">Demografi & Biyometri</button>
+        <button type="button" data-group="vitaller" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Vitaller & Triyaj</button>
+        <button type="button" data-group="tromboz" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Tromboz & Acil</button>
+        <button type="button" data-group="elektrolit" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Elektrolit & Sıvı</button>
+        <button type="button" data-group="kangazi" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Kan Gazı Analizi</button>
+        <button type="button" data-group="nefro" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Nefroloji & Toksik</button>
+        <button type="button" data-group="cerrahi" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Cerrahi & Yanık</button>
+        <button type="button" data-group="obgyn" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Kadın Doğum</button>
+        <button type="button" data-group="endokrin" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Endokrin & ÇEDD</button>
+        <button type="button" data-group="pediatri" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Pediatri & Aşı</button>
+        <button type="button" data-group="neonatoloji" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Neonatoloji</button>
+        <button type="button" data-group="ilac" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">İlaç & TİTCK</button>
+        <button type="button" data-group="infuzyon" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">İnfüzyon & GIR</button>
+        <button type="button" data-cat="all" class="cat-pill h-7 px-2.5 rounded-md font-medium text-[11px] bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-all whitespace-nowrap shrink-0">Tümü</button>
     </nav>
 
     <!-- 3. ANA ÇALIŞMA ALANI: 3-PANELLİ KLİNİK İŞ İSTASYONU -->
     <div class="max-w-[1700px] mx-auto px-3 sm:px-6 py-3 flex flex-col lg:flex-row gap-4 items-start pb-28 lg:pb-12 safe-bottom-pad">
-        
-        <!-- SOL KENAR PANEL (Desktop lg: 1024px+ Sticky İndeks / Klinik Ağaç) -->
-        <aside id="left-sidebar" class="w-56 hidden lg:block shrink-0 sticky top-12 h-[calc(100vh-3rem)] self-start bg-slate-900/70 border-r border-slate-800/80 p-2.5 backdrop-blur-md overflow-y-auto no-scrollbar space-y-1 shadow-sm">
-            <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 mb-1.5 flex items-center justify-between">
+
+        <!-- MOBİL SOL MENÜ KARARTMA KATMANI -->
+        <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-black/75 backdrop-blur-[2px] z-40 hidden lg:hidden transition-opacity"></div>
+
+        <!-- SOL KENAR PANEL: EN ÜSTTE PAKET ÖZELLEŞTİRME AKORDEONU + 13 KLİNİK GRUP (Desktop Sticky & Mobil Çekmece Birleşik) -->
+        <aside id="left-sidebar" class="hidden lg:block fixed lg:sticky inset-y-0 left-0 lg:top-12 z-50 lg:z-auto w-72 max-w-[85vw] lg:w-64 shrink-0 h-full lg:h-[calc(100vh-3rem)] self-start bg-[#0B111E] lg:bg-slate-900/70 border-r border-slate-800/80 p-2.5 backdrop-blur-md overflow-y-auto no-scrollbar space-y-2.5 shadow-2xl lg:shadow-sm" aria-label="Sol Menü ve Paket Özelleştirme">
+            <!-- Mobil Çekmece Üst Kapatma Şeridi -->
+            <div class="flex lg:hidden items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">SOL MENÜ & PAKETLER</span>
+                <button type="button" id="btn-close-mobile-sidebar" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded-md hover:bg-slate-800" title="Kapat" aria-label="Kapat">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <!-- EN ÜST: PAKET ÖZELLEŞTİRME SATIR İÇİ AKORDEONU -->
+            <div class="border-b border-slate-800/90 pb-2.5">
+                <button type="button" id="btn-toggle-custom-pack" aria-expanded="false" class="w-full h-9 px-2.5 rounded-lg bg-cyan-950/50 hover:bg-cyan-900/50 border border-cyan-700/60 text-cyan-200 text-xs font-semibold flex items-center justify-between gap-2 transition-all shadow-sm">
+                    <span class="flex items-center gap-2 min-w-0">
+                        <svg class="w-3.5 h-3.5 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m8-8H4"/></svg>
+                        <span class="truncate">Paket Özelleştir</span>
+                    </span>
+                    <svg id="icon-custom-pack-chevron" class="w-3.5 h-3.5 text-cyan-400 shrink-0 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+
+                <!-- Özelleştirme Çekmecesi (Sol Menü İçinde Satır İçi Akordeon) -->
+                <div id="drawer-custom-pack" class="hidden mt-2 space-y-2">
+                    <div class="bg-[#0B111E] border border-slate-800 rounded-lg p-2.5 space-y-2">
+                        <div class="flex items-center justify-between gap-1">
+                            <h3 class="text-[11px] font-bold text-white">Yeni Motor Paketi</h3>
+                            <span class="text-[8px] text-amber-400 bg-amber-950/60 border border-amber-800/50 px-1.5 py-0.5 rounded shrink-0">
+                                Oto-Bağımlılık
+                            </span>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <input type="text" id="input-custom-pack-name" placeholder="Örn: Nöbetçi Pediatri Paketi" class="w-full h-8 bg-[#060A12] border border-slate-800 rounded-md px-2 text-xs tabular-nums text-slate-200 placeholder-slate-600 focus:border-cyan-500/80 focus:ring-1 focus:ring-cyan-500/20 focus:outline-none transition-colors">
+                            <button type="button" id="btn-save-custom-pack" class="w-full h-8 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center justify-center gap-1 transition-all">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Kaydet & Ekle</span>
+                            </button>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[9px] font-semibold text-slate-400 uppercase">Motor Seçimi:</span>
+                                <span id="label-resolved-count" class="text-[9px] text-slate-400">0 motor</span>
+                            </div>
+                            <div id="container-motor-checklist" class="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto pr-1"></div>
+                        </div>
+
+                        <div id="box-resolved-summary" class="bg-[#060A12] border border-slate-800 rounded-md p-2 text-[10px] text-slate-300 hidden">
+                            <span class="font-bold text-amber-300">Bağlı Motorlar: </span>
+                            <span id="text-resolved-list" class="text-slate-300"></span>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-800">
+                            <button type="button" id="btn-clear-selection" class="btn-compact px-2 py-0.5 text-[10px] text-slate-400 hover:text-slate-200 transition-colors">
+                                Temizle
+                            </button>
+                            <button type="button" id="btn-apply-custom-pack-now" class="btn-compact px-2.5 py-1 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-semibold flex items-center gap-1 transition-all">
+                                <span>Ekrana Getir</span>
+                            </button>
+                        </div>
+
+                        <div id="section-saved-packs" class="pt-1.5 border-t border-slate-800 hidden">
+                            <div class="text-[9px] font-semibold text-slate-400 uppercase mb-1">Özel Paketleriniz</div>
+                            <div id="container-saved-packs-list" class="space-y-1 text-xs"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13 KLİNİK GRUP LİSTESİ -->
+            <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 mb-1 flex items-center justify-between">
                 <span>KLİNİK MODÜLLER</span>
-                <span class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">13 Modül</span>
+                <span class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">13 Grup</span>
             </div>
             <nav class="space-y-0.5 text-xs font-medium">
-                <a href="#card-demografi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-demografi" data-group="demografi" class="nav-sidebar-link active flex items-center justify-between px-2.5 py-1.5 rounded bg-slate-900 text-cyan-300 font-semibold transition-colors border-l-2 border-cyan-400">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         <span>Demografi & Biyometri</span>
                     </span>
                 </a>
-                <a href="#card-vitaller" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-vitaller" data-group="vitaller" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                         <span>Vitaller & Triyaj</span>
                     </span>
                 </a>
-                <a href="#card-tromboz" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-tromboz" data-group="tromboz" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                         <span>Tromboz & Acil</span>
                     </span>
                 </a>
-                <a href="#card-elektrolit" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-elektrolit" data-group="elektrolit" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
                         <span>Elektrolit & Sıvı</span>
                     </span>
                 </a>
-                <a href="#card-kangazi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-kangazi" data-group="kangazi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31a2 2 0 01-.5 1.34L3.2 18.9A2 2 0 004.7 22h14.6a2 2 0 001.5-3.1l-6.3-8.25a2 2 0 01-.5-1.34V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><path d="M7 16h10"/></svg>
                         <span>Kan Gazı Analizi</span>
                     </span>
                 </a>
-                <a href="#card-nefro" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-nefro" data-group="nefro" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                         <span>Nefroloji & Toksik</span>
                     </span>
                 </a>
-                <a href="#card-cerrahi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-cerrahi" data-group="cerrahi" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3v5a4.5 4.5 0 009 0V3"/><path d="M9 12.5v4.5a3 3 0 003 3h1a3 3 0 003-3V16"/><circle cx="17.5" cy="14.5" r="2.5"/><line x1="4.5" y1="3" x2="6" y2="3"/><line x1="12" y1="3" x2="13.5" y2="3"/></svg>
                         <span>Cerrahi & Yanık</span>
                     </span>
                 </a>
-                <a href="#card-obgyn" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-obgyn" data-group="obgyn" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                         <span>Kadın Doğum (OBGYN)</span>
                     </span>
                 </a>
-                <a href="#card-endokrin" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-endokrin" data-group="endokrin" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M6 7l6-4 6 4"/><path d="M6 7L3 13a3 3 0 006 0L6 7z"/><path d="M18 7l-3 6a3 3 0 006 0l-3-6z"/></svg>
                         <span>Endokrin & ÇEDD</span>
                     </span>
                 </a>
-                <a href="#card-pediatri-surup" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-pediatri-surup" data-group="pediatri" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9 12a3 3 0 006 0"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M12 2a4 4 0 014 4"/></svg>
                         <span>Pediatri & Aşı</span>
                     </span>
                 </a>
-                <a href="#card-neonatoloji" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-neonatoloji" data-group="neonatoloji" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9 12a3 3 0 006 0"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M12 2a4 4 0 014 4"/></svg>
                         <span>Neonatoloji</span>
                     </span>
                 </a>
-                <a href="#card-ilac" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-ilac" data-group="ilac" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5l10-10a4.95 4.95 0 10-7-7l-10 10a4.95 4.95 0 107 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>
                         <span>İlaç & TİTCK</span>
                     </span>
                 </a>
-                <a href="#card-infuzyon" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
+                <a href="#card-infuzyon" data-group="infuzyon" class="nav-sidebar-link flex items-center justify-between px-2.5 py-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors border-l-2 border-transparent">
                     <span class="flex items-center gap-2">
                         <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
                         <span>İnfüzyon & GIR</span>
@@ -303,79 +329,19 @@
             </nav>
         </aside>
 
-        <!-- MOBİL SİDEBAR OVERLAY / DRAWER -->
-        <div id="mobile-sidebar-drawer" class="fixed inset-0 z-50 hidden lg:hidden" role="dialog" aria-modal="true" aria-label="Klinik Modüller">
-            <div id="mobile-sidebar-backdrop" class="absolute inset-0 bg-black/75 backdrop-blur-[2px] transition-opacity"></div>
-            <div class="relative w-72 max-w-[85vw] h-full bg-[#0B111E] border-r border-slate-800 p-3 flex flex-col space-y-2 overflow-y-auto shadow-2xl">
-                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">KLİNİK MODÜLLER</span>
-                    <button type="button" id="btn-close-mobile-sidebar" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-white rounded-md hover:bg-slate-800" title="Kapat" aria-label="Kapat">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
+        <!-- ORTA ÇALIŞMA ALANI: DİNAMİK VE BAĞIMLILIK ÇÖZÜMLÜ 2-SÜTUNLU KART IZGARASI -->
+        <main id="clinical-workspace" class="flex-1 min-w-0 space-y-3">
+            <!-- Aktif Grup & Bağlı Motorlar Durum Şeridi -->
+            <div id="workspace-active-context" class="bg-slate-900/70 border border-slate-800/80 rounded-lg px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                    <span id="workspace-context-title" class="font-semibold text-slate-200 truncate">Demografi & Biyometri</span>
+                    <span id="workspace-context-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-800/50 tabular-nums shrink-0">3 Motor</span>
                 </div>
-                <nav class="space-y-0.5 text-xs font-medium">
-                    <a href="#card-demografi" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <span>Demografi & Biyometri</span>
-                    </a>
-                    <a href="#card-vitaller" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                        <span>Vitaller & Triyaj</span>
-                    </a>
-                    <a href="#card-tromboz" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                        <span>Tromboz & Acil</span>
-                    </a>
-                    <a href="#card-elektrolit" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
-                        <span>Elektrolit & Sıvı</span>
-                    </a>
-                    <a href="#card-kangazi" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M10 2v7.31a2 2 0 01-.5 1.34L3.2 18.9A2 2 0 004.7 22h14.6a2 2 0 001.5-3.1l-6.3-8.25a2 2 0 01-.5-1.34V2"/><line x1="8.5" y1="2" x2="15.5" y2="2"/><path d="M7 16h10"/></svg>
-                        <span>Kan Gazı Analizi</span>
-                    </a>
-                    <a href="#card-nefro" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        <span>Nefroloji & Toksik</span>
-                    </a>
-                    <a href="#card-cerrahi" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M4.5 3v5a4.5 4.5 0 009 0V3"/><path d="M9 12.5v4.5a3 3 0 003 3h1a3 3 0 003-3V16"/><circle cx="17.5" cy="14.5" r="2.5"/><line x1="4.5" y1="3" x2="6" y2="3"/><line x1="12" y1="3" x2="13.5" y2="3"/></svg>
-                        <span>Cerrahi & Yanık</span>
-                    </a>
-                    <a href="#card-obgyn" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-                        <span>Kadın Doğum (OBGYN)</span>
-                    </a>
-                    <a href="#card-endokrin" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 3v18"/><path d="M6 7l6-4 6 4"/><path d="M6 7L3 13a3 3 0 006 0L6 7z"/><path d="M18 7l-3 6a3 3 0 006 0l-3-6z"/></svg>
-                        <span>Endokrin & ÇEDD</span>
-                    </a>
-                    <a href="#card-pediatri-surup" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><path d="M9 12a3 3 0 006 0"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M12 2a4 4 0 014 4"/></svg>
-                        <span>Pediatri & Aşı</span>
-                    </a>
-                    <a href="#card-neonatoloji" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><path d="M9 12a3 3 0 006 0"/><path d="M9 9h.01"/><path d="M15 9h.01"/><path d="M12 2a4 4 0 014 4"/></svg>
-                        <span>Neonatoloji</span>
-                    </a>
-                    <a href="#card-ilac" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M10.5 20.5l10-10a4.95 4.95 0 10-7-7l-10 10a4.95 4.95 0 107 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>
-                        <span>İlaç & TİTCK</span>
-                    </a>
-                    <a href="#card-infuzyon" class="nav-sidebar-link h-9 px-3 rounded-md flex items-center gap-3 text-xs text-slate-300 hover:bg-slate-800/70 transition-colors">
-                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
-                        <span>İnfüzyon & GIR</span>
-                    </a>
-                </nav>
+                <div id="workspace-context-pills" class="flex flex-wrap items-center gap-1"></div>
             </div>
-        </div>
 
-        <!-- ORTA ÇALIŞMA ALANI: 2-SÜTUNLU DENGELİ KART IZGARASI -->
-        <main id="clinical-workspace" class="flex-1 min-w-0">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                
-                <!-- SÜTUN A (Sol Çalışma Grubu: Demografi, Vitaller, GCS, Kardiyo, Tromboz, Cerrahi, OBGYN, Endokrin, Notlar) -->
-                <div class="space-y-3">
+            <div id="workspace-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <details id="card-demografi" data-category="demografi" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden" open>
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Hasta Yaş & Demografi</span></span>
@@ -760,7 +726,7 @@
                 </div>
             </details>
 
-            <details id="card-vitaller" data-category="demografi" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden" open>
+            <details id="card-vitaller" data-category="demografi" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Vital Bulgular & Skorlama</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -825,7 +791,7 @@
                 </div>
             </details>
 
-            <details id="card-gcs" data-category="acil" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-gcs" data-category="acil" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span id="title-gcs-card">Glasgow Koma Skalası (GCS)</span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -873,7 +839,7 @@
                 </div>
             </details>
 
-            <details id="card-kardiyo" data-category="acil" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-kardiyo" data-category="acil" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Kardiyoloji & Tüp Rehberi</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1047,7 +1013,7 @@
                 </div>
             </details>
 
-            <details id="card-tromboz" data-category="acil" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-tromboz" data-category="acil" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Tromboemboli & Kardiyak Acil</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1184,7 +1150,7 @@
                 </div>
             </details>
 
-            <details id="card-cerrahi" data-category="cerrahi" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-cerrahi" data-category="cerrahi" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Cerrahi Skorlar & Yanık</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1277,7 +1243,7 @@
                 </div>
             </details>
 
-            <details id="card-obgyn" data-category="cerrahi" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-obgyn" data-category="cerrahi" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Kadın Doğum (OBGYN)</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1306,7 +1272,7 @@
                 </div>
             </details>
 
-            <details id="card-endokrin" data-category="dahiliye" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-endokrin" data-category="dahiliye" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Endokrin & Metabolizma (ÇEDD)</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1356,7 +1322,7 @@
                 </div>
             </details>
 
-            <details id="card-notlar" data-category="all" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden" open>
+            <details id="card-notlar" data-category="demografi" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden" open>
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Ekstra Anamnez & Not</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1383,11 +1349,8 @@
                     <textarea id="input-custom-notes" rows="3" placeholder="Muayene bulguları... (Örn: .apandisit veya .tonsillit yazıp boşluğa basınız)" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-base text-slate-200 resize-none focus:outline-none focus:border-cyan-500/80 mt-1"></textarea>
                 </div>
             </details>
-                </div>
 
-                <!-- SÜTUN B (Sağ Çalışma Grubu: Elektrolit, Kan Gazı, Nefro, Pediatri, Antibiyotik, Demir, Neonatoloji, İlaç, İnfüzyon, İdame) -->
-                <div class="space-y-3">
-            <details id="card-elektrolit" data-category="lab" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-elektrolit" data-category="lab" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Majör İyonlar & Elektrolit</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1429,7 +1392,7 @@
                 </div>
             </details>
 
-            <details id="card-kangazi" data-category="lab" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-kangazi" data-category="lab" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Kan Gazı Analizi</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1510,7 +1473,7 @@
                 </div>
             </details>
 
-            <details id="card-nefro" data-category="dahiliye" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-nefro" data-category="dahiliye" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Nefroloji, Toksikoloji & Pnömoni</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1594,7 +1557,7 @@
                 </div>
             </details>
 
-            <details id="card-pediatri-surup" data-category="pediatri" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden" open>
+            <details id="card-pediatri-surup" data-category="pediatri" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Pediatrik Sıvı Dozaj & Aşı</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1683,7 +1646,7 @@
                 </div>
             </details>
 
-            <details id="card-antibiyotik" data-category="pediatri" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-antibiyotik" data-category="pediatri" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Akılcı Antibiyotik & Centor-McIsaac</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1700,7 +1663,7 @@
                 </div>
             </details>
 
-            <details id="card-demir" data-category="pediatri" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-demir" data-category="pediatri" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Pediatrik Demir & Anemi (TPHD & SB)</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1737,7 +1700,7 @@
                 </div>
             </details>
 
-            <details id="card-neonatoloji" data-category="pediatri" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-neonatoloji" data-category="pediatri" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">Neonatoloji & Pediatrik Acil</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1978,7 +1941,7 @@
                 </div>
             </details>
 
-            <details id="card-ilac" data-category="ilac" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden" open>
+            <details id="card-ilac" data-category="ilac" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">İlaç, TİTCK & Prospektüs</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2052,7 +2015,7 @@
                 </div>
             </details>
 
-            <details id="card-infuzyon" data-category="ilac" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-infuzyon" data-category="ilac" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100"><span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span><span class="truncate">İnfüzyon Hızı (Perfüzör & GIR)</span></span>
                     <svg class="w-4 h-4 text-slate-400 shrink-0 group-open:rotate-180 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2112,7 +2075,7 @@
                 </div>
             </details>
 
-            <details id="card-idame" data-category="lab" class="card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
+            <details id="card-idame" data-category="lab" class="hidden card-surface bg-[#0B111E] rounded-lg border border-slate-800/80 group transition-colors overflow-hidden">
                 <summary class="card-summary w-full flex items-center justify-between gap-2 px-3.5 py-3 select-none cursor-pointer hover:bg-slate-800/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
                     <span class="card-title flex items-center gap-2 min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-100">
                         <span class="w-0.5 h-3.5 bg-cyan-400 rounded-full shrink-0" aria-hidden="true"></span>
@@ -2497,7 +2460,6 @@
 
                 </div>
             </details>
-                </div>
 
             </div>
         </main>

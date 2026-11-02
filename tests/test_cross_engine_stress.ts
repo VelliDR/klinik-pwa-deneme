@@ -320,6 +320,54 @@ assert.ok(appState.medicine.fluid?.hourlyRate, 'Fluid hourly rate should be calc
 assert.strictEqual(girRateInput.placeholder, `İdame: ${appState.medicine.fluid.hourlyRate} mL/saat`, 'GIR rate placeholder must dynamically reflect fluid hourlyRate');
 console.log('✓ Pipeline M: Fluid Hourly Rate -> GIR Rate Placeholder Sync verified.');
 
+// N. Vitals Temperature -> Alvarado (>37.3°C) and Centor (>38.0°C) Auto-Sync
+(document.getElementById('input-temp') as any).value = '38.5';
+const alvTempChk = document.getElementById('chk-alv-temp') as any;
+const centorFeverChk = document.getElementById('chk-centor-fever') as any;
+delete alvTempChk.dataset.userModified;
+delete centorFeverChk.dataset.userModified;
+
+appModule.updateAllTabs();
+
+assert.strictEqual(alvTempChk.checked, true, 'Alvarado fever check must auto-sync to true when temp > 37.3°C');
+assert.strictEqual(centorFeverChk.checked, true, 'Centor fever check must auto-sync to true when temp > 38.0°C');
+
+(document.getElementById('input-temp') as any).value = '36.8';
+appModule.updateAllTabs();
+assert.strictEqual(alvTempChk.checked, false, 'Alvarado fever check must auto-sync to false when temp <= 37.3°C');
+assert.strictEqual(centorFeverChk.checked, false, 'Centor fever check must auto-sync to false when temp <= 38.0°C');
+console.log('✓ Pipeline N: Vitals Temperature -> Alvarado & Centor Fever Auto-Sync verified.');
+
+// O. GCS Coma (GCS <= 8) -> AVPU ('U') Single-Pass Synchronous Propagation to NEWS2
+(document.getElementById('input-age') as any).value = '45';
+(document.getElementById('select-age-unit') as any).value = 'years';
+(document.getElementById('select-gcs-e') as any).value = '1';
+(document.getElementById('select-gcs-v') as any).value = '1';
+(document.getElementById('select-gcs-m') as any).value = '1'; // total 3 (deep coma)
+(document.getElementById('input-avpu') as any).value = 'A'; // initially set to Alert
+
+appModule.updateAllTabs();
+
+const avpuSelectEl = document.getElementById('input-avpu') as any;
+assert.strictEqual(avpuSelectEl.value, 'U', 'GCS <= 8 must map AVPU to U');
+assert.ok(appState.medicine.news2, 'NEWS2 must be calculated');
+assert.strictEqual(appState.medicine.news2.hasRedScore, true, 'NEWS2 must flag red score (>=3) for AVPU=U on the single synchronous pass');
+assert.ok(appState.medicine.news2.score >= 3, 'NEWS2 score must include at least 3 points for AVPU=U');
+console.log('✓ Pipeline O: GCS Coma -> AVPU (U) Single-Pass NEWS2 Propagation verified.');
+
+// P. Neonatal TND Fluid -> card-idame Badge & Electrolytes Sync
+(document.getElementById('input-age') as any).value = '1';
+(document.getElementById('select-age-unit') as any).value = 'days';
+(document.getElementById('input-weight') as any).value = '3.0'; // 3.0 kg
+(document.getElementById('select-gestational-weeks') as any).value = '39';
+
+appModule.updateAllTabs();
+
+assert.ok(appState.medicine.neonatalFluid, 'Neonatal fluid must be calculated');
+assert.strictEqual((document.getElementById('output-fluid-method-badge') as any).textContent, 'TND Yenidoğan', 'Method badge in card-idame must show TND Yenidoğan');
+assert.strictEqual((document.getElementById('output-daily-k') as any).textContent, '0 (İlk 48h YASAK)', 'Potassium in card-idame must be strictly forbidden in first 48h');
+console.log('✓ Pipeline P: Neonatal TND Fluid -> card-idame Badge & Electrolyte Sync verified.');
+
 // ----------------------------------------------------------------------------
 // TEST 4: MOTOR BAĞIMLILIK ÇÖZÜCÜ SONSUZ DÖNGÜ VE PERFORMANS TESTİ
 // ----------------------------------------------------------------------------

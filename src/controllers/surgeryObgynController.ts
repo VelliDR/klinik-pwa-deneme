@@ -23,7 +23,6 @@ import {
     calculatePreeclampsia 
 } from '../engines/obgynEngine';
 import { getEl, getVal, getNum, getChk, escapeHtml } from '../utils/domUtils';
-import { updateSafetyAlertsCard } from './safetyAlertsController';
 
 export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     const y = ageData.y;
@@ -31,6 +30,21 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     const totalMonths = (y === null && m === null) ? null : (m !== null ? m : (y !== null ? y * 12 : null));
 
     // 1. ALVARADO AKUT APANDİSİT SKORU
+    // Vitaller motorundan ateş (>37.3°C) otomatik senkronizasyonu
+    const chkAlvTempEl = getEl<HTMLInputElement>('chk-alv-temp');
+    if (chkAlvTempEl) {
+        if (!chkAlvTempEl.dataset.listenerBound) {
+            chkAlvTempEl.dataset.listenerBound = 'true';
+            chkAlvTempEl.addEventListener('change', () => {
+                chkAlvTempEl.dataset.userModified = 'true';
+            });
+        }
+        const nTemp = getNum('input-temp');
+        if (!chkAlvTempEl.dataset.userModified && nTemp !== null) {
+            chkAlvTempEl.checked = nTemp > 37.3;
+        }
+    }
+
     const alvParams = {
         migration: getChk('chk-alv-mig'),
         anorexia: getChk('chk-alv-ano'),
@@ -220,8 +234,6 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
     // 5. OBSTETRİK & JİNEKOLOJİ (OB/GYN)
     const lmp = getVal('input-lmp');
     const eddRes = getEl('output-edd');
-    let trimesterChanged = false;
-    const prevTrimester = appState.obgyn.trimester ?? appState.medicine.pregnancyTrimester ?? (appState.obgyn.eddData?.trimester ?? null);
 
     if (lmp && eddRes) {
         const eddVal = calculateObstetrics(lmp);
@@ -229,14 +241,12 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             appState.obgyn.eddData = null;
             appState.obgyn.trimester = null;
             appState.medicine.pregnancyTrimester = null;
-            trimesterChanged = prevTrimester !== null;
             eddRes.classList.remove('hidden');
             eddRes.innerHTML = `<span class="text-rose-400 text-xs font-semibold">${escapeHtml(eddVal.error || '⚠️ Hatalı SAT: Son adet tarihi gelecekte olamaz (veya >44 hafta olamaz).')}</span>`;
         } else if (eddVal) {
             appState.obgyn.eddData = eddVal;
             appState.obgyn.trimester = eddVal.trimester;
             appState.medicine.pregnancyTrimester = eddVal.trimester;
-            trimesterChanged = prevTrimester !== eddVal.trimester;
 
             // Sync to select-safety-trimester if user hasn't explicitly changed it
             const safetyTrimEl = getEl<HTMLSelectElement>('select-safety-trimester');
@@ -264,19 +274,13 @@ export function updateSurgeryObgynCard(ageData: PatientAgeResult): void {
             appState.obgyn.eddData = null;
             appState.obgyn.trimester = null;
             appState.medicine.pregnancyTrimester = null;
-            trimesterChanged = prevTrimester !== null;
             eddRes.classList.add('hidden');
         }
     } else {
         appState.obgyn.eddData = null;
         appState.obgyn.trimester = null;
         appState.medicine.pregnancyTrimester = null;
-        trimesterChanged = prevTrimester !== null;
         if (eddRes) eddRes.classList.add('hidden');
-    }
-
-    if (trimesterChanged) {
-        updateSafetyAlertsCard(ageData);
     }
 
     const bDil = getNum('input-bishop-dil');

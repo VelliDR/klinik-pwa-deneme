@@ -29,6 +29,13 @@ export interface PresetPackage {
 
 export type WorkstationPackage = PresetPackage;
 
+export interface SidebarGroupDefinition {
+  id: string;
+  name: string;
+  href: string;
+  motors: string[];
+}
+
 // 1. TÜM KLİNİK MOTORLAR LİSTESİ VE TANIMLARI
 export const CLINICAL_MOTORS: Record<string, ClinicalMotorDefinition> = {
   'card-demografi': {
@@ -382,6 +389,94 @@ export const PRESET_PACKAGES: PresetPackage[] = [
     accentColor: 'purple'
   }
 ];
+
+// 4.1. SOL MENÜ 13 ALT BAŞLIK GRUBU (ANA EKRAN FİLTRELEME HARİTASI)
+export const DEFAULT_SIDEBAR_GROUP_ID = 'demografi';
+
+export const SIDEBAR_GROUPS: SidebarGroupDefinition[] = [
+  {
+    id: 'demografi',
+    name: 'Demografi & Biyometri',
+    href: '#card-demografi',
+    motors: ['card-demografi', 'card-biyometri', 'card-notlar']
+  },
+  {
+    id: 'vitaller',
+    name: 'Vitaller & Triyaj',
+    href: '#card-vitaller',
+    motors: ['card-vitaller', 'card-gcs']
+  },
+  {
+    id: 'tromboz',
+    name: 'Tromboz & Acil',
+    href: '#card-tromboz',
+    motors: ['card-tromboz', 'card-kardiyo']
+  },
+  {
+    id: 'elektrolit',
+    name: 'Elektrolit & Sıvı',
+    href: '#card-elektrolit',
+    motors: ['card-elektrolit', 'card-idame']
+  },
+  {
+    id: 'kangazi',
+    name: 'Kan Gazı Analizi',
+    href: '#card-kangazi',
+    motors: ['card-kangazi']
+  },
+  {
+    id: 'nefro',
+    name: 'Nefroloji & Toksik',
+    href: '#card-nefro',
+    motors: ['card-nefro']
+  },
+  {
+    id: 'cerrahi',
+    name: 'Cerrahi & Yanık',
+    href: '#card-cerrahi',
+    motors: ['card-cerrahi']
+  },
+  {
+    id: 'obgyn',
+    name: 'Kadın Doğum (OBGYN)',
+    href: '#card-obgyn',
+    motors: ['card-obgyn']
+  },
+  {
+    id: 'endokrin',
+    name: 'Endokrin & ÇEDD',
+    href: '#card-endokrin',
+    motors: ['card-endokrin']
+  },
+  {
+    id: 'pediatri',
+    name: 'Pediatri & Aşı',
+    href: '#card-pediatri-surup',
+    motors: ['card-pediatri-surup', 'card-antibiyotik', 'card-demir']
+  },
+  {
+    id: 'neonatoloji',
+    name: 'Neonatoloji',
+    href: '#card-neonatoloji',
+    motors: ['card-neonatoloji']
+  },
+  {
+    id: 'ilac',
+    name: 'İlaç & TİTCK',
+    href: '#card-ilac',
+    motors: ['card-ilac']
+  },
+  {
+    id: 'infuzyon',
+    name: 'İnfüzyon & GIR',
+    href: '#card-infuzyon',
+    motors: ['card-infuzyon']
+  }
+];
+
+export function findSidebarGroupByMotor(motorId: string): SidebarGroupDefinition | undefined {
+  return SIDEBAR_GROUPS.find(g => g.motors.includes(motorId));
+}
 
 // 5. YEREL DEPOLAMA (LOCAL STORAGE) İLE ÖZEL PAKET YÖNETİMİ
 const STORAGE_KEY = 'klinik_custom_shortcut_packages';

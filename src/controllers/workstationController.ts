@@ -20,8 +20,11 @@ import { initVaccineModalController } from './vaccineModalController';
 import {
     WorkstationPackage,
     ClinicalMotorDefinition,
+    SidebarGroupDefinition,
     CLINICAL_MOTORS,
     PRESET_PACKAGES,
+    SIDEBAR_GROUPS,
+    DEFAULT_SIDEBAR_GROUP_ID,
     getCustomPackages,
     saveCustomPackage,
     deleteCustomPackage,
@@ -420,8 +423,281 @@ export function updateLiveSOAP(): void {
 }
 
 // ----------------------------------------------------------------------------
-// 4. AKILLI MOTOR PAKETLERİ VE ÖZELLEŞTİRİLEBİLİR KISAYOLLAR
+// 4. SOL MENÜ GRUP FİLTRELEME, AKILLI PAKETLER VE PAKET ÖZELLEŞTİRME
 // ----------------------------------------------------------------------------
+let currentActivePackId: string | null = null;
+let currentActiveGroupId: string | null = DEFAULT_SIDEBAR_GROUP_ID;
+
+function closeMobileSidebarDrawer(): void {
+    const leftSidebar = getEl('left-sidebar');
+    const mobileBackdrop = getEl('mobile-sidebar-backdrop');
+    const legacyDrawer = getEl('mobile-sidebar-drawer');
+    if (leftSidebar) leftSidebar.classList.add('hidden');
+    if (mobileBackdrop) mobileBackdrop.classList.add('hidden');
+    if (legacyDrawer) legacyDrawer.classList.add('hidden');
+}
+
+function syncWorkspaceGridColumns(visibleCount: number): void {
+    const grid = getEl('workspace-cards-grid');
+    if (!grid) return;
+    if (visibleCount <= 1) {
+        grid.classList.remove('md:grid-cols-2');
+    } else {
+        grid.classList.add('md:grid-cols-2');
+    }
+}
+
+function computeMotorCardOrder(cardId: string, resolvedMotors: string[], primaryMotors: string[]): number {
+    if (cardId === 'card-demografi') return 1;
+    if (cardId === 'card-biyometri') return 2;
+    const primaryIdx = primaryMotors.indexOf(cardId);
+    if (primaryIdx !== -1) return 10 + primaryIdx;
+    const resolvedIdx = resolvedMotors.indexOf(cardId);
+    return 30 + (resolvedIdx !== -1 ? resolvedIdx : 0);
+}
+
+function applyWorkspaceCardLayout(resolvedMotors: string[], primaryMotors: string[]): number {
+    if (typeof document === 'undefined') return 0;
+    const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
+    let visibleCount = 0;
+
+    allCards.forEach(card => {
+        if (resolvedMotors.includes(card.id)) {
+            card.classList.remove('hidden');
+            card.open = true;
+            if (card.style) {
+                card.style.order = String(computeMotorCardOrder(card.id, resolvedMotors, primaryMotors));
+            }
+            visibleCount++;
+        } else {
+            card.classList.add('hidden');
+            if (card.style) {
+                card.style.order = '';
+            }
+        }
+    });
+
+    return visibleCount;
+}
+
+function renderWorkspaceContextBar(
+    title: string,
+    badgeText: string,
+    resolvedMotors: string[],
+    primaryMotors: string[] = []
+): void {
+    const titleEl = getEl('workspace-context-title');
+    const badgeEl = getEl('workspace-context-badge');
+    const pillsEl = getEl('workspace-context-pills');
+
+    if (titleEl) titleEl.textContent = title;
+    if (badgeEl) badgeEl.textContent = badgeText;
+    if (!pillsEl || typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+
+    pillsEl.innerHTML = '';
+
+    if (resolvedMotors.length === 0) {
+        const span = document.createElement('span');
+        span.className = 'text-[10px] text-slate-400';
+        span.textContent = 'Tüm klinik motorlar açık';
+        pillsEl.appendChild(span);
+        return;
+    }
+
+    const orderedIds = [...resolvedMotors]
+        .filter(id => id !== 'card-soap')
+        .sort((a, b) => computeMotorCardOrder(a, resolvedMotors, primaryMotors) - computeMotorCardOrder(b, resolvedMotors, primaryMotors));
+
+    orderedIds.forEach(mId => {
+        const mDef = CLINICAL_MOTORS[mId];
+        if (!mDef) return;
+        const isPrimary = primaryMotors.includes(mId);
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = isPrimary
+            ? 'px-2 py-0.5 rounded-md bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-200 border border-cyan-700/60 text-[10px] font-medium flex items-center gap-1 transition-colors'
+            : 'px-2 py-0.5 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/80 text-[10px] flex items-center gap-1 transition-colors';
+        pill.innerHTML = `<span class="${isPrimary ? 'text-cyan-400' : 'text-amber-400'}">${getSvgIcon(mDef.icon, 'w-3 h-3')}</span><span>${escapeHtml(mDef.shortName)}</span>`;
+        pill.title = isPrimary
+            ? `${mDef.name} — Seçili grup motoru (Gitmek için tıklayın)`
+            : `${mDef.name} — Otomatik bağlı motor (Gitmek için tıklayın)`;
+        pill.addEventListener('click', () => {
+            const targetEl = getEl<HTMLDetailsElement>(mId);
+            if (targetEl) {
+                targetEl.open = true;
+                if (typeof targetEl.scrollIntoView === 'function') {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                targetEl.classList.remove('card-highlight');
+                targetEl.classList.add('card-highlight');
+                setTimeout(() => targetEl.classList.remove('card-highlight'), 1600);
+            }
+        });
+        pillsEl.appendChild(pill);
+    });
+}
+
+function syncNavigationHighlights(options: { groupId?: string | null; allActive?: boolean }): void {
+    if (typeof document === 'undefined') return;
+    const activeGroup = options.groupId
+        ? SIDEBAR_GROUPS.find(g => g.id === options.groupId)
+        : undefined;
+
+    document.querySelectorAll('.nav-sidebar-link').forEach(l => {
+        const lGroup = l.getAttribute('data-group');
+        const lHref = l.getAttribute('href');
+        const isMatch = Boolean(
+            activeGroup && (lGroup === activeGroup.id || (!lGroup && lHref === activeGroup.href))
+        );
+        if (isMatch) {
+            l.classList.remove('text-slate-400', 'border-transparent');
+            l.classList.add('active', 'border-l-2', 'border-cyan-400', 'bg-slate-900', 'text-cyan-300', 'font-semibold');
+        } else {
+            l.classList.remove('active', 'border-cyan-400', 'bg-slate-900', 'text-cyan-300', 'font-semibold', 'font-medium');
+            l.classList.add('border-l-2', 'border-transparent', 'text-slate-400');
+        }
+    });
+
+    document.querySelectorAll('.cat-pill').forEach(p => {
+        const pGroup = p.getAttribute('data-group');
+        const pCat = p.getAttribute('data-cat');
+        const isMatch = Boolean(
+            (options.allActive && pCat === 'all') ||
+            (activeGroup && pGroup === activeGroup.id)
+        );
+        if (isMatch) {
+            p.classList.remove('bg-slate-900/90', 'text-slate-300', 'border-slate-800', 'bg-slate-800', 'bg-sky-500/15', 'text-sky-400');
+            p.classList.add('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60');
+        } else {
+            p.classList.remove('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60', 'bg-sky-500/15', 'text-sky-400');
+            p.classList.add('bg-slate-900/90', 'text-slate-300', 'border-slate-800');
+        }
+    });
+}
+
+export function activateSidebarGroup(
+    groupIdOrHref: string,
+    options: { scroll?: boolean; highlightCardId?: string } = {}
+): SidebarGroupDefinition | null {
+    if (typeof document === 'undefined') return null;
+
+    const normalized = groupIdOrHref.trim();
+    const group =
+        SIDEBAR_GROUPS.find(g => g.id === normalized || g.href === normalized || g.href === `#${normalized}`) ||
+        SIDEBAR_GROUPS.find(g => g.id === DEFAULT_SIDEBAR_GROUP_ID) ||
+        SIDEBAR_GROUPS[0];
+    if (!group) return null;
+
+    currentActiveGroupId = group.id;
+    currentActivePackId = null;
+
+    // Seçilen grubun motorlarını VE matematiksel/klinik olarak bağımlı olduğu tüm kardeş motorları çöz
+    const resolvedMotors = resolveMotorDependencies(group.motors);
+    const visibleCount = applyWorkspaceCardLayout(resolvedMotors, group.motors);
+
+    syncWorkspaceGridColumns(visibleCount > 0 ? visibleCount : resolvedMotors.length);
+    syncNavigationHighlights({ groupId: group.id });
+
+    const depCount = Math.max(0, resolvedMotors.length - group.motors.length);
+    const badgeLabel = depCount > 0
+        ? `${resolvedMotors.length} Motor (${depCount} Bağlı)`
+        : `${resolvedMotors.length} Motor`;
+    renderWorkspaceContextBar(group.name, badgeLabel, resolvedMotors, group.motors);
+
+    // Üst Paketler popover seçim durumunu temizle ve aktif grup rozetini güncelle
+    const containerButtons = getEl('container-package-buttons');
+    if (containerButtons && typeof containerButtons.querySelectorAll === 'function') {
+        containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
+            btn.classList.remove('border-cyan-500/60', 'bg-cyan-950/30', 'text-cyan-300');
+            btn.classList.add('border-slate-800', 'bg-[#0B111E]', 'text-slate-200');
+        });
+    }
+
+    const containerInfo = getEl('container-package-info');
+    if (containerInfo) containerInfo.classList.add('hidden');
+
+    const badgeActive = getEl('badge-active-pack');
+    if (badgeActive) {
+        badgeActive.textContent = `${group.name} (${resolvedMotors.length} Motor)`;
+        badgeActive.className = 'text-[9px] px-2 py-0.5 rounded-full tabular-nums font-medium bg-cyan-950/80 text-cyan-300 border border-cyan-800/60';
+    }
+
+    const cardShortcuts = getEl('card-custom-shortcuts');
+    if (cardShortcuts) cardShortcuts.classList.add('hidden');
+    const backdropPackages = getEl('backdrop-packages');
+    if (backdropPackages) backdropPackages.classList.add('hidden');
+
+    closeMobileSidebarDrawer();
+    onTabsUpdateCallback();
+
+    if (options.scroll !== false) {
+        const targetId = options.highlightCardId || group.motors[0];
+        const targetCard = targetId ? getEl<HTMLDetailsElement>(targetId) : null;
+        if (options.highlightCardId && targetCard && typeof targetCard.scrollIntoView === 'function') {
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (targetCard && typeof targetCard.scrollIntoView === 'function') {
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (targetCard) {
+            targetCard.classList.remove('card-highlight');
+            targetCard.classList.add('card-highlight');
+            setTimeout(() => targetCard.classList.remove('card-highlight'), 1600);
+        }
+    }
+
+    return group;
+}
+
+export function showAllWorkstationMotors(): void {
+    if (typeof document === 'undefined') return;
+
+    const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
+    allCards.forEach(c => {
+        c.classList.remove('hidden');
+        c.open = true;
+        if (c.style) {
+            c.style.order = '';
+        }
+    });
+
+    currentActivePackId = null;
+    currentActiveGroupId = null;
+
+    syncWorkspaceGridColumns(allCards.length || 20);
+    syncNavigationHighlights({ groupId: null, allActive: true });
+    renderWorkspaceContextBar('Tüm Klinik Motorlar', '21/21 Açık', []);
+
+    const cardShortcuts = getEl('card-custom-shortcuts');
+    if (cardShortcuts) cardShortcuts.classList.add('hidden');
+    const backdropPackages = getEl('backdrop-packages');
+    if (backdropPackages) backdropPackages.classList.add('hidden');
+
+    closeMobileSidebarDrawer();
+
+    const containerButtons = getEl('container-package-buttons');
+    if (containerButtons && typeof containerButtons.querySelectorAll === 'function') {
+        containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
+            btn.classList.remove('border-cyan-500/60', 'bg-cyan-950/30', 'text-cyan-300');
+            btn.classList.add('border-slate-800', 'bg-[#0B111E]', 'text-slate-200');
+        });
+    }
+
+    const badgeActive = getEl('badge-active-pack');
+    if (badgeActive) {
+        badgeActive.textContent = 'Tüm Motorlar Açık (21/21)';
+        badgeActive.className = 'text-[10px] px-2 py-0.5 rounded-full tabular-nums font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60';
+    }
+
+    const containerInfo = getEl('container-package-info');
+    if (containerInfo) {
+        containerInfo.classList.add('hidden');
+    }
+
+    onTabsUpdateCallback();
+}
+
 export function initWorkstationPackages(): void {
     if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
 
@@ -430,6 +706,7 @@ export function initWorkstationPackages(): void {
 
     const btnShowAll = getEl('btn-show-all-motors');
     const btnToggleCustom = getEl('btn-toggle-custom-pack');
+    const iconCustomChevron = getEl('icon-custom-pack-chevron');
     const drawerCustom = getEl('drawer-custom-pack');
     const containerButtons = getEl('container-package-buttons');
     const containerInfo = getEl('container-package-info');
@@ -440,7 +717,7 @@ export function initWorkstationPackages(): void {
     const packDesc = getEl('pack-info-desc');
     const packPills = getEl('pack-info-pills');
 
-    // Drawer inputs & controls
+    // Sol menüdeki Paket Özelleştirme çekmecesi elemanları
     const inputPackName = getEl<HTMLInputElement>('input-custom-pack-name');
     const btnSavePack = getEl('btn-save-custom-pack');
     const btnApplyNow = getEl('btn-apply-custom-pack-now');
@@ -452,10 +729,22 @@ export function initWorkstationPackages(): void {
     const sectionSavedPacks = getEl('section-saved-packs');
     const containerSavedList = getEl('container-saved-packs-list');
 
-    let currentActivePackId: string | null = null;
+    function setCustomDrawerOpen(open: boolean): void {
+        if (!drawerCustom) return;
+        if (open) {
+            drawerCustom.classList.remove('hidden');
+            btnToggleCustom?.setAttribute('aria-expanded', 'true');
+            iconCustomChevron?.classList.add('rotate-180');
+        } else {
+            drawerCustom.classList.add('hidden');
+            btnToggleCustom?.setAttribute('aria-expanded', 'false');
+            iconCustomChevron?.classList.remove('rotate-180');
+        }
+    }
 
     // A. Kartları Paket Motorlarına Göre Aç / Kapat & Vurgula
     function activatePackage(packOrMotors: string[] | WorkstationPackage | any, optName?: string, optDesc?: string, optIcon?: string, packId?: string): void {
+        let baseMotors: string[] = [];
         let motors: string[] = [];
         let title = optName || '';
         let desc = optDesc || '';
@@ -463,13 +752,15 @@ export function initWorkstationPackages(): void {
         let primaryId: string | null = null;
 
         if (Array.isArray(packOrMotors)) {
+            baseMotors = [...packOrMotors];
             motors = resolveMotorDependencies(packOrMotors);
             title = optName || `${motors.length} Motor Paketi`;
             desc = optDesc || `${motors.length} klinik motor hazır`;
             primaryId = packOrMotors[0];
             currentActivePackId = packId || null;
         } else if (packOrMotors && typeof packOrMotors === 'object') {
-            motors = resolveMotorDependencies(packOrMotors.baseMotors || packOrMotors.fullMotors || []);
+            baseMotors = packOrMotors.baseMotors || packOrMotors.fullMotors || [];
+            motors = resolveMotorDependencies(baseMotors);
             title = packOrMotors.name || '';
             desc = packOrMotors.desc || '';
             icon = packOrMotors.icon || 'package';
@@ -479,36 +770,40 @@ export function initWorkstationPackages(): void {
 
         if (!motors || motors.length === 0) return;
 
-        // Workspace içindeki tüm klinik motor kartlarını filtrele
-        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
-        allCards.forEach(card => {
-            if (motors.includes(card.id)) {
-                card.classList.remove('hidden');
-                card.open = true;
-            } else {
-                card.classList.add('hidden');
-            }
-        });
+        currentActiveGroupId = null;
 
-        // Popover dropdown olarak açıksa kapat
+        // Workspace içindeki tüm klinik motor kartlarını bağımlılık sırasıyla göster
+        const visibleWorkspaceCount = applyWorkspaceCardLayout(motors, baseMotors);
+
+        syncWorkspaceGridColumns(visibleWorkspaceCount > 0 ? visibleWorkspaceCount : motors.length);
+        syncNavigationHighlights({ groupId: null, allActive: false });
+
+        const cleanTitle = title.replace(/^[^\w\sğüşöçıİĞÜŞÖÇ]+/, '').trim();
+        renderWorkspaceContextBar(cleanTitle || title, `${motors.length} Motor Paketi`, motors, baseMotors);
+
+        // Popover dropdown ve mobil sol çekmece açıksa kapat
         if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
             cardShortcuts.classList.add('hidden');
         }
         const backdropPackages = getEl('backdrop-packages');
         if (backdropPackages) backdropPackages.classList.add('hidden');
+        closeMobileSidebarDrawer();
 
-        // Birincil karta yumuşak geçiş ve nabız animasyonu
+        onTabsUpdateCallback();
+
+        // Sayfayı başa al ve birincil kartı nabız animasyonuyla vurgula
+        if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         const targetCard = (primaryId ? getEl<HTMLDetailsElement>(primaryId) : null) || getEl<HTMLDetailsElement>(motors[0]);
         if (targetCard) {
-            if (typeof targetCard.scrollIntoView === 'function') {
-                targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            targetCard.classList.remove('card-highlight');
             targetCard.classList.add('card-highlight');
             setTimeout(() => targetCard.classList.remove('card-highlight'), 1800);
         }
 
         // Paket Butonları Aktiflik Durumunu Güncelle
-        if (containerButtons) {
+        if (containerButtons && typeof containerButtons.querySelectorAll === 'function') {
             containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
                 const bId = btn.getAttribute('data-pack-id');
                 if (bId && bId === currentActivePackId) {
@@ -523,7 +818,6 @@ export function initWorkstationPackages(): void {
 
         // Üst Bar Durum Rozetini Güncelle
         if (badgeActive) {
-            const cleanTitle = title.replace(/^[^\w\sğüşöçıİĞÜŞÖÇ]+/, '').trim();
             badgeActive.textContent = `${cleanTitle} (${motors.length} Motor Aktif)`;
             badgeActive.className = 'text-[10px] px-2.5 py-0.5 rounded-full tabular-nums font-medium bg-cyan-950/80 text-cyan-300 border border-cyan-800/60';
         }
@@ -563,54 +857,11 @@ export function initWorkstationPackages(): void {
         }
     }
 
-    // B. Tüm Motorları Göster & Sıfırla
-    function showAllMotors(): void {
-        const allCards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
-        allCards.forEach(c => c.classList.remove('hidden'));
-
-        currentActivePackId = null;
-
-        // Popover dropdown olarak açıksa kapat
-        if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
-            cardShortcuts.classList.add('hidden');
-        }
-        const backdropPackages = getEl('backdrop-packages');
-        if (backdropPackages) backdropPackages.classList.add('hidden');
-
-        if (containerButtons) {
-            containerButtons.querySelectorAll('.btn-workstation-pack').forEach(btn => {
-                btn.classList.remove('border-cyan-500/60', 'bg-cyan-950/30', 'text-cyan-300');
-                btn.classList.add('border-slate-800', 'bg-[#0B111E]', 'text-slate-200');
-            });
-        }
-
-        if (badgeActive) {
-            badgeActive.textContent = 'Tüm Motorlar Açık (21/21)';
-            badgeActive.className = 'text-[10px] px-2 py-0.5 rounded-full tabular-nums font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60';
-        }
-
-        if (containerInfo) {
-            containerInfo.classList.add('hidden');
-        }
-
-        // Kategori haplarını da 'Tümü' aktif olacak şekilde senkronize et
-        const pills = document.querySelectorAll('.cat-pill');
-        pills.forEach(p => {
-            if (p.getAttribute('data-cat') === 'all') {
-                p.classList.add('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60');
-                p.classList.remove('bg-slate-900/90', 'text-slate-300', 'border-slate-800', 'bg-slate-800', 'bg-sky-500/15', 'text-sky-400');
-            } else {
-                p.classList.remove('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60', 'bg-sky-500/15', 'text-sky-400');
-                p.classList.add('bg-slate-900/90', 'text-slate-300', 'border-slate-800');
-            }
-        });
-    }
-
     if (btnShowAll) {
-        btnShowAll.addEventListener('click', showAllMotors);
+        btnShowAll.addEventListener('click', showAllWorkstationMotors);
     }
 
-    // C. Paket Butonlarını Render Et (2-Sütunlu Kompakt Izgara)
+    // C. Paket Butonlarını Render Et (Üstteki Paketler Popover)
     function renderPackageButtons(): void {
         if (!containerButtons) return;
         containerButtons.innerHTML = '';
@@ -621,7 +872,10 @@ export function initWorkstationPackages(): void {
         allPacks.forEach(pack => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'btn-workstation-pack w-full flex items-center gap-2 px-2.5 py-2 rounded-md bg-[#0B111E] hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 text-left transition';
+            const isPackActive = Boolean(currentActivePackId && currentActivePackId === pack.id);
+            btn.className = isPackActive
+                ? 'btn-workstation-pack w-full flex items-center gap-2 px-2.5 py-2 rounded-md border border-cyan-500/60 bg-cyan-950/30 text-cyan-300 text-xs text-left transition'
+                : 'btn-workstation-pack w-full flex items-center gap-2 px-2.5 py-2 rounded-md bg-[#0B111E] hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 text-left transition';
             btn.setAttribute('data-pack-id', pack.id);
             btn.title = pack.desc || pack.badge || pack.name;
 
@@ -639,40 +893,41 @@ export function initWorkstationPackages(): void {
         });
     }
 
-    // D. Motor Seçim Listesini (Checklist) Doldur
+    // D. Motor Seçim Listesini (Checklist) Doldur (Sol menü akordeonuna uyumlu tek sütun kompakt yapı)
     function renderMotorChecklist(): void {
         if (!containerChecklist) return;
         containerChecklist.innerHTML = '';
 
         (Object.values(CLINICAL_MOTORS) as ClinicalMotorDefinition[]).forEach((m: ClinicalMotorDefinition) => {
             const label = document.createElement('label');
-            label.className = 'flex items-start gap-2 p-2 rounded-lg bg-slate-900/60 hover:bg-slate-900 border border-slate-800 cursor-pointer text-xs select-none transition-colors';
+            label.className = 'flex items-center gap-2 px-2 py-1.5 rounded-md bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/90 cursor-pointer text-[11px] select-none transition-colors';
             label.innerHTML = `
-                <input type="checkbox" class="chk-custom-motor mt-0.5 rounded border-slate-700 text-rose-600 focus:ring-0 focus:ring-offset-0 bg-slate-800" value="${m.id}">
+                <input type="checkbox" class="chk-custom-motor rounded border-slate-700 text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-800 shrink-0" value="${m.id}">
                 <div class="min-w-0 flex-1">
                     <div class="font-medium text-slate-200 flex items-center gap-1.5">
-                        <span class="text-sky-400">${getSvgIcon(m.icon, 'w-3.5 h-3.5')}</span>
-                        <span class="truncate">${m.shortName}</span>
-                        <span id="dep-badge-${m.id}" class="hidden text-[9px] px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">Bağımlı</span>
+                        <span class="text-sky-400 shrink-0">${getSvgIcon(m.icon, 'w-3 h-3')}</span>
+                        <span class="truncate flex-1">${m.shortName}</span>
+                        <span id="dep-badge-${m.id}" class="hidden text-[8px] px-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono shrink-0">Oto</span>
                     </div>
-                    <p class="text-[10px] text-slate-400 truncate">${m.name}</p>
                 </div>
             `;
+            label.title = `${m.name} — ${m.desc}`;
             containerChecklist.appendChild(label);
         });
 
-        // Checkbox değişim dinleyicisi
-        const checkBoxes = containerChecklist.querySelectorAll<HTMLInputElement>('.chk-custom-motor');
-        checkBoxes.forEach(cb => {
-            cb.addEventListener('change', updateChecklistDependencies);
-        });
+        if (typeof containerChecklist.querySelectorAll === 'function') {
+            const checkBoxes = containerChecklist.querySelectorAll<HTMLInputElement>('.chk-custom-motor');
+            checkBoxes.forEach(cb => {
+                cb.addEventListener('change', updateChecklistDependencies);
+            });
+        }
     }
 
     // E. Canlı Bağımlılık Hesaplayıcı & Checkbox Güncelleyici
     function updateChecklistDependencies(): void {
-        if (!containerChecklist) return;
+        if (!containerChecklist || typeof containerChecklist.querySelectorAll !== 'function') return;
         const checkBoxes = containerChecklist.querySelectorAll<HTMLInputElement>('.chk-custom-motor');
-        
+
         const explicitlyChecked: string[] = [];
         checkBoxes.forEach(cb => {
             if (cb.checked && !cb.disabled) {
@@ -703,7 +958,7 @@ export function initWorkstationPackages(): void {
         });
 
         if (labelResolvedCount) {
-            labelResolvedCount.textContent = `${fullResolved.length} motor pakete dahil`;
+            labelResolvedCount.textContent = `${fullResolved.length} motor`;
         }
 
         if (boxResolvedSummary && textResolvedList) {
@@ -732,18 +987,18 @@ export function initWorkstationPackages(): void {
 
         customPacks.forEach((pack: WorkstationPackage) => {
             const row = document.createElement('div');
-            row.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 text-xs';
+            row.className = 'flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md bg-slate-900 border border-slate-800 text-[11px]';
             row.innerHTML = `
-                <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-sky-400">${getSvgIcon(pack.icon || 'star', 'w-3.5 h-3.5')}</span>
-                    <span class="font-medium text-slate-200 truncate">${escapeHtml(pack.name)}</span>
-                    <span class="text-[10px] text-slate-400 font-mono">(${pack.fullMotors ? pack.fullMotors.length : pack.baseMotors.length} motor)</span>
+                <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span class="text-amber-400 shrink-0">${getSvgIcon(pack.icon || 'star', 'w-3 h-3')}</span>
+                    <span class="font-medium text-slate-200 truncate" title="${escapeHtml(pack.name)}">${escapeHtml(pack.name)}</span>
+                    <span class="text-[9px] text-slate-500 font-mono shrink-0">(${pack.fullMotors ? pack.fullMotors.length : pack.baseMotors.length})</span>
                 </div>
-                <div class="flex items-center gap-1.5">
-                    <button type="button" class="btn-run-saved-pack px-2 py-1 rounded bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] transition-colors" data-pack-id="${escapeHtml(pack.id)}">
-                        Çalıştır
+                <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" class="btn-run-saved-pack btn-compact px-1.5 py-0.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-medium transition-colors" data-pack-id="${escapeHtml(pack.id)}">
+                        Aç
                     </button>
-                    <button type="button" class="btn-del-saved-pack px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 text-[10px] transition-colors" data-pack-id="${escapeHtml(pack.id)}" title="Paketi Sil">
+                    <button type="button" class="btn-del-saved-pack btn-compact px-1.5 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 text-[10px] transition-colors" data-pack-id="${escapeHtml(pack.id)}" title="Paketi Sil">
                         Sil
                     </button>
                 </div>
@@ -751,15 +1006,18 @@ export function initWorkstationPackages(): void {
 
             row.querySelector('.btn-run-saved-pack')?.addEventListener('click', () => {
                 activatePackage(pack);
-                drawerCustom?.classList.add('hidden');
+                setCustomDrawerOpen(false);
             });
 
             row.querySelector('.btn-del-saved-pack')?.addEventListener('click', () => {
                 if (confirm(`"${pack.name}" paketi silinsin mi?`)) {
+                    const wasActive = currentActivePackId === pack.id;
                     deleteCustomPackage(pack.id);
                     renderPackageButtons();
                     renderSavedCustomPacks();
-                    showAllMotors();
+                    if (wasActive) {
+                        activateSidebarGroup(currentActiveGroupId || DEFAULT_SIDEBAR_GROUP_ID, { scroll: false });
+                    }
                 }
             });
 
@@ -767,19 +1025,18 @@ export function initWorkstationPackages(): void {
         });
     }
 
-    // G. Çekmece Aç/Kapa
+    // G. Sol Menü Paket Özelleştirme Akordeon Çekmecesi Aç/Kapa
     if (btnToggleCustom && drawerCustom) {
         btnToggleCustom.addEventListener('click', () => {
             const isHidden = drawerCustom.classList.contains('hidden');
             if (isHidden) {
-                drawerCustom.classList.remove('hidden');
-                renderMotorChecklist();
-                renderSavedCustomPacks();
-                if (typeof drawerCustom.scrollIntoView === 'function') {
-                    drawerCustom.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (containerChecklist && containerChecklist.children.length === 0) {
+                    renderMotorChecklist();
                 }
+                renderSavedCustomPacks();
+                setCustomDrawerOpen(true);
             } else {
-                drawerCustom.classList.add('hidden');
+                setCustomDrawerOpen(false);
             }
         });
     }
@@ -787,7 +1044,7 @@ export function initWorkstationPackages(): void {
     // H. Seçimi Temizle
     if (btnClearSelection) {
         btnClearSelection.addEventListener('click', () => {
-            if (containerChecklist) {
+            if (containerChecklist && typeof containerChecklist.querySelectorAll === 'function') {
                 containerChecklist.querySelectorAll<HTMLInputElement>('.chk-custom-motor').forEach(cb => {
                     cb.checked = false;
                     cb.disabled = false;
@@ -798,10 +1055,10 @@ export function initWorkstationPackages(): void {
         });
     }
 
-    // I. Hemen Uygula (Kaydetmeden)
+    // I. Hemen Uygula (Kaydetmeden Ekrana Getir)
     if (btnApplyNow) {
         btnApplyNow.addEventListener('click', () => {
-            if (!containerChecklist) return;
+            if (!containerChecklist || typeof containerChecklist.querySelectorAll !== 'function') return;
             const checked: string[] = [];
             containerChecklist.querySelectorAll<HTMLInputElement>('.chk-custom-motor:checked').forEach(cb => {
                 checked.push(cb.value);
@@ -812,7 +1069,7 @@ export function initWorkstationPackages(): void {
             }
             const resolved = resolveMotorDependencies(checked);
             activatePackage(resolved, 'Özel Seçim Paketi', `${resolved.length} motor ekranda aktif`, 'activity');
-            if (drawerCustom) drawerCustom.classList.add('hidden');
+            setCustomDrawerOpen(false);
         });
     }
 
@@ -826,7 +1083,7 @@ export function initWorkstationPackages(): void {
                 return;
             }
 
-            if (!containerChecklist) return;
+            if (!containerChecklist || typeof containerChecklist.querySelectorAll !== 'function') return;
             const checkedBase: string[] = [];
             containerChecklist.querySelectorAll<HTMLInputElement>('.chk-custom-motor').forEach(cb => {
                 if (cb.checked && !cb.disabled) {
@@ -845,7 +1102,7 @@ export function initWorkstationPackages(): void {
                 renderSavedCustomPacks();
                 activatePackage(newPack);
                 if (inputPackName) inputPackName.value = '';
-                if (drawerCustom) drawerCustom.classList.add('hidden');
+                setCustomDrawerOpen(false);
             }
         });
     }
@@ -879,7 +1136,7 @@ export function initWorkstationPackages(): void {
             const target = e.target as HTMLElement;
             if (cardShortcuts && !cardShortcuts.classList.contains('hidden')) {
                 const headerContainer = getEl('header-packages-container');
-                if (headerContainer && !headerContainer.contains(target)) {
+                if (headerContainer && typeof headerContainer.contains === 'function' && !headerContainer.contains(target)) {
                     cardShortcuts.classList.add('hidden');
                     if (backdropPackages) backdropPackages.classList.add('hidden');
                 }
@@ -887,8 +1144,10 @@ export function initWorkstationPackages(): void {
         });
     }
 
-    // Başlangıçta Butonları ve Özel Paketleri Çiz
+    // Başlangıçta Butonları, Motor Seçim Listesini ve Özel Paketleri Hazırla
     renderPackageButtons();
+    renderMotorChecklist();
+    renderSavedCustomPacks();
 }
 
 // ----------------------------------------------------------------------------
@@ -1093,17 +1352,11 @@ export function resetAllPatientData(options: { skipConfirm?: boolean } = {}): bo
         delete textarea.dataset.userModified;
     });
 
-    // 6. Kategori Filtresi Aktifse 'Tümü' (all) Moduna Döndür
-    const allPill = document.querySelector<HTMLButtonElement>('.cat-pill[data-cat="all"]');
-    if (allPill && !allPill.classList.contains('active')) {
-        allPill.click();
-    }
+    // 6. Görünümü Başlangıç Grubu (Demografi & Biyometri) Moduna Döndür ve Hesaplamaları Yenile
+    activateSidebarGroup(DEFAULT_SIDEBAR_GROUP_ID, { scroll: false });
 
-    // 7. Tüm Sekme, Kart ve Çıktıları Reaktif Olarak Yeniden Hesapla (Temiz Boş Durum)
-    onTabsUpdateCallback();
-
-    // 8. Sayfayı Başa Yumuşakça Kaydır ve Demografi Kartındaki İlk Alana Odaklan
-    if (typeof window !== 'undefined') {
+    // 7. Sayfayı Başa Yumuşakça Kaydır ve Demografi Kartındaki İlk Alana Odaklan
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     setTimeout(() => {
@@ -1127,119 +1380,69 @@ export function initResponsiveWorkstation(onUpdateTabs?: () => void): void {
         onTabsUpdateCallback = onUpdateTabs;
     }
 
-    // 0. Akıllı Motor Paketleri ve Kısayol Kartı Başlatıcı
+    // 0. Akıllı Motor Paketleri ve Sol Menü Özelleştirme Başlatıcı
     initWorkstationPackages();
 
-    // 1. Mobile Category Pills Filtering & Smooth Jump
+    // 0.1. İlk Açılışta Sadece Varsayılan Sol Menü Grubunu (Demografi & Biyometri) Göster
+    activateSidebarGroup(DEFAULT_SIDEBAR_GROUP_ID, { scroll: false });
+
+    // 1. Mobil Yatay Hızlı Grup / Kategori Hapları
     const pills = document.querySelectorAll('.cat-pill');
     pills.forEach(pill => {
         pill.addEventListener('click', () => {
-            pills.forEach(p => {
-                p.classList.remove('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60', 'bg-sky-500/15', 'text-sky-400');
-                p.classList.add('bg-slate-900/90', 'text-slate-300', 'border-slate-800');
-            });
-            pill.classList.remove('bg-slate-900/90', 'text-slate-300', 'border-slate-800');
-            pill.classList.add('active', 'bg-cyan-950/60', 'text-cyan-300', 'border-cyan-500/60');
-
+            const groupAttr = pill.getAttribute('data-group');
             const cat = pill.getAttribute('data-cat');
-            const cards = document.querySelectorAll<HTMLDetailsElement>('#clinical-workspace details[id^="card-"], #clinical-workspace > details');
             if (cat === 'all') {
-                cards.forEach(c => c.classList.remove('hidden'));
+                showAllWorkstationMotors();
                 const ws = getEl('clinical-workspace');
                 if (ws && typeof ws.scrollIntoView === 'function') ws.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                let firstMatch: HTMLDetailsElement | null = null;
-                cards.forEach(c => {
-                    const cardCat = c.getAttribute('data-category');
-                    if (cardCat === cat || cardCat === 'all') {
-                        c.classList.remove('hidden');
-                        c.open = true;
-                        if (!firstMatch) firstMatch = c;
-                    } else {
-                        c.classList.add('hidden');
-                    }
-                });
-                if (firstMatch) {
-                    if (typeof (firstMatch as any).scrollIntoView === 'function') {
-                        (firstMatch as any).scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                    (firstMatch as HTMLElement).classList.add('card-highlight');
-                    setTimeout(() => (firstMatch as HTMLElement).classList.remove('card-highlight'), 1800);
-                }
+            } else if (groupAttr) {
+                activateSidebarGroup(groupAttr, { scroll: true });
+            } else if (cat) {
+                activateSidebarGroup(cat, { scroll: true });
             }
         });
     });
 
-    // 2. Desktop Left Sidebar & Mobile Drawer Navigation Links
+    // 2. Sol Menü (Masaüstü & Mobil Çekmece) 13 Alt Başlık Grup Seçimi
     document.querySelectorAll('.nav-sidebar-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const href = link.getAttribute('href');
-            if (!href || !href.startsWith('#')) return;
-            const targetId = href.substring(1);
-            const targetCard = getEl<HTMLDetailsElement>(targetId);
-            if (targetCard) {
-                targetCard.classList.remove('hidden');
-                targetCard.open = true;
-                if (typeof targetCard.scrollIntoView === 'function') {
-                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-                targetCard.classList.add('card-highlight');
-                setTimeout(() => targetCard.classList.remove('card-highlight'), 1800);
-            }
-
-            // Aktif modül stili güncelle: border-l-2 border-cyan-400 bg-slate-900 text-cyan-300 font-medium
-            document.querySelectorAll('.nav-sidebar-link').forEach(l => {
-                l.classList.remove('border-l-2', 'border-cyan-400', 'bg-slate-900', 'text-cyan-300', 'font-medium');
-                l.classList.add('text-slate-400');
-            });
-            link.classList.remove('text-slate-400');
-            link.classList.add('border-l-2', 'border-cyan-400', 'bg-slate-900', 'text-cyan-300', 'font-medium');
-
-            // Mobilde tıklandıysa çekmeceyi kapat
-            const mobileSidebar = getEl('mobile-sidebar-drawer');
-            if (mobileSidebar && !mobileSidebar.classList.contains('hidden')) {
-                mobileSidebar.classList.add('hidden');
-            }
+            const groupKey = link.getAttribute('data-group') || link.getAttribute('href') || DEFAULT_SIDEBAR_GROUP_ID;
+            activateSidebarGroup(groupKey, { scroll: true });
         });
     });
 
-    // 2.1. Hasta Bilgi Kapsülü Tıklandığında Demografi Kartına Yumuşak Kaydırma
+    // 2.1. Hasta Bilgi Kapsülü Tıklandığında Demografi & Biyometri Grubunu Aç ve Vurgula
     const headerPatientCapsule = getEl('header-patient-info');
     if (headerPatientCapsule) {
         headerPatientCapsule.addEventListener('click', () => {
-            const cardDemografi = getEl<HTMLDetailsElement>('card-demografi');
-            if (cardDemografi) {
-                cardDemografi.classList.remove('hidden');
-                cardDemografi.open = true;
-                if (typeof cardDemografi.scrollIntoView === 'function') {
-                    cardDemografi.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-                cardDemografi.classList.add('card-highlight');
-                setTimeout(() => cardDemografi.classList.remove('card-highlight'), 1800);
-            }
+            activateSidebarGroup(DEFAULT_SIDEBAR_GROUP_ID, { scroll: true, highlightCardId: 'card-demografi' });
         });
     }
 
-    // 2.2. Mobil Kenar Çubuğu (Sidebar Drawer) Etkileşimleri
+    // 2.2. Mobil Sol Menü Çekmecesi (Unified Responsive #left-sidebar Drawer) Etkileşimleri
     const btnMobileSidebar = getEl('btn-mobile-sidebar-toggle');
-    const drawerMobileSidebar = getEl('mobile-sidebar-drawer');
+    const leftSidebarEl = getEl('left-sidebar');
+    const legacyDrawerMobileSidebar = getEl('mobile-sidebar-drawer');
     const btnCloseMobileSidebar = getEl('btn-close-mobile-sidebar');
     const backdropMobileSidebar = getEl('mobile-sidebar-backdrop');
 
-    if (btnMobileSidebar && drawerMobileSidebar) {
+    if (btnMobileSidebar) {
         btnMobileSidebar.addEventListener('click', () => {
-            drawerMobileSidebar.classList.remove('hidden');
+            if (leftSidebarEl) leftSidebarEl.classList.remove('hidden');
+            if (backdropMobileSidebar) backdropMobileSidebar.classList.remove('hidden');
+            if (legacyDrawerMobileSidebar) legacyDrawerMobileSidebar.classList.remove('hidden');
         });
     }
-    if (btnCloseMobileSidebar && drawerMobileSidebar) {
+    if (btnCloseMobileSidebar) {
         btnCloseMobileSidebar.addEventListener('click', () => {
-            drawerMobileSidebar.classList.add('hidden');
+            closeMobileSidebarDrawer();
         });
     }
-    if (backdropMobileSidebar && drawerMobileSidebar) {
+    if (backdropMobileSidebar) {
         backdropMobileSidebar.addEventListener('click', () => {
-            drawerMobileSidebar.classList.add('hidden');
+            closeMobileSidebarDrawer();
         });
     }
 

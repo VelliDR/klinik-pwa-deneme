@@ -26,6 +26,8 @@ import {
     updatePatientBanner,
     updateClinicalAlertsInspector,
     updateLiveSOAP,
+    activateSidebarGroup,
+    showAllWorkstationMotors,
     initWorkstationPackages,
     initResponsiveWorkstation,
     resetAllPatientData
@@ -42,6 +44,8 @@ export {
     updatePatientBanner,
     updateClinicalAlertsInspector,
     updateLiveSOAP,
+    activateSidebarGroup,
+    showAllWorkstationMotors,
     initWorkstationPackages,
     initResponsiveWorkstation,
     resetAllPatientData
@@ -120,11 +124,11 @@ export function updateAllTabs(): void {
         const ageData = calculatePatientAge();
         updateBiometryAndGrowth(ageData);
 
-        // 2. Pediatri & Gelişim & Şurup & Aşı
-        updatePediatricCard(ageData);
-
-        // 3. Acil, Nöroloji & Tromboemboli Skorlamaları
+        // 2. Acil, Nöroloji & Tromboemboli Skorlamaları (GCS, AVPU'yu besler)
         updateEmergencyNeuroCard(ageData);
+
+        // 3. Pediatri & Gelişim & Şurup & Aşı (NEWS2/PEWS güncel AVPU ile tek geçişte hesaplanır)
+        updatePediatricCard(ageData);
 
         // 4. Cerrahi & Kadın Doğum & Yanık
         updateSurgeryObgynCard(ageData);

@@ -265,6 +265,54 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                 }
             }
         }
+    } else {
+        // Yenidoğan İdame Sıvısı ve Elektrolit Senkronizasyonu (neonatologyController'dan gelen TND verisi)
+        const neoFluid = appState.medicine.neonatalFluid;
+        if (neoFluid) {
+            if (outRatePerKg) {
+                outRatePerKg.textContent = `${neoFluid.mlPerKgRange} mL/kg/gün`;
+            }
+            if (outMethodBadge) {
+                outMethodBadge.textContent = 'TND Yenidoğan';
+                outMethodBadge.className = 'text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-medium truncate max-w-[110px]';
+            }
+            const isFirst48h = (ageData.days !== null && ageData.days <= 2) || neoFluid.dayTitle.includes('1.') || neoFluid.dayTitle.includes('2.');
+            if (outDailyNa) {
+                outDailyNa.textContent = isFirst48h ? '0 (İlk 48h Yok)' : '~2-3 mmol/kg';
+            }
+            if (outDailyK) {
+                outDailyK.textContent = isFirst48h ? '0 (İlk 48h YASAK)' : '~1-2 mmol/kg';
+                outDailyK.className = isFirst48h ? 'font-bold text-rose-400' : 'font-bold text-amber-300';
+            }
+            if (outDailyCl) {
+                outDailyCl.textContent = isFirst48h ? '0' : '~2-3 mmol/kg';
+            }
+            if (outDailyGlu) {
+                outDailyGlu.textContent = `GIR: ${neoFluid.girMgKgMin} mg/kg/dk`;
+            }
+            if (outSolutionRec) {
+                outSolutionRec.textContent = neoFluid.soluteAdvice;
+            }
+            if (containerFluidWarnings) {
+                let warnHtml = `<div class="p-2 rounded-lg border bg-amber-950/40 border-amber-800/60 text-amber-200 leading-tight">${escapeHtml(neoFluid.contraindicationNotice)}</div>`;
+                if (neoFluid.weightLossAnalysis?.warning) {
+                    warnHtml += `<div class="p-2 rounded-lg border bg-rose-950/40 border-rose-800/60 text-rose-200 leading-tight mt-1">${escapeHtml(neoFluid.weightLossAnalysis.warning)}</div>`;
+                }
+                containerFluidWarnings.innerHTML = warnHtml;
+                containerFluidWarnings.classList.remove('hidden');
+            }
+        } else {
+            if (outRatePerKg) outRatePerKg.textContent = '--';
+            if (outDailyNa) outDailyNa.textContent = '--';
+            if (outDailyK) outDailyK.textContent = '--';
+            if (outDailyCl) outDailyCl.textContent = '--';
+            if (outDailyGlu) outDailyGlu.textContent = '--';
+            if (outSolutionRec) outSolutionRec.textContent = '--';
+            if (containerFluidWarnings) {
+                containerFluidWarnings.innerHTML = '';
+                containerFluidWarnings.classList.add('hidden');
+            }
+        }
     }
 
     // 2. ELEKTROLİTLER: KALSİYUM & SODYUM (ADROGUÉ-MADİAS)
@@ -1043,6 +1091,21 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
     }
 
     // 8. CENTOR / MCISAAC
+    // Vitaller motorundan ateş (>38.0°C) otomatik senkronizasyonu
+    const chkCentorFeverEl = getEl<HTMLInputElement>('chk-centor-fever');
+    if (chkCentorFeverEl) {
+        if (!chkCentorFeverEl.dataset.listenerBound) {
+            chkCentorFeverEl.dataset.listenerBound = 'true';
+            chkCentorFeverEl.addEventListener('change', () => {
+                chkCentorFeverEl.dataset.userModified = 'true';
+            });
+        }
+        const nTemp = getNum('input-temp');
+        if (!chkCentorFeverEl.dataset.userModified && nTemp !== null) {
+            chkCentorFeverEl.checked = nTemp > 38.0;
+        }
+    }
+
     const cFever = getChk('chk-centor-fever');
     const cNoCough = getChk('chk-centor-no-cough');
     const cNodes = getChk('chk-centor-nodes');

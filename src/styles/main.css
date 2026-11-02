@@ -34,12 +34,14 @@ select {
     }
 }
 @media (max-width: 640px) {
-    button:not(header button):not(.h-7) {
+    button:not(header button):not(.h-7):not(.btn-compact):not(#workspace-context-pills button) {
         min-height: 42px;
     }
 }
 header button,
 header .btn-compact,
+.btn-compact,
+#workspace-context-pills button,
 .h-7 {
     min-height: unset;
 }
@@ -124,6 +126,31 @@ html.light-theme .cat-pill:not(.active) {
 html.light-theme .cat-pill:not(.active):hover {
     background-color: #e2e8f0 !important;
     color: #0f172a !important;
+}
+
+html.light-theme #left-sidebar,
+html.light-theme #workspace-active-context,
+html.light-theme #card-custom-shortcuts {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme #drawer-custom-pack > div {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme #btn-toggle-custom-pack {
+    background-color: rgba(14, 165, 233, 0.12) !important;
+    border-color: rgba(14, 165, 233, 0.45) !important;
+    color: #0369a1 !important;
+}
+
+html.light-theme .nav-sidebar-link.active {
+    background-color: rgba(14, 165, 233, 0.12) !important;
+    color: #0369a1 !important;
+    border-color: #0284c7 !important;
 }
 
 /* Kartlar (details) */

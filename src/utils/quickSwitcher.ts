@@ -259,6 +259,8 @@ const MOTOR_DOM_ID_ALIASES: Record<string, string> = {
   'card-sutur': 'card-cerrahi'
 };
 
+import { findSidebarGroupByMotor } from '../workstationPackages';
+
 export function jumpToMotor(motorId: string): boolean {
   if (motorId === 'action-reset-patient') {
     if (typeof document === 'undefined') return false;
@@ -274,10 +276,18 @@ export function jumpToMotor(motorId: string): boolean {
   const card = document.getElementById(resolvedId) || document.getElementById(motorId);
   if (!card) return false;
 
-  // 1. Kart gizli ise (kategori filtresi nedeniyle), 'Tümü' filtresini tetikle
+  // 1. Kart gizli ise, ait olduğu sol menü grubunu etkinleştir (tüm 20 kartı açıp kalabalık yaratmadan)
   if (card.classList.contains('hidden') || card.style.display === 'none') {
-    const allPill = document.querySelector<HTMLButtonElement>('.cat-pill[data-cat="all"]');
-    if (allPill) allPill.click();
+    const group = findSidebarGroupByMotor(card.id) || findSidebarGroupByMotor(resolvedId);
+    const groupLink = group
+      ? (document.querySelector<HTMLElement>(`.nav-sidebar-link[data-group="${group.id}"]`) ||
+         document.querySelector<HTMLElement>(`.nav-sidebar-link[href="${group.href}"]`))
+      : null;
+    if (groupLink) {
+      groupLink.click();
+    } else {
+      card.classList.remove('hidden');
+    }
   }
 
   // 2. Kart <details> ise açık yap

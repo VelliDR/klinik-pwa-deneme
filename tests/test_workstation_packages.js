@@ -7,6 +7,9 @@ import {
     CLINICAL_MOTORS,
     MOTOR_DEPENDENCIES,
     PRESET_PACKAGES,
+    SIDEBAR_GROUPS,
+    DEFAULT_SIDEBAR_GROUP_ID,
+    findSidebarGroupByMotor,
     resolveMotorDependencies,
     getCustomPackages,
     saveCustomPackage,
@@ -205,6 +208,72 @@ const remainingPacks = deleteCustomPackage(createdPack.id);
 assert.strictEqual(remainingPacks.length, 0);
 assert.strictEqual(getCustomPackages().length, 0);
 console.log('✓ Custom package successfully deleted from localStorage.');
+
+console.log('\n--- 6. Testing 13 Left-Sidebar Groups, Dependency Resolution & Top Customization Layout ---');
+assert.strictEqual(SIDEBAR_GROUPS.length, 13, 'Must have all 13 left-menu clinical groups');
+assert.strictEqual(DEFAULT_SIDEBAR_GROUP_ID, 'demografi', 'Default initial sidebar group must be demografi');
+
+// Verify all 20 workspace cards belong to exactly one sidebar group
+const groupedMotors = new Set();
+SIDEBAR_GROUPS.forEach(group => {
+    assert.ok(group.id && group.name && group.href, `Group ${group.id} must have id, name, and href`);
+    assert.ok(group.motors.length > 0, `Group ${group.id} must contain at least one motor`);
+    group.motors.forEach(mId => {
+        assert.ok(CLINICAL_MOTORS[mId], `Motor ${mId} in sidebar group ${group.id} must exist in CLINICAL_MOTORS`);
+        assert.ok(!groupedMotors.has(mId), `Motor ${mId} must not be duplicated across sidebar groups`);
+        groupedMotors.add(mId);
+        assert.strictEqual(findSidebarGroupByMotor(mId)?.id, group.id, `findSidebarGroupByMotor(${mId}) must resolve to ${group.id}`);
+    });
+});
+assert.strictEqual(groupedMotors.size, 20, 'All 20 workspace motor cards (excluding right-panel card-soap) must be covered by SIDEBAR_GROUPS');
+
+// Initial load group ('demografi') resolves to ONLY 3 motors so initial load has zero clutter
+const defaultGroup = SIDEBAR_GROUPS.find(g => g.id === DEFAULT_SIDEBAR_GROUP_ID);
+const initialResolved = resolveMotorDependencies(defaultGroup.motors);
+assert.deepStrictEqual(
+    new Set(initialResolved),
+    new Set(['card-demografi', 'card-biyometri', 'card-notlar']),
+    'Initial default group must resolve to only the 3 Demografi & Biyometri cards'
+);
+
+// Clicking 'pediatri' (Şurup motoru) resolves its base motors PLUS connected Yaş, Kilo/Boy, and Vitaller motors
+const pediatriGroup = SIDEBAR_GROUPS.find(g => g.id === 'pediatri');
+const pediatriResolved = resolveMotorDependencies(pediatriGroup.motors);
+assert.ok(pediatriResolved.includes('card-pediatri-surup'), 'Pediatri group must include syrup motor');
+assert.ok(pediatriResolved.includes('card-demografi'), 'Pediatri group must auto-include connected Yaş & Demografi motor');
+assert.ok(pediatriResolved.includes('card-biyometri'), 'Pediatri group must auto-include connected Kilo & Boy motor');
+assert.ok(pediatriResolved.includes('card-vitaller'), 'Pediatri group must auto-include connected Vitaller motor');
+console.log('✓ Sidebar group dependency resolution verified (initial load = 3 motors; Pediatri/Şurup = 6 interconnected motors).');
+
+// Verify DOM placement: Package customization (#btn-toggle-custom-pack + #drawer-custom-pack) is at the very top of #left-sidebar, NOT inside #card-custom-shortcuts
+const shortcutsIdx = indexHtml.indexOf('id="card-custom-shortcuts"');
+const leftSidebarIdx = indexHtml.indexOf('id="left-sidebar"');
+const toggleCustomIdx = indexHtml.indexOf('id="btn-toggle-custom-pack"');
+const drawerCustomIdx = indexHtml.indexOf('id="drawer-custom-pack"');
+const sidebarNavIdx = indexHtml.indexOf('<nav', leftSidebarIdx);
+const mainWorkspaceIdx = indexHtml.indexOf('id="clinical-workspace"');
+
+assert.ok(shortcutsIdx > 0 && shortcutsIdx < leftSidebarIdx, '#card-custom-shortcuts must remain in the top header');
+assert.ok(toggleCustomIdx > leftSidebarIdx && toggleCustomIdx < sidebarNavIdx, '#btn-toggle-custom-pack must be at the top of #left-sidebar before <nav>');
+assert.ok(drawerCustomIdx > leftSidebarIdx && drawerCustomIdx < sidebarNavIdx, '#drawer-custom-pack must be at the top of #left-sidebar before <nav>');
+assert.ok(sidebarNavIdx < mainWorkspaceIdx, '#left-sidebar navigation must precede #clinical-workspace');
+console.log('✓ Package customization is placed at the top of #left-sidebar while preset package selector remains in header.');
+
+// Verify initial HTML hides the 17 non-default workspace cards and keeps the 3 initial cards visible
+motorIds.filter(id => id !== 'card-soap').forEach(id => {
+    const tagMatch = indexHtml.match(new RegExp(`<details[^>]*id="${id}"[^>]*>`));
+    assert.ok(tagMatch, `Must find opening <details> tag for ${id}`);
+    const openingTag = tagMatch[0];
+    const classMatch = openingTag.match(/class="([^"]*)"/);
+    const classTokens = classMatch ? classMatch[1].trim().split(/\s+/) : [];
+    const hasHidden = classTokens.includes('hidden');
+    if (defaultGroup.motors.includes(id)) {
+        assert.ok(!hasHidden, `Initial group motor ${id} must NOT be hidden on startup`);
+    } else {
+        assert.ok(hasHidden, `Non-initial motor ${id} MUST be hidden on startup to eliminate clutter`);
+    }
+});
+console.log('✓ Initial HTML state verified: only 3 default motors visible on startup, 17 others hidden.');
 
 console.log('\n======================================================');
 console.log('🎉 ALL WORKSTATION PACKAGE TESTS PASSED SUCCESSFULLY! 🎉');
