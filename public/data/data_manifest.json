@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-20",
+  "masterBuildDate": "2026-11-19",
+  "sources": {
+    "prices": {
+      "label": "İlaç Perakende Satış Fiyatları (TL)",
+      "snapshotDate": "2026-11-19",
+      "latestItemDate": "2026-11-10",
+      "bulkTariffDate": "2026-04-01",
+      "recordCount": 5919,
+      "staleAfterDays": 90,
+      "criticalAfterDays": 180,
+      "sourceName": "Ecza Deposu Açık Web Fiyat Listesi (PSF/DSF)"
+    },
+    "gkf": {
+      "label": "Referans İlaç Fiyatı (GKF Euro)",
+      "snapshotDate": "2026-11-19",
+      "recordCount": 2399,
+      "staleAfterDays": 90,
+      "criticalAfterDays": 180,
+      "sourceName": "TİTCK Referans Fiyat Listesi"
+    },
+    "sgk": {
+      "label": "SGK EK-4/A Geri Ödeme & 4 Kademeli KKİ",
+      "snapshotDate": "2026-10-25",
+      "recordCount": 7280,
+      "equivalentGroupCount": 6317,
+      "staleAfterDays": 90,
+      "criticalAfterDays": 180,
+      "sourceName": "SGK Bedeli Ödenecek İlaçlar Listesi (EK-4/A)"
+    },
+    "titck": {
+      "label": "TİTCK SKRS, Ruhsat, ▼ Ek İzlem & KÜB/KT",
+      "snapshotDate": "2026-11-19",
+      "recordCount": 18212,
+      "extraMonitoringCount": 1217,
+      "pdfCount": 6664,
+      "staleAfterDays": 180,
+      "criticalAfterDays": 365,
+      "sourceName": "T.C. Sağlık Bakanlığı TİTCK"
+    },
+    "ddi": {
+      "label": "İlaç & Besin Etkileşim Matrisi",
+      "snapshotDate": "2026-11-19",
+      "recordCount": 81355,
+      "staleAfterDays": 365,
+      "criticalAfterDays": 730,
+      "sourceName": "DDInter 2.0 + 28 Küratörlü Türkçe ATC Kuralı"
+    },
+    "vaccines": {
+      "label": "Ulusal & Özel Bağışıklama Takvimi",
+      "snapshotDate": "2026-09-01",
+      "versionLabel": "GBP 2025/2026",
+      "staleAfterDays": 365,
+      "criticalAfterDays": 730,
+      "sourceName": "T.C. Sağlık Bakanlığı Genişletilmiş Bağışıklama Programı"
+    }
+  }
+}
