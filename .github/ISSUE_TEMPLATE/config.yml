@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Canlı Uygulama (PWA)
+    url: https://vellidr.github.io/klinik-pwa-deneme/
+    about: Uygulamayı doğrudan tarayıcıda açıp test etmek için.
+  - name: Veri Kaynakları ve Lisans Bildirimi (DATA_NOTICE.md)
+    url: https://github.com/VelliDR/klinik-pwa-deneme/blob/main/DATA_NOTICE.md
+    about: TİTCK, SGK, DDInter 2.0 ve üçüncü parti veri kaynaklarının kapsamı ile tarih bilgisi.

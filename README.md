@@ -6,7 +6,7 @@
 [![Lisans: AGPLv3 + CC BY-NC-SA 4.0](https://img.shields.io/badge/Lisans-AGPLv3_%2B_CC_BY--NC--SA_4.0-amber.svg)](LICENSE)
 [![TİTCK Data](https://img.shields.io/badge/TİTCK-18%2C212_İlaç_%2B_1%2C198_KÜB_%2B_81K_DDI-E11D48)](https://www.titck.gov.tr/)
 [![Clinical Motors](https://img.shields.io/badge/Klinik_Motor-21_Modül-8B5CF6)](https://github.com/VelliDR/klinik-pwa-deneme)
-[![Tests](https://img.shields.io/badge/Test_Suite-13_Paket_Doğrulandı-10B981)](https://github.com/VelliDR/klinik-pwa-deneme)
+[![CI & Pages](https://github.com/VelliDR/klinik-pwa-deneme/actions/workflows/deploy.yml/badge.svg)](https://github.com/VelliDR/klinik-pwa-deneme/actions/workflows/deploy.yml)
 [![Privacy](https://img.shields.io/badge/Veri_Gizliliği-İstemci_Taraflı_(Client--Side)-blue)](https://kvkk.gov.tr/)
 
 Klinik Karar Destek Asistanı; acil servis, poliklinik ve yataklı servislerde görev yapan hekimler ve sağlık çalışanları için tasarlanmış, açık kaynaklı ve çevrimdışı öncelikli (offline-first) bir klinik hesaplama, akılcı ilaç güvenliği ve dokümantasyon aracıdır.

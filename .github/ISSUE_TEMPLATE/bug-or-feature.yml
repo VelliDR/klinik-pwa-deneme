@@ -1,0 +1,46 @@
+name: Teknik Hata / Arayüz Önerisi
+description: Arayüz sorunu, mobil görünüm, çevrimdışı PWA önbelleği veya genel iyileştirme önerisi bildirin.
+title: "[Teknik] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Hasta Gizliliği (KVKK):** Ekran görüntüsü ekliyorsanız gerçek hasta verisi içermediğinden emin olunuz.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Bildirim Türü
+      options:
+        - Arayüz / görsel hizalama hatası
+        - Mobil görünüm / dokunmatik kullanım sorunu
+        - Çevrimdışı PWA / Service Worker önbellek sorunu
+        - Genel teknik hata (konsol hatası / donma)
+        - Kullanılabilirlik veya özellik önerisi
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Cihaz ve Tarayıcı
+      placeholder: "Örn: Android 14 / Chrome 130 veya Masaüstü / Firefox"
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Açıklama ve Yeniden Üretme Adımları
+      description: Hatanın nasıl oluştuğunu veya önerinizin neyi kolaylaştıracağını kısaca yazınız.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Ekran Görüntüsü / Konsol Çıktısı (Varsa)
+      description: Görselleri doğrudan bu alana sürükleyip bırakabilirsiniz.
+    validations:
+      required: false
