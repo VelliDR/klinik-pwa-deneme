@@ -13,6 +13,28 @@ Klinik Karar Destek Asistanı; acil servis, poliklinik ve yataklı servislerde g
 
 Projenin temel amacı; yoğun klinik çalışma temposunda sık başvurulan kılavuz algoritmalarını, pediatrik ve erişkin dozaj hesaplamalarını, çoklu ilaç etkileşim denetimini ve epikriz dokümantasyonunu tek bir arayüzde toplayarak hekimin karar verme sürecine pratik ve güvenilir bir asistan sunmaktır.
 
+**Canlı Uygulama (PWA):** [vellidr.github.io/klinik-pwa-deneme](https://vellidr.github.io/klinik-pwa-deneme/) — Doğrudan tarayıcıda çalışır; masaüstü ve mobil cihazlara çevrimdışı uygulama olarak kurulabilir.
+
+### Öne Çıkan Kapsam
+- **21 klinik karar destek motoru:** Biyometri ve persentil (WHO / Neyzi 2015), eGFR (Schwartz / CKD-EPI 2021), 3 ekollü kan gazı analizi (Boston · Kopenhag · Stewart-Fencl), AAP 2022 yenidoğan sarılığı, pediatrik şurup dozlama, GBP 2026 aşı yakalama ve 10 başlıkta 30 genel cerrahi skorlama sistemi.
+- **Yerel TİTCK ilaç ve etkileşim katmanı:** 18.212 ruhsatlı ilaç, 1.794 ATC / 1.798 ICD-10 endikasyon eşlemesi, 5 sekmeli monograf görünümü, 1.198 ATC Türkçe KÜB bölümü ve 81.327 DDInter 2.0 etkileşim çifti.
+- **Canlı SOAP notu ve A4 kullanım çizelgesi:** Girilen ölçüm, skor ve uyarıların otomatik SOAP metnine derlenmesi ve hasta için yazdırılabilir A4 ilaç çizelgesi.
+- **Acil durum akışları:** Kilo bazlı IM adrenalin dozajı ile 5 dakikalık canlı anafilaksi sayacı ve AES kademeli status epileptikus kronometresi.
+- **İstemci taraflı gizlilik ve çevrimdışı çalışma:** Hasta verisi sunucuya gönderilmez; çekirdek uygulama ve ilaç veritabanı Workbox ile yerel önbelleğe alınır.
+
+<details>
+<summary>English Summary</summary>
+
+**Klinik Karar Destek Asistanı (Klinik PWA)** is an open-source, offline-first clinical decision support and medical education Progressive Web App built with TypeScript and Vite for Turkish clinical practice.
+
+- **21 Clinical Modules:** Pediatric growth percentiles (WHO & Neyzi 2015), eGFR (Schwartz & CKD-EPI 2021), three-school blood gas interpretation (Boston, Copenhagen SBE, Stewart-Fencl), AAP 2022 / TND 2014 neonatal hyperbilirubinemia, weight-based pediatric syrup dosing, Turkish national vaccination catch-up (GBP 2026), and 30 general surgery scoring systems across 10 domains.
+- **Local Drug Safety & Monograph Layer:** Client-side catalog of 18,212 Turkish-licensed medications (TİTCK), ICD-10 indication search, 5-tab monographs with 1,198 Turkish SmPC (KÜB) sections, LiverTox DILI flags, and an O(1) interaction engine combining curated rules with 81,327 DDInter 2.0 pairs.
+- **Privacy & Offline Support:** 100% client-side execution with zero telemetry; patient data never leaves the browser.
+- **Live Demo:** https://vellidr.github.io/klinik-pwa-deneme/
+- **Disclaimer:** Intended strictly as an educational and clinical reference aid for healthcare professionals; all calculations and drug decisions must be independently verified by a licensed physician.
+
+</details>
+
 ---
 
 > [!IMPORTANT]
@@ -25,7 +47,7 @@ Projenin temel amacı; yoğun klinik çalışma temposunda sık başvurulan kıl
 
 ## Uygulama Ekran Görüntüleri
 
-Uygulamanın masaüstü iş istasyonu görünümü (sol tarafta 13 klinik modül grubu, ortada reaktif karar destek motoru, sağda canlı güvenlik alarmları ve otomatik SOAP hasta notu) ile Aydınlık / Karanlık tema desteğini gösteren beş farklı klinik motor örneği:
+Masaüstü iş istasyonu görünümü (sol tarafta 13 klinik modül grubu, ortada reaktif karar destek motoru, sağda canlı güvenlik alarmları ve otomatik SOAP hasta notu), Aydınlık / Karanlık tema desteği, 5 sekmeli ilaç monografı ve mobil PWA görünümünden örnekler:
 
 ### 1. Biyometri, Pediatrik Persentil Spektrumu ve Canlı SOAP (Aydınlık Mod)
 18 aylık bir pediatrik olguda Mosteller BSA, IDMS yatakbaşı Schwartz eGFR (mutlak GFR dâhil), Neyzi 2015 ulusal büyüme standartlarına göre renk kodlu persentil spektrum çubukları ve sağ panelde eşzamanlı güncellenen canlı SOAP hasta notu.
@@ -51,6 +73,18 @@ Evre 3 KBH ($\text{eGFR } 40\text{ mL/dk}$) olan 68 yaşındaki hastada Ramipril
 48 saatlik, 38 haftalık ve DAT(+) izoimmün hemoliz riskli yenidoğanda AAP 2022 fototerapi / bakım eskalasyonu / kan değişimi eşikleri, Non-Subtraction kuralı, Bilirubin/Albümin oranı, Tablo 4 taburculuk matrisi, TND 2014 ikili kılavuz kıyaslaması ve %10,9 aşırı tartı kaybı alarmı.
 
 ![Neonatoloji — AAP 2022 Hiperbilirubinemi ve Yenidoğan Sarılığı Yönetimi](docs/screenshots/05-neonatoloji-aap2022-sarilik.png)
+
+### 6. 5 Sekmeli TİTCK Klinik Monograf Modalı (KÜB, ICD-10, DILI ve SGK)
+Atorvastatin örneğinde 5 sekmeli (`Özet & Doz`, `Etkileşimler`, `Güvenlik`, `Farmakoloji`, `SGK & Fiyat`) çevrimdışı klinik monograf görünümü: onaylı ICD-10 endikasyon etiketleri, resmi Türkçe TİTCK KÜB metni, gebelik / LiverTox DILI rozetleri ve erişkin-pediatrik dozaj özeti.
+
+![5 Sekmeli TİTCK Klinik Monograf Modalı](docs/screenshots/06-titck-monograf-modal.png)
+
+### 7. Mobil PWA Görünümü (Pediatrik Şurup Dozajı ve Acil Anafilaksi Sayacı)
+Telefon boyutunda (`390×844`) 4 yaşında / 16 kg pediatrik olgu üzerinden iki yatak başı görünüm: solda kilo bazlı şurup dozlama (`mL` / oral enjektör, klavulanat toksisite ve saklama uyarıları, GBP 2025/2026 erişimi), sağda kilo bazlı İM adrenalin dozajı ile 5 dakikalık canlı geri sayım ve sıvı bolusu.
+
+| Pediatrik Şurup Dozlama & Aşı Erişimi | Acil Anafilaksi & 5 dk Adrenalin Sayacı |
+| :---: | :---: |
+| <img src="docs/screenshots/07-mobil-pediatrik-dozaj.png" alt="Mobil PWA — Pediatrik Şurup Dozlama" width="330" /> | <img src="docs/screenshots/08-mobil-acil-anafilaksi.png" alt="Mobil PWA — Acil Anafilaksi ve 5 dk Adrenalin Sayacı" width="330" /> |
 
 ---
 

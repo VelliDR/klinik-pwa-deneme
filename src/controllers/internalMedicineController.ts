@@ -614,7 +614,7 @@ export function updateInternalMedicineCard(ageData: PatientAgeResult): void {
                         ${getSvgIcon('microscope', 'w-3.5 h-3.5 text-cyan-400 shrink-0')}
                         <span>Fizyopatolojik Detay & Ekol Karşılaştırma Kutusu</span>
                     </span>
-                    <span class="text-[0.75rem] text-cyan-400 group-open/deep:rotate-180 transition-transform">▼ Detay</span>
+                    <span class="inline-flex items-center gap-1 text-[0.75rem] text-cyan-400"><span>Detay</span><span class="inline-block group-open/deep:rotate-180 transition-transform">▼</span></span>
                 </summary>
                 
                 <div class="mt-2 space-y-2 text-[0.75rem] text-slate-300 border-t border-cyan-900/40 pt-2">
