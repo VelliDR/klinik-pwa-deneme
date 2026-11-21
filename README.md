@@ -23,8 +23,40 @@ Projenin temel amacı; yoğun klinik çalışma temposunda sık başvurulan kıl
 
 ---
 
+## Uygulama Ekran Görüntüleri
+
+Uygulamanın masaüstü iş istasyonu görünümü (sol tarafta 13 klinik modül grubu, ortada reaktif karar destek motoru, sağda canlı güvenlik alarmları ve otomatik SOAP hasta notu) ile Aydınlık / Karanlık tema desteğini gösteren beş farklı klinik motor örneği:
+
+### 1. Biyometri, Pediatrik Persentil Spektrumu ve Canlı SOAP (Aydınlık Mod)
+18 aylık bir pediatrik olguda Mosteller BSA, IDMS yatakbaşı Schwartz eGFR (mutlak GFR dâhil), Neyzi 2015 ulusal büyüme standartlarına göre renk kodlu persentil spektrum çubukları ve sağ panelde eşzamanlı güncellenen canlı SOAP hasta notu.
+
+![Biyometri, Pediatrik Persentil Spektrumu ve Canlı SOAP](docs/screenshots/01-biyometri-persentil-soap.png)
+
+### 2. Kan Gazı Analizi ve 3'lü Fizyopatolojik Asit-Baz Motoru (Karanlık Mod)
+Gece nöbeti karanlık temasında yüksek anyon açıklı metabolik asidoz (HAGMA) olgusu: Winter kompanzasyonu, albümin düzeltmeli anyon açığı (Figge), Kassirer-Bleich iç tutarlılık denetimi, Boston · Kopenhag SBE · Stewart-Fencl ($\text{SID}_a$/$\text{SIG}$) ekol karşılaştırması ve $A\text{-}a$ gradiyenti / Berlin ARDS analizi.
+
+![Kan Gazı Analizi ve 3'lü Fizyopatolojik Asit-Baz Motoru (Karanlık Mod)](docs/screenshots/02-kan-gazi-asit-baz-dark.png)
+
+### 3. Genel Cerrahi İş İstasyonu — 11 Sekme ve 3'lü Akut Apandisit Karşılaştırması
+10 klinik başlıkta 30 cerrahi skorlama sistemini bir araya getiren iş istasyonu: ortak laboratuvar senkronizasyonuyla Alvarado (MANTRELS), AIR (2008 / 2021 STRAPPSCORE) ve Adult Appendicitis Score (AAS) sistemlerinin WSES 2020 kılavuzu altında yan yana değerlendirilmesi.
+
+![Genel Cerrahi İş İstasyonu — Akut Apandisit 3'lü Karşılaştırma](docs/screenshots/03-genel-cerrahi-apandisit.png)
+
+### 4. Akılcı Reçete, TİTCK İlaç Kataloğu ve 4 Kademeli Etkileşim Kalkanı
+Evre 3 KBH ($\text{eGFR } 40\text{ mL/dk}$) olan 68 yaşındaki hastada Ramipril + Furosemid + İbuprofen reçetesine karşı eşzamanlı tetiklenen Triple Whammy (Tier 2 Soft Stop), Ölümcül Hiperkalemi Kalkanı, KDIGO renal doz uyarısı ve sağ sütundaki canlı güvenlik takip paneli.
+
+![Akılcı Reçete, TİTCK İlaç Kataloğu ve 4 Kademeli Etkileşim Kalkanı](docs/screenshots/04-akilci-recete-titck-etkilesim.png)
+
+### 5. Neonatoloji — AAP 2022 Hiperbilirubinemi ve Yenidoğan Tartı Kaybı Takibi
+48 saatlik, 38 haftalık ve DAT(+) izoimmün hemoliz riskli yenidoğanda AAP 2022 fototerapi / bakım eskalasyonu / kan değişimi eşikleri, Non-Subtraction kuralı, Bilirubin/Albümin oranı, Tablo 4 taburculuk matrisi, TND 2014 ikili kılavuz kıyaslaması ve %10,9 aşırı tartı kaybı alarmı.
+
+![Neonatoloji — AAP 2022 Hiperbilirubinemi ve Yenidoğan Sarılığı Yönetimi](docs/screenshots/05-neonatoloji-aap2022-sarilik.png)
+
+---
+
 ## İçindekiler
 
+- [Uygulama Ekran Görüntüleri](#uygulama-ekran-görüntüleri)
 - [Tasarım ve Arayüz İlkeleri](#tasarım-ve-arayüz-ilkeleri)
 - [Hızlı Başlangıç ve PWA Kurulumu](#hızlı-başlangıç-ve-pwa-kurulumu)
 - [Klinik Karar Destek Motorları (21 Modül)](#klinik-karar-destek-motorları-21-modül)
