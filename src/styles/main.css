@@ -1,0 +1,779 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+ * TEMEL KLİNİK ERGONOMİ, RENK ŞEMASI VE YATAY KAYDIRMA KORUMASI
+ * ============================================================================ */
+html {
+    color-scheme: dark;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+}
+
+html.light-theme {
+    color-scheme: light;
+}
+
+body {
+    overflow-x: clip;
+    background-color: #0f172a;
+    color: #e2e8f0;
+    line-height: 1.45;
+}
+
+/* İnce, göz yormayan özel kaydırma çubukları (Textarea / sonuç kutuları için beyaz parlama engeli) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
+}
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.26);
+    border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.44);
+}
+html.light-theme * {
+    scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+html.light-theme *::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 116, 139, 0.32);
+}
+
+/* Scrollbar Gizleme Yardımcısı */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Monospace ve düşey sayısal hizalama standardı */
+.tabular-nums,
+#patient-context-banner,
+#header-patient-info,
+[id^="output-"],
+[id^="badge-"],
+.timer-display {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Form elemanları tipografisi: Mobilde iOS Safari zoom koruması, masaüstünde ölçeklenebilir netlik */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    font-size: 0.875rem !important;
+    line-height: 1.35;
+}
+@media (max-width: 640px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+        font-size: max(16px, 1rem) !important;
+    }
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select {
+    min-height: 2.5rem;
+}
+@media (min-width: 641px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select {
+        min-height: 2.375rem;
+    }
+}
+@media (max-width: 640px) {
+    button:not(header button):not(.h-7):not(.btn-compact):not(#workspace-context-pills button):not(.btn-dob-preset):not(.btn-dot-phrase) {
+        min-height: 40px;
+    }
+}
+header button,
+header .btn-compact,
+.btn-compact,
+#workspace-context-pills button,
+.h-7 {
+    min-height: unset;
+}
+
+/* Kutu taşması olmadan esnek yazı ölçeklendirme güvenliği */
+#clinical-workspace,
+#workspace-cards-grid,
+.card-surface,
+.card-body {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Sayısal Girdilerde Tarayıcı Oklarını (Spinner) Gizle */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Sakin Klinik Kart Vurgulama (Göz yoran kırmızı neon yerine yumuşak klinik mavi) */
+@keyframes clinical-card-focus {
+    0% {
+        border-color: rgba(56, 189, 248, 0.85);
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.22);
+    }
+    60% {
+        border-color: rgba(56, 189, 248, 0.45);
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.1);
+    }
+    100% {
+        border-color: rgba(71, 85, 105, 0.55);
+        box-shadow: none;
+    }
+}
+.card-highlight {
+    animation: clinical-card-focus 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Hafif Modal Giriş Animasyonları (tailwindcss-animate eklentisi olmadan yerel CSS desteği) */
+@keyframes modal-enter {
+    from {
+        opacity: var(--tw-enter-opacity, 1);
+        transform: scale(var(--tw-enter-scale, 1));
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-in {
+    animation: modal-enter 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.fade-in {
+    --tw-enter-opacity: 0;
+}
+
+.zoom-in-95 {
+    --tw-enter-scale: 0.95;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-in {
+        animation: none !important;
+    }
+}
+
+/* Yumuşak, ağırbaşlı mikro-etkileşimler */
+.btn-interactive,
+button:not([disabled]):not(.cursor-default),
+.cat-pill,
+.tab-btn-vax,
+.tab-btn-surg,
+.btn-dob-preset,
+.btn-fluid-bubble,
+summary.card-summary {
+    transition: background-color 140ms ease,
+                border-color 140ms ease,
+                color 140ms ease,
+                box-shadow 140ms ease;
+}
+
+/* Kart Yüzeyleri (Göz yormayan mat koyu arduvaz) */
+.card-surface {
+    background-color: #162032;
+    border-color: rgba(148, 163, 184, 0.16);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.card-surface:hover {
+    border-color: rgba(148, 163, 184, 0.28);
+}
+
+/* Bağlı veri kartları (ikincil / daraltılmış) için sakin ayrım */
+.card-surface.is-dependency-card:not([open]) {
+    background-color: rgba(22, 32, 50, 0.72);
+    border-color: rgba(148, 163, 184, 0.14);
+}
+.card-surface.is-dependency-card:not([open]):hover {
+    background-color: #162032;
+    border-color: rgba(56, 189, 248, 0.32);
+}
+
+/* Form kontrolleri odaklanma */
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: rgba(56, 189, 248, 0.65) !important;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.14) !important;
+    outline: none !important;
+}
+
+/* Safe area iOS ve Android alt çubuk */
+.safe-bottom-pad {
+    padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem));
+}
+
+/* ============================================================================
+ * AYDINLIK TEMA (LIGHT MODE - POLİKLİNİK GÜNDÜZ ERGONOMİSİ)
+ * ============================================================================ */
+html.light-theme body {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+/* Header & Footer */
+html.light-theme header,
+html.light-theme footer > div {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+}
+
+html.light-theme header h1 {
+    color: #0f172a !important;
+}
+
+html.light-theme #font-scale-control,
+html.light-theme #mobile-font-scale-control {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+html.light-theme #font-scale-control button,
+html.light-theme #mobile-font-scale-control button {
+    color: #1e293b !important;
+}
+
+html.light-theme #font-scale-label,
+html.light-theme #mobile-font-scale-label {
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme #font-scale-control button:hover:not(:disabled),
+html.light-theme #mobile-font-scale-control button:hover:not(:disabled) {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme #header-patient-info,
+html.light-theme #badge-age-group {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #1e293b !important;
+}
+
+html.light-theme #header-patient-age,
+html.light-theme #header-patient-gender,
+html.light-theme #header-patient-weight {
+    color: #0f172a !important;
+}
+
+html.light-theme #patient-context-banner {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
+}
+
+html.light-theme #category-pills {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+html.light-theme .cat-pill.active,
+html.light-theme .tab-btn-surg.active {
+    background-color: rgba(14, 165, 233, 0.14) !important;
+    color: #0369a1 !important;
+    border-color: rgba(14, 165, 233, 0.45) !important;
+}
+
+html.light-theme .cat-pill:not(.active),
+html.light-theme .tab-btn-surg:not(.active) {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme .cat-pill:not(.active):hover,
+html.light-theme .tab-btn-surg:not(.active):hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme #left-sidebar,
+html.light-theme #workspace-active-context,
+html.light-theme #card-custom-shortcuts,
+html.light-theme #inspector-panel > div,
+html.light-theme #panel-clinical-alerts {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme #mobile-floating-bar {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme #drawer-custom-pack > div {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme #btn-toggle-custom-pack {
+    background-color: rgba(14, 165, 233, 0.1) !important;
+    border-color: rgba(14, 165, 233, 0.35) !important;
+    color: #0369a1 !important;
+}
+
+html.light-theme .nav-sidebar-link.active {
+    background-color: rgba(14, 165, 233, 0.12) !important;
+    color: #0369a1 !important;
+    border-color: #0284c7 !important;
+}
+
+/* Kartlar (details) */
+html.light-theme details {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+}
+
+html.light-theme details.is-dependency-card:not([open]) {
+    background-color: #f8fafc !important;
+}
+
+html.light-theme details summary {
+    color: #0f172a !important;
+}
+
+html.light-theme details summary .card-title {
+    color: #0f172a !important;
+}
+
+html.light-theme details > div {
+    border-color: #e2e8f0 !important;
+}
+
+/* Form Kontrolleri (input, select, textarea) */
+html.light-theme input:not([type="checkbox"]):not([type="radio"]),
+html.light-theme select,
+html.light-theme textarea {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme input::placeholder,
+html.light-theme textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+html.light-theme input:focus,
+html.light-theme select:focus,
+html.light-theme textarea:focus {
+    border-color: #0284c7 !important;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.18) !important;
+}
+
+html.light-theme label {
+    color: #334155 !important;
+}
+
+/* Alt Çıkış Kutuları ve Özel Koyu Arka Planların Aydınlık Mod Dönüşümü */
+html.light-theme [class^="bg-slate-900"],
+html.light-theme [class*=" bg-slate-900"],
+html.light-theme [class^="bg-slate-950"]:not([id^="modal-"]),
+html.light-theme [class*=" bg-slate-950"]:not([id^="modal-"]),
+html.light-theme [class^="bg-[#0"],
+html.light-theme [class*=" bg-[#0"] {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Aydınlık Mod Modal Perdeleri & Kart Yüzeyleri */
+html.light-theme [id^="modal-"][class*="bg-slate-950"] {
+    background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+html.light-theme [id^="modal-"] > div[class*="bg-slate-900"],
+html.light-theme #modal-soap-sheet #soap-sheet-content {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme [class^="bg-slate-800"]:not(input),
+html.light-theme [class*=" bg-slate-800"]:not(input),
+html.light-theme [class^="bg-slate-700"]:not(input),
+html.light-theme [class*=" bg-slate-700"]:not(input) {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme [class^="bg-[#1"]:not(details.card-surface):not(#left-sidebar):not(#panel-clinical-alerts),
+html.light-theme [class*=" bg-[#1"]:not(details.card-surface):not(#left-sidebar):not(#panel-clinical-alerts) {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Aydınlık Modda Renkli Klinik Uyarı Kutuları (Pastel Yüzey + Koyu Kontrastlı Metin) */
+html.light-theme [class^="bg-rose-950"],
+html.light-theme [class*=" bg-rose-950"],
+html.light-theme [class^="bg-rose-900"],
+html.light-theme [class*=" bg-rose-900"],
+html.light-theme [class^="bg-red-950"],
+html.light-theme [class*=" bg-red-950"],
+html.light-theme [class^="bg-red-900"],
+html.light-theme [class*=" bg-red-900"] {
+    background-color: #fff1f2 !important;
+    border-color: #fda4af !important;
+    color: #881337 !important;
+}
+
+html.light-theme [class^="bg-amber-950"],
+html.light-theme [class*=" bg-amber-950"],
+html.light-theme [class^="bg-amber-900"],
+html.light-theme [class*=" bg-amber-900"],
+html.light-theme [class^="bg-yellow-950"],
+html.light-theme [class*=" bg-yellow-950"] {
+    background-color: #fffbeb !important;
+    border-color: #fcd34d !important;
+    color: #78350f !important;
+}
+
+html.light-theme [class^="bg-pink-950"],
+html.light-theme [class*=" bg-pink-950"] {
+    background-color: #fdf2f8 !important;
+    border-color: #f9a8d4 !important;
+    color: #831843 !important;
+}
+
+html.light-theme [class^="bg-blue-950"],
+html.light-theme [class*=" bg-blue-950"] {
+    background-color: #eff6ff !important;
+    border-color: #93c5fd !important;
+    color: #1e3a8a !important;
+}
+
+html.light-theme [class^="bg-emerald-950"],
+html.light-theme [class*=" bg-emerald-950"],
+html.light-theme [class^="bg-emerald-900"],
+html.light-theme [class*=" bg-emerald-900"],
+html.light-theme [class^="bg-teal-950"],
+html.light-theme [class*=" bg-teal-950"] {
+    background-color: #ecfdf5 !important;
+    border-color: #6ee7b7 !important;
+    color: #064e3b !important;
+}
+
+html.light-theme [class^="bg-sky-950"],
+html.light-theme [class*=" bg-sky-950"],
+html.light-theme [class^="bg-sky-900"],
+html.light-theme [class*=" bg-sky-900"],
+html.light-theme [class^="bg-cyan-950"],
+html.light-theme [class*=" bg-cyan-950"],
+html.light-theme [class^="bg-cyan-900"],
+html.light-theme [class*=" bg-cyan-900"] {
+    background-color: #e0f2fe !important;
+    border-color: #7dd3fc !important;
+    color: #0c4a6e !important;
+}
+
+html.light-theme [class^="bg-indigo-950"],
+html.light-theme [class*=" bg-indigo-950"],
+html.light-theme [class^="bg-violet-950"],
+html.light-theme [class*=" bg-violet-950"],
+html.light-theme [class^="bg-purple-950"],
+html.light-theme [class*=" bg-purple-950"],
+html.light-theme [class^="bg-purple-900"],
+html.light-theme [class*=" bg-purple-900"] {
+    background-color: #f5f3ff !important;
+    border-color: #c4b5fd !important;
+    color: #4c1d95 !important;
+}
+
+/* Aydınlık Modda Koyu Gradyan Yüzeyleri Temiz Açık Yüzeye Çevir */
+html.light-theme [class*="bg-gradient-to-"][class*="via-slate-900"],
+html.light-theme [class*="bg-gradient-to-"][class*="from-slate-900"],
+html.light-theme [class*="bg-gradient-to-"][class*="from-amber-950"],
+html.light-theme [class*="bg-gradient-to-"][class*="from-sky-950"],
+html.light-theme [class*="bg-gradient-to-"][class*="from-rose-950"] {
+    background-image: none !important;
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Aydınlık Mod Metin Kontrast Güçlendirmeleri (/90, /80 opaklık ekleri dahil) */
+html.light-theme .text-white,
+html.light-theme [class^="text-slate-100"], html.light-theme [class*=" text-slate-100"],
+html.light-theme [class^="text-slate-200"], html.light-theme [class*=" text-slate-200"],
+html.light-theme [class^="text-slate-300"], html.light-theme [class*=" text-slate-300"] {
+    color: #0f172a !important;
+}
+
+html.light-theme [class^="text-slate-400"], html.light-theme [class*=" text-slate-400"],
+html.light-theme [class^="text-slate-500"], html.light-theme [class*=" text-slate-500"] {
+    color: #475569 !important;
+}
+
+html.light-theme [class^="text-rose-100"], html.light-theme [class*=" text-rose-100"],
+html.light-theme [class^="text-rose-200"], html.light-theme [class*=" text-rose-200"],
+html.light-theme [class^="text-rose-300"], html.light-theme [class*=" text-rose-300"],
+html.light-theme [class^="text-rose-400"], html.light-theme [class*=" text-rose-400"],
+html.light-theme [class^="text-red-100"], html.light-theme [class*=" text-red-100"],
+html.light-theme [class^="text-red-200"], html.light-theme [class*=" text-red-200"],
+html.light-theme [class^="text-red-300"], html.light-theme [class*=" text-red-300"],
+html.light-theme [class^="text-red-400"], html.light-theme [class*=" text-red-400"] {
+    color: #be123c !important;
+}
+
+html.light-theme [class^="text-pink-200"], html.light-theme [class*=" text-pink-200"],
+html.light-theme [class^="text-pink-300"], html.light-theme [class*=" text-pink-300"],
+html.light-theme [class^="text-pink-400"], html.light-theme [class*=" text-pink-400"],
+html.light-theme [class^="text-fuchsia-400"], html.light-theme [class*=" text-fuchsia-400"] {
+    color: #be185d !important;
+}
+
+html.light-theme [class^="text-amber-100"], html.light-theme [class*=" text-amber-100"],
+html.light-theme [class^="text-amber-200"], html.light-theme [class*=" text-amber-200"],
+html.light-theme [class^="text-amber-300"], html.light-theme [class*=" text-amber-300"],
+html.light-theme [class^="text-amber-400"], html.light-theme [class*=" text-amber-400"],
+html.light-theme [class^="text-yellow-100"], html.light-theme [class*=" text-yellow-100"],
+html.light-theme [class^="text-yellow-200"], html.light-theme [class*=" text-yellow-200"],
+html.light-theme [class^="text-yellow-300"], html.light-theme [class*=" text-yellow-300"] {
+    color: #b45309 !important;
+}
+
+html.light-theme [class^="text-emerald-100"], html.light-theme [class*=" text-emerald-100"],
+html.light-theme [class^="text-emerald-200"], html.light-theme [class*=" text-emerald-200"],
+html.light-theme [class^="text-emerald-300"], html.light-theme [class*=" text-emerald-300"],
+html.light-theme [class^="text-emerald-400"], html.light-theme [class*=" text-emerald-400"],
+html.light-theme [class^="text-teal-200"], html.light-theme [class*=" text-teal-200"],
+html.light-theme [class^="text-teal-300"], html.light-theme [class*=" text-teal-300"] {
+    color: #047857 !important;
+}
+
+html.light-theme [class^="text-sky-100"], html.light-theme [class*=" text-sky-100"],
+html.light-theme [class^="text-sky-200"], html.light-theme [class*=" text-sky-200"],
+html.light-theme [class^="text-sky-300"], html.light-theme [class*=" text-sky-300"],
+html.light-theme [class^="text-sky-400"], html.light-theme [class*=" text-sky-400"],
+html.light-theme [class^="text-cyan-100"], html.light-theme [class*=" text-cyan-100"],
+html.light-theme [class^="text-cyan-200"], html.light-theme [class*=" text-cyan-200"],
+html.light-theme [class^="text-cyan-300"], html.light-theme [class*=" text-cyan-300"],
+html.light-theme [class^="text-cyan-400"], html.light-theme [class*=" text-cyan-400"],
+html.light-theme [class^="text-blue-300"], html.light-theme [class*=" text-blue-300"],
+html.light-theme [class^="text-blue-400"], html.light-theme [class*=" text-blue-400"] {
+    color: #0369a1 !important;
+}
+
+html.light-theme [class^="text-indigo-100"], html.light-theme [class*=" text-indigo-100"],
+html.light-theme [class^="text-indigo-200"], html.light-theme [class*=" text-indigo-200"],
+html.light-theme [class^="text-indigo-300"], html.light-theme [class*=" text-indigo-300"],
+html.light-theme [class^="text-indigo-400"], html.light-theme [class*=" text-indigo-400"],
+html.light-theme [class^="text-violet-200"], html.light-theme [class*=" text-violet-200"],
+html.light-theme [class^="text-violet-300"], html.light-theme [class*=" text-violet-300"],
+html.light-theme [class^="text-violet-400"], html.light-theme [class*=" text-violet-400"],
+html.light-theme [class^="text-purple-200"], html.light-theme [class*=" text-purple-200"],
+html.light-theme [class^="text-purple-300"], html.light-theme [class*=" text-purple-300"],
+html.light-theme [class^="text-purple-400"], html.light-theme [class*=" text-purple-400"] {
+    color: #5b21b6 !important;
+}
+
+/* Aydınlık Modda Dolu Aksiyon Butonlarında Beyaz Metni Koru */
+html.light-theme .bg-emerald-600,
+html.light-theme .bg-cyan-600,
+html.light-theme .bg-sky-600,
+html.light-theme .bg-rose-600,
+html.light-theme .bg-red-600,
+html.light-theme .bg-red-700,
+html.light-theme .bg-amber-600,
+html.light-theme .bg-indigo-600 {
+    color: #ffffff !important;
+}
+html.light-theme .bg-emerald-600 *,
+html.light-theme .bg-cyan-600 *,
+html.light-theme .bg-sky-600 *,
+html.light-theme .bg-rose-600 *,
+html.light-theme .bg-red-600 *,
+html.light-theme .bg-red-700 *,
+html.light-theme .bg-amber-600 *,
+html.light-theme .bg-indigo-600 * {
+    color: #ffffff !important;
+}
+
+/* Butonlar & Hover Durumları */
+html.light-theme button[class^="bg-slate-800"],
+html.light-theme button[class*=" bg-slate-800"],
+html.light-theme button[class^="bg-slate-900"],
+html.light-theme button[class*=" bg-slate-900"],
+html.light-theme button[class^="bg-slate-700"],
+html.light-theme button[class*=" bg-slate-700"] {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme button[class^="bg-slate-800"]:hover,
+html.light-theme button[class*=" bg-slate-800"]:hover,
+html.light-theme button[class^="bg-slate-900"]:hover,
+html.light-theme button[class*=" bg-slate-900"]:hover,
+html.light-theme button[class^="bg-slate-700"]:hover,
+html.light-theme button[class*=" bg-slate-700"]:hover,
+html.light-theme [class*="hover:bg-slate-800"]:hover,
+html.light-theme [class*="hover:bg-slate-700"]:hover,
+html.light-theme [class*="hover:bg-slate-900"]:hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme details summary:hover {
+    background-color: #f8fafc !important;
+}
+
+/* İlaç Monograf Sekmeleri ve Hızlı Filtre Çipleri — Aydınlık Tema Uyumu */
+html.light-theme .mono-tab-btn[aria-selected="true"],
+html.light-theme .drug-filter-chip[aria-pressed="true"] {
+    background-color: #e0f2fe !important;
+    color: #0369a1 !important;
+    border-color: #0284c7 !important;
+}
+
+html.light-theme .mono-tab-btn[aria-selected="false"],
+html.light-theme .drug-filter-chip[aria-pressed="false"] {
+    background-color: #f1f5f9 !important;
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme .mono-tab-btn[aria-selected="false"]:hover,
+html.light-theme .drug-filter-chip[aria-pressed="false"]:hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+html.light-theme #modal-drug-monograph details {
+    box-shadow: none !important;
+}
+
+/* Tıklanabilir Veri Tarihi Baloncuğu & Kart Kılavuz Dipnotu — Aydınlık Tema Uyumu */
+html.light-theme #popover-price-date-bubble {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16) !important;
+}
+
+html.light-theme .btn-price-date-bubble {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-theme .btn-price-date-bubble:hover {
+    background-color: #e0f2fe !important;
+    border-color: #0284c7 !important;
+    color: #0369a1 !important;
+}
+
+html.light-theme .card-guideline-footer {
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+
+/* ============================================================================
+ * @MEDIA PRINT HASTA REÇETE VE AŞI TABLOSU YAZDIRMA STANDARDI
+ * ============================================================================ */
+@media print {
+    header,
+    nav,
+    footer,
+    aside,
+    main,
+    #clinical-workspace,
+    #inspector-panel,
+    #modal-soap-sheet,
+    #modal-quick-switcher,
+    #modal-prescription-print,
+    #modal-emergency-protocols,
+    #modal-drug-monograph,
+    #modal-drug-equivalents,
+    #modal-surgery-reference,
+    #popover-price-date-bubble,
+    #pwa-update-toast,
+    #mobile-sidebar-backdrop,
+    #backdrop-packages,
+    #mobile-floating-bar,
+    #patient-context-banner,
+    #category-pills,
+    .no-print,
+    details,
+    button {
+        display: none !important;
+    }
+
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 11pt !important;
+        overflow: visible !important;
+    }
+
+    #printable-prescription-container {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    body:has(#modal-vaccine-tables:not(.hidden)) #printable-prescription-container {
+        display: none !important;
+    }
+
+    #modal-vaccine-tables:not(.hidden) {
+        display: block !important;
+        position: static !important;
+        inset: auto !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        overflow: visible !important;
+    }
+
+    #modal-vaccine-tables:not(.hidden) > div,
+    #modal-vaccine-tables:not(.hidden) .overflow-y-auto {
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    #modal-vaccine-tables:not(.hidden) * {
+        color: #0f172a !important;
+        background-color: transparent !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    #modal-vaccine-tables:not(.hidden) input {
+        display: none !important;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 12mm 15mm;
+    }
+}

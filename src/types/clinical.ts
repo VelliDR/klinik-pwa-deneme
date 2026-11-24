@@ -1,0 +1,464 @@
+/**
+ * KLİNİK KARAR DESTEK ASİSTANI - TEMEL KLİNİK VERİ TİPLERİ
+ */
+
+export type Gender = 'M' | 'F' | 'male' | 'female';
+
+export type AgeUnit = 'years' | 'months' | 'weeks' | 'days';
+
+export type AgeGroupKey = 
+  | 'NEONATE'
+  | 'INFANT'
+  | 'TODDLER'
+  | 'PRESCHOOL'
+  | 'CHILD'
+  | 'ADOLESCENT'
+  | 'ADULT'
+  | 'GERIATRIC';
+
+export interface AgeGroupDefinition {
+  id: AgeGroupKey;
+  label: string;
+  isPediatric: boolean;
+}
+
+export interface PatientBiometry {
+  ageYears: number | null;
+  ageMonths: number | null;
+  ageWeeks: number | null;
+  ageDays: number | null;
+  ageHours: number | null;
+  dob: string | null;
+  birthTime: string | null;
+  ageFormatted: string | null;
+  ageGroupTag: string | null;
+  isNeonate: boolean;
+  birthWeightG: number | null;
+  gender: Gender | null;
+  weightKg: number | null;
+  heightCm: number | null;
+  bsa: number | null;
+  bmi?: number | null;
+  ibwKg?: number | null;
+  adjBwKg?: number | null;
+  isObese?: boolean;
+  egfr: number | null;
+  egfrAbsolute?: number | null;
+  egfrFormula?: string | null;
+  cystatinC?: number | null;
+  heartRate?: number | null;
+}
+
+import type {
+  PercentilesResult,
+  TargetHeightResult,
+  CorrectedAgeResult,
+  GrowthVelocityResult,
+  CranialScreeningResult,
+  PediatricBPResult,
+  CentorResult,
+  PediatricDoseResult,
+  PEWSResult,
+  GCSResult,
+  PediatricIronResult,
+  AlvaradoResult,
+  AIRScoreResult,
+  AASResult,
+  AppendicitisTriadComparisonResult,
+  TokyoCholecystitisResult,
+  ParklandCholecystitisResult,
+  StrasbergBismuthResult,
+  RansonResult,
+  AtlantaMarshallResult,
+  BISAPResult,
+  ModifiedCTSIResult,
+  DiverticulitisTriadResult,
+  GroinHerniaResult,
+  VentralHerniaResult,
+  HemorrhoidTriadResult,
+  PerianalFistulaTriadResult,
+  ColorectalTNMResult,
+  MalignantPolypResult,
+  SolidOrganTraumaResult,
+  ClavienDindoCCIResult,
+  ASAPhysicalStatusResult,
+  ParklandResult,
+  SutureGuidance,
+  ObstetricsResult,
+  BishopResult,
+  PreeclampsiaResult,
+  BloodGasResult,
+  MaintenanceFluidResult,
+  NeonatalFluidResult,
+  SodiumCorrectionResult,
+  CalciumResult,
+  InfusionRateResult,
+  GIRResult,
+  SteroidConversionResult,
+  HOMAIRResult,
+  NEWS2Result,
+  QTcResult,
+  AxisResult,
+  WellsDVTResult,
+  WellsPTEResult,
+  PERCResult,
+  CHA2DS2VAScResult,
+  HASBLEDResult,
+  HEARTResult,
+  FENaResult,
+  FEUreaResult,
+  CorrectedSodiumResult,
+  OsmolalGapResult,
+  RumackMatthewResult,
+  CURB65Result,
+  BhutaniResult,
+  APGARResult,
+  WestleyCroupResult,
+  CDSDehydrationResult,
+  NeonatalWeightLossResult,
+  RenalDoseCheckResult,
+  TripleWhammyResult,
+  PregnancySafetyResult,
+  NeonatalDrugSafetyResult,
+  SerotoninSyndromeResult,
+  HyperkalemiaRiskResult,
+  CypStatinInteractionResult,
+  HepaticDoseSafetyResult,
+  InteractionEvaluationResult,
+  ChildPughResult,
+  Meld3Result,
+  DeclarativeScoreEvaluation,
+  AnaphylaxisDoses,
+  StatusEpilepticusDoses
+} from './engines';
+
+export interface SelectedDrugItem {
+  brand?: string;
+  brandName?: string;
+  name?: string;
+  generic?: string;
+  atc?: string;
+  atcCode?: string;
+  barcode?: string;
+  rx?: string;
+  company?: string;
+  kt?: string | null;
+  kub?: string | null;
+  esdegerGroup?: string;
+  sgkReimbursed?: number;
+  sgkKamuNo?: string;
+  sgkDiscount?: string;
+  sgkTieredDiscount?: string;
+  sgkPriceProtected?: boolean;
+  retailPriceTl?: number | null;
+  referencePriceEur?: number | null;
+  isExtraMonitoring?: boolean;
+  allergens?: string[];
+  mealTimingCode?: number;
+  drivingRiskCode?: number;
+  drivingRisk?: string;
+  route?: string;
+  licenseSuspension?: string;
+  dosage?: string;
+  frequency?: string;
+  boxCount?: number | string;
+  mealTiming?: string;
+  duration?: string;
+  instructions?: string;
+  morning?: boolean;
+  noon?: boolean;
+  evening?: boolean;
+  night?: boolean;
+  morningDose?: string;
+  noonDose?: string;
+  eveningDose?: string;
+  nightDose?: string;
+  [key: string]: unknown;
+}
+
+export interface AppState {
+  biometry: PatientBiometry;
+  pediatrics: {
+    active: boolean;
+    percentiles: PercentilesResult | null;
+    targetHeight: TargetHeightResult | null;
+    correctedAge: CorrectedAgeResult | null;
+    bp: PediatricBPResult | null;
+    centor: CentorResult | null;
+    vaccines: string[] | null;
+    syrupDose: PediatricDoseResult | null;
+    pews: PEWSResult | null;
+    pgcs: GCSResult | null;
+    iron?: PediatricIronResult | null;
+    growthVelocity?: GrowthVelocityResult | null;
+    cranialScreening?: CranialScreeningResult | null;
+  };
+  surgery: {
+    active: boolean;
+    alvarado: AlvaradoResult | null;
+    air?: AIRScoreResult | null;
+    aas?: AASResult | null;
+    appendicitisTriad?: AppendicitisTriadComparisonResult | null;
+    tokyoCholecystitis?: TokyoCholecystitisResult | null;
+    parklandCholecystitis?: ParklandCholecystitisResult | null;
+    strasbergBismuth?: StrasbergBismuthResult | null;
+    ranson: RansonResult | null;
+    atlantaMarshall?: AtlantaMarshallResult | null;
+    bisap?: BISAPResult | null;
+    mctsi?: ModifiedCTSIResult | null;
+    diverticulitis?: DiverticulitisTriadResult | null;
+    groinHernia?: GroinHerniaResult | null;
+    ventralHernia?: VentralHerniaResult | null;
+    hemorrhoid?: HemorrhoidTriadResult | null;
+    perianalFistula?: PerianalFistulaTriadResult | null;
+    colorectalTnm?: ColorectalTNMResult | null;
+    malignantPolyp?: MalignantPolypResult | null;
+    solidOrganTrauma?: SolidOrganTraumaResult | null;
+    clavienDindoCci?: ClavienDindoCCIResult | null;
+    asaPs?: ASAPhysicalStatusResult | null;
+    parkland: ParklandResult | null;
+    suture: SutureGuidance | null;
+  };
+  obgyn: {
+    active: boolean;
+    trimester?: number | null;
+    eddData: ObstetricsResult | null;
+    bishop: BishopResult | null;
+    preeclampsia: PreeclampsiaResult | null;
+  };
+  medicine: {
+    active: boolean;
+    pregnancyTrimester?: number | null;
+    bloodGas: BloodGasResult | null;
+    fluid: MaintenanceFluidResult | null;
+    neonatalFluid: NeonatalFluidResult | null;
+    sodium: SodiumCorrectionResult | null;
+    calcium: CalciumResult | null;
+    infusion: InfusionRateResult | null;
+    gir: GIRResult | null;
+    steroid: SteroidConversionResult | null;
+    homaIR: HOMAIRResult | null;
+    news2: NEWS2Result | null;
+    gcs: GCSResult | null;
+    childPugh?: ChildPughResult | null;
+    meld3?: Meld3Result | null;
+    nihss?: DeclarativeScoreEvaluation | null;
+    abcd2?: DeclarativeScoreEvaluation | null;
+    sofa?: DeclarativeScoreEvaluation | null;
+    qsofa?: DeclarativeScoreEvaluation | null;
+    gbs?: DeclarativeScoreEvaluation | null;
+  };
+  other: {
+    active: boolean;
+    cardiac: QTcResult | null;
+    axis?: AxisResult | null;
+    drugPrescription: SelectedDrugItem[] | null;
+  };
+  thrombosis: {
+    active: boolean;
+    wellsDVT: WellsDVTResult | null;
+    wellsPTE: WellsPTEResult | null;
+    perc: PERCResult | null;
+    cha2ds2vasc: CHA2DS2VAScResult | null;
+    hasbled: HASBLEDResult | null;
+    heart: HEARTResult | null;
+  };
+  nephroTox: {
+    active: boolean;
+    fena: FENaResult | null;
+    feurea: FEUreaResult | null;
+    correctedSodium: CorrectedSodiumResult | null;
+    osmolalGap: OsmolalGapResult | null;
+    paracetamol: RumackMatthewResult | null;
+    curb65: CURB65Result | null;
+  };
+  neonatology: {
+    active: boolean;
+    bhutani: BhutaniResult | null;
+    apgar: APGARResult | null;
+    westleyCroup: WestleyCroupResult | null;
+    cdsDehydration: CDSDehydrationResult | null;
+    weightLoss: NeonatalWeightLossResult | null;
+  };
+  safetyPrescription: {
+    active: boolean;
+    interactions?: InteractionEvaluationResult | null;
+    renalAdjustments: RenalDoseCheckResult | null;
+    tripleWhammy: TripleWhammyResult | null;
+    pregnancySafety: PregnancySafetyResult | null;
+    neonatalDrugSafety: NeonatalDrugSafetyResult | null;
+    serotoninSyndrome: SerotoninSyndromeResult | null;
+    hyperkalemiaRisk: HyperkalemiaRiskResult | null;
+    cypStatinInteraction: CypStatinInteractionResult | null;
+    hepaticSafety?: HepaticDoseSafetyResult | null;
+    selectedSafetyDrugs: SelectedDrugItem[];
+  };
+  treatment?: {
+    active?: boolean;
+    selectedDrugs?: SelectedDrugItem[];
+  };
+  emergency?: {
+    active: boolean;
+    anaphylaxis: {
+      administeredDoses: number;
+      lastDoseTimestamp?: number;
+      doses?: AnaphylaxisDoses;
+      notes?: string;
+    } | null;
+    statusEpilepticus: {
+      elapsedMinutes: number;
+      isRunning: boolean;
+      doses?: StatusEpilepticusDoses;
+      notes?: string;
+    } | null;
+  };
+}
+
+/**
+ * TİTCK & DSÖ ATC DETAYLI FARMAKOLOJİK SINIFLANDIRMA VERİ YAPILARI
+ */
+export interface AtcSystemInfo {
+  code: string;
+  name: string;
+  shortName: string;
+}
+
+export interface AtcGroupInfo {
+  code: string;
+  system: string;
+  name: string;
+}
+
+export interface AtcPharmacologyProfile {
+  atcCode: string;
+  systemCode: string;
+  systemName: string;
+  systemShortName: string;
+  groupCode: string;
+  groupName: string;
+  pharmClass?: string;
+  mechanismOfAction?: string;
+  blackBoxWarning?: string;
+  foodAlcoholInteraction?: string;
+  halfLife?: string;
+  metabolismExcretion?: string;
+  whoDdd?: string;
+  interactionRiskLevel?: string;
+  interactionText?: string;
+  interactingAtcCodes?: string[];
+}
+
+export interface AtcCompactEntry {
+  c1: string;
+  c3: string;
+  cls?: number;
+  moa?: number;
+  bb?: number;
+  fa?: number;
+  t12?: number;
+  met?: number;
+  ddd?: number;
+  ir?: number;
+  it?: number;
+  itg?: string[];
+}
+
+export interface AtcInteractionRule {
+  src: string;
+  tgt: string;
+  risk: string;
+  desc: string;
+}
+
+export interface AtcInteractionMatch {
+  sourceAtc: string;
+  targetAtc: string;
+  risk: string;
+  description: string;
+  sourceDrugBrand?: string;
+  targetDrugBrand?: string;
+}
+
+export interface AtcKnowledgeBaseData {
+  version: string;
+  generatedAt: string;
+  totalAtcCount: number;
+  systems: Record<string, AtcSystemInfo>;
+  groups: Record<string, AtcGroupInfo>;
+  strings: string[];
+  atcMap: Record<string, AtcCompactEntry>;
+  interactions: AtcInteractionRule[];
+}
+
+/**
+ * TİTCK ATC <-> ICD-10 ENDİKASYON VE KONTRENDİKASYON SÖZLÜĞÜ VERİ YAPILARI
+ */
+export type Icd10DiagnosisTuple = [
+  categoryCode: string,
+  subCode: string,
+  diagnosisTr: string
+];
+
+export interface AtcIcd10EntryRaw {
+  e: string;
+  l1?: string;
+  l2?: string;
+  l3?: string;
+  l4?: string;
+  i?: Icd10DiagnosisTuple[];
+  c?: Icd10DiagnosisTuple[];
+  ddd?: string;
+  t12?: string;
+  frm?: string;
+  dili?: string;
+  cyp?: string[];
+  ddiM?: number;
+  food?: string[];
+}
+
+export interface AtcIcd10DictionaryData {
+  icd: Record<string, string>;
+  atc: Record<string, AtcIcd10EntryRaw>;
+}
+
+export interface Icd10DiagnosisEntry {
+  categoryCode: string;
+  code: string;
+  nameTr: string;
+  catalogNameTr?: string;
+  normText: string;
+  tokens: string[];
+}
+
+export interface AtcIcd10Profile {
+  atcCode: string;
+  activeIngredientTr: string;
+  l1?: string;
+  l2?: string;
+  l3?: string;
+  l4?: string;
+  indications: Icd10DiagnosisEntry[];
+  contraindications: Icd10DiagnosisEntry[];
+  ddd?: string;
+  t12?: string;
+  formula?: string;
+  dili?: string;
+  cyp?: string[];
+  ddiMajorCount?: number;
+  foodList?: string[];
+}
+
+export type IndicationMatchType =
+  | 'icd_exact'
+  | 'icd_category'
+  | 'indication_exact'
+  | 'indication_phrase'
+  | 'indication_tokens';
+
+export interface AtcIndicationMatch {
+  atcCode: string;
+  score: number;
+  matchType: IndicationMatchType;
+  matchedIndications: Icd10DiagnosisEntry[];
+}
+

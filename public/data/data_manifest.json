@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-24",
+  "masterBuildDate": "2026-11-21",
+  "sources": {
+    "prices": {
+      "label": "İlaç Perakende Satış Fiyatları (TL)",
+      "snapshotDate": "2026-11-19",
+      "latestItemDate": "2026-11-10",
+      "bulkTariffDate": "2026-04-01",
+      "recordCount": 5919,
+      "staleAfterDays": 90,
+      "criticalAfterDays": 180,
+      "sourceName": "Ecza Deposu Açık Web Fiyat Listesi (PSF/DSF)"
+    },
+    "gkf": {
+      "label": "Referans İlaç Fiyatı (GKF Euro)",
+      "snapshotDate": "2026-11-21",
+      "recordCount": 2399,
+      "staleAfterDays": 90,
+      "criticalAfterDays": 180,
+      "sourceName": "TİTCK Referans Fiyat Listesi"
+    },
+    "sgk": {
+      "label": "SGK EK-4/A Geri Ödeme & 4 Kademeli KKİ",
+      "snapshotDate": "2026-10-25",
+      "recordCount": 7280,
+      "equivalentGroupCount": 6317,
+      "staleAfterDays": 90,
+      "criticalAfterDays": 180,
+      "sourceName": "SGK Bedeli Ödenecek İlaçlar Listesi (EK-4/A)"
+    },
+    "titck": {
+      "label": "TİTCK SKRS, Ruhsat, ▼ Ek İzlem & KÜB/KT",
+      "snapshotDate": "2026-11-21",
+      "recordCount": 18212,
+      "extraMonitoringCount": 1224,
+      "pdfCount": 6664,
+      "staleAfterDays": 180,
+      "criticalAfterDays": 365,
+      "sourceName": "T.C. Sağlık Bakanlığı TİTCK"
+    },
+    "ddi": {
+      "label": "İlaç & Besin Etkileşim Matrisi + W3C PDDI-CDS",
+      "snapshotDate": "2026-11-25",
+      "recordCount": 81355,
+      "pddiMonographCount": 3041,
+      "staleAfterDays": 365,
+      "criticalAfterDays": 730,
+      "sourceName": "W3C PDDI-CDS (3.041 Kanıtlı TR Monograf: TİTCK KÜB, OpenFDA SPL, ANSM 2023, FDA CYP, ONC-15) + DDInter 2.0"
+    },
+    "vaccines": {
+      "label": "Ulusal & Özel Bağışıklama Takvimi",
+      "snapshotDate": "2026-09-01",
+      "versionLabel": "GBP 2025/2026",
+      "staleAfterDays": 365,
+      "criticalAfterDays": 730,
+      "sourceName": "T.C. Sağlık Bakanlığı Genişletilmiş Bağışıklama Programı"
+    }
+  }
+}

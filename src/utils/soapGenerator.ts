@@ -1,0 +1,963 @@
+import { appState } from '../state';
+import { expandDotPhrases } from './soapTemplates';
+
+/**
+ * HBYS / AHBS (Hastane & Aile Hekimliği Bilgi Yönetim Sistemleri) uyumluluğu için
+ * metindeki tüm Unicode emojileri temizleyerek standart metin etiketlerine ([KRİTİK UYARI], [DİKKAT], [KİLİTLİ] vb.)
+ * dönüştürür.
+ */
+export function sanitizeForHbys(text: string): string {
+  if (!text) return '';
+  return text
+    // 1. Kritik Medikal & Matematiksel ASCII Dönüşümleri (HBYS / ANSI Windows-1254 Karakter Bozulması Önlemi)
+    .replace(/[µμ]g\/mL/g, 'mcg/mL')
+    .replace(/[µμ]g/g, 'mcg')
+    .replace(/[µμ]/g, 'mc')
+    .replace(/m²/g, 'm2')
+    .replace(/m³/g, 'm3')
+    .replace(/CHA₂DS₂/g, 'CHA2DS2')
+    .replace(/₂/g, '2')
+    .replace(/₁/g, '1')
+    .replace(/₃/g, '3')
+    .replace(/₄/g, '4')
+    .replace(/≥/g, '>=')
+    .replace(/≤/g, '<=')
+    .replace(/±/g, '+/-')
+    .replace(/→/g, '->')
+    .replace(/←/g, '<-')
+    .replace(/–|—/g, '-')
+    // 2. Klinik Güvenlik Rozetleri Metin Dönüşümleri
+    .replace(/🛑/g, '[KRİTİK UYARI]')
+    .replace(/🚨/g, '[KRİTİK UYARI]')
+    .replace(/⚠️|⚠/g, '[DİKKAT]')
+    .replace(/🔒/g, '[KİLİTLİ]')
+    .replace(/⚡/g, '[ACİL]')
+    .replace(/✓|✔/g, '[UYGUN]')
+    // 3. Geri Kalan Emojileri ve Varyasyon Seçicileri Temizle
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+    .replace(/[\u{2600}-\u{27BF}]/gu, '')
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, '');
+}
+
+export function generateSOAP(): string {
+  const s: string[] = []; // Subjektif
+  const o: string[] = []; // Objektif
+  const a: string[] = []; // Değerlendirme
+  const p: string[] = []; // Plan
+
+  // --- SUBJEKTİF ---
+  const ptParts: string[] = [];
+  if (appState.biometry.ageFormatted && appState.biometry.ageFormatted !== '--') {
+    ptParts.push(`Yaş: ${appState.biometry.ageFormatted}`);
+  } else if (appState.biometry.ageYears !== null && appState.biometry.ageYears !== undefined) {
+    ptParts.push(`Yaş: ${appState.biometry.ageYears} Yıl (${appState.biometry.ageMonths || 0} Ay)`);
+  } else if (appState.biometry.ageMonths !== null && appState.biometry.ageMonths !== undefined) {
+    ptParts.push(`Yaş: ${appState.biometry.ageMonths} Ay`);
+  }
+  if (appState.pediatrics && appState.pediatrics.correctedAge && appState.pediatrics.correctedAge.isPreterm) {
+    ptParts.push(`Düzeltilmiş Yaş: ${appState.pediatrics.correctedAge.correctedMonths} Ay (${appState.pediatrics.correctedAge.gestationalWeeks} GH preterm)`);
+  }
+  if (appState.biometry.gender) {
+    ptParts.push(`Cinsiyet: ${appState.biometry.gender === 'female' || appState.biometry.gender === 'F' ? 'Kadın' : 'Erkek'}`);
+  }
+  if (appState.biometry.weightKg) {
+    ptParts.push(`Kilo: ${appState.biometry.weightKg} kg`);
+  }
+  if (appState.biometry.heightCm) {
+    ptParts.push(`Boy: ${appState.biometry.heightCm} cm`);
+  }
+
+  if (ptParts.length > 0) {
+    s.push(`Hasta Bilgileri: ${ptParts.join(', ')}.`);
+  }
+
+  const anamnez = (typeof document !== 'undefined') ? (document.getElementById('input-custom-notes') as HTMLInputElement | HTMLTextAreaElement | null)?.value : null;
+  if (anamnez && anamnez.trim()) {
+    const { expandedText } = expandDotPhrases(anamnez.trim());
+    s.push(`Ana Şikayet / Öykü: ${expandedText}`);
+  }
+
+  // --- OBJEKTİF ---
+  const bioParts: string[] = [];
+  if (appState.biometry.bsa) bioParts.push(`BSA: ${appState.biometry.bsa} m²`);
+  if (appState.biometry.egfr !== null && appState.biometry.egfr !== undefined) {
+    const formulaTag = appState.biometry.egfrFormula ? ` [${appState.biometry.egfrFormula}]` : '';
+    const absTag = appState.biometry.egfrAbsolute ? `, Mutlak GFR: ${appState.biometry.egfrAbsolute} mL/dk` : '';
+    bioParts.push(`eGFR: ${appState.biometry.egfr} mL/dk/1.73m²${formulaTag}${absTag}`);
+  }
+  
+  if (appState.pediatrics && appState.pediatrics.percentiles) {
+    const perc = appState.pediatrics.percentiles;
+    if (perc.weightPercentile !== null && perc.weightPercentile !== undefined) {
+      bioParts.push(`Kilo/Yaş: %${perc.weightPercentile}${perc.weightZ !== null ? ' (Z: ' + perc.weightZ + ')' : ''}`);
+    }
+    if (perc.heightPercentile !== null && perc.heightPercentile !== undefined) {
+      bioParts.push(`Boy/Yaş: %${perc.heightPercentile}${perc.heightZ !== null ? ' (Z: ' + perc.heightZ + ')' : ''}`);
+    }
+    if (perc.headCircumferencePercentile !== null && perc.headCircumferencePercentile !== undefined) {
+      bioParts.push(`Baş Çevresi: %${perc.headCircumferencePercentile}${perc.headCircZ !== null ? ' (Z: ' + perc.headCircZ + ')' : ''}`);
+    }
+    if (perc.bmiPercentile !== null && perc.bmiPercentile !== undefined) {
+      bioParts.push(`BKİ: ${perc.bmiValue || ''} kg/m² (%${perc.bmiPercentile}, ${perc.category || 'Normal'})`);
+    }
+  }
+  if (appState.pediatrics && appState.pediatrics.targetHeight) {
+    const th = appState.pediatrics.targetHeight;
+    bioParts.push(`Hedef Boy (Tanner): ${th.targetHeightCm} cm (${th.targetRangeCm}, %${th.targetPercentile})`);
+  }
+  if (bioParts.length > 0) {
+    o.push(`- Büyüme & Biyometri: ${bioParts.join(', ')}.`);
+  }
+
+  // Pediatrik Büyüme Hızı & Akut Malnütrisyon (WHO 2022/2023)
+  if (appState.pediatrics?.growthVelocity?.isValid) {
+    const gv = appState.pediatrics.growthVelocity;
+    const falteringStr = gv.centileDropAnalysis?.isPathologicalFaltering ? ' [KRİTİK UYARI: Patolojik Büyüme Duraklaması]' : '';
+    const malStr = gv.malnutritionAssessment ? ` (${gv.malnutritionAssessment.categoryText})` : '';
+    o.push(`- Büyüme Hızı & Malnütrisyon: ${gv.gramsPerDay} g/gün (Beklenen: ${gv.expectedRange.minGramsPerDay}-${gv.expectedRange.maxGramsPerDay} g/gün, ${gv.velocityStatusText})${falteringStr}${malStr}.`);
+  }
+
+  // Kraniyal İzlem & Hidrosefali / Mikrosefali Tarama Kalkanı
+  if (appState.pediatrics?.cranialScreening?.isValid) {
+    const cs = appState.pediatrics.cranialScreening;
+    const kibasStr = cs.kibasSignsDetected.length > 0 ? ` [KİBAS Bulguları: ${cs.kibasSignsDetected.join(', ')}]` : '';
+    o.push(`- Kraniyal Baş Çevresi İzlemi: ${cs.headCircCm} cm (%${cs.percentile}, Z: ${cs.zScore}) -> ${cs.riskTitle}${kibasStr}.`);
+  }
+
+  // Pediatrik Demir / Anemi (TPHD & T.C. Sağlık Bakanlığı + Mentzer Kalkanı)
+  if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.status === 'SUCCESS') {
+    const ir = appState.pediatrics.iron;
+    const anemiaDesc = ir.hbEvaluation?.text || ir.hbCategory || 'Normal';
+    const mentzerDesc = ir.differential?.mentzerIndex !== null && ir.differential?.mentzerIndex !== undefined
+      ? ` | Mentzer İndeksi: ${ir.differential.mentzerIndex}`
+      : '';
+    const treatDesc = ir.treatment?.text ? ` | Tedavi: ${ir.treatment.text}` : '';
+    const prophDesc = ir.prophylaxis?.text ? ` | Profilaksi: ${ir.prophylaxis.text}` : '';
+    o.push(`- Demir & Anemi Durumu: ${anemiaDesc}${mentzerDesc}${treatDesc}${prophDesc}.`);
+  }
+
+  // Triage / Vitals / Tansiyon
+  if (appState.pediatrics && appState.pediatrics.bp) {
+    const bp = appState.pediatrics.bp;
+    o.push(`- Pediatrik Tansiyon (AAP 2017): ${bp.stage}${bp.thresholds ? ' [' + bp.thresholds + ']' : ''}`);
+  }
+  if (appState.medicine && appState.medicine.news2) {
+    const news2 = appState.medicine.news2;
+    o.push(`- Vital / Triyaj (NEWS2): Skor ${news2.score || 0} (${news2.risk || 'Düşük Risk'})`);
+  }
+  if (appState.pediatrics && appState.pediatrics.pews) {
+    const pews = appState.pediatrics.pews;
+    o.push(`- Vital / Triyaj (PEWS): Skor ${pews.score || 0} (${pews.risk || 'Düşük Risk'})`);
+  }
+  if (appState.pediatrics && appState.pediatrics.pgcs) {
+    const pgcs = appState.pediatrics.pgcs;
+    const vStr = pgcs.isEntubated ? '1T' : (pgcs.v ?? 5);
+    o.push(`- pGCS (Pediatrik Glasgow Koma Skalası): Toplam ${pgcs.formattedScore || pgcs.total || 15} (E${pgcs.e || 4}V${vStr}M${pgcs.m || 6})${pgcs.interpretation ? ` — ${pgcs.interpretation}` : ''}`);
+  } else if (appState.medicine && appState.medicine.gcs) {
+    const gcs = appState.medicine.gcs;
+    const vStr = gcs.isEntubated ? '1T' : (gcs.v ?? 5);
+    o.push(`- GCS (Glasgow Koma Skalası): Toplam ${gcs.formattedScore || gcs.total || 15} (E${gcs.e || 4}V${vStr}M${gcs.m || 6})${gcs.interpretation ? ` — ${gcs.interpretation}` : ''}`);
+  }
+
+  // Kardiyoloji & EKG
+  if (appState.other && appState.other.cardiac && appState.other.cardiac.status === 'OK') {
+    const c = appState.other.cardiac;
+    let cardStr = `- EKG & Kardiyak: Nabız: ${c.hr || '--'} bpm`;
+    if (c.rrMs) cardStr += ` (RR: ${c.rrMs} ms)`;
+    if (c.qt) cardStr += `, QT: ${c.qt} ms`;
+    if (c.qrs) cardStr += `, QRS: ${c.qrs} ms`;
+    
+    cardStr += `, QTcB (Bazett): ${c.qtcBazett || '--'} ms, QTcF (Fridericia): ${c.qtcFridericia || '--'} ms`;
+    if (c.qtcBogossian) cardStr += `, QTcBog (Bogossian): ${c.qtcBogossian} ms`;
+    cardStr += ` [Yorum: ${c.interpretation || 'Normal'}]`;
+    
+    if (c.tisdaleScore > 0) cardStr += ` [Tisdale Skoru: ${c.tisdaleScore} - ${c.tisdaleRisk}]`;
+    o.push(cardStr + '.');
+
+    if (c.drugFlags && c.drugFlags.length > 0) {
+      c.drugFlags.forEach((flag: string) => o.push(`  -> İlaç/EKG Uyarısı: ${flag}`));
+    }
+  }
+  if (appState.other && appState.other.axis) {
+    const ax = appState.other.axis;
+    o.push(`- EKG Aksı: ${ax.degrees}° (${ax.axisCategory}).`);
+  }
+
+  // Kan Gazı
+  if (appState.medicine && appState.medicine.bloodGas) {
+    const bg = appState.medicine.bloodGas;
+    let bgStr = `- Kan Gazı (ABG/VBG): pH: ${bg.pH || '--'}, pCO2: ${bg.pCO2 || '--'}, HCO3: ${bg.HCO3 || '--'}`;
+    if (bg.primaryDisorder) {
+      bgStr += ` -> Tanı: ${bg.primaryDisorder} ${bg.compensationText ? '(' + bg.compensationText + ')' : ''}`;
+    }
+    o.push(bgStr + '.');
+  }
+
+  // Elektrolitler & İyonlar (Sodyum & Kalsiyum)
+  if (appState.medicine && appState.medicine.sodium) {
+    const na = appState.medicine.sodium;
+    o.push(`- Sodyum Düzeltme & Açık: Açık: ${na.deficit} mEq (3% NaCl: +${na.deltaNa3Percent} mEq/L, 0.9% NaCl: +${na.deltaNa09Percent} mEq/L)${na.warning ? ' [' + na.warning + ']' : ''}.`);
+  }
+  if (appState.medicine && appState.medicine.calcium) {
+    const ca = appState.medicine.calcium;
+    o.push(`- Düzeltilmiş Kalsiyum: ${ca.correctedCa} mg/dL (Ölçülen: ${ca.measuredCa} mg/dL)${ca.alertMsg ? ' [' + ca.alertMsg + ']' : ''}.`);
+  }
+
+  // İnfüzyon & GIR
+  if (appState.medicine && appState.medicine.infusion) {
+    const inf = appState.medicine.infusion;
+    o.push(`- IV İnfüzyon Hızı: ${inf.rateMlHr} mL/saat (Konsantrasyon: ${inf.concentrationMgMl} mg/mL, ${inf.concentrationMcgMl} mcg/mL).`);
+  }
+  if (appState.medicine && appState.medicine.gir) {
+    const g = appState.medicine.gir;
+    o.push(`- Glukoz İnfüzyon Hızı (GIR): ${g.gir} mg/kg/dk (${g.interpretation}).`);
+  }
+
+  // Endokrin & Metabolizma
+  if (appState.medicine && appState.medicine.homaIR) {
+    const hm = appState.medicine.homaIR;
+    o.push(`- HOMA-IR İnsülin Direnci: ${hm.homaIR} [${hm.tannerStage}, Eşik: ${hm.cutoff}] -> ${hm.isResistant ? 'İnsülin Direnci Pozitif' : 'Normal'}.`);
+  }
+  if (appState.medicine && appState.medicine.steroid) {
+    const st = appState.medicine.steroid;
+    o.push(`- Glukokortikoid Eşdeğerlik: ${st.sourceDrug} ${st.inputDoseMg} mg bazında hesaplandı.`);
+  }
+
+  // Genişletilmiş Dahiliye / Hepatoloji / Nöroloji / Sepsis / Üst GİS Skorları
+  if (appState.medicine?.childPugh) o.push(`- ${appState.medicine.childPugh.soapLine}`);
+  if (appState.medicine?.meld3) o.push(`- ${appState.medicine.meld3.soapLine}`);
+  if (appState.medicine?.nihss) o.push(`- ${appState.medicine.nihss.soapLine}`);
+  if (appState.medicine?.abcd2) o.push(`- ${appState.medicine.abcd2.soapLine}`);
+  if (appState.medicine?.qsofa) o.push(`- ${appState.medicine.qsofa.soapLine}`);
+  if (appState.medicine?.sofa) o.push(`- ${appState.medicine.sofa.soapLine}`);
+  if (appState.medicine?.gbs) o.push(`- ${appState.medicine.gbs.soapLine}`);
+
+  // Akılcı Antibiyotik & Centor-McIsaac
+  if (appState.pediatrics && appState.pediatrics.centor) {
+    const ct = appState.pediatrics.centor;
+    o.push(`- Centor / McIsaac Faranjit Skoru: ${ct.score} (GAS Riski: ${ct.riskPercent}). ${ct.recommendation}`);
+  }
+
+  // Cerrahi Skorlar & Sınıflandırmalar
+  if (appState.surgery && appState.surgery.alvarado && appState.surgery.alvarado.score > 0) {
+    const alv = appState.surgery.alvarado;
+    o.push(`- Cerrahi (Alvarado Apendisit Skoru): ${alv.score}/10 (${alv.risk || ''}).`);
+  }
+  if (appState.surgery?.air && appState.surgery.air.score > 0) {
+    const air = appState.surgery.air;
+    o.push(`- Cerrahi (AIR Apandisit Skoru): ${air.score}/12 (${air.riskLabel} — Klinik: ${air.clinicalPoints}p, Lab: ${air.labPoints}p).`);
+  }
+  if (appState.surgery?.aas && appState.surgery.aas.score > 0) {
+    const aas = appState.surgery.aas;
+    o.push(`- Cerrahi (Adult Appendicitis Score - AAS): ${aas.score}/23 (${aas.riskLabel}).`);
+  }
+  if (appState.surgery?.tokyoCholecystitis) {
+    const tg = appState.surgery.tokyoCholecystitis;
+    o.push(`- Cerrahi (Tokyo ${tg.guidelineVersion} Akut Kolesistit): ${tg.diagnosisStatus} — Şiddet: ${tg.severityGrade}.`);
+  }
+  if (appState.surgery?.parklandCholecystitis) {
+    const pgs = appState.surgery.parklandCholecystitis;
+    o.push(`- Cerrahi (Parkland Kolesistit Ölçeği - PGS): ${pgs.gradeTitle} (Zorluk: ${pgs.operativeDifficulty}).`);
+  }
+  if (appState.surgery?.strasbergBismuth) {
+    const sb = appState.surgery.strasbergBismuth;
+    o.push(`- Cerrahi (Strasberg-Bismuth Safra Yolu Yaralanması): Tip ${sb.type} (${sb.bismuthEquivalent}) — ${sb.anatomicalDefinition}`);
+  }
+  if (appState.surgery && appState.surgery.ranson && appState.surgery.ranson.score > 0) {
+    const rn = appState.surgery.ranson;
+    o.push(`- Cerrahi (Ranson Akut Pankreatit Skoru): ${rn.score}/11 (0.s: ${rn.admissionScore}, 48.s: ${rn.hour48Score}) -> ${rn.severity} (~%${rn.mortalityPercent} Mortalite).`);
+  }
+  if (appState.surgery?.atlantaMarshall) {
+    const am = appState.surgery.atlantaMarshall;
+    o.push(`- Cerrahi (Revize Atlanta 2012 & Modifiye Marshall): ${am.atlantaSeverity} (Marshall Solunum: ${am.respScore}, Renal: ${am.renalScore}, KV: ${am.cvScore} | Koleksiyon: ${am.collectionType}).`);
+  }
+  if (appState.surgery?.bisap && appState.surgery.bisap.score > 0) {
+    const bs = appState.surgery.bisap;
+    o.push(`- Cerrahi (BISAP Pankreatit Skoru): ${bs.score}/5 (${bs.riskCategory}, Mortalite: ${bs.observedMortalityRange}).`);
+  }
+  if (appState.surgery?.mctsi) {
+    const mc = appState.surgery.mctsi;
+    o.push(`- Cerrahi (Modifiye CTSI 2004 / Balthazar): mCTSI ${mc.score}/10 (${mc.severity}) | 1990 Balthazar: ${mc.balthazar1990Comparison.originalCtsiScore}/10.`);
+  }
+  if (appState.surgery?.diverticulitis) {
+    const dv = appState.surgery.diverticulitis;
+    o.push(`- Cerrahi (Akut Divertikülit 3'lü BT Evrelemesi): WSES Evre ${dv.wses.stage} (${dv.wses.group}) | Kaiser Mod. Hinchey Evre ${dv.kaiserHinchey.stage} | Ambrosetti: ${dv.ambrosetti.gradeTitle}.`);
+  }
+  if (appState.surgery?.groinHernia) {
+    const gh = appState.surgery.groinHernia;
+    o.push(`- Cerrahi (Kasık Fıtığı): EHS ${gh.ehsCode} (${gh.nyhusTitle}).`);
+  }
+  if (appState.surgery?.ventralHernia) {
+    const vh = appState.surgery.ventralHernia;
+    o.push(`- Cerrahi (Karın Duvarı Fıtığı): ${vh.ehsCode} (${vh.sizeOrWidthCategory}).`);
+  }
+  if (appState.surgery?.hemorrhoid) {
+    const hm = appState.surgery.hemorrhoid;
+    o.push(`- Cerrahi (Hemoroidal Hastalık): Goligher Derece ${hm.goligher.grade} | BPRST Evre ${hm.bprst.stage} (${hm.bprst.code}) | PNR-Bleed: ${hm.pnrBleed.code} (HSS: ${hm.pnrBleed.hssScore}/20).`);
+  }
+  if (appState.surgery?.perianalFistula) {
+    const pf = appState.surgery.perianalFistula;
+    o.push(`- Cerrahi (Perianal Fistül): Parks Tip ${pf.parks.type} | SJUH MRG Derece ${pf.sjuhMri.grade} | Garg Derece ${pf.garg.grade} (${pf.garg.complexityCategory}).`);
+  }
+  if (appState.surgery?.colorectalTnm) {
+    const crc = appState.surgery.colorectalTnm;
+    o.push(`- Cerrahi Onkoloji (AJCC 8. Baskı Kolorektal TNM): ${crc.tnmCode} -> ${crc.stageGroup}.`);
+  }
+  if (appState.surgery?.malignantPolyp) {
+    const mp = appState.surgery.malignantPolyp;
+    o.push(`- Cerrahi Onkoloji (pT1 Malign Polip): ${mp.primaryClassificationTitle} (LNM Riski: ${mp.estimatedLnmRiskPercent}).`);
+  }
+  if (appState.surgery?.solidOrganTrauma) {
+    const tr = appState.surgery.solidOrganTrauma;
+    o.push(`- Cerrahi Travma (${tr.organLabelTr}): AAST Derece ${tr.activeAastGrade} (2018: ${tr.aastGrade2018}, 1994: ${tr.aastGrade1994}) | ${tr.wsesSeverityCategory}.`);
+  }
+  if (appState.surgery?.clavienDindoCci && appState.surgery.clavienDindoCci.totalComplicationCount > 0) {
+    const cd = appState.surgery.clavienDindoCci;
+    o.push(`- Postoperatif Komplikasyon: Clavien-Dindo ${cd.formattedClavienDindo} | Kümülatif CCI: ${cd.cciScore}/100 (${cd.breakdownText}).`);
+  }
+  if (appState.surgery?.asaPs) {
+    const asa = appState.surgery.asaPs;
+    o.push(`- Perioperatif Anestezi/Cerrahi Risk: ${asa.formattedCode} (${asa.officialDefinition}).`);
+  }
+
+  // Obstetrik & Jinekoloji
+  if (appState.obgyn && appState.obgyn.eddData && appState.obgyn.eddData.edd) {
+    const edd = appState.obgyn.eddData;
+    o.push(`- Obstetrik: SAT'a göre Gebelik Haftası: ${edd.gestationalAge || '--'}, Tahmini Doğum Tarihi (TDT): ${edd.edd || '--'}.`);
+  }
+  if (appState.obgyn?.bishop?.score !== undefined) {
+    const b = appState.obgyn.bishop;
+    o.push(`- Bishop Doğum İndüksiyon Skoru: ${b.score}/13 (${b.interpretation}).`);
+  }
+  if (appState.obgyn?.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+    const pe = appState.obgyn.preeclampsia;
+    o.push(`- Preeklampsi Değerlendirmesi: ${pe.diagnosis}${pe.alert ? ' (' + pe.alert + ')' : ''}.`);
+  }
+
+  // Tromboemboli & Kardiyak Acil
+  if (appState.thrombosis) {
+    const th = appState.thrombosis;
+    if (th.wellsDVT && th.wellsDVT.isValid) {
+      o.push(`- Wells DVT Skoru: ${th.wellsDVT.score} Puan (${th.wellsDVT.riskCategory} - DVT İhtimali: ${th.wellsDVT.probability}).`);
+    }
+    if (th.wellsPTE && th.wellsPTE.isValid) {
+      o.push(`- Wells PTE Skoru: ${th.wellsPTE.score} Puan (2-Seviyeli: ${th.wellsPTE.twoTierRisk.risk}, 3-Seviyeli: ${th.wellsPTE.threeTierRisk.risk}).`);
+    }
+    if (th.perc && th.perc.isValid) {
+      o.push(`- PERC Dışlama Kuralı: Pozitif Kriter Sayısı: ${th.perc.positiveCount} (${th.perc.isPERCNegative ? 'PERC Negatif - PE Güvenle Dışlandı' : 'PERC Pozitif - İleri İnceleme Gerekli'}).`);
+    }
+    if (th.heart && th.heart.isValid) {
+      o.push(`- HEART Skoru (Göğüs Ağrısı): ${th.heart.score}/10 (${th.heart.riskCategory} - 6-Haftalık MACE: %${th.heart.maceRatePercent}).`);
+    }
+    if (th.cha2ds2vasc && th.cha2ds2vasc.isValid) {
+      o.push(`- CHA₂DS₂-VASc AF İnme Skoru: ${th.cha2ds2vasc.score} Puan (Yıllık İnme Riski: %${th.cha2ds2vasc.annualStrokeRiskPercent}).`);
+    }
+    if (th.hasbled && th.hasbled.isValid) {
+      o.push(`- HAS-BLED Kanama Skoru: ${th.hasbled.score} Puan (${th.hasbled.bleedingRiskCategory}).`);
+    }
+  }
+
+  // Nefroloji, Toksikoloji & Solunum
+  if (appState.nephroTox) {
+    const nt = appState.nephroTox;
+    if (nt.fena && nt.fena.isValid) {
+      o.push(`- FENa: %${nt.fena.fenaPercent} (${nt.fena.category})${nt.fena.isOnDiuretics ? ' [Hasta Diüretik Alıyor - FENa Yalancı Yüksek Olabilir]' : ''}.`);
+    }
+    if (nt.feurea && nt.feurea.isValid) {
+      o.push(`- FEUrea (Diüretik Güvenli): %${nt.feurea.feUreaPercent} (${nt.feurea.category}).`);
+    }
+    if (nt.correctedSodium && nt.correctedSodium.isValid) {
+      o.push(`- Düzeltilmiş Sodyum: Katz: ${nt.correctedSodium.correctedSodiumKatz} mEq/L, Hillier: ${nt.correctedSodium.correctedSodiumHillier} mEq/L (Ölçülen: ${nt.correctedSodium.measuredSodium}, Glukoz: ${nt.correctedSodium.glucose} mg/dL). ${nt.correctedSodium.interpretation}`);
+    }
+    if (nt.osmolalGap && nt.osmolalGap.isValid) {
+      o.push(`- Osmolal Açık: ${nt.osmolalGap.osmolalGap} mOsm/kg (Ölçülen: ${nt.osmolalGap.measuredOsm}, Hesaplanan: ${nt.osmolalGap.calculatedOsm}) -> ${nt.osmolalGap.isCriticalGap ? '[KRİTİK UYARI] YÜKSEK (Toksik Alkol Zehirlenmesi)' : (nt.osmolalGap.isHighGap ? '[DİKKAT] YÜKSEK' : '[UYGUN] Normal')}.`);
+    }
+    if (nt.paracetamol && nt.paracetamol.isValid) {
+      o.push(`- Parasetamol Düzeyi (Rumack-Matthew): ${nt.paracetamol.levelMcgMl} µg/mL (${nt.paracetamol.hoursPostIngestion}. saat, Eşik: ${nt.paracetamol.threshold} µg/mL${nt.paracetamol.isHighRisk ? ' - Yüksek Risk Nomogramı' : ''}) -> ${nt.paracetamol.isToxic ? '[KRİTİK UYARI] TOKSİK DÜZEY' : '[UYGUN] Tedavi Çizgisi Altında'}.`);
+    }
+    if (nt.curb65 && nt.curb65.isValid) {
+      o.push(`- CURB-65 / CRB-65 Pnömoni Skoru: CURB-65: ${nt.curb65.score}/5, CRB-65: ${nt.curb65.crbScore}/4 (${nt.curb65.mortalityGroup} - 30-Günlük Mortalite: %${nt.curb65.mortalityPercent}).`);
+    }
+  }
+
+  // Neonatoloji & Pediatrik Acil
+  if (appState.neonatology) {
+    const neo = appState.neonatology;
+    if (neo.bhutani && neo.bhutani.isValid) {
+      const gTag = neo.bhutani.guidelineLabel || (neo.bhutani.guidelineUsed === 'TND_2014' ? 'TND 2014' : 'AAP 2022');
+      const mTag = neo.bhutani.measurementType || 'TSB';
+      const escPart = neo.bhutani.escalationThreshold ? `, Bakım Eskalasyonu: ${neo.bhutani.escalationThreshold}` : '';
+      let jStr = `- Hiperbilirubinemi (${gTag}): Yaş: ${neo.bhutani.ageHours}s, ${mTag}: ${neo.bhutani.totalBilirubin} mg/dL (Fototerapi Eşiği: ${neo.bhutani.phototherapyThreshold || '--'}${escPart}, Kan Değişimi: ${neo.bhutani.exchangeThreshold || '--'}) -> ${neo.bhutani.interpretation}`;
+      if (neo.bhutani.requiresTsbConfirmation && neo.bhutani.tsbConfirmationReason) {
+        jStr += ` [DİKKAT: TcB Doğrulama: ${neo.bhutani.tsbConfirmationReason}]`;
+      }
+      o.push(jStr);
+    }
+    if (neo.apgar) {
+      o.push(`- APGAR Skoru (${neo.apgar.minute}. dk): ${neo.apgar.score}/10 (${neo.apgar.status}).`);
+    }
+    if (neo.westleyCroup) {
+      o.push(`- Westley Krup Skoru: ${neo.westleyCroup.score}/17 (${neo.westleyCroup.severity} - ${neo.westleyCroup.interpretation}).`);
+    }
+    if (neo.cdsDehydration) {
+      o.push(`- Klinik Dehidratasyon Skalası (CDS): ${neo.cdsDehydration.score}/8 (${neo.cdsDehydration.interpretation}).`);
+    }
+    if (neo.weightLoss && neo.weightLoss.isValid) {
+      o.push(`- Yenidoğan Tartı Takibi: Doğum: ${neo.weightLoss.birthWeightG} g, Mevcut: ${neo.weightLoss.currentWeightG} g -> Tartı Değişimi: %${neo.weightLoss.percentLoss} (${neo.weightLoss.interpretation})`);
+    }
+  }
+
+  // İlaç Güvenliği & DDI
+  if (appState.safetyPrescription) {
+    const sp = appState.safetyPrescription;
+    if (sp.tripleWhammy && sp.tripleWhammy.isTripleWhammy) {
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği: Triple Whammy AKI Riski Tespit Edildi (RAS Blokörü + Diüretik + NSAİİ).`);
+    }
+    if (sp.renalAdjustments && (sp.renalAdjustments.alertsCount ?? 0) > 0) {
+      o.push(`- Renal Dozaj Uyarısı (${sp.renalAdjustments.egfr} mL/dk): ${sp.renalAdjustments.alertsCount} ilaçta doz kısıtlaması/kontrendikasyon mevcut.`);
+    }
+    if (sp.pregnancySafety && sp.pregnancySafety.alertsCount > 0) {
+      o.push(`- Gebelik Güvenlik Uyarısı: ${sp.pregnancySafety.alertsCount} ilaçta fetal risk saptandı.`);
+    }
+    if (sp.neonatalDrugSafety && sp.neonatalDrugSafety.alertsCount > 0) {
+      o.push(`- [KRİTİK UYARI] Yenidoğan İlaç Güvenliği: ${sp.neonatalDrugSafety.alertsCount} ilaçta kontrendikasyon/toksisite uyarısı mevcut (${sp.neonatalDrugSafety.alerts.map((a) => a.drugName).join(', ')}).`);
+    }
+    if (sp.serotoninSyndrome && sp.serotoninSyndrome.isHighRisk) {
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği (Serotonin Toksisitesi): ${sp.serotoninSyndrome.title}. Tespit edilen: ${Object.values(sp.serotoninSyndrome.detectedDrugs).flat().join(', ')}.`);
+    }
+    if (sp.hyperkalemiaRisk && sp.hyperkalemiaRisk.isAtRisk) {
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği (Hiperkalemi Kalkanı): ${sp.hyperkalemiaRisk.title}. Risk faktörleri: ${sp.hyperkalemiaRisk.riskFactorsIdentified.join(', ')}.`);
+    }
+    if (sp.cypStatinInteraction && sp.cypStatinInteraction.hasInteraction) {
+      o.push(`- [KRİTİK UYARI] İlaç Güvenliği (CYP3A4 / Statin): ${sp.cypStatinInteraction.title}.`);
+    }
+  }
+
+  // --- DEĞERLENDİRME ---
+  if (appState.pediatrics?.growthVelocity?.malnutritionAssessment && appState.pediatrics.growthVelocity.malnutritionAssessment.category !== 'WELL_NOURISHED') {
+    const ma = appState.pediatrics.growthVelocity.malnutritionAssessment;
+    a.push(`- ${ma.categoryText.toUpperCase()}: ${ma.criteriaMet.join('; ')}.`);
+  } else if (appState.pediatrics?.growthVelocity?.centileDropAnalysis?.isPathologicalFaltering) {
+    a.push(`- Büyüme Duraklaması (Faltering Growth): ${appState.pediatrics.growthVelocity.centileDropAnalysis.falteringReason || 'Belirgin persentil kanal düşüşü saptandı'}.`);
+  }
+  if (appState.pediatrics?.cranialScreening && appState.pediatrics.cranialScreening.hydrocephalusRisk !== 'SAFE' && appState.pediatrics.cranialScreening.hydrocephalusRisk !== 'BENIGN_FAMILIAL') {
+    const cs = appState.pediatrics.cranialScreening;
+    a.push(`- KRANİYAL RİSK: ${cs.riskTitle}. ${cs.clinicalRecommendations[0] || ''}`);
+  }
+  if (appState.obgyn?.bishop && appState.obgyn.bishop.score >= 8) {
+    a.push(`- Servikal Olgunlaşma: Yüksek Bishop Skoru (${appState.obgyn.bishop.score}/13) - Doğum indüksiyonu başarı şansı yüksek.`);
+  } else if (appState.obgyn?.bishop && appState.obgyn.bishop.score <= 5) {
+    a.push(`- Olgunlaşmamış Serviks (Bishop Skoru: ${appState.obgyn.bishop.score}/13): İndüksiyon öncesi servikal olgunlaştırma (prostaglandin/balon) gereklidir.`);
+  }
+  if (appState.obgyn?.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+    a.push(`- Obstetrik Risk: ${appState.obgyn.preeclampsia.diagnosis}.`);
+  }
+  if (appState.pediatrics && appState.pediatrics.targetHeight && appState.pediatrics.targetHeight.deviationAlert) {
+    a.push(`- ${appState.pediatrics.targetHeight.deviationAlert}`);
+  }
+  if (appState.pediatrics?.iron?.differential?.warningTitle) {
+    const diff = appState.pediatrics.iron.differential;
+    a.push(`- ${diff.warningTitle}: ${diff.warningText || ''}`);
+  }
+  if (appState.pediatrics && appState.pediatrics.bp && appState.pediatrics.bp.stage.includes('Hipertansiyon')) {
+    a.push(`- Pediatrik Kan Basıncı Uyarısı: ${appState.pediatrics.bp.stage}. Doğrulayıcı ölçümler ve etiyolojik tarama önerilir.`);
+  }
+  if (appState.medicine && appState.medicine.gir && (appState.medicine.gir.status === 'LOW' || appState.medicine.gir.gir < 4)) {
+    a.push(`- Neonatal Hipoglisemi Riski: Glukoz infüzyon hızı kritik düşük (${appState.medicine.gir.gir} mg/kg/dk).`);
+  }
+  if (appState.medicine && appState.medicine.homaIR && appState.medicine.homaIR.isResistant) {
+    a.push(`- ${appState.medicine.homaIR.interpretation}`);
+  }
+  // Genişletilmiş Dahiliye Skorları (Child-Pugh B/C, MELD 3.0 ≥20, NIHSS ≥5/≥15, ABCD² ≥4/≥6, qSOFA ≥2, SOFA ≥2/≥6, GBS ≥6)
+  if (appState.medicine?.childPugh && (appState.medicine.childPugh.childClass === 'B' || appState.medicine.childPugh.childClass === 'C')) {
+    const cp = appState.medicine.childPugh;
+    const prefix = cp.childClass === 'C' ? '[KRİTİK UYARI] Dekompanze Siroz' : 'Hepatik Fonksiyon Kaybı / Siroz';
+    a.push(`- ${prefix} (Child-Pugh Sınıf ${cp.childClass}, ${cp.score}/15 — ${cp.tier.label}): 1Y sağkalım ${cp.oneYearSurvival}; ${cp.surgicalMortalityNote}.`);
+  }
+  if (appState.medicine?.meld3 && appState.medicine.meld3.score >= 20) {
+    const m3 = appState.medicine.meld3;
+    const prefix = m3.score >= 30 ? '[KRİTİK UYARI] ' : '';
+    a.push(`- ${prefix}İleri Karaciğer Yetmezliği / Yüksek Mortalite Riski (MELD 3.0: ${m3.score}/40 — ${m3.riskLabel}, 90g mortalite ${m3.ninetyDayMortality}).`);
+  }
+  if (appState.medicine?.nihss && appState.medicine.nihss.score >= 5) {
+    const ni = appState.medicine.nihss;
+    const prefix = ni.score >= 15 ? '[KRİTİK UYARI] Ağır Akut İnme' : 'Orta Şiddette Akut İnme';
+    a.push(`- ${prefix} (NIHSS: ${ni.score}/42 — ${ni.tier.label}).`);
+  }
+  if (appState.medicine?.abcd2 && appState.medicine.abcd2.score >= 4) {
+    const ab = appState.medicine.abcd2;
+    const prefix = ab.score >= 6 ? '[KRİTİK UYARI] Yüksek Riskli GİA' : 'Orta Riskli GİA';
+    a.push(`- ${prefix} (ABCD²: ${ab.score}/7 — ${ab.tier.label}${ab.tier.riskEstimate ? ', ' + ab.tier.riskEstimate : ''}).`);
+  }
+  if (appState.medicine?.qsofa && appState.medicine.qsofa.score >= 2) {
+    const qs = appState.medicine.qsofa;
+    a.push(`- [KRİTİK UYARI] Yüksek Sepsis Riski (qSOFA: ${qs.score}/3 — ${qs.tier.label}${qs.tier.riskEstimate ? ', ' + qs.tier.riskEstimate : ''}).`);
+  }
+  if (appState.medicine?.sofa && appState.medicine.sofa.score >= 2) {
+    const sf = appState.medicine.sofa;
+    const prefix = sf.score >= 6 ? '[KRİTİK UYARI] Çoklu Organ Yetmezliği / Ağır Sepsis' : 'Sepsis-3 Organ Disfonksiyonu';
+    a.push(`- ${prefix} (SOFA: ${sf.score}/24 — ${sf.tier.label}${sf.tier.riskEstimate ? ', ' + sf.tier.riskEstimate : ''}).`);
+  }
+  if (appState.medicine?.gbs && appState.medicine.gbs.score >= 6) {
+    const gbs = appState.medicine.gbs;
+    a.push(`- [KRİTİK UYARI] Yüksek Riskli Üst GİS Kanaması (Glasgow-Blatchford Skoru: ${gbs.score}/23 — ${gbs.tier.label}${gbs.tier.riskEstimate ? ', ' + gbs.tier.riskEstimate : ''}).`);
+  }
+  if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
+    a.push(`- Akut Tonsillofaranjit: Yüksek Streptokok olasılığı (Centor Skoru: ${appState.pediatrics.centor.score}).`);
+  }
+  if (appState.surgery && appState.surgery.alvarado && appState.surgery.alvarado.score >= 7) {
+    a.push(`- Yüksek Apendisit Olasılığı (Alvarado Skoru: ${appState.surgery.alvarado.score}/10). Cerrahi konsültasyonu önerilir.`);
+  }
+  if (appState.surgery?.air && appState.surgery.air.score >= 9) {
+    a.push(`- Yüksek Apandisit Olasılığı (AIR Skoru: ${appState.surgery.air.score}/12 — Özgüllük %98-99).`);
+  }
+  if (appState.surgery?.aas && appState.surgery.aas.score >= 16) {
+    a.push(`- Yüksek Apandisit Olasılığı (AAS Skoru: ${appState.surgery.aas.score}/23 — ${appState.surgery.aas.riskLabel}).`);
+  }
+  if (appState.surgery?.tokyoCholecystitis && appState.surgery.tokyoCholecystitis.gradeNumber >= 2) {
+    a.push(`- Akut Kolesistit (${appState.surgery.tokyoCholecystitis.guidelineVersion} ${appState.surgery.tokyoCholecystitis.severityGrade}): ${appState.surgery.tokyoCholecystitis.diagnosisStatus}.`);
+  }
+  if (appState.surgery?.parklandCholecystitis && appState.surgery.parklandCholecystitis.grade >= 4) {
+    a.push(`- İntraoperatif Zor Safra Kesesi (${appState.surgery.parklandCholecystitis.gradeTitle}): CVS başarısızlık ve safra yolu yaralanması riski yüksek.`);
+  }
+  if (appState.surgery?.strasbergBismuth) {
+    a.push(`- İyatrojenik Safra Yolu Yaralanması: Strasberg Tip ${appState.surgery.strasbergBismuth.type} (${appState.surgery.strasbergBismuth.bismuthEquivalent}).`);
+  }
+  if (appState.surgery && appState.surgery.ranson && appState.surgery.ranson.score >= 3) {
+    const rn = appState.surgery.ranson;
+    a.push(`- Akut Pankreatit Ciddiyet Uyarısı (Ranson Skoru: ${rn.score}/11 - ${rn.severity}, ~%${rn.mortalityPercent} Mortalite): ${rn.interpretation}`);
+  }
+  if (appState.surgery?.atlantaMarshall && appState.surgery.atlantaMarshall.atlantaSeverity !== 'Hafif Akut Pankreatit (Mild AP)') {
+    a.push(`- Akut Pankreatit (Revize Atlanta 2012): ${appState.surgery.atlantaMarshall.atlantaSeverity}.`);
+  }
+  if (appState.surgery?.bisap && appState.surgery.bisap.isHighRiskCutoff) {
+    a.push(`- Yüksek Riskli Akut Pankreatit (BISAP: ${appState.surgery.bisap.score}/5 — Mortalite: ${appState.surgery.bisap.observedMortalityRange}).`);
+  }
+  if (appState.surgery?.mctsi && appState.surgery.mctsi.score >= 4) {
+    a.push(`- Pankreatit BT Şiddet Uyarısı (mCTSI: ${appState.surgery.mctsi.score}/10 — ${appState.surgery.mctsi.severity}).`);
+  }
+  if (appState.surgery?.diverticulitis && appState.surgery.diverticulitis.wses.group === 'Komplike (Complicated)') {
+    a.push(`- Komplike Akut Kolonik Divertikülit: WSES Evre ${appState.surgery.diverticulitis.wses.stage} / Kaiser Mod. Hinchey Evre ${appState.surgery.diverticulitis.kaiserHinchey.stage}.`);
+  }
+  if (appState.surgery?.ventralHernia?.isLossOfDomain) {
+    a.push(`- Kompleks Karın Duvarı Fıtığı (Loss of Domain - IHV/PV >%20): ${appState.surgery.ventralHernia.ehsCode}.`);
+  }
+  if (appState.surgery?.perianalFistula) {
+    const pf = appState.surgery.perianalFistula;
+    a.push(`- Perianal Fistül Değerlendirmesi: Garg Derece ${pf.garg.grade} (${pf.garg.complexityCategory}) — ${pf.garg.isFistulotomySafe ? 'Fistülotomiye uygun' : 'Fistülotomi kontrendike'}.`);
+  }
+  if (appState.surgery?.colorectalTnm) {
+    a.push(`- Kolorektal Kanser Evrelemesi (AJCC 8. Baskı): ${appState.surgery.colorectalTnm.tnmCode} (${appState.surgery.colorectalTnm.stageGroup}).`);
+  }
+  if (appState.surgery?.malignantPolyp && appState.surgery.malignantPolyp.requiresOncologicResection) {
+    a.push(`- Yüksek Riskli pT1 Malign Polip (${appState.surgery.malignantPolyp.primaryClassificationTitle}): LNM riski ${appState.surgery.malignantPolyp.estimatedLnmRiskPercent}, tamamlayıcı onkolojik rezeksiyon endike.`);
+  }
+  if (appState.surgery?.solidOrganTrauma) {
+    const tr = appState.surgery.solidOrganTrauma;
+    a.push(`- Solid Organ Travması (${tr.organLabelTr}): AAST Derece ${tr.activeAastGrade}, ${tr.wsesSeverityCategory}.`);
+  }
+  if (appState.surgery?.clavienDindoCci && appState.surgery.clavienDindoCci.isMajorComplication) {
+    a.push(`- Majör Postoperatif Komplikasyon: Clavien-Dindo ${appState.surgery.clavienDindoCci.formattedClavienDindo} (Kümülatif CCI: ${appState.surgery.clavienDindoCci.cciScore}/100).`);
+  }
+  if (appState.other && appState.other.cardiac && appState.other.cardiac.colorCode === 'danger') {
+    a.push(`- Kardiyak Uyarı: ${appState.other.cardiac.interpretation}`);
+  }
+  if (appState.medicine && appState.medicine.bloodGas && appState.medicine.bloodGas.primaryDisorder) {
+    a.push(`- Asit-Baz Bozukluğu: ${appState.medicine.bloodGas.primaryDisorder}.`);
+  }
+
+  // Yeni Klinik Modül Değerlendirmeleri
+  if (appState.thrombosis) {
+    const th = appState.thrombosis;
+    if (th.wellsDVT && th.wellsDVT.score >= 2) {
+      a.push(`- Yüksek DVT Şüphesi: Wells Skoru ${th.wellsDVT.score} (Acil Kompresyon Doppler USG önerilir).`);
+    }
+    if (th.wellsPTE && th.wellsPTE.score > 4) {
+      a.push(`- Yüksek Pulmoner Emboli Olasılığı: Wells PE Skoru ${th.wellsPTE.score} (Acil BT Pulmoner Anjiyografi endikedir).`);
+    }
+    if (th.heart && th.heart.score >= 7) {
+      a.push(`- Yüksek Kardiyovasküler Olay Riski: HEART Skoru ${th.heart.score} (Erken invaziv koroner anjiyografi/yatış).`);
+    }
+    if (th.cha2ds2vasc && th.cha2ds2vasc.score >= 2) {
+      a.push(`- Yüksek AF Tromboemboli Riski: CHA₂DS₂-VASc Skoru ${th.cha2ds2vasc.score} (Oral Antikoagülan - OAK Class I endikasyon).`);
+    }
+  }
+  if (appState.nephroTox) {
+    const nt = appState.nephroTox;
+    if (nt.fena && nt.feurea) {
+      if (nt.fena.isOnDiuretics && nt.fena.fenaPercent >= 1.0 && nt.feurea.feUreaPercent < 35.0) {
+        a.push(`- Oligüri / Azotemi Değerlendirmesi: Diüretik etkisiyle FENa yalancı yüksek çıkmıştır; FEUrea <%35 Prerenal Hipoperfüzyonu doğrulamaktadır.`);
+      } else if (nt.fena.fenaPercent < 1.0 && nt.feurea.feUreaPercent < 35.0) {
+        a.push(`- Akut Böbrek Hasarı: Güçlü Prerenal Azotemi (Tübüler fonksiyonlar korunmuş, sıvı açığı/hipovolemi).`);
+      } else if (nt.fena.fenaPercent > 2.0 && nt.feurea.feUreaPercent >= 35.0) {
+        a.push(`- Akut Böbrek Hasarı: Güçlü İntrensek Renal Hasar / Akut Tübüler Nekroz (ATN).`);
+      }
+    } else if (nt.fena && nt.fena.fenaPercent < 1.0) {
+      a.push(`- Prerenal Azotemi (FENa <%1): Böbrek hipoperfüzyonu/dehidratasyon.`);
+    } else if (nt.fena && nt.fena.fenaPercent > 2.0) {
+      a.push(`- İntrensek Renal Hasar (FENa >%2): Tübüler hasar / ATN.`);
+    }
+
+    if (nt.paracetamol && nt.paracetamol.isToxic) {
+      a.push(`- Akut Parasetamol Hepatotoksisitesi: Serum düzeyi Rumack-Matthew tedavi çizgisinin üzerindedir (Karaciğer yetmezliği riski!).`);
+    }
+    if (nt.osmolalGap && nt.osmolalGap.isCriticalGap) {
+      a.push(`- [KRİTİK UYARI] KRİTİK OSMOLAL AÇIK (${nt.osmolalGap.osmolalGap} mOsm/kg > 20): Toksik Alkol Zehirlenmesi (Metanol / Etilen Glikol / Propilen Glikol) kuşkusu!`);
+    } else if (nt.osmolalGap && nt.osmolalGap.isHighGap) {
+      a.push(`- Yüksek Osmolal Açık (${nt.osmolalGap.osmolalGap} mOsm/kg): Toksik alkol veya anyon açığı asidozu dışlanmalıdır.`);
+    }
+    if (nt.curb65 && nt.curb65.score >= 3) {
+      a.push(`- Şiddetli Toplum Kökenli Pnömoni (CURB-65 Skoru: ${nt.curb65.score}/5): Yüksek mortalite riski (%${nt.curb65.mortalityPercent}), acil hastane/YBÜ yatışı.`);
+    } else if (nt.curb65 && nt.curb65.score === 2) {
+      a.push(`- Orta Risk Pnömoni (CURB-65 Skoru: 2/5): Kısa süreli hastane yatışı / gözlem endikedir.`);
+    }
+  }
+  if (appState.neonatology) {
+    const neo = appState.neonatology;
+    if (neo.bhutani && neo.bhutani.status === 'EXCHANGE_TRANSFUSION_REQUIRED') {
+      a.push(`- KRİTİK HİPERBİLİRUBİNEMİ: Acil Kan Değişimi (Exchange Transfusion) ve yoğun fototerapi endikasyonu!`);
+    } else if (neo.bhutani && neo.bhutani.status === 'ESCALATION_OF_CARE') {
+      a.push(`- [KRİTİK UYARI] BAKIM ESKALASYONU (AAP 2022): Kan değişimi eşiğine ≤2.0 mg/dL! Acil yoğun fototerapi, IV hidrasyon, IVIG değerlendirmesi ve YDYBÜ nakil hazırlığı gereklidir.`);
+    } else if (neo.bhutani && neo.bhutani.status === 'PHOTOTHERAPY_REQUIRED') {
+      const gTag = neo.bhutani.guidelineUsed === 'TND_2014' ? 'TND 2014' : 'AAP 2022';
+      a.push(`- Yenidoğan Patolojik Sarılığı: ${gTag} fototerapi eşiği aşıldı, fototerapi başlanması gereklidir.`);
+    }
+    if (neo.westleyCroup && neo.westleyCroup.score >= 6) {
+      a.push(`- Ciddi Krup / Yaklaşan Solunum Yetmezliği: Westley Skoru ${neo.westleyCroup.score} (Nebülize Epinefrin ve YBÜ gözlemi).`);
+    }
+    if (neo.weightLoss && (neo.weightLoss.status === 'EXCESSIVE_LOSS_CRITICAL' || (neo.weightLoss.percentLoss ?? 0) > 10)) {
+      a.push(`- YENİDOĞAN AŞIRI TARTI KAYBI: Doğum tartısının %${neo.weightLoss.percentLoss}'i kaybedildi. Hipernatremik dehidratasyon riski!`);
+    }
+  }
+  if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
+    a.push(`- İlaç Etkileşim Uyarısı: Triple Whammy kombinasyonu nedeniyle Akut Böbrek Hasarı riski çok yüksektir.`);
+  }
+  if (appState.safetyPrescription && appState.safetyPrescription.neonatalDrugSafety && appState.safetyPrescription.neonatalDrugSafety.hasContraindication) {
+    a.push(`- YENİDOĞAN İLAÇ KONTRENDİKASYONU: Reçetelenen ilaçlarda fatal toksisite riski (Kernikterus/Gri Bebek Sendromu vb.) tespit edildi.`);
+  }
+  if (appState.safetyPrescription?.serotoninSyndrome?.isHighRisk) {
+    const ss = appState.safetyPrescription.serotoninSyndrome;
+    a.push(`- SEROTONİN SENDROMU TEHLİKESİ: ${ss.title} Hunter Kriterleri ile hasta (klonus, hiperrefleksi, terleme) acilen değerlendirilmelidir.`);
+  }
+  if (appState.safetyPrescription?.hyperkalemiaRisk?.isAtRisk) {
+    const hk = appState.safetyPrescription.hyperkalemiaRisk;
+    a.push(`- ÖLÜMCÜL HİPERKALEMİ RİSKİ: ${hk.title} Serum K+ düzeyi ve EKG acilen kontrol edilmelidir.`);
+  }
+  if (appState.safetyPrescription?.cypStatinInteraction?.hasInteraction) {
+    const cs = appState.safetyPrescription.cypStatinInteraction;
+    a.push(`- STATİN RABDOMİYOLİZ UYARISI: ${cs.title} Statin plazma konsantrasyonu toksik seviyelere çıkabilir.`);
+  }
+  if (appState.emergency?.anaphylaxis) {
+    const an = appState.emergency.anaphylaxis;
+    a.push(`- ACİL MÜDAHALE (ANAFİLAKSİ): Akut anafilaksi tablosu; ${an.administeredDoses}. doz Adrenalin İM ve acil resüsitasyon uygulandı.`);
+  }
+  if (appState.emergency?.statusEpilepticus) {
+    const se = appState.emergency.statusEpilepticus;
+    a.push(`- ACİL MÜDAHALE (STATUS EPİLEPTİCUS): ${se.elapsedMinutes} dakikadır süren epileptik nöbet; AES protokolü kademeleri uygulandı.`);
+  }
+
+  // --- PLAN & TEDAVİ ---
+  let pCount = 1;
+  if (appState.medicine && appState.medicine.gir && (appState.medicine.gir.status === 'LOW' || appState.medicine.gir.gir < 4) && appState.medicine.gir.hypoglycemiaBolus?.instructions) {
+    p.push(`${pCount}. Hipoglisemi Acil Protokolü: ${appState.medicine.gir.hypoglycemiaBolus.instructions}`);
+    pCount++;
+  }
+  if (appState.surgery && appState.surgery.parkland && appState.surgery.parkland.totalVolume) {
+    const pk = appState.surgery.parkland;
+    const label = pk.formulaLabel || 'ATLS-10 / Parkland Yanık Sıvı Resüsitasyonu';
+    const mult = pk.multiplierUsed ?? 2;
+    const uo = pk.urineOutputTarget || '0.5 mL/kg/saat';
+    const maintStr = pk.requiresDextroseMaintenance && pk.maintenanceHourlyMl
+      ? ` + <30 kg Pediatrik Ek %5 Dekstrozlu İdame: ${pk.maintenanceDailyMl} mL/gün (${pk.maintenanceHourlyMl} mL/s)`
+      : '';
+    p.push(`${pCount}. ${label} (${mult} mL/kg/%TBSA RL): Toplam 24s RL: ${pk.totalVolume} mL (İlk 8s: ${pk.first8HrsRate} mL/s, Sonraki 16s: ${pk.next16HrsRate} mL/s; Hedef İdrar: ${uo})${maintStr}.`);
+    pCount++;
+  }
+  if (appState.medicine && appState.medicine.fluid && appState.medicine.fluid.dailyVolume) {
+    const fl = appState.medicine.fluid;
+    if (fl.isNeonate) {
+      p.push(`${pCount}. Yenidoğan İdame Sıvısı (TND Sıvı Kademesi - ${fl.dayTitle}): ${fl.dailyVolume} mL/gün (${fl.hourlyRate} mL/saat). ${fl.fluidTypeRecommendation}`);
+    } else {
+      p.push(`${pCount}. İdame Sıvısı (Holliday-Segar): ${fl.dailyVolume} mL/gün (${fl.hourlyRate} mL/saat).`);
+    }
+    pCount++;
+  }
+  if (appState.neonatology && appState.neonatology.weightLoss && appState.neonatology.weightLoss.isValid) {
+    const wl = appState.neonatology.weightLoss;
+    if (wl.recommendations && wl.recommendations.length > 0) {
+      p.push(`${pCount}. Yenidoğan Tartı & Beslenme İzlemi: ${wl.recommendations[0]}`);
+      pCount++;
+    }
+  }
+  if (appState.pediatrics && appState.pediatrics.syrupDose) {
+    const sy = appState.pediatrics.syrupDose;
+    p.push(`${pCount}. Pediatrik Dozaj: ${sy.name || 'Şurup'}: ${sy.targetDoseMg || ''} mg tek doz (${sy.olcekText || ''}, ${sy.freq || ''}).`);
+    pCount++;
+  }
+  if (appState.pediatrics && appState.pediatrics.iron && appState.pediatrics.iron.prophylaxis?.eligible) {
+    const ir = appState.pediatrics.iron;
+    const doseStr = ir.prophylaxis.text ? `${ir.prophylaxis.mgDay} mg/gün (${ir.prophylaxis.text})` : `${ir.prophylaxis.mgDay} mg/gün`;
+    p.push(`${pCount}. Demir Takviyesi / Profilaksi: ${doseStr}`);
+    pCount++;
+  }
+  if (appState.pediatrics && appState.pediatrics.centor && appState.pediatrics.centor.score >= 4) {
+    p.push(`${pCount}. Akılcı Antibiyotik Protokolü: AGBHS şüphesi nedeniyle Amoksisilin 50 mg/kg/gün (2 dozda, 10 gün) veya Penisilin V değerlendiriniz.`);
+    pCount++;
+  }
+
+  // Yeni Plan & Tedavi Adımları (Aşama 2)
+  if (appState.nephroTox && appState.nephroTox.paracetamol && appState.nephroTox.paracetamol.isToxic && appState.nephroTox.paracetamol.nacProtocol) {
+    const nac = appState.nephroTox.paracetamol.nacProtocol;
+    p.push(`${pCount}. IV N-Asetilsistein (NAC) 21 Saatlik Protokolü${nac.isPediatricAdjusted ? ' (Pediatrik Sıvı Korumalı)' : ''}:`);
+    p.push(`   - Faz 1 (Yükleme, 1. saat): ${nac.phase1.totalMg} mg (${nac.phase1.fluidD5W})`);
+    p.push(`   - Faz 2 (4 saatlik infüzyon): ${nac.phase2.totalMg} mg (${nac.phase2.fluidD5W})`);
+    p.push(`   - Faz 3 (16 saatlik infüzyon): ${nac.phase3.totalMg} mg (${nac.phase3.fluidD5W})`);
+    p.push(`   - ${nac.oralAlternative}`);
+    pCount++;
+  }
+  if (appState.nephroTox && appState.nephroTox.osmolalGap && appState.nephroTox.osmolalGap.isCriticalGap && appState.nephroTox.osmolalGap.antidoteAdvice) {
+    const anti = appState.nephroTox.osmolalGap.antidoteAdvice;
+    p.push(`${pCount}. Toksik Alkol Zehirlenmesi Acil Protokolü:`);
+    p.push(`   - ${anti.fomepizol}`);
+    p.push(`   - ${anti.etanolAlternative}`);
+    p.push(`   - ${anti.dialysisCriteria}`);
+    pCount++;
+  }
+  if (appState.nephroTox && appState.nephroTox.curb65 && appState.nephroTox.curb65.isValid) {
+    p.push(`${pCount}. Pnömoni Tedavi Planı (CURB-65: ${appState.nephroTox.curb65.score}/5): ${appState.nephroTox.curb65.treatmentSetting}`);
+    p.push(`   - ${appState.nephroTox.curb65.empiricAntibiotic}`);
+    pCount++;
+  }
+  if (appState.neonatology && appState.neonatology.westleyCroup && appState.neonatology.westleyCroup.score >= 3) {
+    p.push(`${pCount}. Krup Tedavisi: Tek doz Deksametazon 0.60 mg/kg oral/IM${appState.neonatology.westleyCroup.score >= 6 ? ' + Nebülize L-Epinefrin 0.5 mL/kg (1:1000, maks 5 mL)' : ''}.`);
+    pCount++;
+  }
+  if (appState.neonatology && appState.neonatology.cdsDehydration && appState.neonatology.cdsDehydration.orsRecommendedMl) {
+    p.push(`${pCount}. Dehidratasyon Sıvı Protokolü: ${appState.neonatology.cdsDehydration.orsRecommendedMl}`);
+    pCount++;
+  }
+  if (appState.safetyPrescription && appState.safetyPrescription.tripleWhammy && appState.safetyPrescription.tripleWhammy.isTripleWhammy) {
+    p.push(`${pCount}. İlaç Güvenliği Eylemi: NSAİİ kesilmeli, analjezi için Parasetamol tercih edilmeli ve böbrek fonksiyonları (kreatinin, K+) kontrol edilmelidir.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.serotoninSyndrome?.isHighRisk) {
+    p.push(`${pCount}. Serotonin Sendromu Güvenlik Eylemi: MAOI/Linezolid veya serotonerjik opioid kombinasyonları derhal sonlandırılmalı; hastaya klonus, tremor ve hipertermi semptomları anlatılmalıdır.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.hyperkalemiaRisk?.isAtRisk) {
+    p.push(`${pCount}. Hiperkalemi Güvenlik Eylemi: Serum potasyum ve böbrek fonksiyonları (kreatinin, eGFR) acil tetkik edilmeli; potasyum tutucu diüretik / Bactrim / NSAİİ kombinasyonu revize edilmelidir.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.cypStatinInteraction?.hasInteraction) {
+    const cs = appState.safetyPrescription.cypStatinInteraction;
+    const altAbx = cs.safeAlternatives?.antibiotics?.[0] || 'CYP3A4 inhibitörü olmayan antibiyotik';
+    const altStatin = cs.safeAlternatives?.statins?.[0] || 'pravastatin/rosuvastatin';
+    p.push(`${pCount}. CYP3A4 / Statin Eylemi: ${altAbx} veya ${altStatin} tercih edilmeli; tedavi boyunca statine geçici ara verilmelidir.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.hepaticSafety && appState.safetyPrescription.hepaticSafety.alertsCount > 0) {
+    const hs = appState.safetyPrescription.hepaticSafety;
+    p.push(`${pCount}. Hepatik İlaç Güvenliği Eylemi (${hs.summary}): ${hs.alerts.map(a => `${a.drugName} (${a.recommendation})`).join(' | ')}`);
+    pCount++;
+  }
+  if (appState.pediatrics?.growthVelocity?.malnutritionAssessment?.treatmentProtocol) {
+    const tp = appState.pediatrics.growthVelocity.malnutritionAssessment.treatmentProtocol;
+    p.push(`${pCount}. Beslenme & Malnütrisyon Protokolü (${tp.setting === 'INPATIENT' ? 'Yatarak Tedavi' : 'Ayaktan Tedavi'}):`);
+    p.push(`   - Kalori Hedefi: ${tp.caloricTargetKcalKgDay}`);
+    p.push(`   - Diyet: ${tp.dietRecommendation}`);
+    if (tp.contraindications.length > 0) p.push(`   - [DİKKAT] Kontrendikasyon: ${tp.contraindications.join(' ')}`);
+    p.push(`   - İzlem: ${tp.monitoringAdvice}`);
+    pCount++;
+  }
+  if (appState.pediatrics?.cranialScreening?.isValid && appState.pediatrics.cranialScreening.urgencyLevel !== 'ROUTINE_FOLLOWUP') {
+    const cs = appState.pediatrics.cranialScreening;
+    p.push(`${pCount}. Kraniyal İleri İnceleme Planı (${cs.urgencyLevel === 'EMERGENCY_IMAGING' ? 'ACİL GÖRÜNTÜLEME' : 'PLANLI USG'}): ${cs.clinicalRecommendations.slice(0, 2).join(' ')}`);
+    pCount++;
+  }
+  if (appState.pediatrics?.vaccines && appState.pediatrics.vaccines.length > 0) {
+    p.push(`${pCount}. Planlı Aşı Takvimi: ${appState.pediatrics.vaccines.join(', ')}.`);
+    pCount++;
+  }
+  if (appState.neonatology?.bhutani && appState.neonatology.bhutani.isValid) {
+    const b = appState.neonatology.bhutani;
+    if (b.status === 'EXCHANGE_TRANSFUSION_REQUIRED') {
+      p.push(`${pCount}. Hiperbilirubinemi Acil Eylemi: Acil Kan Değişimi (Exchange Transfusion) hazırlığı yapınız, yoğun fototerapiye başlayınız ve YDYBÜ naklini sağlayınız.`);
+      pCount++;
+    } else if (b.status === 'ESCALATION_OF_CARE') {
+      p.push(`${pCount}. Hiperbilirubinemi Bakım Eskalasyonu: Yoğun fototerapi, IV hidrasyon, TSB 2 saatte bir izlem, IVIG endikasyonunu değerlendiriniz.`);
+      pCount++;
+    } else if (b.status === 'PHOTOTHERAPY_REQUIRED') {
+      p.push(`${pCount}. Hiperbilirubinemi Tedavi Planı: Yoğun fototerapi başlanması (4-6 saat sonra TSB kontrolü) ve hidrasyon/beslenme takibi.`);
+      pCount++;
+    } else if (b.followUpRecommendation) {
+      p.push(`${pCount}. Hiperbilirubinemi İzlem Planı: ${b.followUpRecommendation}`);
+      pCount++;
+    }
+  }
+  if (appState.surgery?.suture) {
+    const su = appState.surgery.suture;
+    p.push(`${pCount}. Sütür Materyali & Alınma Planı: İplik: ${su.material} (${su.size}), Alınma: ${su.removalDays}.`);
+    pCount++;
+  }
+  if (appState.surgery?.tokyoCholecystitis) {
+    p.push(`${pCount}. Akut Kolesistit Yönetim Planı (${appState.surgery.tokyoCholecystitis.guidelineVersion}): ${appState.surgery.tokyoCholecystitis.managementRecommendation}`);
+    pCount++;
+  }
+  if (appState.surgery?.strasbergBismuth) {
+    p.push(`${pCount}. Safra Yolu Yaralanması Planı (Strasberg Tip ${appState.surgery.strasbergBismuth.type}): ${appState.surgery.strasbergBismuth.primaryManagement} ${appState.surgery.strasbergBismuth.timingAndReferralGuidance}`);
+    pCount++;
+  }
+  if (appState.surgery?.atlantaMarshall) {
+    p.push(`${pCount}. Akut Pankreatit Planı (Revize Atlanta): ${appState.surgery.atlantaMarshall.managementRecommendation}`);
+    pCount++;
+  }
+  if (appState.surgery?.diverticulitis) {
+    p.push(`${pCount}. Akut Divertikülit Planı (WSES Evre ${appState.surgery.diverticulitis.wses.stage}): ${appState.surgery.diverticulitis.wses.managementRecommendation}`);
+    pCount++;
+  }
+  if (appState.surgery?.groinHernia) {
+    p.push(`${pCount}. Kasık Fıtığı Onarım Planı (EHS ${appState.surgery.groinHernia.ehsCode}): ${appState.surgery.groinHernia.herniaSurge2023Recommendation}`);
+    pCount++;
+  }
+  if (appState.surgery?.ventralHernia) {
+    p.push(`${pCount}. Karın Duvarı Fıtığı Planı (${appState.surgery.ventralHernia.ehsCode}): ${appState.surgery.ventralHernia.surgicalStrategy}`);
+    pCount++;
+  }
+  if (appState.surgery?.hemorrhoid) {
+    p.push(`${pCount}. Hemoroidal Hastalık Tedavi Planı (BPRST Evre ${appState.surgery.hemorrhoid.bprst.stage}): ${appState.surgery.hemorrhoid.bprst.therapeuticApproach}`);
+    pCount++;
+  }
+  if (appState.surgery?.perianalFistula) {
+    p.push(`${pCount}. Perianal Fistül Cerrahi Planı (Garg Derece ${appState.surgery.perianalFistula.garg.grade}): ${appState.surgery.perianalFistula.garg.surgicalRule}`);
+    pCount++;
+  }
+  if (appState.surgery?.colorectalTnm) {
+    p.push(`${pCount}. Kolorektal Kanser Onkolojik Planı (${appState.surgery.colorectalTnm.stageGroup}): ${appState.surgery.colorectalTnm.oncologicManagement}`);
+    pCount++;
+  }
+  if (appState.surgery?.malignantPolyp) {
+    p.push(`${pCount}. Malign Polip Yönetim Planı: ${appState.surgery.malignantPolyp.clinicalRecommendation}`);
+    pCount++;
+  }
+  if (appState.surgery?.solidOrganTrauma) {
+    p.push(`${pCount}. Solid Organ Travma Planı (WSES Sınıf ${appState.surgery.solidOrganTrauma.wsesClass}): ${appState.surgery.solidOrganTrauma.wsesManagementRecommendation}`);
+    pCount++;
+  }
+  if (appState.obgyn?.preeclampsia && appState.obgyn.preeclampsia.diagnosis !== 'Normal') {
+    p.push(`${pCount}. Preeklampsi Yönetim Planı: Yakın tansiyon takibi, idrar protein/kreatinin oranı, Magnezyum Sülfat ve acil doğum endikasyonu değerlendiriniz.`);
+    pCount++;
+  }
+  if (appState.medicine?.infusion) {
+    const inf = appState.medicine.infusion;
+    p.push(`${pCount}. IV İnfüzyon Tedavisi: ${inf.rateMlHr} mL/saat infüzyon pompası ile (Konsantrasyon: ${inf.concentrationMgMl} mg/mL).`);
+    pCount++;
+  }
+  // Genişletilmiş Dahiliye Skorları Yönetim Planları
+  if (appState.medicine?.childPugh && (appState.medicine.childPugh.childClass === 'B' || appState.medicine.childPugh.childClass === 'C')) {
+    const cp = appState.medicine.childPugh;
+    p.push(`${pCount}. Hepatoloji & İlaç Güvenliği Planı (Child-Pugh Sınıf ${cp.childClass}): ${cp.tier.recommendation}`);
+    pCount++;
+  }
+  if (appState.medicine?.meld3 && appState.medicine.meld3.score >= 20) {
+    const m3 = appState.medicine.meld3;
+    p.push(`${pCount}. MELD 3.0 Yönetim Planı (${m3.score}/40): ${m3.recommendation}`);
+    pCount++;
+  }
+  if (appState.medicine?.nihss && appState.medicine.nihss.score >= 5) {
+    const ni = appState.medicine.nihss;
+    p.push(`${pCount}. Akut İnme Reperfüzyon & İzlem Planı (NIHSS ${ni.score}/42): ${ni.tier.recommendation}`);
+    pCount++;
+  }
+  if (appState.medicine?.abcd2 && appState.medicine.abcd2.score >= 4) {
+    const ab = appState.medicine.abcd2;
+    p.push(`${pCount}. GİA İnme Profilaksisi & Görüntüleme Planı (ABCD² ${ab.score}/7): ${ab.tier.recommendation}`);
+    pCount++;
+  }
+  if (appState.medicine?.qsofa && appState.medicine.qsofa.score >= 2) {
+    const qs = appState.medicine.qsofa;
+    p.push(`${pCount}. Erken Sepsis Müdahale Planı (qSOFA ${qs.score}/3): ${qs.tier.recommendation}`);
+    pCount++;
+  }
+  if (appState.medicine?.sofa && appState.medicine.sofa.score >= 2) {
+    const sf = appState.medicine.sofa;
+    p.push(`${pCount}. Sepsis / Çoklu Organ Destek Planı (SOFA ${sf.score}/24): ${sf.tier.recommendation}`);
+    pCount++;
+  }
+  if (appState.medicine?.gbs && appState.medicine.gbs.score >= 6) {
+    const gbs = appState.medicine.gbs;
+    p.push(`${pCount}. Üst GİS Kanaması Acil Yönetim Planı (GBS ${gbs.score}/23): ${gbs.tier.recommendation}`);
+    pCount++;
+  }
+  if (appState.treatment && appState.treatment.selectedDrugs && appState.treatment.selectedDrugs.length > 0) {
+    const formattedDrugs = appState.treatment.selectedDrugs.map((d: any) => {
+      const drugName = (d.brand || d.brandName || d.name || d.generic || 'İlaç').trim();
+      const details: string[] = [];
+
+      // Kutu Adedi (DİB)
+      if (d.boxCount) {
+        details.push(`DİB: ${d.boxCount} Kutu`);
+      } else if (d.dosage || d.frequency || d.morningDose || d.mealTiming) {
+        details.push('DİB: 1 Kutu');
+      }
+
+      // Posoloji / Sıklık (S: 2x1 vb.)
+      let freqStr = d.frequency || '';
+      if (!freqStr) {
+        const doses = [
+          d.morningDose ?? (d.morning ? '1' : '0'),
+          d.noonDose ?? (d.noon ? '1' : '0'),
+          d.eveningDose ?? (d.evening ? '1' : '0'),
+          d.nightDose ?? (d.night ? '1' : '0')
+        ];
+        const activeCount = doses.filter(v => v !== null && v !== undefined && String(v).trim() !== '' && v !== '0' && v !== '-').length;
+        if (activeCount > 0) {
+          freqStr = `${activeCount}x1`;
+        }
+      }
+
+      const usageParts: string[] = [];
+      if (freqStr) usageParts.push(freqStr);
+      if (d.dosage) usageParts.push(d.dosage);
+      if (d.mealTiming) usageParts.push(d.mealTiming);
+      if (usageParts.length > 0) {
+        details.push(`S: ${usageParts.join(' ')}`);
+      }
+      if (d.duration) {
+        details.push(d.duration);
+      }
+
+      let fullDrugStr = drugName;
+      if (details.length > 0) {
+        fullDrugStr += ` (${details.join(', ')})`;
+      }
+      if (d.instructions && d.instructions.trim()) {
+        fullDrugStr += ` - ${d.instructions.trim()}`;
+      }
+      return fullDrugStr;
+    });
+
+    if (formattedDrugs.length === 1) {
+      p.push(`${pCount}. Reçete / Tedavi Protokolü: ${formattedDrugs[0]}.`);
+    } else {
+      p.push(`${pCount}. Reçete / Tedavi Protokolü:\n   * ` + formattedDrugs.join('\n   * '));
+    }
+    pCount++;
+  }
+  if (appState.emergency?.anaphylaxis?.doses) {
+    const ad = appState.emergency.anaphylaxis.doses;
+    p.push(`${pCount}. Anafilaksi Acil Planı: ${ad.adrenaline.instruction} | Sıvı Bolusu: ${ad.fluidBolus.volumeMl} mL ${ad.fluidBolus.fluidType} (${ad.fluidBolus.rate}) | Adjuvan: ${ad.antihistaminic.drug} (${ad.antihistaminic.doseMg} mg) + ${ad.corticosteroid.drug} (${ad.corticosteroid.doseMg} mg). En az 6-8 saat gözlem.`);
+    pCount++;
+  }
+  if (appState.emergency?.statusEpilepticus?.doses) {
+    const sd = appState.emergency.statusEpilepticus.doses;
+    p.push(`${pCount}. Status Epilepticus Planı: 1. Basamak: ${sd.phase2EarlyStatus.midazolam.instruction} | 2. Basamak: ${sd.phase3EstablishedStatus.levetiracetam.instruction}`);
+    pCount++;
+  }
+
+  let soapText = `[S] SUBJEKTİF:\n${s.length > 0 ? s.join('\n') : 'Girilen veri yok.'}\n\n`;
+  soapText += `[O] OBJEKTİF:\n${o.length > 0 ? o.join('\n') : 'Girilen veri yok.'}\n\n`;
+  soapText += `[A] DEĞERLENDİRME:\n${a.length > 0 ? a.join('\n') : 'Özel değerlendirme yok.'}\n\n`;
+  soapText += `[P] PLAN & TEDAVİ:\n${p.length > 0 ? p.join('\n') : 'Özel plan girilmemiş.'}`;
+
+  return sanitizeForHbys(soapText);
+}

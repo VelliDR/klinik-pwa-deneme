@@ -1,0 +1,78 @@
+name: Klinik Hesaplama / Kılavuz Bildirimi
+description: Bir klinik motor, skorlama eşiği, formül, dozaj kuralı veya kılavuz güncellemesi hakkında bildirim açın.
+title: "[Klinik] "
+labels: ["clinical-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Hasta Gizliliği (KVKK):** Lütfen gerçek hasta adı, T.C. kimlik numarası, protokol numarası, doğum tarihi veya kimlik belirleyici klinik kayıt paylaşmayınız. Yalnızca anonimleştirilmiş örnek değerler kullanınız.
+
+  - type: dropdown
+    id: motor
+    attributes:
+      label: İlgili Klinik Motor
+      options:
+        - Demografi, Biyometri, eGFR & Persentil
+        - Vitaller, Triyaj (NEWS2 / PEWS / AAP BP) & GCS
+        - Tromboemboli & Kardiyoloji / EKG (QTc / Wells / HEART)
+        - Kan Gazı Analizi (ABG / VBG)
+        - Sıvı-Elektrolit (Holliday-Segar / Adrogué-Madias) & İnfüzyon / GIR
+        - Nefroloji, Toksikoloji (FENa / NAC / CURB-65) & Endokrin
+        - Neonatoloji & Hiperbilirubinemi (AAP 2022 / TND 2014)
+        - Pediatrik Şurup Dozajı, Demir/Anemi & Aşı (GBP 2026)
+        - Genel Cerrahi (30 Sistem) & Yanık Resüsitasyonu
+        - Kadın Doğum (Naegele / Bishop / Preeklampsi)
+        - Acil Protokoller (Anafilaksi / Status Epileptikus)
+        - Canlı SOAP Notu / A4 Hasta Çizelgesi
+        - Diğer
+    validations:
+      required: true
+
+  - type: dropdown
+    id: report_type
+    attributes:
+      label: Bildirim Türü
+      options:
+        - Hesaplama / formül hatası
+        - Kılavuz sürümü, eşik veya erratum güncellemesi
+        - Klinik güvenlik uyarısı eksikliği veya yanlış tetiklenme
+        - Yeni klinik skor / algoritma önerisi
+    validations:
+      required: true
+
+  - type: textarea
+    id: inputs_observed
+    attributes:
+      label: Örnek Girdiler ve Gözlenen Çıktı
+      description: Sorunu yeniden üretebilmek için girdiğiniz sayısal değerleri ve uygulamanın ürettiği sonucu yazınız.
+      placeholder: |
+        Örn: Yaş 38 hafta, postnatal 48 saat, TSB 16.8 mg/dL, DAT(+)
+        Uygulama çıktısı: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Beklenen Klinik Sonuç
+      description: İlgili kılavuza göre beklenen skor, eşik, doz veya uyarı metnini belirtiniz.
+    validations:
+      required: true
+
+  - type: textarea
+    id: guideline_reference
+    attributes:
+      label: Birincil Kılavuz veya Akademik Kaynak
+      description: Kılavuz adı, yılı, tablo/bölüm numarası, DOI veya resmi belge bağlantısı.
+      placeholder: "Örn: AAP 2022 Clinical Practice Guideline Revision (Pediatrics 2022;150(3):e2022058859), Tablo 4"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy_confirm
+    attributes:
+      label: Gizlilik Doğrulaması
+      options:
+        - label: Paylaştığım verilerin tamamen anonim olduğunu ve gerçek hasta kimlik bilgisi içermediğini onaylıyorum.
+          required: true

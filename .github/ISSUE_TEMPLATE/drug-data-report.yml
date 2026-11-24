@@ -1,0 +1,55 @@
+name: İlaç Verisi / KÜB / Etkileşim (DDI) Bildirimi
+description: TİTCK ilaç kaydı, SGK/fiyat bilgisi, ICD-10 endikasyon, Türkçe KÜB veya ilaç etkileşimi uyuşmazlığı bildirin.
+title: "[İlaç/DDI] "
+labels: ["drug-data"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Not:** Fiyat, SGK EK-4/A ve ruhsat bilgileri periyodik anlık görüntülere dayanır (bkz. `DATA_NOTICE.md`). Lütfen bildirimlerde gerçek hasta kimlik bilgisi paylaşmayınız.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Bildirim Kategorisi
+      options:
+        - İlaç-İlaç Etkileşimi (DDI) — eksik veya hatalı uyarı
+        - 5 Sekmeli Monograf / Türkçe KÜB içeriği
+        - Endikasyon / ICD-10 arama eşleşmesi veya kontrendikasyon filtresi
+        - SGK ödeme durumu, perakende fiyat veya muadil (E-Kodu)
+        - Eksik ticari preparat veya yanlış formülasyon
+        - Gebelik, emzirme, renal doz, besin veya eksipiyan uyarısı
+    validations:
+      required: true
+
+  - type: input
+    id: drug_identifier
+    attributes:
+      label: İlgili İlaç(lar), Etken Madde, ATC Kodu veya Barkod
+      placeholder: "Örn: DELIX 5 MG (C09AA05) + BRUFEN 400 MG (M01AE01)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Gözlenen Durum ve Beklenen Düzeltme
+      description: Uygulamada ne göründüğünü ve resmi kaynağa göre nasıl olması gerektiğini açıklayınız.
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Resmi / Akademik Kaynak (Varsa)
+      placeholder: "Örn: TİTCK KÜB Bölüm 4.5, SGK EK-4/A listesi, DDInter 2.0, LiverTox veya LactMed bağlantısı"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: privacy_confirm
+    attributes:
+      label: Gizlilik Doğrulaması
+      options:
+        - label: Bildirimin gerçek hasta kimlik verisi içermediğini onaylıyorum.
+          required: true

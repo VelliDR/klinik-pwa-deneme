@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/VelliDR/klinik-pwa-deneme/schema/PddiMonograph.schema.json",
+  "title": "W3C PDDI-CDS Clean-Room Turkish Clinical Interaction Monograph Bundle",
+  "description": "W3C Potential Drug-Drug Interaction Clinical Decision Support (PDDI-CDS) minimum information model adapted for offline Turkish clinical decision support with verbatim regulatory provenance.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "license",
+    "total_monographs",
+    "sources_summary",
+    "monographs"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "3.0.0-pddi-cds" },
+    "generated_at": { "type": "string", "format": "date" },
+    "license": { "type": "string" },
+    "total_monographs": { "type": "integer", "minimum": 1 },
+    "sources_summary": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["count", "snapshot_date"],
+        "properties": {
+          "count": { "type": "integer", "minimum": 0 },
+          "snapshot_date": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "templates": {
+      "type": "object",
+      "description": "Optional domain template dictionary for compact offline PWA hydration"
+    },
+    "compact_monographs": {
+      "type": "array",
+      "description": "Compact hydrated-on-load W3C PDDI-CDS monograph array preserving full verbatim regulatory quotes"
+    },
+    "monographs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "schema_version",
+          "monograph_id",
+          "canonical_pair_key",
+          "atc_a",
+          "atc_b",
+          "drug_a_tr",
+          "drug_b_tr",
+          "drug_a_en",
+          "drug_b_en",
+          "unified_risk_tier",
+          "operational_statement_tr",
+          "seriousness",
+          "evidence_level",
+          "clinical_consequences_tr",
+          "interaction_category",
+          "mechanism_tr",
+          "recommended_action_tr",
+          "monitoring_parameters",
+          "route_scope",
+          "discordance_flag",
+          "reconciliation_tier",
+          "source_assertions",
+          "authored_text_license",
+          "last_clinical_review_date"
+        ],
+        "properties": {
+          "schema_version": { "type": "string" },
+          "monograph_id": { "type": "string", "pattern": "^PDDI_TR_[0-9]{4}$" },
+          "canonical_pair_key": { "type": "string" },
+          "atc_a": { "type": "string", "minLength": 4 },
+          "atc_b": { "type": "string", "minLength": 4 },
+          "drug_a_tr": { "type": "string", "minLength": 2 },
+          "drug_b_tr": { "type": "string", "minLength": 2 },
+          "drug_a_en": { "type": "string", "minLength": 2 },
+          "drug_b_en": { "type": "string", "minLength": 2 },
+          "rxcui_a": { "type": "string" },
+          "rxcui_b": { "type": "string" },
+          "unified_risk_tier": { "type": "string", "enum": ["X", "D", "C", "B", "A"] },
+          "operational_statement_tr": { "type": "string", "minLength": 10 },
+          "seriousness": {
+            "type": "string",
+            "enum": ["life_threatening", "hospitalization_or_major", "moderate_clinical", "minor"]
+          },
+          "evidence_level": { "type": "string", "enum": ["kesin", "olasi", "teorik"] },
+          "clinical_consequences_tr": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "interaction_category": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "mechanism_tr": { "type": "string", "minLength": 10 },
+          "recommended_action_tr": { "type": "string", "minLength": 10 },
+          "alternative_tr": { "type": "string" },
+          "monitoring_parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["parameter_tr", "loinc_code", "critical_threshold", "timing_tr"],
+              "properties": {
+                "parameter_tr": { "type": "string" },
+                "loinc_code": { "type": "string", "pattern": "^[0-9]{3,6}-[0-9]$" },
+                "critical_threshold": { "type": "string" },
+                "timing_tr": { "type": "string" }
+              }
+            }
+          },
+          "route_scope": {
+            "type": "string",
+            "enum": ["SYSTEMIC", "ORAL_GI_ONLY", "NON_ORAL_EXCEPTION"]
+          },
+          "patient_context_escalators": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["egfr_lt_30", "child_pugh_bc", "hypokalemia_qt", "hyperkalemia_k_ge_5"]
+            }
+          },
+          "discordance_flag": { "type": "boolean" },
+          "reconciliation_tier": { "type": "integer", "enum": [1, 2, 3] },
+          "source_assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "source_id",
+                "source_type",
+                "section",
+                "original_rating",
+                "version_date",
+                "source_quote_verbatim"
+              ],
+              "properties": {
+                "source_id": { "type": "string" },
+                "source_type": {
+                  "type": "string",
+                  "enum": ["TITCK_KUB", "OPENFDA_SPL", "ANSM_2023", "FDA_CYP_TABLE", "ONC_15", "CLINICAL_GUIDELINE"]
+                },
+                "section": { "type": "string" },
+                "original_rating": { "type": "string" },
+                "version_date": { "type": "string" },
+                "source_quote_verbatim": { "type": "string", "minLength": 15 }
+              }
+            }
+          },
+          "authored_text_license": { "type": "string", "const": "CC-BY-NC-SA-4.0" },
+          "last_clinical_review_date": { "type": "string", "format": "date" }
+        }
+      }
+    }
+  }
+}
