@@ -152,7 +152,10 @@ export const appState: AppState = {
         hyperkalemiaRisk: null,
         cypStatinInteraction: null,
         hepaticSafety: null,
-        selectedSafetyDrugs: []
+        selectedSafetyDrugs: [],
+        recentDiscontinuedDrugs: [],
+        clinicalMonitoringOrders: [],
+        overrideAuditLog: []
     },
 
     treatment: {

@@ -29,6 +29,7 @@ import { inferDrugRoute, type DrugRouteCode } from './drugRouteEngine';
 export interface RxNormConceptDefinition {
   canonicalKey: string;
   rxCui: string;
+  fdaGsrsUnii?: string;
   displayNameTr: string;
   displayNameEn: string;
   atcCodes: string[];
@@ -59,6 +60,7 @@ export interface ResolvedRxConcept {
   displayNameTr: string;
   displayNameEn: string;
   rxCui: string;
+  fdaGsrsUnii?: string;
   atcCodes: string[];
   drugClasses: string[];
   isControlledSubstance: boolean;
@@ -126,6 +128,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ceftriaxone',
     rxCui: '2193',
+    fdaGsrsUnii: '75J73V1629',
     displayNameTr: 'Seftriakson',
     displayNameEn: 'Ceftriaxone',
     atcCodes: ['J01DD04'],
@@ -136,7 +139,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'cefotaxime',
-    rxCui: '2194',
+    rxCui: '2186',
+    fdaGsrsUnii: 'N2GI8B1GK7',
     displayNameTr: 'Sefotaksim',
     displayNameEn: 'Cefotaxime',
     atcCodes: ['J01DD01'],
@@ -146,7 +150,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ampicillin',
-    rxCui: '7980',
+    rxCui: '733',
+    fdaGsrsUnii: '7C782967RD',
     displayNameTr: 'Ampisilin',
     displayNameEn: 'Ampicillin',
     atcCodes: ['J01CA01'],
@@ -156,7 +161,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'gentamicin',
-    rxCui: '24514',
+    rxCui: '1596450',
+    fdaGsrsUnii: 'T6Z9V48IKG',
     displayNameTr: 'Gentamisin',
     displayNameEn: 'Gentamicin',
     atcCodes: ['J01GB03', 'S01AA11', 'S03AA06'],
@@ -167,6 +173,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'vancomycin',
     rxCui: '11124',
+    fdaGsrsUnii: '6Q205EH1VU',
     displayNameTr: 'Vankomisin',
     displayNameEn: 'Vancomycin',
     atcCodes: ['J01XA01', 'A07AA09'],
@@ -176,7 +183,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'piperacillin_tazobactam',
-    rxCui: '54136',
+    rxCui: '74169',
+    fdaGsrsUnii: 'X00B0D5O0E',
     displayNameTr: 'Piperasilin / Tazobaktam',
     displayNameEn: 'Piperacillin / Tazobactam',
     atcCodes: ['J01CR05'],
@@ -186,7 +194,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'cefepime',
-    rxCui: '25037',
+    rxCui: '20481',
+    fdaGsrsUnii: '807PW4VQE3',
     displayNameTr: 'Sefepim',
     displayNameEn: 'Cefepime',
     atcCodes: ['J01DE01'],
@@ -196,7 +205,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'meropenem',
-    rxCui: '29560',
+    rxCui: '29561',
+    fdaGsrsUnii: 'FV9J3JU8B1',
     displayNameTr: 'Meropenem',
     displayNameEn: 'Meropenem',
     atcCodes: ['J01DH02'],
@@ -206,7 +216,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ertapenem',
-    rxCui: '316049',
+    rxCui: '325642',
+    fdaGsrsUnii: 'G32F6EID2H',
     displayNameTr: 'Ertapenem',
     displayNameEn: 'Ertapenem',
     atcCodes: ['J01DH03'],
@@ -216,7 +227,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'imipenem_cilastatin',
-    rxCui: '315995',
+    rxCui: '34482',
+    fdaGsrsUnii: '71OTZ9ZE0A',
     displayNameTr: 'İmipenem / Silastatin',
     displayNameEn: 'Imipenem / Cilastatin',
     atcCodes: ['J01DH51'],
@@ -227,6 +239,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'amoxicillin',
     rxCui: '723',
+    fdaGsrsUnii: '804826J2HU',
     displayNameTr: 'Amoksisilin',
     displayNameEn: 'Amoxicillin',
     atcCodes: ['J01CA04'],
@@ -236,7 +249,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'amoxicillin_clavulanate',
-    rxCui: '6185',
+    rxCui: '19711',
+    fdaGsrsUnii: '804826J2HU',
     displayNameTr: 'Amoksisilin / Klavulanat',
     displayNameEn: 'Amoxicillin / Clavulanate',
     atcCodes: ['J01CR02'],
@@ -246,7 +260,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'cefuroxime',
-    rxCui: '2191',
+    rxCui: '2194',
+    fdaGsrsUnii: 'O1R9FJ93ED',
     displayNameTr: 'Sefuroksim',
     displayNameEn: 'Cefuroxime',
     atcCodes: ['J01DC02', 'J01DC14'],
@@ -257,6 +272,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ciprofloxacin',
     rxCui: '2551',
+    fdaGsrsUnii: '5E8K9I0O4U',
     displayNameTr: 'Siprofloksasin',
     displayNameEn: 'Ciprofloxacin',
     atcCodes: ['J01MA02', 'S01AE03', 'S02AA15'],
@@ -268,6 +284,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'levofloxacin',
     rxCui: '82122',
+    fdaGsrsUnii: '6GNT3Y5LMF',
     displayNameTr: 'Levofloksasin',
     displayNameEn: 'Levofloxacin',
     atcCodes: ['J01MA12', 'S01AE05'],
@@ -279,6 +296,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'moxifloxacin',
     rxCui: '139462',
+    fdaGsrsUnii: 'U188XYD42P',
     displayNameTr: 'Moksifloksasin',
     displayNameEn: 'Moxifloxacin',
     atcCodes: ['J01MA14', 'S01AE07'],
@@ -290,6 +308,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'clarithromycin',
     rxCui: '21212',
+    fdaGsrsUnii: 'H1250JIK0A',
     displayNameTr: 'Klaritromisin',
     displayNameEn: 'Clarithromycin',
     atcCodes: ['J01FA09'],
@@ -300,6 +319,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'erythromycin',
     rxCui: '4053',
+    fdaGsrsUnii: '63937KV33D',
     displayNameTr: 'Eritromisin',
     displayNameEn: 'Erythromycin',
     atcCodes: ['J01FA01', 'D10AF02'],
@@ -310,6 +330,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'azithromycin',
     rxCui: '18631',
+    fdaGsrsUnii: 'F94OW58Y8V',
     displayNameTr: 'Azitromisin',
     displayNameEn: 'Azithromycin',
     atcCodes: ['J01FA10', 'S01AA26'],
@@ -319,7 +340,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'trimethoprim_sulfamethoxazole',
-    rxCui: '10834',
+    rxCui: '10831',
+    fdaGsrsUnii: 'AN164J8Y0X',
     displayNameTr: 'Trimetoprim / Sülfametoksazol',
     displayNameEn: 'Trimethoprim / Sulfamethoxazole',
     atcCodes: ['J01EE01'],
@@ -331,6 +353,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'metronidazole',
     rxCui: '6922',
+    fdaGsrsUnii: '140QMO216E',
     displayNameTr: 'Metronidazol',
     displayNameEn: 'Metronidazole',
     atcCodes: ['J01XD01', 'P01AB01'],
@@ -340,7 +363,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'linezolid',
-    rxCui: '190521',
+    rxCui: '190376',
+    fdaGsrsUnii: 'ISQ9I6J12J',
     displayNameTr: 'Linezolid',
     displayNameEn: 'Linezolid',
     atcCodes: ['J01XX08'],
@@ -351,6 +375,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'doxycycline',
     rxCui: '3640',
+    fdaGsrsUnii: 'N12000U13O',
     displayNameTr: 'Doksisiklin',
     displayNameEn: 'Doxycycline',
     atcCodes: ['J01AA02'],
@@ -361,6 +386,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'tetracycline',
     rxCui: '10395',
+    fdaGsrsUnii: 'F8VB5M810T',
     displayNameTr: 'Tetrasiklin',
     displayNameEn: 'Tetracycline',
     atcCodes: ['J01AA07'],
@@ -370,7 +396,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'chloramphenicol',
-    rxCui: '2338',
+    rxCui: '2348',
+    fdaGsrsUnii: '66974FR9Q1',
     displayNameTr: 'Kloramfenikol',
     displayNameEn: 'Chloramphenicol',
     atcCodes: ['J01BA01', 'S01AA01'],
@@ -381,7 +408,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'nitrofurantoin',
-    rxCui: '7457',
+    rxCui: '7454',
+    fdaGsrsUnii: '927AH8112L',
     displayNameTr: 'Nitrofurantoin',
     displayNameEn: 'Nitrofurantoin',
     atcCodes: ['J01XE01'],
@@ -392,6 +420,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'rifampin',
     rxCui: '9384',
+    fdaGsrsUnii: 'VJT6J7R4TR',
     displayNameTr: 'Rifampisin',
     displayNameEn: 'Rifampin',
     atcCodes: ['J04AB02'],
@@ -404,6 +433,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'fluconazole',
     rxCui: '4450',
+    fdaGsrsUnii: '8VZV102JFY',
     displayNameTr: 'Flukonazol',
     displayNameEn: 'Fluconazole',
     atcCodes: ['J02AC01'],
@@ -414,6 +444,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'itraconazole',
     rxCui: '28031',
+    fdaGsrsUnii: '304NUG5GF4',
     displayNameTr: 'İtrakonazol',
     displayNameEn: 'Itraconazole',
     atcCodes: ['J02AC02'],
@@ -424,6 +455,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ketoconazole',
     rxCui: '6135',
+    fdaGsrsUnii: 'R9400W927I',
     displayNameTr: 'Ketokonazol',
     displayNameEn: 'Ketoconazole',
     atcCodes: ['J02AB02', 'D01AC08'],
@@ -435,6 +467,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'voriconazole',
     rxCui: '121243',
+    fdaGsrsUnii: 'JFU09I87TR',
     displayNameTr: 'Vorikonazol',
     displayNameEn: 'Voriconazole',
     atcCodes: ['J02AC03'],
@@ -445,6 +478,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'posaconazole',
     rxCui: '282446',
+    fdaGsrsUnii: '6TK1G07BHZ',
     displayNameTr: 'Posakonazol',
     displayNameEn: 'Posaconazole',
     atcCodes: ['J02AC04'],
@@ -455,6 +489,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'acyclovir',
     rxCui: '281',
+    fdaGsrsUnii: 'X4HES1O11F',
     displayNameTr: 'Asiklovir',
     displayNameEn: 'Acyclovir',
     atcCodes: ['J05AB01', 'D06BB03', 'S01AD03'],
@@ -464,7 +499,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'oseltamivir',
-    rxCui: '214199',
+    rxCui: '260101',
+    fdaGsrsUnii: '20O93L6F9H',
     displayNameTr: 'Oseltamivir',
     displayNameEn: 'Oseltamivir',
     atcCodes: ['J05AH02'],
@@ -475,6 +511,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ritonavir',
     rxCui: '85762',
+    fdaGsrsUnii: 'O3J8G9O825',
     displayNameTr: 'Ritonavir',
     displayNameEn: 'Ritonavir',
     atcCodes: ['J05AE03'],
@@ -487,6 +524,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'spironolactone',
     rxCui: '9997',
+    fdaGsrsUnii: '27O7W4T232',
     displayNameTr: 'Spironolakton',
     displayNameEn: 'Spironolactone',
     atcCodes: ['C03DA01'],
@@ -496,7 +534,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'eplerenone',
-    rxCui: '259255',
+    rxCui: '298869',
+    fdaGsrsUnii: '6995V82D0B',
     displayNameTr: 'Eplerenon',
     displayNameEn: 'Eplerenone',
     atcCodes: ['C03DA04'],
@@ -507,6 +546,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'furosemide',
     rxCui: '4603',
+    fdaGsrsUnii: '7LXU5N7ZO5',
     displayNameTr: 'Furosemid',
     displayNameEn: 'Furosemide',
     atcCodes: ['C03CA01'],
@@ -517,6 +557,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'hydrochlorothiazide',
     rxCui: '5487',
+    fdaGsrsUnii: '0J48LPH2TH',
     displayNameTr: 'Hidroklorotiyazid',
     displayNameEn: 'Hydrochlorothiazide',
     atcCodes: ['C03AA03'],
@@ -527,6 +568,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ramipril',
     rxCui: '35296',
+    fdaGsrsUnii: 'L35JN3I7SJ',
     displayNameTr: 'Ramipril',
     displayNameEn: 'Ramipril',
     atcCodes: ['C09AA05'],
@@ -538,6 +580,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'enalapril',
     rxCui: '3827',
+    fdaGsrsUnii: '69PN84IO1A',
     displayNameTr: 'Enalapril',
     displayNameEn: 'Enalapril',
     atcCodes: ['C09AA02'],
@@ -549,6 +592,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'lisinopril',
     rxCui: '29046',
+    fdaGsrsUnii: 'E7199S1YWR',
     displayNameTr: 'Lisinopril',
     displayNameEn: 'Lisinopril',
     atcCodes: ['C09AA03'],
@@ -560,6 +604,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'perindopril',
     rxCui: '54552',
+    fdaGsrsUnii: 'Y5GMK36KGY',
     displayNameTr: 'Perindopril',
     displayNameEn: 'Perindopril',
     atcCodes: ['C09AA04'],
@@ -571,6 +616,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'captopril',
     rxCui: '1998',
+    fdaGsrsUnii: '9G64RSX1XD',
     displayNameTr: 'Kaptopril',
     displayNameEn: 'Captopril',
     atcCodes: ['C09AA01'],
@@ -582,6 +628,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'losartan',
     rxCui: '52175',
+    fdaGsrsUnii: 'JMS50MPO89',
     displayNameTr: 'Losartan',
     displayNameEn: 'Losartan',
     atcCodes: ['C09CA01'],
@@ -593,6 +640,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'valsartan',
     rxCui: '69749',
+    fdaGsrsUnii: '80M03YXJ7I',
     displayNameTr: 'Valsartan',
     displayNameEn: 'Valsartan',
     atcCodes: ['C09CA03'],
@@ -603,7 +651,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'irbesartan',
-    rxCui: '52246',
+    rxCui: '83818',
+    fdaGsrsUnii: 'J0E2756Z7N',
     displayNameTr: 'İrbesartan',
     displayNameEn: 'Irbesartan',
     atcCodes: ['C09CA04'],
@@ -614,7 +663,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'telmisartan',
-    rxCui: '73066',
+    rxCui: '73494',
+    fdaGsrsUnii: 'U5SYW473RQ',
     displayNameTr: 'Telmisartan',
     displayNameEn: 'Telmisartan',
     atcCodes: ['C09CA07'],
@@ -626,6 +676,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'candesartan',
     rxCui: '214354',
+    fdaGsrsUnii: 'S8Q36MD2XX',
     displayNameTr: 'Kandesartan',
     displayNameEn: 'Candesartan',
     atcCodes: ['C09CA06'],
@@ -636,7 +687,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'sacubitril_valsartan',
-    rxCui: '1656338',
+    rxCui: '1656339',
+    fdaGsrsUnii: '17ERJ0MKGI',
     displayNameTr: 'Sakubitril / Valsartan',
     displayNameEn: 'Sacubitril / Valsartan',
     atcCodes: ['C09DX04'],
@@ -648,6 +700,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'sildenafil',
     rxCui: '136411',
+    fdaGsrsUnii: '3M7OB98Y7H',
     displayNameTr: 'Sildenafil',
     displayNameEn: 'Sildenafil',
     atcCodes: ['G04BE03'],
@@ -657,7 +710,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'tadalafil',
-    rxCui: '360416',
+    rxCui: '358263',
+    fdaGsrsUnii: '742SXX0ICT',
     displayNameTr: 'Tadalafil',
     displayNameEn: 'Tadalafil',
     atcCodes: ['G04BE08'],
@@ -667,7 +721,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'nitroglycerin',
-    rxCui: '7454',
+    rxCui: '4917',
+    fdaGsrsUnii: 'G59M7S0WS3',
     displayNameTr: 'Nitrogliserin',
     displayNameEn: 'Nitroglycerin',
     atcCodes: ['C01DA02'],
@@ -677,7 +732,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'isosorbide_dinitrate',
-    rxCui: '6054',
+    rxCui: '6058',
+    fdaGsrsUnii: 'IA7306519N',
     displayNameTr: 'İzosorbid Dinitrat',
     displayNameEn: 'Isosorbide Dinitrate',
     atcCodes: ['C01DA08'],
@@ -688,6 +744,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'digoxin',
     rxCui: '3407',
+    fdaGsrsUnii: '73K4184T59',
     displayNameTr: 'Digoksin',
     displayNameEn: 'Digoxin',
     atcCodes: ['C01AA05'],
@@ -698,6 +755,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'amiodarone',
     rxCui: '703',
+    fdaGsrsUnii: 'N3RQ532IUT',
     displayNameTr: 'Amiodaron',
     displayNameEn: 'Amiodarone',
     atcCodes: ['C01BD01'],
@@ -709,6 +767,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'verapamil',
     rxCui: '11170',
+    fdaGsrsUnii: 'CJ0O37KU29',
     displayNameTr: 'Verapamil',
     displayNameEn: 'Verapamil',
     atcCodes: ['C08DA01'],
@@ -719,6 +778,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'diltiazem',
     rxCui: '3443',
+    fdaGsrsUnii: 'EE92BBP03H',
     displayNameTr: 'Diltiazem',
     displayNameEn: 'Diltiazem',
     atcCodes: ['C08DB01'],
@@ -728,7 +788,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'sotalol',
-    rxCui: '9954',
+    rxCui: '9947',
+    fdaGsrsUnii: 'A6D97U294I',
     displayNameTr: 'Sotalol',
     displayNameEn: 'Sotalol',
     atcCodes: ['C07AA07'],
@@ -740,6 +801,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'warfarin',
     rxCui: '11289',
+    fdaGsrsUnii: '5Q7ZVV76EI',
     displayNameTr: 'Varfarin',
     displayNameEn: 'Warfarin',
     atcCodes: ['B01AA03'],
@@ -751,6 +813,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'apixaban',
     rxCui: '1364430',
+    fdaGsrsUnii: '3Z9Y7UWC1J',
     displayNameTr: 'Apiksaban',
     displayNameEn: 'Apixaban',
     atcCodes: ['B01AF02'],
@@ -762,6 +825,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'rivaroxaban',
     rxCui: '1114195',
+    fdaGsrsUnii: '9NDF7JZ4M3',
     displayNameTr: 'Rivaroksaban',
     displayNameEn: 'Rivaroxaban',
     atcCodes: ['B01AF01'],
@@ -773,6 +837,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'dabigatran',
     rxCui: '1037042',
+    fdaGsrsUnii: '2E18WX195X',
     displayNameTr: 'Dabigatran',
     displayNameEn: 'Dabigatran',
     atcCodes: ['B01AE07'],
@@ -784,6 +849,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'clopidogrel',
     rxCui: '32968',
+    fdaGsrsUnii: 'A74586SNO7',
     displayNameTr: 'Klopidogrel',
     displayNameEn: 'Clopidogrel',
     atcCodes: ['B01AC04'],
@@ -795,6 +861,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'enoxaparin',
     rxCui: '67108',
+    fdaGsrsUnii: 'E47C0NF7LV',
     displayNameTr: 'Enoksaparin',
     displayNameEn: 'Enoxaparin',
     atcCodes: ['B01AB05'],
@@ -816,6 +883,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'simvastatin',
     rxCui: '36567',
+    fdaGsrsUnii: 'AGG2FN16EV',
     displayNameTr: 'Simvastatin',
     displayNameEn: 'Simvastatin',
     atcCodes: ['C10AA01'],
@@ -827,6 +895,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'atorvastatin',
     rxCui: '83367',
+    fdaGsrsUnii: 'A0JWA85V8F',
     displayNameTr: 'Atorvastatin',
     displayNameEn: 'Atorvastatin',
     atcCodes: ['C10AA05'],
@@ -837,6 +906,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'rosuvastatin',
     rxCui: '301542',
+    fdaGsrsUnii: '413KH5ZJ73',
     displayNameTr: 'Rosuvastatin',
     displayNameEn: 'Rosuvastatin',
     atcCodes: ['C10AA07'],
@@ -847,6 +917,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'lovastatin',
     rxCui: '6472',
+    fdaGsrsUnii: '9LHU78OQFD',
     displayNameTr: 'Lovastatin',
     displayNameEn: 'Lovastatin',
     atcCodes: ['C10AA02'],
@@ -857,6 +928,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'pravastatin',
     rxCui: '42463',
+    fdaGsrsUnii: 'KXO2KT9N0G',
     displayNameTr: 'Pravastatin',
     displayNameEn: 'Pravastatin',
     atcCodes: ['C10AA03'],
@@ -869,6 +941,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'valproic_acid',
     rxCui: '11118',
+    fdaGsrsUnii: '614OI1Z5WI',
     displayNameTr: 'Valproik Asit / Sodyum Valproat',
     displayNameEn: 'Valproic Acid / Sodium Valproate',
     atcCodes: ['N03AG01'],
@@ -880,6 +953,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'carbamazepine',
     rxCui: '2002',
+    fdaGsrsUnii: '33CM23913M',
     displayNameTr: 'Karbamazepin',
     displayNameEn: 'Carbamazepine',
     atcCodes: ['N03AF01'],
@@ -891,6 +965,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'phenytoin',
     rxCui: '8183',
+    fdaGsrsUnii: '6158TKW0C5',
     displayNameTr: 'Fenitoin',
     displayNameEn: 'Phenytoin',
     atcCodes: ['N03AB02'],
@@ -902,6 +977,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'phenobarbital',
     rxCui: '8134',
+    fdaGsrsUnii: 'YQE403BP4D',
     displayNameTr: 'Fenobarbital',
     displayNameEn: 'Phenobarbital',
     atcCodes: ['N03AA02'],
@@ -912,7 +988,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'levetiracetam',
-    rxCui: '39045',
+    rxCui: '114477',
+    fdaGsrsUnii: '44YRR34555',
     displayNameTr: 'Levetirasetam',
     displayNameEn: 'Levetiracetam',
     atcCodes: ['N03AX14'],
@@ -923,6 +1000,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'diazepam',
     rxCui: '3322',
+    fdaGsrsUnii: 'Q3JTX2Q7TU',
     displayNameTr: 'Diazepam',
     displayNameEn: 'Diazepam',
     atcCodes: ['N05BA01'],
@@ -935,6 +1013,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'midazolam',
     rxCui: '6960',
+    fdaGsrsUnii: 'R60L0SM5BC',
     displayNameTr: 'Midazolam',
     displayNameEn: 'Midazolam',
     atcCodes: ['N05CD08'],
@@ -947,6 +1026,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'lorazepam',
     rxCui: '6470',
+    fdaGsrsUnii: 'O26FZP769L',
     displayNameTr: 'Lorazepam',
     displayNameEn: 'Lorazepam',
     atcCodes: ['N05BA06'],
@@ -959,6 +1039,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'clonazepam',
     rxCui: '2598',
+    fdaGsrsUnii: '5PE9FDE8GB',
     displayNameTr: 'Klonazepam',
     displayNameEn: 'Clonazepam',
     atcCodes: ['N03AE01'],
@@ -971,6 +1052,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'morphine',
     rxCui: '7052',
+    fdaGsrsUnii: '76I7G6D29C',
     displayNameTr: 'Morfin',
     displayNameEn: 'Morphine',
     atcCodes: ['N02AA01'],
@@ -983,6 +1065,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'fentanyl',
     rxCui: '4337',
+    fdaGsrsUnii: 'UF599785JZ',
     displayNameTr: 'Fentanil',
     displayNameEn: 'Fentanyl',
     atcCodes: ['N02AB03', 'N01AH01'],
@@ -995,6 +1078,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'tramadol',
     rxCui: '10689',
+    fdaGsrsUnii: '39J1LGJ30J',
     displayNameTr: 'Tramadol',
     displayNameEn: 'Tramadol',
     atcCodes: ['N02AX02', 'N02AJ13'],
@@ -1007,6 +1091,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'codeine',
     rxCui: '2670',
+    fdaGsrsUnii: 'Q830PW7520',
     displayNameTr: 'Kodein',
     displayNameEn: 'Codeine',
     atcCodes: ['N02AA59', 'N02AJ06', 'N02AJ09', 'R05DA04'],
@@ -1019,6 +1104,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ketamine',
     rxCui: '6130',
+    fdaGsrsUnii: '690G0D6V8H',
     displayNameTr: 'Ketamin',
     displayNameEn: 'Ketamine',
     atcCodes: ['N01AX03'],
@@ -1030,6 +1116,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'paracetamol',
     rxCui: '161',
+    fdaGsrsUnii: '362O9ITL9D',
     displayNameTr: 'Parasetamol',
     displayNameEn: 'Paracetamol / Acetaminophen',
     atcCodes: ['N02BE01'],
@@ -1040,6 +1127,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ibuprofen',
     rxCui: '5640',
+    fdaGsrsUnii: 'WK2XYI10QM',
     displayNameTr: 'İbuprofen',
     displayNameEn: 'Ibuprofen',
     atcCodes: ['M01AE01'],
@@ -1050,6 +1138,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'naproxen',
     rxCui: '7258',
+    fdaGsrsUnii: '57Y76R9ATQ',
     displayNameTr: 'Naproksen',
     displayNameEn: 'Naproxen',
     atcCodes: ['M01AE02'],
@@ -1060,6 +1149,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'diclofenac',
     rxCui: '3355',
+    fdaGsrsUnii: '144O8QL0L1',
     displayNameTr: 'Diklofenak',
     displayNameEn: 'Diclofenac',
     atcCodes: ['M01AB05'],
@@ -1069,7 +1159,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'meloxicam',
-    rxCui: '224913',
+    rxCui: '41493',
+    fdaGsrsUnii: 'VG2QF83CGL',
     displayNameTr: 'Meloksikam',
     displayNameEn: 'Meloxicam',
     atcCodes: ['M01AC06'],
@@ -1079,7 +1170,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'dexketoprofen',
-    rxCui: '226871',
+    rxCui: '237162',
     displayNameTr: 'Deksketoprofen',
     displayNameEn: 'Dexketoprofen',
     atcCodes: ['M01AE17'],
@@ -1089,7 +1180,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'fluoxetine',
-    rxCui: '4492',
+    rxCui: '4493',
+    fdaGsrsUnii: '01K63SUP8D',
     displayNameTr: 'Fluoksetin',
     displayNameEn: 'Fluoxetine',
     atcCodes: ['N06AB03'],
@@ -1101,6 +1193,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'sertraline',
     rxCui: '36437',
+    fdaGsrsUnii: 'QUC7NX6WMB',
     displayNameTr: 'Sertralin',
     displayNameEn: 'Sertraline',
     atcCodes: ['N06AB06'],
@@ -1112,6 +1205,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'escitalopram',
     rxCui: '321988',
+    fdaGsrsUnii: '4O4S742ANY',
     displayNameTr: 'Essitalopram',
     displayNameEn: 'Escitalopram',
     atcCodes: ['N06AB10'],
@@ -1123,6 +1217,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'citalopram',
     rxCui: '2556',
+    fdaGsrsUnii: '0DHU5B8D6V',
     displayNameTr: 'Sitalopram',
     displayNameEn: 'Citalopram',
     atcCodes: ['N06AB04'],
@@ -1134,6 +1229,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'paroxetine',
     rxCui: '32937',
+    fdaGsrsUnii: '41VRH5220H',
     displayNameTr: 'Paroksetin',
     displayNameEn: 'Paroxetine',
     atcCodes: ['N06AB05'],
@@ -1145,6 +1241,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'venlafaxine',
     rxCui: '39786',
+    fdaGsrsUnii: 'GRZ5RCB1QG',
     displayNameTr: 'Venlafaksin',
     displayNameEn: 'Venlafaxine',
     atcCodes: ['N06AX16'],
@@ -1156,6 +1253,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'duloxetine',
     rxCui: '72625',
+    fdaGsrsUnii: 'O5TNM5N07U',
     displayNameTr: 'Duloksetin',
     displayNameEn: 'Duloxetine',
     atcCodes: ['N06AX21'],
@@ -1167,6 +1265,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'amitriptyline',
     rxCui: '704',
+    fdaGsrsUnii: '1806D8D52K',
     displayNameTr: 'Amitriptilin',
     displayNameEn: 'Amitriptyline',
     atcCodes: ['N06AA09'],
@@ -1177,7 +1276,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'moclobemide',
-    rxCui: '7004',
+    rxCui: '30121',
     displayNameTr: 'Moklobemid',
     displayNameEn: 'Moclobemide',
     atcCodes: ['N06AG02'],
@@ -1188,7 +1287,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'selegiline',
-    rxCui: '9699',
+    rxCui: '9639',
+    fdaGsrsUnii: '2K1V7GP655',
     displayNameTr: 'Selegilin',
     displayNameEn: 'Selegiline',
     atcCodes: ['N04BD01'],
@@ -1199,7 +1299,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'rasagiline',
-    rxCui: '333262',
+    rxCui: '134748',
+    fdaGsrsUnii: '003N66TS6T',
     displayNameTr: 'Rasajilin',
     displayNameEn: 'Rasagiline',
     atcCodes: ['N04BD02'],
@@ -1211,6 +1312,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'haloperidol',
     rxCui: '5093',
+    fdaGsrsUnii: 'J6292F8L3D',
     displayNameTr: 'Haloperidol',
     displayNameEn: 'Haloperidol',
     atcCodes: ['N05AD01'],
@@ -1222,6 +1324,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'lithium',
     rxCui: '6448',
+    fdaGsrsUnii: '9FN79X2M3F',
     displayNameTr: 'Lityum',
     displayNameEn: 'Lithium',
     atcCodes: ['N05AN01'],
@@ -1233,6 +1336,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'gabapentin',
     rxCui: '25480',
+    fdaGsrsUnii: '6CW7F3G59X',
     displayNameTr: 'Gabapentin',
     displayNameEn: 'Gabapentin',
     atcCodes: ['N02BF01'],
@@ -1243,6 +1347,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'pregabalin',
     rxCui: '187832',
+    fdaGsrsUnii: '55JG375S6M',
     displayNameTr: 'Pregabalin',
     displayNameEn: 'Pregabalin',
     atcCodes: ['N02BF02'],
@@ -1253,7 +1358,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'sumatriptan',
-    rxCui: '10244',
+    rxCui: '37418',
+    fdaGsrsUnii: '8R78F6L9VO',
     displayNameTr: 'Sumatriptan',
     displayNameEn: 'Sumatriptan',
     atcCodes: ['N02CC01'],
@@ -1263,7 +1369,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'zolmitriptan',
-    rxCui: '74885',
+    rxCui: '135775',
+    fdaGsrsUnii: '2FS66TH3YW',
     displayNameTr: 'Zolmitriptan',
     displayNameEn: 'Zolmitriptan',
     atcCodes: ['N02CC03'],
@@ -1274,6 +1381,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'dextromethorphan',
     rxCui: '3289',
+    fdaGsrsUnii: '7355X3ROTS',
     displayNameTr: 'Dekstrometorfan',
     displayNameEn: 'Dextromethorphan',
     atcCodes: ['R05DA09'],
@@ -1286,6 +1394,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'methotrexate',
     rxCui: '6851',
+    fdaGsrsUnii: 'YL5FZ2Y5U1',
     displayNameTr: 'Metotreksat',
     displayNameEn: 'Methotrexate',
     atcCodes: ['L01BA01', 'L04AX03'],
@@ -1297,6 +1406,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'azathioprine',
     rxCui: '1256',
+    fdaGsrsUnii: 'MRK240IY2L',
     displayNameTr: 'Azatioprin',
     displayNameEn: 'Azathioprine',
     atcCodes: ['L04AX01'],
@@ -1307,7 +1417,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'mercaptopurine',
-    rxCui: '6780',
+    rxCui: '103',
+    fdaGsrsUnii: 'E7WED276I5',
     displayNameTr: 'Merkaptopürin (6-MP)',
     displayNameEn: 'Mercaptopurine (6-MP)',
     atcCodes: ['L01BB02'],
@@ -1319,6 +1430,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'allopurinol',
     rxCui: '519',
+    fdaGsrsUnii: '63CZ7GJN5I',
     displayNameTr: 'Allopürinol',
     displayNameEn: 'Allopurinol',
     atcCodes: ['M04AA01'],
@@ -1328,7 +1440,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'febuxostat',
-    rxCui: '413620',
+    rxCui: '73689',
+    fdaGsrsUnii: '101V0R1N2E',
     displayNameTr: 'Febuksostat',
     displayNameEn: 'Febuxostat',
     atcCodes: ['M04AA03'],
@@ -1340,6 +1453,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'colchicine',
     rxCui: '2683',
+    fdaGsrsUnii: 'SML2Y3J35T',
     displayNameTr: 'Kolşisin',
     displayNameEn: 'Colchicine',
     atcCodes: ['M04AC01'],
@@ -1351,6 +1465,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'methylprednisolone',
     rxCui: '6902',
+    fdaGsrsUnii: 'X4W7ZR7023',
     displayNameTr: 'Metilprednizolon',
     displayNameEn: 'Methylprednisolone',
     atcCodes: ['H02AB04'],
@@ -1361,6 +1476,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'dexamethasone',
     rxCui: '3264',
+    fdaGsrsUnii: '7S5I7G3JQL',
     displayNameTr: 'Deksametazon',
     displayNameEn: 'Dexamethasone',
     atcCodes: ['H02AB02', 'S01BA01'],
@@ -1371,6 +1487,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'prednisolone',
     rxCui: '8638',
+    fdaGsrsUnii: '9PHQ9Y1OLM',
     displayNameTr: 'Prednizolon',
     displayNameEn: 'Prednisolone',
     atcCodes: ['H02AB06'],
@@ -1380,7 +1497,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'budesonide',
-    rxCui: '19839',
+    rxCui: '19831',
+    fdaGsrsUnii: 'Q3OKS62Q6X',
     displayNameTr: 'Budezonid',
     displayNameEn: 'Budesonide',
     atcCodes: ['R03BA02', 'A07EA06'],
@@ -1391,6 +1509,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'cyclosporine',
     rxCui: '3008',
+    fdaGsrsUnii: '83HN0GTJ6D',
     displayNameTr: 'Siklosporin',
     displayNameEn: 'Cyclosporine',
     atcCodes: ['L04AD01', 'S01XA18'],
@@ -1402,6 +1521,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'tacrolimus',
     rxCui: '42316',
+    fdaGsrsUnii: 'WM0HAQ4WNM',
     displayNameTr: 'Takrolimus',
     displayNameEn: 'Tacrolimus',
     atcCodes: ['L04AD02', 'D11AH01'],
@@ -1413,6 +1533,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'isotretinoin',
     rxCui: '6064',
+    fdaGsrsUnii: 'EH28UP18IF',
     displayNameTr: 'İzotretinoin',
     displayNameEn: 'Isotretinoin',
     atcCodes: ['D10BA01'],
@@ -1426,6 +1547,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'omeprazole',
     rxCui: '7646',
+    fdaGsrsUnii: 'KG60484QX9',
     displayNameTr: 'Omeprazol',
     displayNameEn: 'Omeprazole',
     atcCodes: ['A02BC01'],
@@ -1436,6 +1558,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'esomeprazole',
     rxCui: '283742',
+    fdaGsrsUnii: 'N3PA6559FT',
     displayNameTr: 'Esomeprazol',
     displayNameEn: 'Esomeprazole',
     atcCodes: ['A02BC05'],
@@ -1446,6 +1569,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'pantoprazole',
     rxCui: '40790',
+    fdaGsrsUnii: 'D8TST4O562',
     displayNameTr: 'Pantoprazol',
     displayNameEn: 'Pantoprazole',
     atcCodes: ['A02BC02'],
@@ -1455,7 +1579,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ondansetron',
-    rxCui: '7617',
+    rxCui: '26225',
+    fdaGsrsUnii: '4AF302ESOS',
     displayNameTr: 'Ondansetron',
     displayNameEn: 'Ondansetron',
     atcCodes: ['A04AA01'],
@@ -1466,6 +1591,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'metoclopramide',
     rxCui: '6915',
+    fdaGsrsUnii: 'L4YEB44I46',
     displayNameTr: 'Metoklopramid',
     displayNameEn: 'Metoclopramide',
     atcCodes: ['A03FA01'],
@@ -1477,6 +1603,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'epinephrine',
     rxCui: '3992',
+    fdaGsrsUnii: 'YKH834O4BH',
     displayNameTr: 'Epinefrin (Adrenalin)',
     displayNameEn: 'Epinephrine (Adrenaline)',
     atcCodes: ['C01CA24', 'R01AA14', 'R03AK01'],
@@ -1487,6 +1614,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'salbutamol',
     rxCui: '435',
+    fdaGsrsUnii: 'QF8SVZ843E',
     displayNameTr: 'Salbutamol',
     displayNameEn: 'Salbutamol (Albuterol)',
     atcCodes: ['R03AC02', 'R03CC02'],
@@ -1496,7 +1624,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ipratropium',
-    rxCui: '5970',
+    rxCui: '7213',
+    fdaGsrsUnii: 'GR88G0I6UL',
     displayNameTr: 'İpratropium Bromür',
     displayNameEn: 'Ipratropium Bromide',
     atcCodes: ['R03BB01'],
@@ -1507,6 +1636,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'calcium_gluconate',
     rxCui: '1908',
+    fdaGsrsUnii: 'SQE6VB453K',
     displayNameTr: 'Kalsiyum Glukonat',
     displayNameEn: 'Calcium Gluconate',
     atcCodes: ['A12AA03', 'D11AX18'],
@@ -1516,7 +1646,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'calcium_chloride',
-    rxCui: '1903',
+    rxCui: '1901',
+    fdaGsrsUnii: 'M4I0D6VV5M',
     displayNameTr: 'Kalsiyum Klorür',
     displayNameEn: 'Calcium Chloride',
     atcCodes: ['A12AA07', 'B05XA07'],
@@ -1527,6 +1658,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'potassium_chloride',
     rxCui: '8591',
+    fdaGsrsUnii: '660YQ98I10',
     displayNameTr: 'Potasyum Klorür',
     displayNameEn: 'Potassium Chloride',
     atcCodes: ['A12BA01', 'B05XA01'],
@@ -1536,7 +1668,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ringer_lactate',
-    rxCui: '9390',
+    rxCui: '1008377',
     displayNameTr: 'Ringer Laktat',
     displayNameEn: 'Lactated Ringer Solution',
     atcCodes: ['B05BB01'],
@@ -1547,6 +1679,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'metformin',
     rxCui: '6809',
+    fdaGsrsUnii: '9100L32L2N',
     displayNameTr: 'Metformin',
     displayNameEn: 'Metformin',
     atcCodes: ['A10BA02'],
@@ -1557,7 +1690,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'oral_rehydration_salts',
-    rxCui: '7695',
+    rxCui: '1007563',
     displayNameTr: 'Oral Rehidrasyon Sıvısı (ORS)',
     displayNameEn: 'Oral Rehydration Salts',
     atcCodes: ['A07CA'],
@@ -1567,7 +1700,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'zinc_sulfate',
-    rxCui: '11440',
+    rxCui: '39954',
+    fdaGsrsUnii: '89DS0H96TB',
     displayNameTr: 'Çinko Sülfat',
     displayNameEn: 'Zinc Sulfate',
     atcCodes: ['A12CB01'],
@@ -1577,7 +1711,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'methylene_blue',
-    rxCui: '6886',
+    rxCui: '6878',
+    fdaGsrsUnii: 'T42P99266K',
     displayNameTr: 'Metilen Mavisi (Methylthioninium)',
     displayNameEn: 'Methylene Blue',
     atcCodes: ['V03AB17'],
@@ -1587,7 +1722,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'isosorbide_mononitrate',
-    rxCui: '6058',
+    rxCui: '28004',
+    fdaGsrsUnii: 'LX1OH63030',
     displayNameTr: 'İzosorbid Mononitrat',
     displayNameEn: 'Isosorbide Mononitrate',
     atcCodes: ['C01DA14'],
@@ -1597,7 +1733,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'acitretin',
-    rxCui: '194',
+    rxCui: '16818',
+    fdaGsrsUnii: 'LCH760E9T7',
     displayNameTr: 'Asitretin',
     displayNameEn: 'Acitretin',
     atcCodes: ['D05BB02'],
@@ -1608,7 +1745,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'iodinated_contrast',
-    rxCui: '5784',
+    rxCui: '5956',
     displayNameTr: 'İyotlu Kontrast Madde (İKM)',
     displayNameEn: 'Iodinated Radiocontrast Agent',
     atcCodes: ['V08AB'],
@@ -1621,6 +1758,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'propofol',
     rxCui: '8782',
+    fdaGsrsUnii: 'YI7VU623SF',
     displayNameTr: 'Propofol',
     displayNameEn: 'Propofol',
     atcCodes: ['N01AX10'],
@@ -1632,6 +1770,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'etomidate',
     rxCui: '4177',
+    fdaGsrsUnii: 'Z22628B598',
     displayNameTr: 'Etomidat',
     displayNameEn: 'Etomidate',
     atcCodes: ['N01AX07'],
@@ -1653,6 +1792,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'dexmedetomidine',
     rxCui: '48937',
+    fdaGsrsUnii: '67VB76HONO',
     displayNameTr: 'Deksmedetomidin',
     displayNameEn: 'Dexmedetomidine',
     atcCodes: ['N05CM18'],
@@ -1662,7 +1802,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'sevoflurane',
-    rxCui: '36480',
+    rxCui: '36453',
+    fdaGsrsUnii: '38LVP0K73A',
     displayNameTr: 'Sevofluran',
     displayNameEn: 'Sevoflurane',
     atcCodes: ['N01AB08'],
@@ -1673,6 +1814,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'isoflurane',
     rxCui: '6026',
+    fdaGsrsUnii: 'CYS9AKD70P',
     displayNameTr: 'İzofluran',
     displayNameEn: 'Isoflurane',
     atcCodes: ['N01AB06'],
@@ -1682,7 +1824,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'desflurane',
-    rxCui: '22697',
+    rxCui: '27340',
+    fdaGsrsUnii: 'CRS35BZ94Q',
     displayNameTr: 'Desfluran',
     displayNameEn: 'Desflurane',
     atcCodes: ['N01AB07'],
@@ -1693,6 +1836,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'rocuronium',
     rxCui: '68139',
+    fdaGsrsUnii: 'WRE554RFEZ',
     displayNameTr: 'Roküronyum Bromür',
     displayNameEn: 'Rocuronium',
     atcCodes: ['M03AC09'],
@@ -1703,6 +1847,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'vecuronium',
     rxCui: '71535',
+    fdaGsrsUnii: '5438723848',
     displayNameTr: 'Veküronyum Bromür',
     displayNameEn: 'Vecuronium',
     atcCodes: ['M03AC03'],
@@ -1712,7 +1857,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'atracurium',
-    rxCui: '1216',
+    rxCui: '1218',
+    fdaGsrsUnii: '2GQ1IRY63P',
     displayNameTr: 'Atraküryum Besilat',
     displayNameEn: 'Atracurium',
     atcCodes: ['M03AC04'],
@@ -1722,7 +1868,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'cisatracurium',
-    rxCui: '68140',
+    rxCui: '319864',
+    fdaGsrsUnii: 'QX62KLI41N',
     displayNameTr: 'Sisatraküryum',
     displayNameEn: 'Cisatracurium',
     atcCodes: ['M03AC11'],
@@ -1733,6 +1880,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'succinylcholine',
     rxCui: '10154',
+    fdaGsrsUnii: 'J2R869A8YF',
     displayNameTr: 'Süksinilkolin (Süksametonyum)',
     displayNameEn: 'Succinylcholine',
     atcCodes: ['M03AB01'],
@@ -1743,7 +1891,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'sugammadex',
-    rxCui: '1727493',
+    rxCui: '1726988',
+    fdaGsrsUnii: '361LPM2T56',
     displayNameTr: 'Sugammadeks',
     displayNameEn: 'Sugammadex',
     atcCodes: ['V03AB35'],
@@ -1754,6 +1903,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'neostigmine',
     rxCui: '7315',
+    fdaGsrsUnii: '3982TWQ96G',
     displayNameTr: 'Neostigmin',
     displayNameEn: 'Neostigmine',
     atcCodes: ['N07AA01'],
@@ -1766,6 +1916,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'metoprolol',
     rxCui: '6918',
+    fdaGsrsUnii: 'GEB06NHM23',
     displayNameTr: 'Metoprolol',
     displayNameEn: 'Metoprolol',
     atcCodes: ['C07AB02'],
@@ -1776,6 +1927,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'propranolol',
     rxCui: '8787',
+    fdaGsrsUnii: '9Y8NXQ24VQ',
     displayNameTr: 'Propranolol',
     displayNameEn: 'Propranolol',
     atcCodes: ['C07AA05'],
@@ -1786,6 +1938,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'bisoprolol',
     rxCui: '19484',
+    fdaGsrsUnii: 'Y41JS2NL6U',
     displayNameTr: 'Bisoprolol',
     displayNameEn: 'Bisoprolol',
     atcCodes: ['C07AB07'],
@@ -1796,6 +1949,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'carvedilol',
     rxCui: '20352',
+    fdaGsrsUnii: '0K47UL67F2',
     displayNameTr: 'Karvedilol',
     displayNameEn: 'Carvedilol',
     atcCodes: ['C07AG02'],
@@ -1806,6 +1960,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'nebivolol',
     rxCui: '31555',
+    fdaGsrsUnii: '030Y90569U',
     displayNameTr: 'Nebivolol',
     displayNameEn: 'Nebivolol',
     atcCodes: ['C07AB12'],
@@ -1816,6 +1971,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'esmolol',
     rxCui: '49737',
+    fdaGsrsUnii: 'MDY902UXSR',
     displayNameTr: 'Esmolol',
     displayNameEn: 'Esmolol',
     atcCodes: ['C07AB09'],
@@ -1826,6 +1982,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'atenolol',
     rxCui: '1202',
+    fdaGsrsUnii: '50VV3VW0TI',
     displayNameTr: 'Atenolol',
     displayNameEn: 'Atenolol',
     atcCodes: ['C07AB03'],
@@ -1835,7 +1992,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ivabradine',
-    rxCui: '1652673',
+    rxCui: '1649480',
+    fdaGsrsUnii: '3H48L0LPZQ',
     displayNameTr: 'İvabradin',
     displayNameEn: 'Ivabradine',
     atcCodes: ['C01EB17'],
@@ -1848,6 +2006,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'domperidone',
     rxCui: '3626',
+    fdaGsrsUnii: '5587267Z69',
     displayNameTr: 'Domperidon',
     displayNameEn: 'Domperidone',
     atcCodes: ['A03FA03'],
@@ -1858,6 +2017,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'chlorpromazine',
     rxCui: '2403',
+    fdaGsrsUnii: 'U42B7VYA4P',
     displayNameTr: 'Klorpromazin',
     displayNameEn: 'Chlorpromazine',
     atcCodes: ['N05AA01'],
@@ -1868,6 +2028,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'quetiapine',
     rxCui: '51272',
+    fdaGsrsUnii: 'BGL0JSY5SI',
     displayNameTr: 'Ketiapin',
     displayNameEn: 'Quetiapine',
     atcCodes: ['N05AH04'],
@@ -1878,6 +2039,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'olanzapine',
     rxCui: '61381',
+    fdaGsrsUnii: 'N7U69T4SZR',
     displayNameTr: 'Olanzapin',
     displayNameEn: 'Olanzapine',
     atcCodes: ['N05AH03'],
@@ -1888,6 +2050,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'risperidone',
     rxCui: '35636',
+    fdaGsrsUnii: 'L6UH7ZF8HC',
     displayNameTr: 'Risperidon',
     displayNameEn: 'Risperidone',
     atcCodes: ['N05AX08'],
@@ -1898,6 +2061,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ziprasidone',
     rxCui: '115698',
+    fdaGsrsUnii: '6UKA5VEJ6X',
     displayNameTr: 'Ziprasidon',
     displayNameEn: 'Ziprasidone',
     atcCodes: ['N05AE04'],
@@ -1908,6 +2072,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'pimozide',
     rxCui: '8331',
+    fdaGsrsUnii: '1HIZ4DL86F',
     displayNameTr: 'Pimozid',
     displayNameEn: 'Pimozide',
     atcCodes: ['N05AG02'],
@@ -1919,6 +2084,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'hydroxyzine',
     rxCui: '5553',
+    fdaGsrsUnii: '30S50YM8OG',
     displayNameTr: 'Hidroksizin',
     displayNameEn: 'Hydroxyzine',
     atcCodes: ['N05BB01'],
@@ -1929,6 +2095,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'trazodone',
     rxCui: '10737',
+    fdaGsrsUnii: 'YBK48BXK30',
     displayNameTr: 'Trazodon',
     displayNameEn: 'Trazodone',
     atcCodes: ['N06AX05'],
@@ -1939,6 +2106,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'flecainide',
     rxCui: '4441',
+    fdaGsrsUnii: 'K94FTS1806',
     displayNameTr: 'Flekainid',
     displayNameEn: 'Flecainide',
     atcCodes: ['C01BC04'],
@@ -1950,6 +2118,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'propafenone',
     rxCui: '8754',
+    fdaGsrsUnii: '68IQX3T69U',
     displayNameTr: 'Propafenon',
     displayNameEn: 'Propafenone',
     atcCodes: ['C01BC03'],
@@ -1960,6 +2129,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'procainamide',
     rxCui: '8700',
+    fdaGsrsUnii: 'L39WTC366D',
     displayNameTr: 'Prokainamid',
     displayNameEn: 'Procainamide',
     atcCodes: ['C01BA02'],
@@ -1971,6 +2141,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'quinidine',
     rxCui: '9068',
+    fdaGsrsUnii: 'ITX08688JL',
     displayNameTr: 'Kinidin',
     displayNameEn: 'Quinidine',
     atcCodes: ['C01BA01'],
@@ -1981,6 +2152,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'methadone',
     rxCui: '6813',
+    fdaGsrsUnii: 'UC6VBE7V1Z',
     displayNameTr: 'Metadon',
     displayNameEn: 'Methadone',
     atcCodes: ['N07BC02'],
@@ -1993,6 +2165,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'chloroquine',
     rxCui: '2393',
+    fdaGsrsUnii: '886U3H6UFF',
     displayNameTr: 'Klorokin',
     displayNameEn: 'Chloroquine',
     atcCodes: ['P01BA01'],
@@ -2003,6 +2176,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'hydroxychloroquine',
     rxCui: '5521',
+    fdaGsrsUnii: '4QWG6N8QKH',
     displayNameTr: 'Hidroksiklorokin',
     displayNameEn: 'Hydroxychloroquine',
     atcCodes: ['P01BA02'],
@@ -2015,6 +2189,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'amikacin',
     rxCui: '641',
+    fdaGsrsUnii: '84319SGC3C',
     displayNameTr: 'Amikasin',
     displayNameEn: 'Amikacin',
     atcCodes: ['J01GB06'],
@@ -2025,6 +2200,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'tobramycin',
     rxCui: '10627',
+    fdaGsrsUnii: 'VZ8RRZ51VK',
     displayNameTr: 'Tobramisin',
     displayNameEn: 'Tobramycin',
     atcCodes: ['J01GB01', 'S01AA12'],
@@ -2035,6 +2211,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'clindamycin',
     rxCui: '2582',
+    fdaGsrsUnii: '3U02EL437C',
     displayNameTr: 'Klindamisin',
     displayNameEn: 'Clindamycin',
     atcCodes: ['J01FF01'],
@@ -2045,6 +2222,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'colistin',
     rxCui: '2709',
+    fdaGsrsUnii: 'Z67X93HJG1',
     displayNameTr: 'Kolistin (Kolistimetat)',
     displayNameEn: 'Colistin',
     atcCodes: ['J01XB01'],
@@ -2055,6 +2233,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'polymyxin_b',
     rxCui: '8536',
+    fdaGsrsUnii: 'J2VZ07J96K',
     displayNameTr: 'Polimiksin B',
     displayNameEn: 'Polymyxin B',
     atcCodes: ['J01XB02'],
@@ -2065,6 +2244,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'magnesium_sulfate',
     rxCui: '6585',
+    fdaGsrsUnii: 'DE08037SAB',
     displayNameTr: 'Magnezyum Sülfat',
     displayNameEn: 'Magnesium Sulfate',
     atcCodes: ['B05XA05'],
@@ -2075,6 +2255,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'lidocaine',
     rxCui: '6387',
+    fdaGsrsUnii: '98PI200987',
     displayNameTr: 'Lidokain',
     displayNameEn: 'Lidocaine',
     atcCodes: ['N01BB02', 'C01BB01'],
@@ -2085,6 +2266,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'bupivacaine',
     rxCui: '1815',
+    fdaGsrsUnii: 'Y8335394RO',
     displayNameTr: 'Bupivakain',
     displayNameEn: 'Bupivacaine',
     atcCodes: ['N01BB01'],
@@ -2095,6 +2277,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'tamoxifen',
     rxCui: '10324',
+    fdaGsrsUnii: '094ZI81Y45',
     displayNameTr: 'Tamoksifen',
     displayNameEn: 'Tamoxifen',
     atcCodes: ['L02BA01'],
@@ -2105,6 +2288,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'repaglinide',
     rxCui: '73044',
+    fdaGsrsUnii: '668Z8C33LU',
     displayNameTr: 'Repaglinid',
     displayNameEn: 'Repaglinide',
     atcCodes: ['A10BX02'],
@@ -2115,6 +2299,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'gemfibrozil',
     rxCui: '4719',
+    fdaGsrsUnii: 'Q8X02027X3',
     displayNameTr: 'Gemfibrozil',
     displayNameEn: 'Gemfibrozil',
     atcCodes: ['C10AB04'],
@@ -2125,6 +2310,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'theophylline',
     rxCui: '10438',
+    fdaGsrsUnii: 'C137DTR5RG',
     displayNameTr: 'Teofilin',
     displayNameEn: 'Theophylline',
     atcCodes: ['R03DA04'],
@@ -2135,6 +2321,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'clozapine',
     rxCui: '2626',
+    fdaGsrsUnii: 'J60AR2IKIC',
     displayNameTr: 'Klozapin',
     displayNameEn: 'Clozapine',
     atcCodes: ['N05AH02'],
@@ -2146,6 +2333,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'fluvoxamine',
     rxCui: '42355',
+    fdaGsrsUnii: 'O4L1XPO44W',
     displayNameTr: 'Fluvoksamin',
     displayNameEn: 'Fluvoxamine',
     atcCodes: ['N06AB08'],
@@ -2157,6 +2345,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'bupropion',
     rxCui: '42347',
+    fdaGsrsUnii: '01ZG3TPX31',
     displayNameTr: 'Bupropion',
     displayNameEn: 'Bupropion',
     atcCodes: ['N06AX12'],
@@ -2168,6 +2357,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'irinotecan',
     rxCui: '51499',
+    fdaGsrsUnii: '7673326042',
     displayNameTr: 'İrinotekan',
     displayNameEn: 'Irinotecan',
     atcCodes: ['L01CE02'],
@@ -2178,7 +2368,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ramelteon',
-    rxCui: '351292',
+    rxCui: '596205',
+    fdaGsrsUnii: '901AS54I69',
     displayNameTr: 'Ramelteon',
     displayNameEn: 'Ramelteon',
     atcCodes: ['N05CH02'],
@@ -2189,6 +2380,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'tizanidine',
     rxCui: '57258',
+    fdaGsrsUnii: '6AI06C00GW',
     displayNameTr: 'Tizanidin',
     displayNameEn: 'Tizanidine',
     atcCodes: ['M03BX02'],
@@ -2198,7 +2390,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'ergotamine',
-    rxCui: '4024',
+    rxCui: '4025',
+    fdaGsrsUnii: 'PR834Q503T',
     displayNameTr: 'Ergotamin',
     displayNameEn: 'Ergotamine',
     atcCodes: ['N02CA02', 'N02CA52'],
@@ -2210,6 +2403,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'tranylcypromine',
     rxCui: '10734',
+    fdaGsrsUnii: '3E3V44J4Z9',
     displayNameTr: 'Tranilsipromin',
     displayNameEn: 'Tranylcypromine',
     atcCodes: ['N06AF04'],
@@ -2221,6 +2415,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'phenelzine',
     rxCui: '8123',
+    fdaGsrsUnii: 'O408N561GF',
     displayNameTr: 'Fenelzin',
     displayNameEn: 'Phenelzine',
     atcCodes: ['N06AF03'],
@@ -2232,6 +2427,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'meperidine',
     rxCui: '6754',
+    fdaGsrsUnii: '9E338QE28F',
     displayNameTr: 'Meperidin (Petidin)',
     displayNameEn: 'Meperidine (Pethidine)',
     atcCodes: ['N02AB02'],
@@ -2244,6 +2440,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'aspirin',
     rxCui: '1191',
+    fdaGsrsUnii: 'R16CO5Y76E',
     displayNameTr: 'Asetilsalisilik Asit (Aspirin)',
     displayNameEn: 'Aspirin',
     atcCodes: ['B01AC06', 'N02BA01'],
@@ -2254,6 +2451,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'ticagrelor',
     rxCui: '1116632',
+    fdaGsrsUnii: 'GLH0314RVC',
     displayNameTr: 'Tikagrelor',
     displayNameEn: 'Ticagrelor',
     atcCodes: ['B01AC24'],
@@ -2265,6 +2463,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'prasugrel',
     rxCui: '613391',
+    fdaGsrsUnii: '34K66TBT99',
     displayNameTr: 'Prasugrel',
     displayNameEn: 'Prasugrel',
     atcCodes: ['B01AC22'],
@@ -2276,6 +2475,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'edoxaban',
     rxCui: '1599538',
+    fdaGsrsUnii: 'NDU3J18APO',
     displayNameTr: 'Edoksaban',
     displayNameEn: 'Edoxaban',
     atcCodes: ['B01AF03'],
@@ -2287,6 +2487,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'alprazolam',
     rxCui: '596',
+    fdaGsrsUnii: 'YU55MQ3IZY',
     displayNameTr: 'Alprazolam',
     displayNameEn: 'Alprazolam',
     atcCodes: ['N05BA12'],
@@ -2299,6 +2500,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'zolpidem',
     rxCui: '39993',
+    fdaGsrsUnii: '7K383OQI23',
     displayNameTr: 'Zolpidem',
     displayNameEn: 'Zolpidem',
     atcCodes: ['N05CF02'],
@@ -2310,6 +2512,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'oxycodone',
     rxCui: '7804',
+    fdaGsrsUnii: 'CD35PMG570',
     displayNameTr: 'Oksikodon',
     displayNameEn: 'Oxycodone',
     atcCodes: ['N02AA05'],
@@ -2322,6 +2525,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'fluticasone',
     rxCui: '41126',
+    fdaGsrsUnii: 'CUT2W21N7U',
     displayNameTr: 'Flutikazon',
     displayNameEn: 'Fluticasone',
     atcCodes: ['R03BA05', 'R01AD08'],
@@ -2332,6 +2536,7 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   {
     canonicalKey: 'triamcinolone',
     rxCui: '10759',
+    fdaGsrsUnii: '1ZK20VI6TY',
     displayNameTr: 'Triamsinolon',
     displayNameEn: 'Triamcinolone',
     atcCodes: ['H02AB08', 'R01AD11'],
@@ -2341,7 +2546,8 @@ export const OFFLINE_RXNORM_CONCEPTS: RxNormConceptDefinition[] = [
   },
   {
     canonicalKey: 'rimegepant',
-    rxCui: '2281864',
+    rxCui: '2282307',
+    fdaGsrsUnii: '997WVV895X',
     displayNameTr: 'Rimegepant',
     displayNameEn: 'Rimegepant',
     atcCodes: ['N02CD06'],
@@ -2696,6 +2902,7 @@ function buildResolvedConcept(
     displayNameTr: def.displayNameTr,
     displayNameEn: def.displayNameEn,
     rxCui: def.rxCui,
+    fdaGsrsUnii: def.fdaGsrsUnii,
     atcCodes: [...def.atcCodes],
     drugClasses: [...def.drugClasses],
     isControlledSubstance: !!def.isControlledSubstance,

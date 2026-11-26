@@ -1918,7 +1918,7 @@ assert.ok(ceftByCui.drugClasses.includes('calcium_incompatible_neonatal'));
 const meroByAtc = getRxNormConceptByAtc('J01DH02')!;
 assert.ok(meroByAtc);
 assert.strictEqual(meroByAtc.canonicalKey, 'meropenem');
-assert.strictEqual(meroByAtc.rxCui, '29560');
+assert.strictEqual(meroByAtc.rxCui, '29561');
 assert.ok(meroByAtc.drugClasses.includes('valproate_incompatible'));
 
 const mtxByKey = getRxNormConceptByKey('methotrexate')!;
@@ -1946,7 +1946,7 @@ assert.ok(c3.drugClasses.includes('carbapenem_incompatible_hard_stop'));
 const c4 = resolveToRxNormConcept('Meronem 1g IV')!;
 assert.ok(c4);
 assert.strictEqual(c4.canonicalKey, 'meropenem');
-assert.strictEqual(c4.rxCui, '29560');
+assert.strictEqual(c4.rxCui, '29561');
 
 const c5 = resolveToRxNormConcept('Zyloric 300 mg')!;
 assert.ok(c5);
@@ -1967,7 +1967,7 @@ assert.ok(c7.drugClasses.includes('nitrate_contraindicated_hard_stop'));
 const c8 = resolveToRxNormConcept('Perlinganit 10 mg/10 ml')!;
 assert.ok(c8);
 assert.strictEqual(c8.canonicalKey, 'nitroglycerin');
-assert.strictEqual(c8.rxCui, '7454');
+assert.strictEqual(c8.rxCui, '4917');
 assert.ok(c8.drugClasses.includes('pde5_contraindicated_hard_stop'));
 
 const c9 = resolveToRxNormConcept('Kolsin 0.5 mg')!;
@@ -1983,7 +1983,7 @@ assert.strictEqual(c10.rxCui, '21212');
 const c11 = resolveToRxNormConcept('Tazocin 4.5 g')!;
 assert.ok(c11);
 assert.strictEqual(c11.canonicalKey, 'piperacillin_tazobactam');
-assert.strictEqual(c11.rxCui, '54136');
+assert.strictEqual(c11.rxCui, '74169');
 
 const c12 = resolveToRxNormConcept('Contramal 50 mg Kapsül')!;
 assert.ok(c12);
@@ -1995,7 +1995,7 @@ assert.ok(c12.drugClasses.includes('pediatric_under_12_hard_stop'));
 const c13 = resolveToRxNormConcept('Bactrim Forte')!;
 assert.ok(c13);
 assert.strictEqual(c13.canonicalKey, 'trimethoprim_sulfamethoxazole');
-assert.strictEqual(c13.rxCui, '10834');
+assert.strictEqual(c13.rxCui, '10831');
 assert.ok(c13.drugClasses.includes('neonatal_kernicterus_risk'));
 
 const c14 = resolveToRxNormConcept('Eliquis 5 mg')!;
@@ -2017,7 +2017,7 @@ assert.strictEqual(c16.rxCui, '8591');
 const c17 = resolveToRxNormConcept('Ringer Laktat 500 ml')!;
 assert.ok(c17);
 assert.strictEqual(c17.canonicalKey, 'ringer_lactate');
-assert.strictEqual(c17.rxCui, '9390');
+assert.strictEqual(c17.rxCui, '1008377');
 
 // 19.4 Turkish Uppercase & Diacritic Normalization
 const tIbu = resolveToRxNormConcept('İBUFEN 100 MG SURUP')!;
@@ -2052,7 +2052,7 @@ assert.strictEqual(batchResults.length, 4, 'Should resolve 4 valid drugs and ign
 assert.strictEqual(batchResults[0].rxCui, '2193');
 assert.strictEqual(batchResults[1].rxCui, '1908');
 assert.strictEqual(batchResults[2].rxCui, '11118');
-assert.strictEqual(batchResults[3].rxCui, '29560');
+assert.strictEqual(batchResults[3].rxCui, '29561');
 
 // 19.6 getDrugRxNormBadge Integration
 const badgeRocephin = getDrugRxNormBadge({ brand: 'ROCEPHIN 1 G FLAKON' });

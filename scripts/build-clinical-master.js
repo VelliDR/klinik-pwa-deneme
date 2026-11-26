@@ -27,20 +27,32 @@ const DIST_FILE = path.join(ROOT_DIR, 'dist', 'data', 'clinical_monographs_maste
 const KUB_DIR = path.join(ROOT_DIR, 'public', 'data', 'kub');
 const DIST_KUB_DIR = path.join(ROOT_DIR, 'dist', 'data', 'kub');
 
-// TİTCK PDF e-imza artefaktı (4 resmi EBYS varyantı) ve standart TÜFAM bildirim son ekini temizleyen düzenli ifadeler
+// TİTCK PDF e-imza artefaktı (tüm resmi EBYS & sütun kırılım varyantları) ve standart TÜFAM bildirim son ekini temizleyen düzenli ifadeler
 const EBYS_PATTERNS = [
   /(?:Bu\s+)?belge,?\s*güvenli\s+elektronik\s+imza\s+ile\s+imzalanmıştır\.?/gi,
-  /Bu\s+belge\s+5070\s+sayılı\s+Elektronik\s+İmza\s+Kanunu[\s\S]{0,160}?kontrol\s+edilebilir\.?/gi,
+  /(?:Bu\s+belge\s+)?5070\s+sayılı\s+Elektronik[\s\S]{0,220}?(?:kontrol\s+edilebilir|imzalanmıştır|uyarınc\S*)\.?/gi,
+  /İmza\s+Kanunu\s+uyarınca\s+elektronik\s+olarak\s+imzalanmıştır\.?/gi,
+  /(?:[ \t]*elektronik\s+olarak\s+imzalanmıştır\.?)/gi,
+  /(?:Bu\s+)?belge,?\s*[^\n]{0,40}?(?:elektronik\s*imza|güvenli\S*)\s*[^\n]{0,30}?\s+i?mzalanmıştır\.?/gi,
+  /(?:güvenli\S*\s+)?(?:bir\s+)?(?:elektronik\S*\s+)?imza\s+ile\S*\s+i?mzalanmıştır\.?/gi,
+  /Bu\s+belge,?\s*(?:güvenli\s+)?(?:elektronik\s+)?(?:ile\s+)?i?mzalanmıştır\.?/gi,
   /Güvenli\s+elektronik\s+imza\s+aslı\s+ile\s+aynıdır\.?/gi,
   /güvenli\s+elektronik\s+imza\s*(?:ile\s+imzalanmıştır\.?)?/gi,
-  /Dokümanın\s+doğrulama\s+kodu\s*:?\s*[A-Za-z0-9+/=_-]+/gi,
-  /Belge\s+Doğrulama\s+Kodu\s*:?\s*[A-Za-z0-9+/=_-]+/gi,
-  /Belge\s+Takip\s+Adresi\s*:?\s*https?:\/\/\S+/gi,
-  /Takip\s+Adresi\s*:?\s*https?:\/\/\S+/gi,
-  /Doküman\s+https?:\/\/\S+\s+adresinden\s+kontrol\s+edilebilir\.?/gi,
-  /TırnakKodu:\s*/gi
+  /\S*ile\s+i?mzalanmıştır\.?/gi,
+  /Dokümanın\s+\S{0,16}\s*doğrulama\s+kodu\s*:?\s*[A-Za-z0-9+/=_-]+/gi,
+  /Belge[\s\S]{0,16}?Doğrulama\s+Kodu\s*:?\s*(?:[^\n]{0,28}?\s+)?[A-Za-z0-9+/=_-]{12,}/gi,
+  /Belge[\s\S]{0,16}?Doğrulama\s+Kodu\s*:?/gi,
+  /Doğrulama\s+Kodu\s*:?\s*[A-Za-z0-9+/=_-]{8,}/gi,
+  /Doğrulama\s+Kodu\s*:/gi,
+  /(?:Belge\s+)?(?:Takip\s+)?Adresi\s*:\s*https?:\S*/gi,
+  /Belge\s+Takip\s+Adresi[\s.]*/gi,
+  /Doküman\s+https?:\/\/\S+(?:\s+adresinden\s+kontrol\s+edilebilir\.?)?/gi,
+  /https?:\/\/(?:www\.)?(?:turkiye\.gov\.tr\/saglik-titck-ebys|ebs\.titck\.gov\.tr\S*)/gi,
+  /(?:çiftElektronik|TırnakKodu:\s*)/gi
 ];
 const TUFAM_TAIL_RE = /Şüpheli advers reaksiyonların raporlanması[\s\S]*$/i;
+const TUFAM_INLINE_RE = /[^.\n]*Türkiye\s+Farmakovijilans\s+Merkezi\s*\(TÜFAM\)[\s\S]{0,360}?(?:tufam@titck\.[gs]ov\.tr|bildirmeleri\s+gerekmektedir)[^.\n]*\.?/gi;
+const TUFAM_CONTACT_RE = /[^\n(]*\(?[^\n)]*(?:tufam@titck\.[gs]ov\.tr|0\s*800\s*314\s*00\s*08)[^\n)]*\)?\.?/gi;
 
 function cleanKubText(raw, stripTufam = false) {
   if (!raw) return '';
@@ -48,11 +60,13 @@ function cleanKubText(raw, stripTufam = false) {
   for (const re of EBYS_PATTERNS) {
     text = text.replace(re, '');
   }
+  text = text.replace(TUFAM_INLINE_RE, '');
+  text = text.replace(TUFAM_CONTACT_RE, '');
   if (stripTufam) {
     text = text.replace(TUFAM_TAIL_RE, '');
   }
   // Kırık tek kelimelik satır sonlarını aşırı boşlukları sadeleştirerek temizle
-  text = text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  text = text.replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   return text;
 }
 

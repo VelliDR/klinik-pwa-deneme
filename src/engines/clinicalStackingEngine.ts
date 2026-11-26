@@ -38,8 +38,10 @@ export interface TisdaleQtcScoreResult {
   bradycardiaAgents: string[];
   breakdown: TisdaleQtcBreakdownItem[];
   monitoringNoteTr: string;
+  nonCardiologySpecificityNoteTr: string;
   loincCodes: {
     qtc: '8636-3';
+    qtcFridericia: '76634-5';
     potassium: '2823-3';
     creatinine: '2160-0';
   };
@@ -224,10 +226,13 @@ export function calculateTisdaleQtcScore(
 
   const monitoringNoteTr =
     riskTier === 'HIGH'
-      ? 'Bazal ve seri 12 derivasyonlu EKG (LOINC 8636-3; QTc ≥500 ms veya Δ≥60 ms ise derhal ilacı değiştir/kes) + Serum K⁺ >4,0 mEq/L (LOINC 2823-3) ve Mg²⁺ >2,0 mg/dL hedefle.'
+      ? 'Bazal ve seri 12 derivasyonlu EKG — özellikle taşikardide QTc Fridericia (LOINC 76634-5; genel QTc 8636-3; ≥500 ms veya Δ≥60 ms ise derhal ilacı değiştir/kes) + Serum K⁺ >4,0 mEq/L (LOINC 2823-3) ve Mg²⁺ >2,0 mg/dL hedefle.'
       : riskTier === 'MODERATE'
-        ? 'Bazal 12 derivasyonlu EKG (LOINC 8636-3) ve kararlı durumda kontrol EKG; serum K⁺ (LOINC 2823-3) ve Mg²⁺ düzeltilmesi önerilir.'
+        ? 'Bazal 12 derivasyonlu EKG (QTc Fridericia LOINC 76634-5 / QTc 8636-3) ve kararlı durumda kontrol EKG; serum K⁺ (LOINC 2823-3) ve Mg²⁺ düzeltilmesi önerilir.'
         : 'Standart klinik izlem; ek QT uzatan ajan veya bradikardi eklendiğinde yeniden değerlendiriniz.';
+
+  const nonCardiologySpecificityNoteTr =
+    'Kalibrasyon (RISQ-PATH): Tisdale skoru koroner yoğun bakımda C-istatistiği 0,832 ile doğrulanmıştır; kardiyoloji dışı servislerde özgüllük düşebileceğinden taşikardide QTc Fridericia (LOINC 76634-5) önceliklendirilmelidir.';
 
   return {
     score,
@@ -239,8 +244,10 @@ export function calculateTisdaleQtcScore(
     bradycardiaAgents: bradyAgents.map(c => c.displayNameTr),
     breakdown,
     monitoringNoteTr,
+    nonCardiologySpecificityNoteTr,
     loincCodes: {
       qtc: '8636-3',
+      qtcFridericia: '76634-5',
       potassium: '2823-3',
       creatinine: '2160-0'
     }
@@ -838,11 +845,17 @@ export function evaluateClinicalStackingAndCypRules(
     });
   }
 
-  // 7f. Kanama Yükü Yığılması (Antikoagülan + Antiplatelet + Sistemik NSAİİ + SSRI/SNRI)
+  // 7f. Kanama Yükü Yığılması (Antikoagülan + Antiplatelet + Sistemik NSAİİ + SSRI/SNRI + Dinamik PPİ Koruyucusu)
   const anticoagulants = getSysClass('bleeding_anticoagulant');
   const antiplatelets = getSysClass('bleeding_antiplatelet');
   const bleedingNsaids = getSysClass('bleeding_nsaid');
   const bleedingSsri = getSysClass('bleeding_ssri_snri');
+  const hasActivePpi = systemic.some(
+    c =>
+      c.drugClasses.includes('ppi') ||
+      c.atcCodes.some(code => code.startsWith('A02BC')) ||
+      ['omeprazole', 'esomeprazole', 'pantoprazole', 'lansoprazole', 'rabeprazole'].includes(c.canonicalKey)
+  );
 
   const bleedingClassesCount =
     (anticoagulants.length > 0 ? 1 : 0) +
@@ -857,31 +870,36 @@ export function evaluateClinicalStackingAndCypRules(
     const isSsriNsaidOnly =
       !isMajorBleed && bleedingSsri.length > 0 && bleedingNsaids.length > 0;
     const involved = [...anticoagulants, ...antiplatelets, ...bleedingNsaids, ...bleedingSsri].map(toRef);
+    const suppressSsriNsaidByPpi = isSsriNsaidOnly && hasActivePpi;
 
-    alerts.push({
-      ruleId: 'STACK_BLEEDING_BURDEN_001',
-      tier: isMajorBleed ? 2 : 3,
-      alertTier: isMajorBleed ? 'TIER_2_SOFT_STOP' : 'TIER_3_MONITORING',
-      alertLevel: isMajorBleed ? 'SOFT_STOP_WARNING' : 'WARNING_MONITOR',
-      alertTitle: isMajorBleed
-        ? `YÜKSEK KANAMA YIĞILMASI (${bleedingClassesCount} Hemostatik/Mukozal Sınıf)`
-        : 'ARTMIŞ ÜST GİS KANAMA RİSKİ: Çoklu Kanama Yükü Kombinasyonu',
-      message: `${involved.map(d => d.displayNameTr).join(' + ')} eşzamanlı kullanımı trombosit fonksiyonu, pıhtılaşma kaskadı ve/veya gastrik mukozal bariyer üzerinden aditif majör GİS/intrakraniyal kanama riski doğurur.${isSsriNsaidOnly ? ' (SSRI + NSAİİ kombinasyonunda üst GİS kanama riski tekil etkilerin ötesinde %19 artar; yüksek riskli hastalarda NNH = 179, düşük risklide NNH = 645.)' : ''}`,
-      mechanism: 'Antikoagülasyon + trombosit serotonin/COX-1 inhibisyonu + gastrik prostaglandin kaybı.',
-      clinicalSeverity: isMajorBleed ? 'MAJOR' : 'MODERATE',
-      interruptive: isMajorBleed,
-      blocksConfirmation: false,
-      evidenceLevel: 'Meta-Analizler & W3C PDDI-CDS Zarar Sıklığı Verisi (NNH)',
-      guidelineSource: 'ESC/ACC Antithrombotic Guidelines; W3C PDDI-CDS Note; Janusmed Risk Profile',
-      recommendations: [
-        'Mümkünse sistemik NSAİİ yerine Parasetamol veya topikal analjezik tercih ediniz.',
-        'Birlikte kullanım zorunluysa PPI ile gastroproteksiyon (klopidogrel varsa Pantoprazol) ekleyiniz.',
-        'Melena, hematemez, açıklanamayan hemoglobin düşüşü ve INR (varfarin varsa) izlemi yapınız.'
-      ],
-      involvedDrugs: involved,
-      alertClass: isMajorBleed ? 'warning' : 'yellow',
-      badgeLabel: isMajorBleed ? '⚠️ MAJÖR KANAMA YÜKÜ (D)' : '⚡ GİS KANAMA İZLEMİ (C)'
-    });
+    if (!suppressSsriNsaidByPpi) {
+      alerts.push({
+        ruleId: 'STACK_BLEEDING_BURDEN_001',
+        tier: isMajorBleed ? 2 : 3,
+        alertTier: isMajorBleed ? 'TIER_2_SOFT_STOP' : 'TIER_3_MONITORING',
+        alertLevel: isMajorBleed ? 'SOFT_STOP_WARNING' : 'WARNING_MONITOR',
+        alertTitle: isMajorBleed
+          ? `YÜKSEK KANAMA YIĞILMASI (${bleedingClassesCount} Hemostatik/Mukozal Sınıf)`
+          : 'ARTMIŞ ÜST GİS KANAMA RİSKİ: Çoklu Kanama Yükü Kombinasyonu',
+        message: `${involved.map(d => d.displayNameTr).join(' + ')} eşzamanlı kullanımı trombosit fonksiyonu, pıhtılaşma kaskadı ve/veya gastrik mukozal bariyer üzerinden aditif majör GİS/intrakraniyal kanama riski doğurur.${isSsriNsaidOnly ? ' (SSRI + NSAİİ ÜGİS kanama OR 4,25–6,33; ≥50 yaş kombinasyonda yıllık NNH 62–82 [Loke 2008], bazal risk katmanlı SSRI NNH düşük riskte 3.177 vs yüksek riskte 881 [Anglin 2014]; eşzamanlı PPİ riski OR 0,81 düzeyine indirir.)' : ''}`,
+        mechanism: 'Antikoagülasyon + trombosit serotonin/COX-1 inhibisyonu + gastrik prostaglandin kaybı.',
+        clinicalSeverity: isMajorBleed ? 'MAJOR' : 'MODERATE',
+        interruptive: isMajorBleed,
+        blocksConfirmation: false,
+        evidenceLevel: 'Meta-Analizler (Anglin AJG 2014; Loke APT 2008; CGH 2015) & W3C PDDI-CDS NNH',
+        guidelineSource: 'ESC/ACC Antithrombotic Guidelines; Anglin et al., AJG 2014 (PMID: 24777151); Loke et al., APT 2008 (PMID: 17919277)',
+        recommendations: [
+          'Mümkünse sistemik NSAİİ yerine Parasetamol veya topikal analjezik tercih ediniz.',
+          hasActivePpi
+            ? 'Reçetede aktif PPİ mevcut; buna karşın çoklu antitrombotik kanama yükü sürdüğünden hemoglobin (LOINC 718-7) ve melena/hematemez takibi yapınız.'
+            : 'Birlikte kullanım zorunluysa PPİ gastroproteksiyonu (klopidogrel varsa Pantoprazol) ekleyiniz.',
+          'Hemoglobin (LOINC 718-7; ≥2 g/dL düşüş kritik eşik) ve varfarin varsa 3–5. gün INR (LOINC 6301-6) izlemi yapınız.'
+        ],
+        involvedDrugs: involved,
+        alertClass: isMajorBleed ? 'warning' : 'yellow',
+        badgeLabel: isMajorBleed ? '⚠️ MAJÖR KANAMA YÜKÜ (D)' : '⚡ GİS KANAMA İZLEMİ (C)'
+      });
+    }
   }
 
   // 7g. Child-Pugh C Siroz Bağlam Yükselticisi: Rimegepant (2x maruziyet -> Kaçın)

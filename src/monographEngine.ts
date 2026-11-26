@@ -146,6 +146,32 @@ export interface ClinicalMonograph {
   reproductive_safety?: ReproductiveSafetyStructure;
   safety_warnings?: SafetyWarningsStructure;
   metadata?: MonographMetadata;
+  // W3C / DRIVE v2.0.0 Kanıt, LOINC İzlem ve Yönetişim Alanları
+  schema_version?: string;
+  summary?: string;
+  rxcui?: string;
+  fda_gsrs_unii?: string;
+  monitoring_protocol?: Array<{
+    parameter_tr: string;
+    loinc_code: string | null;
+    ucum_unit?: string | null;
+    critical_threshold: string;
+    timing_tr: string;
+  }>;
+  evidence_and_provenance?: Array<{
+    source_id: string;
+    source_type: string;
+    identifier: string;
+    effective_date: string;
+    section: string;
+    source_quote_verbatim: string;
+    source_url?: string;
+  }>;
+  review_governance?: {
+    review_status: 'author_draft_unreviewed' | 'PEER_REVIEWED_APPROVED';
+    independent_pharmacologist_signed: boolean;
+    independent_pharmacist_signed: boolean;
+  };
 }
 
 export interface MonographLookupInput {
@@ -498,8 +524,8 @@ export function convertMasterToClinicalMonograph(m: MasterMonographRecord, selec
     adultDose: m.adultDose || 'KÜB / prospektüs pozolojisine başvurunuz.',
     pediatricDose: m.pediatricDose || 'Pediatrik kullanım ve yaş sınırları için resmi KÜB belgesine başvurunuz.',
     maxDailyDose: 'Resmi KÜB / prospektüs tavan dozuna bakınız.',
-    renalAdjustment: m.organImpairment || 'Böbrek yetmezliğinde (eGFR) hekim değerlendirmesi ve doz uyarlaması önerilir.',
-    hepaticAdjustment: m.organImpairment || 'Karaciğer yetmezliğinde dikkatli kullanım önerilir.',
+    renalAdjustment: m.organImpairment || 'eGFR (CKD-EPI 2021, LOINC 98979-8) değerine göre resmi KÜB Bölüm 4.2/5.2 renal dozaj tablosundan doğrulayınız.',
+    hepaticAdjustment: m.organImpairment || 'Child-Pugh sınıfına (A/B/C) ve Weersink siroz güvenlik kademesine göre resmi KÜB Bölüm 4.2/5.2 kaydından doğrulayınız.',
     pregnancyLactation: pregStr,
     contraindications: contraStr,
     clinicalPearls: pearlParts.join(' • '),
@@ -1568,9 +1594,46 @@ export function renderMonographCardHTML(
   if (master?.formula || icdProfile?.formula) molFields.push({ k: 'Formül', v: master?.formula || icdProfile?.formula || '' });
   if (master?.mw) molFields.push({ k: 'Mol. Ağırlığı', v: `${master.mw} g/mol` });
   if (master?.pubchem) molFields.push({ k: 'PubChem CID', v: master.pubchem });
-  if (master?.rxnorm) molFields.push({ k: 'RxCUI', v: master.rxnorm });
+  if (mono.rxcui || master?.rxnorm) molFields.push({ k: 'RxCUI', v: mono.rxcui || master?.rxnorm || '' });
+  if (mono.fda_gsrs_unii) molFields.push({ k: 'FDA UNII', v: mono.fda_gsrs_unii });
   if (master?.chembl) molFields.push({ k: 'ChEMBL', v: master.chembl });
   if (master?.phase) molFields.push({ k: 'Klinik Faz', v: master.phase });
+
+  const v2MonitoringAndProvenanceHTML = (Array.isArray(mono.monitoring_protocol) && mono.monitoring_protocol.length > 0) ||
+    (Array.isArray(mono.evidence_and_provenance) && mono.evidence_and_provenance.length > 0)
+    ? `
+      <div class="bg-slate-900/70 border border-sky-800/60 rounded-lg p-2.5 space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-1.5">
+          <div class="text-[0.75rem] uppercase tracking-wider font-bold text-sky-300">W3C Kanıtlı İzlem Protokolü &amp; Kaynak (v2.0)</div>
+          <span class="px-1.5 py-0.5 rounded text-[0.625rem] font-mono bg-slate-800 text-slate-300 border border-slate-700">${mono.review_governance?.review_status === 'PEER_REVIEWED_APPROVED' ? 'Hakem Onaylı' : 'Yazar Taslağı (Bağımsız Hakem Bekliyor)'}</span>
+        </div>
+        ${Array.isArray(mono.monitoring_protocol) && mono.monitoring_protocol.length > 0 ? `
+          <div class="space-y-1">
+            ${mono.monitoring_protocol.map(mp => `
+              <div class="text-[0.75rem] text-slate-200 bg-slate-950/60 border border-slate-800 rounded px-2 py-1">
+                <strong class="text-sky-200">${escapeSafeHtml(mp.parameter_tr)}</strong>
+                <span class="ml-1 font-mono text-[0.6875rem] text-slate-400">[${mp.loinc_code ? `LOINC ${escapeSafeHtml(mp.loinc_code)}` : 'Klinik/Cihaz İzlemi'}${mp.ucum_unit ? ` · ${escapeSafeHtml(mp.ucum_unit)}` : ''}]</span>
+                <div class="text-[0.6875rem] text-slate-300">Zamanlama: ${escapeSafeHtml(mp.timing_tr)} · Kritik Eşik: <span class="text-amber-300">${escapeSafeHtml(mp.critical_threshold)}</span></div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${Array.isArray(mono.evidence_and_provenance) && mono.evidence_and_provenance.length > 0 ? `
+          <details class="text-[0.75rem]">
+            <summary class="cursor-pointer text-sky-400 hover:text-sky-300 font-medium">Birebir Kaynak Alıntıları (${mono.evidence_and_provenance.length})</summary>
+            <div class="mt-1.5 space-y-1.5">
+              ${mono.evidence_and_provenance.map(ev => `
+                <div class="p-2 rounded bg-slate-950/70 border border-slate-800 space-y-0.5">
+                  <div class="font-mono text-[0.6875rem] text-emerald-300">${escapeSafeHtml(ev.source_type)} · ${escapeSafeHtml(ev.identifier)} · ${escapeSafeHtml(ev.effective_date)}</div>
+                  <blockquote class="text-[0.75rem] text-slate-300 italic leading-relaxed">“${escapeSafeHtml(ev.source_quote_verbatim)}”</blockquote>
+                </div>
+              `).join('')}
+            </div>
+          </details>
+        ` : ''}
+      </div>
+    `
+    : '';
 
   const molCardHTML = molFields.length > 0
     ? `
@@ -1723,6 +1786,7 @@ export function renderMonographCardHTML(
       <!-- Panel 3: Güvenlik & Özel Popülasyon -->
       <div class="mono-tab-panel hidden space-y-2.5" data-mono-panel="guvenlik">
         ${contraBlockHTML}
+        ${v2MonitoringAndProvenanceHTML}
         ${reproductiveHTML}
         ${organImpairmentHTML}
         ${diliCardHTML}

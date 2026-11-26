@@ -2851,7 +2851,34 @@
                             </div>
                         </div>
 
+                        <!-- Faz 3: Son 14–35 Günde Kesilen Kritik İlaç (Arınma / Washout Tarayıcı) -->
+                        <details class="rounded-lg border border-slate-800/90 bg-slate-950/45 overflow-hidden">
+                            <summary class="px-2.5 py-1.5 cursor-pointer select-none flex items-center justify-between text-[0.75rem] text-slate-300 hover:text-sky-300 font-medium list-none [&::-webkit-details-marker]:hidden">
+                                <span>Son 14–35 Günde Kesilen Kritik İlaç (MAOI / Fluoksetin / İndükleyici Arınma)</span>
+                                <span id="badge-discontinued-count" class="text-[0.6875rem] font-mono text-slate-400">0</span>
+                            </summary>
+                            <div class="px-2.5 pb-2 pt-1.5 border-t border-slate-800/80 space-y-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <select id="select-discontinued-drug" class="flex-1 min-w-[160px] h-8 bg-[#0c1322] border border-slate-700/80 rounded px-2 text-xs text-slate-200 focus:border-sky-400 focus:outline-none">
+                                        <option value="">Kesilen kritik ilaç seç...</option>
+                                        <option value="phenelzine">Fenelzin / Tranilsipromin (MAOI — 14g)</option>
+                                        <option value="selegiline">Selejilin / Rasajilin (MAO-B — 14g)</option>
+                                        <option value="fluoxetine">Fluoksetin (Norfluoksetin — 35g)</option>
+                                        <option value="rifampicin">Rifampisin (İndükleyici — 14g rebound)</option>
+                                        <option value="carbamazepine">Karbamazepin (İndükleyici — 14g rebound)</option>
+                                        <option value="clarithromycin">Klaritromisin (MBI CYP3A4 — 7g)</option>
+                                        <option value="amiodarone">Amiodaron (t½ 40–55g — ≥35g)</option>
+                                    </select>
+                                    <input type="number" id="input-discontinued-days" min="0" max="60" value="5" class="w-20 h-8 bg-[#0c1322] border border-slate-700/80 rounded px-2 text-xs text-slate-100 tabular-nums focus:border-sky-400 focus:outline-none" title="Kaç gün önce kesildi?">
+                                    <span class="text-[0.6875rem] text-slate-400">gün önce</span>
+                                    <button type="button" id="btn-add-discontinued-drug" class="btn-compact h-8 px-2.5 rounded bg-sky-900/70 hover:bg-sky-800 text-sky-200 border border-sky-600/70 text-xs font-semibold">+ Ekle</button>
+                                </div>
+                                <div id="container-discontinued-chips" class="flex flex-wrap gap-1.5 empty:hidden"></div>
+                            </div>
+                        </details>
+
                         <!-- Canlı Uyarı Çıktıları -->
+                        <div id="output-safety-lab-orders" class="hidden text-[0.75rem] p-2 rounded-lg border border-cyan-700/60 bg-cyan-950/30 text-cyan-100 space-y-1"></div>
                         <div id="output-safety-interactions" class="hidden text-[0.75rem] p-2.5 rounded-lg border tabular-nums space-y-2"></div>
                         <div id="output-safety-ddinter" class="hidden text-[0.75rem] space-y-1.5"></div>
                         <div id="output-safety-duplication" class="hidden text-[0.75rem] p-2.5 rounded-lg border space-y-1"></div>

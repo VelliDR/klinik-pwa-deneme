@@ -11,6 +11,10 @@ import {
   evaluateUnifiedPrescriptionSafety,
   renderUnifiedModalSafetyBannerHTML
 } from '../engines/unifiedSafetyOrchestrator';
+import {
+  loadOverrideAuditLog,
+  recordOverrideAuditEntry
+} from '../engines/cdsHooksActionEngine';
 import { copyToClipboardWithFallback, updateLiveSOAP } from './workstationController';
 import { renderSelectedDrugs } from './safetyAlertsController';
 import {
@@ -73,8 +77,17 @@ const getEl = <T extends HTMLElement = HTMLElement>(id: string): T | null => {
 };
 
 let activePrescriptionDrugs: PrintableDrugSchedule[] = [];
+let activeHardStopOverride: { signature: string; code: string; display: string; note?: string } | null = null;
+let lastModalHasCritical = false;
 const boundDocuments = new WeakSet<Document>();
 let onPrescriptionTabsUpdate: (() => void) | undefined;
+
+function getPrescriptionSignature(): string {
+  return activePrescriptionDrugs
+    .map(d => `${(d.atcCode || '').toUpperCase()}:${(d.name || '').toLowerCase()}`)
+    .sort()
+    .join('|');
+}
 
 export function resetPrescriptionData(): void {
   activePrescriptionDrugs = [];
@@ -249,21 +262,30 @@ export function initPrescriptionModalController(onUpdateAllTabs?: () => void): v
         childPughClass: cpState?.childClass ?? null,
         childPughScore: cpState?.score ?? null,
         meldScore: meldState?.score ?? null,
-        diagnosis: inputPrintDiagnosis?.value || undefined
+        diagnosis: inputPrintDiagnosis?.value || undefined,
+        recentDiscontinuedDrugs: appState.safetyPrescription.recentDiscontinuedDrugs || []
       }
     );
 
+    const currentSig = getPrescriptionSignature();
+    if (activeHardStopOverride && activeHardStopOverride.signature !== currentSig) {
+      activeHardStopOverride = null;
+    }
+    lastModalHasCritical = unifiedResult.counts.hasCritical;
+
     if (btnTriggerPrint) {
-      if (unifiedResult.counts.hasCritical) {
+      if (unifiedResult.counts.hasCritical && !activeHardStopOverride) {
         btnTriggerPrint.classList.add('opacity-50');
-        btnTriggerPrint.title = 'Reçetede kesin kontrendikasyon (Hard Stop) bulunmaktadır!';
+        btnTriggerPrint.title = 'Reçetede kesin kontrendikasyon (Hard Stop) bulunmaktadır — yazdırmak için kodlu override gerekçesi seçiniz!';
       } else {
         btnTriggerPrint.classList.remove('opacity-50');
-        btnTriggerPrint.title = 'Reçeteyi Yazdır / PDF İndir';
+        btnTriggerPrint.title = activeHardStopOverride
+          ? `Kodlu Override Onaylı (${activeHardStopOverride.display}) — Yazdır / PDF İndir`
+          : 'Reçeteyi Yazdır / PDF İndir';
       }
     }
 
-    return renderUnifiedModalSafetyBannerHTML(unifiedResult);
+    return renderUnifiedModalSafetyBannerHTML(unifiedResult, activeHardStopOverride);
   }
 
   function refreshPrescriptionPreview(): void {
@@ -811,9 +833,107 @@ export function initPrescriptionModalController(onUpdateAllTabs?: () => void): v
     });
   }
 
+  // Faz 4: Modal İçi Kodlu Override (Marcilly 2018) & Tek Tıkla CDS Hooks Aksiyonları
+  if (containerRxEditorList) {
+    containerRxEditorList.addEventListener('click', (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+
+      const overrideBtn = targetEl?.closest<HTMLButtonElement>('.btn-cds-override');
+      if (overrideBtn) {
+        const code = overrideBtn.dataset.overrideCode || '';
+        const display = overrideBtn.dataset.overrideDisplay || '';
+        const bar = overrideBtn.closest<HTMLElement>('[data-override-status="locked"]');
+        const ruleId = bar?.dataset.overrideRule || 'CRITICAL_SAFETY_LOCK';
+        const pairLabel = bar?.dataset.overridePair || '';
+        const noteEl = getEl<HTMLInputElement>('input-cds-override-note');
+        const note = noteEl?.value?.trim() || undefined;
+        activeHardStopOverride = { signature: getPrescriptionSignature(), code, display, note };
+        const entry = recordOverrideAuditEntry({
+          cardUuid: `card-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+          ruleId,
+          pairLabel,
+          overrideCode: code,
+          overrideDisplay: display,
+          note
+        });
+        appState.safetyPrescription.overrideAuditLog = [entry, ...loadOverrideAuditLog().filter(x => x.cardUuid !== entry.cardUuid)].slice(0, 100);
+        if (inputPrintClinicalNotes) {
+          const logLine = `[CDS Override: ${display}${note ? ` — ${note}` : ''} | ${ruleId}]`;
+          if (!inputPrintClinicalNotes.value.includes(logLine)) {
+            inputPrintClinicalNotes.value = inputPrintClinicalNotes.value ? `${inputPrintClinicalNotes.value}\n${logLine}` : logLine;
+          }
+        }
+        refreshPrescriptionPreview();
+        return;
+      }
+
+      const clearBtn = targetEl?.closest<HTMLButtonElement>('.btn-clear-cds-override');
+      if (clearBtn) {
+        activeHardStopOverride = null;
+        refreshPrescriptionPreview();
+        return;
+      }
+
+      const cdsBtn = targetEl?.closest<HTMLButtonElement>('.btn-cds-action');
+      if (cdsBtn) {
+        const action = cdsBtn.dataset.cdsAction || '';
+        const targetBrand = (cdsBtn.dataset.targetBrand || '').toLowerCase();
+        const targetAtc = (cdsBtn.dataset.targetAtc || '').toUpperCase();
+        const targetKey = (cdsBtn.dataset.targetKey || '').toLowerCase();
+        const findIdx = () => activePrescriptionDrugs.findIndex(d => {
+          const n = (d.name || '').toLowerCase();
+          const g = (d.generic || '').toLowerCase();
+          const a = (d.atcCode || '').toUpperCase();
+          return (targetAtc && a === targetAtc) || (targetBrand && n === targetBrand) || (targetKey && (n.includes(targetKey) || g.includes(targetKey)));
+        });
+
+        if (action === 'REMOVE_DRUG') {
+          const idx = findIdx();
+          if (idx >= 0) {
+            activePrescriptionDrugs.splice(idx, 1);
+            activeHardStopOverride = null;
+            renderRxEditorList();
+          }
+        } else if (action === 'SWITCH_ALTERNATIVE') {
+          const idx = findIdx();
+          const repBrand = cdsBtn.dataset.repBrand || '';
+          const repGeneric = cdsBtn.dataset.repGeneric || '';
+          const repAtc = cdsBtn.dataset.repAtc || '';
+          if (repBrand && repAtc) {
+            const cat = findCatalogDrugSync({ atc: repAtc, brand: repBrand });
+            const isChild = !!appState.biometry.isNeonate || (appState.biometry.ageYears !== null && appState.biometry.ageYears < 18);
+            const sched = buildDefaultDrugSchedule(
+              cat
+                ? { brand: cat.brand, generic: cat.generic, atcCode: cat.atcCode, barcode: cat.barcode, rx: cat.prescriptionType, route: cat.route }
+                : { brand: repBrand, generic: repGeneric, atcCode: repAtc },
+              appState.biometry.weightKg || undefined,
+              isChild
+            );
+            if (idx >= 0) activePrescriptionDrugs[idx] = sched;
+            else activePrescriptionDrugs.push(sched);
+            activeHardStopOverride = null;
+            renderRxEditorList();
+          }
+        } else if (action === 'ADD_LAB_ORDER') {
+          const orderText = cdsBtn.dataset.labOrder || '';
+          if (orderText && inputPrintClinicalNotes && !inputPrintClinicalNotes.value.includes(orderText)) {
+            inputPrintClinicalNotes.value = inputPrintClinicalNotes.value ? `${inputPrintClinicalNotes.value}\n${orderText}` : orderText;
+            refreshPrescriptionPreview();
+          }
+        }
+      }
+    });
+  }
+
   if (btnTriggerPrint) {
     btnTriggerPrint.addEventListener('click', () => {
       refreshPrescriptionPreview();
+      if (lastModalHasCritical && !activeHardStopOverride) {
+        const safetyBox = getEl('container-rx-safety-banners');
+        safetyBox?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        getEl<HTMLInputElement>('input-cds-override-note')?.focus?.();
+        return;
+      }
       if (typeof window !== 'undefined' && typeof window.print === 'function') {
         window.print();
       }

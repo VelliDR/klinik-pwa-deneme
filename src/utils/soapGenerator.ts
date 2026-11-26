@@ -760,6 +760,17 @@ export function generateSOAP(): string {
     p.push(`${pCount}. Hepatik İlaç Güvenliği Eylemi (${hs.summary}): ${hs.alerts.map(a => `${a.drugName} (${a.recommendation})`).join(' | ')}`);
     pCount++;
   }
+  if (appState.safetyPrescription?.clinicalMonitoringOrders && appState.safetyPrescription.clinicalMonitoringOrders.length > 0) {
+    p.push(`${pCount}. LOINC Klinik İzlem İstemleri: ${appState.safetyPrescription.clinicalMonitoringOrders.join(' | ')}.`);
+    pCount++;
+  }
+  if (appState.safetyPrescription?.recentDiscontinuedDrugs && appState.safetyPrescription.recentDiscontinuedDrugs.length > 0) {
+    const discStr = appState.safetyPrescription.recentDiscontinuedDrugs
+      .map(d => `${d.displayNameTr || d.canonicalKey} (${d.stoppedDaysAgo} gün önce kesildi)`)
+      .join(', ');
+    p.push(`${pCount}. Arınma (Washout) Takibi — Yakın Dönemde Kesilen İlaçlar: ${discStr}.`);
+    pCount++;
+  }
   if (appState.pediatrics?.growthVelocity?.malnutritionAssessment?.treatmentProtocol) {
     const tp = appState.pediatrics.growthVelocity.malnutritionAssessment.treatmentProtocol;
     p.push(`${pCount}. Beslenme & Malnütrisyon Protokolü (${tp.setting === 'INPATIENT' ? 'Yatarak Tedavi' : 'Ayaktan Tedavi'}):`);

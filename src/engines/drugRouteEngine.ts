@@ -11,9 +11,13 @@
 
 export type DrugRouteCode =
   | 'ORAL'
+  | 'ENTERAL'
   | 'IV'
   | 'IM'
   | 'SC'
+  | 'IA'
+  | 'EPIDURAL'
+  | 'INTRALESIONAL'
   | 'PARENTERAL'
   | 'INH'
   | 'TOP'
@@ -28,9 +32,13 @@ export type DrugRouteCode =
 
 export type CompactRouteCode =
   | 'O'
+  | 'ENT'
   | 'IV'
   | 'IM'
   | 'SC'
+  | 'IA'
+  | 'EPI'
+  | 'IL'
   | 'P'
   | 'IH'
   | 'T'
@@ -45,14 +53,27 @@ export type CompactRouteCode =
 export const COMPACT_TO_ROUTE: Record<string, DrugRouteCode> = {
   O: 'ORAL',
   ORAL: 'ORAL',
+  ENT: 'ENTERAL',
+  ENTERAL: 'ENTERAL',
   IV: 'IV',
+  INTRAVENOUS: 'IV',
   IM: 'IM',
+  INTRAMUSCULAR: 'IM',
   SC: 'SC',
+  SUBCUTANEOUS: 'SC',
+  IA: 'IA',
+  INTRAARTICULAR: 'IA',
+  'INTRA-ARTICULAR': 'IA',
+  EPI: 'EPIDURAL',
+  EPIDURAL: 'EPIDURAL',
+  IL: 'INTRALESIONAL',
+  INTRALESIONAL: 'INTRALESIONAL',
   P: 'PARENTERAL',
   PARENTERAL: 'PARENTERAL',
   IH: 'INH',
   INH: 'INH',
   INHAL: 'INH',
+  INHALED: 'INH',
   T: 'TOP',
   TOP: 'TOP',
   TOPICAL: 'TOP',
@@ -63,6 +84,7 @@ export const COMPACT_TO_ROUTE: Record<string, DrugRouteCode> = {
   OTIC: 'OTIC',
   N: 'NASAL',
   NASAL: 'NASAL',
+  INTRANASAL: 'NASAL',
   R: 'RECT',
   RECT: 'RECT',
   RECTAL: 'RECT',
@@ -77,9 +99,13 @@ export const COMPACT_TO_ROUTE: Record<string, DrugRouteCode> = {
 
 export const ROUTE_LABELS_TR: Record<DrugRouteCode, string> = {
   ORAL: 'Oral',
+  ENTERAL: 'Enteral',
   IV: 'İntravenöz (IV)',
   IM: 'İntramüsküler (IM)',
   SC: 'Subkutan (SC)',
+  IA: 'İntra-artiküler (Eklem İçi)',
+  EPIDURAL: 'Epidural',
+  INTRALESIONAL: 'İntralezyonel',
   PARENTERAL: 'Parenteral (IV/IM/SC)',
   INH: 'İnhalasyon',
   TOP: 'Topikal / Dermal',
@@ -116,9 +142,13 @@ export function decodeRouteCode(raw?: string | null): DrugRouteCode {
 export function encodeRouteCode(route: DrugRouteCode): CompactRouteCode | '' {
   switch (route) {
     case 'ORAL': return 'O';
+    case 'ENTERAL': return 'ENT';
     case 'IV': return 'IV';
     case 'IM': return 'IM';
     case 'SC': return 'SC';
+    case 'IA': return 'IA';
+    case 'EPIDURAL': return 'EPI';
+    case 'INTRALESIONAL': return 'IL';
     case 'PARENTERAL': return 'P';
     case 'INH': return 'IH';
     case 'TOP': return 'T';
@@ -182,6 +212,17 @@ export function inferDrugRoute(input: {
     return 'SL';
   }
 
+  // 3b. Eklem içi / Epidural / İntralezyonel depo enjeksiyonlar (sistemik CYP3A4 Cushing istisnası için ayrı tutulur)
+  if (/\b(intra-?artikuler|eklem\s+ici|intraarticular)\b/.test(text)) {
+    return 'IA';
+  }
+  if (/\b(epidural)\b/.test(text)) {
+    return 'EPIDURAL';
+  }
+  if (/\b(intralezyonel|intralesional)\b/.test(text)) {
+    return 'INTRALESIONAL';
+  }
+
   // 4. Parenteral (IV / IM / SC ayrımı)
   const hasIv = /\b(i\.?\s*v\.?|intravenoz|infuzyon|infüzyon|perfuzyon|perfüzyon)\b/.test(text);
   const hasIm = /\b(i\.?\s*m\.?|intramuskuler|intramusküler)\b/.test(text);
@@ -213,7 +254,7 @@ export function inferDrugRoute(input: {
 
 export function isParenteralRoute(route?: DrugRouteCode | string | null): boolean {
   const r = decodeRouteCode(route as string);
-  return r === 'IV' || r === 'IM' || r === 'SC' || r === 'PARENTERAL';
+  return r === 'IV' || r === 'IM' || r === 'SC' || r === 'IA' || r === 'EPIDURAL' || r === 'INTRALESIONAL' || r === 'PARENTERAL';
 }
 
 export function isLocalNonSystemicRoute(route?: DrugRouteCode | string | null): boolean {
@@ -228,7 +269,7 @@ export function isSystemicRoute(route?: DrugRouteCode | string | null): boolean 
 
 export function isOralOrEnteralRoute(route?: DrugRouteCode | string | null): boolean {
   const r = decodeRouteCode(route as string);
-  return r === 'ORAL' || r === 'SL' || r === 'UNKNOWN';
+  return r === 'ORAL' || r === 'ENTERAL' || r === 'SL' || r === 'UNKNOWN';
 }
 
 /**

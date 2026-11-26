@@ -16,24 +16,64 @@ import {
   isOralOrEnteralRoute,
   type DrugRouteCode
 } from './drugRouteEngine';
+import {
+  normalizeSourceType,
+  UNKNOWN_EPIDEMIOLOGY_SENTINEL,
+  type ActionTier,
+  type CanonicalSourceType,
+  type ClassExtrapolationPolicy,
+  type CompatSourceType,
+  type InteractionDirectionality,
+  type LegacyEvidenceLevel,
+  type LiverpoolGradeLevel,
+  type ReviewStatus
+} from '../schemas/pddiMonographSchema';
 
-export type UnifiedRiskTier = 'X' | 'D' | 'C' | 'B' | 'A';
-export type UnifiedEvidenceLevel = 'kesin' | 'olasi' | 'teorik';
+export type UnifiedRiskTier = ActionTier;
+export type UnifiedEvidenceLevel = LegacyEvidenceLevel;
 
 export interface PddiSourceAssertion {
   source_id: string;
-  source_type: 'TITCK_KUB' | 'OPENFDA_SPL' | 'ANSM_2023' | 'FDA_CYP_TABLE' | 'ONC_15' | 'CLINICAL_GUIDELINE';
+  source_type: CompatSourceType;
   section: string;
   original_rating: string;
   version_date: string;
   source_quote_verbatim: string;
+  /** Kanonik W3C/DRIVE alan eşlemeleri */
+  identifier?: string;
+  effective_date?: string;
+  source_url?: string;
+}
+
+export interface PddiEvidenceProvenanceItem {
+  source_id: string;
+  source_type: CanonicalSourceType;
+  identifier: string;
+  effective_date: string;
+  section: string;
+  original_rating: string;
+  source_quote_verbatim: string;
+  source_url?: string;
 }
 
 export interface PddiMonitoringParameter {
   parameter_tr: string;
-  loinc_code: string;
+  loinc_code: string | null;
+  ucum_unit?: string | null;
   critical_threshold: string;
   timing_tr: string;
+  device_mapping?: string;
+}
+
+export interface PddiOverrideReason {
+  code: string;
+  display: string;
+}
+
+export interface PddiReviewGovernance {
+  review_status: ReviewStatus;
+  independent_pharmacologist_signed: boolean;
+  independent_pharmacist_signed: boolean;
 }
 
 export interface PddiMonographRecord {
@@ -49,12 +89,25 @@ export interface PddiMonographRecord {
   rxcui_a?: string;
   rxcui_b?: string;
   unified_risk_tier: UnifiedRiskTier;
+  default_action_tier: UnifiedRiskTier;
+  liverpool_grade_level: LiverpoolGradeLevel;
+  dips_score?: number | null;
+  directionality: InteractionDirectionality;
+  mirror_indexed: boolean;
+  class_extrapolation_policy: ClassExtrapolationPolicy;
+  included_routes: string[];
   operational_statement_tr: string;
+  primary_directive_tr: string;
+  summary: string;
+  override_reasons: PddiOverrideReason[];
+  frequency_of_exposure: string;
+  frequency_of_harm: string;
   seriousness: 'life_threatening' | 'hospitalization_or_major' | 'moderate_clinical' | 'minor';
   evidence_level: UnifiedEvidenceLevel;
   clinical_consequences_tr: string[];
   interaction_category: string[];
   mechanism_tr: string;
+  clinician_narrative_tr: string;
   recommended_action_tr: string;
   alternative_tr?: string;
   monitoring_parameters: PddiMonitoringParameter[];
@@ -63,6 +116,8 @@ export interface PddiMonographRecord {
   discordance_flag: boolean;
   reconciliation_tier: 1 | 2 | 3;
   source_assertions: PddiSourceAssertion[];
+  evidence_and_provenance: PddiEvidenceProvenanceItem[];
+  review_governance: PddiReviewGovernance;
   authored_text_license: 'CC-BY-NC-SA-4.0';
   last_clinical_review_date: string;
 }
@@ -76,6 +131,10 @@ export interface PddiDomainTemplate {
   monitoring: PddiMonitoringParameter[];
   escalators: string[];
   route_scope: 'SYSTEMIC' | 'ORAL_GI_ONLY' | 'NON_ORAL_EXCEPTION';
+  class_extrapolation_policy?: ClassExtrapolationPolicy;
+  directionality?: InteractionDirectionality;
+  included_routes?: string[];
+  override_reasons?: PddiOverrideReason[];
 }
 
 export interface CompactPddiMonographRecord {
@@ -91,11 +150,17 @@ export interface CompactPddiMonographRecord {
   rb?: string;
   t: UnifiedRiskTier;
   ev: UnifiedEvidenceLevel;
+  /** Ortogonal DRIVE / Liverpool GRADE kanıt düzeyi */
+  lg?: LiverpoolGradeLevel;
+  /** Olgu raporlarına dayanan kayıtlarda 10 maddelik DIPS skoru */
+  dips?: number;
+  /** Doğrulanmış epidemiyolojik zarar sıklığı / NNH (yoksa UNKNOWN_EPIDEMIOLOGY_SENTINEL) */
+  harm?: string;
   dom: string;
   pb?: 1;
   dc?: 1;
   rt: 1 | 2 | 3;
-  sa: Array<[string, PddiSourceAssertion['source_type'], string, string, string, string]>;
+  sa: Array<[string, CompatSourceType, string, string, string, string]>;
 }
 
 export interface PddiMonographBundle {
@@ -161,6 +226,52 @@ export function getPddiMonographStats(): {
   };
 }
 
+const DEFAULT_OVERRIDE_REASONS: PddiOverrideReason[] = [
+  { code: 'specialist-approval', display: 'Uzman onayı' },
+  { code: 'no-alternative', display: 'Alternatif yok' },
+  { code: 'monitored-use', display: 'İzlem planlandı' },
+  { code: 'dose-adjusted', display: 'Doz ayarlandı' }
+];
+
+const PURE_PD_DOMAINS = new Set<string>([
+  'NITRATE_PDE5',
+  'CNS_RESPIRATORY',
+  'HYPERKALEMIA',
+  'NEPHROTOX_RAAS_NSAID',
+  'BLEEDING_ANTICOAG',
+  'SEROTONIN',
+  'BRADYCARDIA_AV',
+  'NMBA_POTENTIATION',
+  'CARDIOVASCULAR_HEMODYNAMIC',
+  'CNS_SEIZURE_OR_EPS',
+  'HEPATOTOXICITY_SYNERGY',
+  'ELECTROLYTE_METABOLIC'
+]);
+
+function buildConciseSummary(
+  tier: UnifiedRiskTier,
+  drugATr: string,
+  drugBTr: string,
+  firstConsequence: string
+): string {
+  const prefix =
+    tier === 'X' ? 'KONTRENDİKE (X)' :
+    tier === 'D' ? 'KAÇIN / DEĞİŞTİR (D)' :
+    tier === 'C' ? 'İZLEM (C)' :
+    tier === 'B' ? 'BİLGİ (B)' : 'GÜVENLİ (A)';
+  const base = `${prefix}: ${drugATr} + ${drugBTr} — ${firstConsequence}`;
+  if (base.length <= 140) return base;
+  return base.slice(0, 137).trimEnd() + '...';
+}
+
+function defaultRoutesForScope(scope: PddiDomainTemplate['route_scope']): string[] {
+  if (scope === 'ORAL_GI_ONLY') return ['ORAL', 'ENTERAL'];
+  if (scope === 'NON_ORAL_EXCEPTION') {
+    return ['ORAL', 'INTRAVENOUS', 'INHALED', 'INTRANASAL', 'INTRAARTICULAR', 'EPIDURAL'];
+  }
+  return ['ORAL', 'ENTERAL', 'INTRAVENOUS', 'INTRAMUSCULAR', 'SUBCUTANEOUS', 'SUBLINGUAL', 'TRANSDERMAL'];
+}
+
 function hydrateCompactBundle(raw: PddiMonographBundle): PddiMonographBundle {
   if (Array.isArray(raw.monographs) && raw.monographs.length > 0) {
     return raw;
@@ -170,20 +281,25 @@ function hydrateCompactBundle(raw: PddiMonographBundle): PddiMonographBundle {
   }
   const templates = raw.templates;
   const fallbackTpl: PddiDomainTemplate = templates['GENERAL_PK_TOXICITY'] || Object.values(templates)[0];
-  const reviewDate = raw.generated_at || '2026-11-25';
+  const reviewDate = raw.generated_at || '2026-11-26';
 
   const hydrated: PddiMonographRecord[] = raw.compact_monographs.map(c => {
     const tpl = templates[c.dom] || fallbackTpl;
     const perpTr = c.pb === 1 ? c.btr : c.atr;
     const vicTr = c.pb === 1 ? c.atr : c.btr;
+    const primaryMon = (tpl.monitoring && tpl.monitoring[0]) || null;
+    const concreteMonClause = primaryMon
+      ? `${primaryMon.parameter_tr} (${primaryMon.timing_tr}; kritik eşik: ${primaryMon.critical_threshold}) ile takip edilmelidir.`
+      : `${tpl.action}`;
+
     const opStatement =
       c.t === 'X'
-        ? `${perpTr} ve ${vicTr} birlikte kullanımı KONTRENDİKEDİR; kesinlikle aynı reçetede uygulanmamalıdır.`
+        ? `${perpTr} ve ${vicTr} birlikte kullanımı KONTRENDİKEDİR; aynı reçetede uygulanmamalıdır.`
         : c.t === 'D'
-          ? `${perpTr} ve ${vicTr} kombinasyonundan kaçının veya tedaviyi değiştirin; zorunlu hallerde doz ayarı ve sıkı klinik izlem gerekir.`
+          ? `${perpTr} ve ${vicTr} kombinasyonundan kaçının veya tedaviyi değiştirin; zorunlu hallerde ${concreteMonClause}`
           : c.t === 'C'
-            ? `${perpTr} ve ${vicTr} birlikte kullanıldığında klinik yanıt ve laboratuvar parametreleri yakından izlenmelidir.`
-            : `${perpTr} ve ${vicTr} eşzamanlı kullanımında olası farmakokinetik/farmakodinamik etkileşimi göz önünde bulundurunuz.`;
+            ? `${perpTr} ve ${vicTr} eşzamanlı kullanımında ${concreteMonClause}`
+            : `${perpTr} ve ${vicTr} birlikte kullanımında özel önlem veya doz kısıtlaması gerekmez; klinik yanıt ${concreteMonClause}`;
 
     const seriousness: PddiMonographRecord['seriousness'] =
       c.t === 'X'
@@ -194,8 +310,45 @@ function hydrateCompactBundle(raw: PddiMonographBundle): PddiMonographBundle {
             ? 'moderate_clinical'
             : 'minor';
 
+    const assertions: PddiSourceAssertion[] = (c.sa || []).map(row => ({
+      source_id: row[0],
+      source_type: row[1],
+      section: row[2],
+      original_rating: row[3],
+      version_date: row[4],
+      source_quote_verbatim: row[5],
+      identifier: row[0],
+      effective_date: row[4]
+    }));
+
+    const provenance: PddiEvidenceProvenanceItem[] = assertions.map(sa => ({
+      source_id: sa.source_id,
+      source_type: normalizeSourceType(sa.source_type),
+      identifier: `${sa.source_id} (${sa.section})`,
+      effective_date: sa.version_date,
+      section: sa.section,
+      original_rating: sa.original_rating,
+      source_quote_verbatim: sa.source_quote_verbatim
+    }));
+
+    const liverpoolGrade: LiverpoolGradeLevel =
+      c.lg ||
+      (c.ev === 'teorik' ? 'VERY_LOW_4' : c.ev === 'olasi' ? 'LOW_3' : 'MODERATE_2');
+
+    const classPolicy: ClassExtrapolationPolicy =
+      tpl.class_extrapolation_policy ||
+      (PURE_PD_DOMAINS.has(c.dom) ? 'CLASS_WIDE' : 'MOLECULE_SPECIFIC_ONLY');
+
+    const directionality: InteractionDirectionality =
+      tpl.directionality ||
+      (PURE_PD_DOMAINS.has(c.dom) ? 'SYMMETRIC_PD' : 'UNIDIRECTIONAL_PK');
+
+    const includedRoutes = tpl.included_routes || defaultRoutesForScope(tpl.route_scope);
+    const mechanismTr = tpl.mechanism.replace(/\{A\}/g, perpTr).replace(/\{B\}/g, vicTr);
+    const summary = buildConciseSummary(c.t, c.atr, c.btr, tpl.consequences[0] || 'Klinik etkileşim');
+
     return {
-      schema_version: raw.schema_version || '3.0.0-pddi-cds',
+      schema_version: raw.schema_version || '3.1.0-pddi-cds',
       monograph_id: c.id,
       canonical_pair_key: c.k,
       atc_a: c.aa,
@@ -207,12 +360,25 @@ function hydrateCompactBundle(raw: PddiMonographBundle): PddiMonographBundle {
       rxcui_a: c.ra || '',
       rxcui_b: c.rb || '',
       unified_risk_tier: c.t,
+      default_action_tier: c.t,
+      liverpool_grade_level: liverpoolGrade,
+      dips_score: typeof c.dips === 'number' ? c.dips : null,
+      directionality,
+      mirror_indexed: true,
+      class_extrapolation_policy: classPolicy,
+      included_routes: includedRoutes,
       operational_statement_tr: opStatement,
+      primary_directive_tr: tpl.action,
+      summary,
+      override_reasons: tpl.override_reasons || DEFAULT_OVERRIDE_REASONS,
+      frequency_of_exposure: UNKNOWN_EPIDEMIOLOGY_SENTINEL,
+      frequency_of_harm: c.harm || UNKNOWN_EPIDEMIOLOGY_SENTINEL,
       seriousness,
       evidence_level: c.ev,
       clinical_consequences_tr: tpl.consequences,
       interaction_category: tpl.categories,
-      mechanism_tr: tpl.mechanism.replace(/\{A\}/g, perpTr).replace(/\{B\}/g, vicTr),
+      mechanism_tr: mechanismTr,
+      clinician_narrative_tr: mechanismTr,
       recommended_action_tr: tpl.action,
       alternative_tr: tpl.alternative,
       monitoring_parameters: tpl.monitoring,
@@ -220,14 +386,13 @@ function hydrateCompactBundle(raw: PddiMonographBundle): PddiMonographBundle {
       patient_context_escalators: tpl.escalators,
       discordance_flag: c.dc === 1,
       reconciliation_tier: c.rt,
-      source_assertions: (c.sa || []).map(row => ({
-        source_id: row[0],
-        source_type: row[1],
-        section: row[2],
-        original_rating: row[3],
-        version_date: row[4],
-        source_quote_verbatim: row[5]
-      })),
+      source_assertions: assertions,
+      evidence_and_provenance: provenance,
+      review_governance: {
+        review_status: 'author_draft_unreviewed',
+        independent_pharmacologist_signed: false,
+        independent_pharmacist_signed: false
+      },
       authored_text_license: 'CC-BY-NC-SA-4.0',
       last_clinical_review_date: reviewDate
     };
@@ -379,12 +544,19 @@ export function evaluatePddiMonographsForPrescription(
       const mono = lookupPddiMonograph(a, b);
       if (!mono || seenIds.has(mono.monograph_id)) continue;
 
-      // Rota filtresi
+      // Rota filtresi (ORAL_GI_ONLY vs SYSTEMIC vs NON_ORAL_EXCEPTION)
       if (mono.route_scope === 'ORAL_GI_ONLY') {
-        if (!isOralOrEnteralRoute(a.route) || !isOralOrEnteralRoute(b.route)) continue;
+        const isGastricPh = mono.interaction_category.includes('GASTRIC_PH');
+        if (isGastricPh) {
+          // Mide pH etkileşiminde IV PPI dahi oral substratı etkiler; yalnızca en az bir oral/enteral substrat aranır
+          if (!isOralOrEnteralRoute(a.route) && !isOralOrEnteralRoute(b.route)) continue;
+        } else if (!isOralOrEnteralRoute(a.route) || !isOralOrEnteralRoute(b.route)) {
+          continue;
+        }
       } else if (mono.route_scope === 'SYSTEMIC') {
         if (isLocalNonSystemicRoute(a.route) || isLocalNonSystemicRoute(b.route)) continue;
       }
+      // NON_ORAL_EXCEPTION (flutikazon/budezonid inhale/nazal, triamsinolon eklem içi/epidural + güçlü CYP3A4 inh.) ASLA bastırılmaz!
 
       seenIds.add(mono.monograph_id);
 

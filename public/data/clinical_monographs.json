@@ -152,6 +152,41 @@
       ],
       "version_date": "2026-REV01",
       "last_reviewed_iso": "2026-10-26"
+    },
+    "schema_version": "2.0.0",
+    "rxcui": "161",
+    "fda_gsrs_unii": "362O9ITL9D",
+    "summary": "Parasetamol: Sağlıklı erişkinde maks 4 g/gün (<50 kg / alkol / kronik KC hastalığında maks 2 g/gün); >150 mg/kg'da antidot NAC.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum ALT (SGPT)",
+        "loinc_code": "1742-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">3× ÜSN veya doz aşımında yükselme",
+        "timing_tr": "Kronik KC hastalığında veya doz aşımı şüphesinde 4. ve 24. saatte"
+      },
+      {
+        "parameter_tr": "Plazma INR",
+        "loinc_code": "6301-6",
+        "ucum_unit": "{INR}",
+        "critical_threshold": "INR >1,5 (akut karaciğer hasarı göstergesi)",
+        "timing_tr": "Doz aşımı veya düzenli >2 g/gün + varfarin kullanımında"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_N02BE01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB N02BE01 · A-FERIN ZERO 120 MG/5 ML PEDIATRIK SURUP (Bölüm 4.2 Pozoloji)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.2 Pozoloji",
+        "source_quote_verbatim": "6 saatte bir 10-15 mg/kg/doz (30 kg üstü çocuklarda bir defada maksimum 500 mg), günlük maksimum doz 60 mg/kg (30 kg üstü çocuklarda günlük maksimum 2 gram) olarak önerilir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
     }
   },
   {
@@ -478,7 +513,42 @@
     "hepaticAdjustment": "Ağır karaciğer yetmezliğinde (Child-Pugh C) KONTRENDİKE; orta dereceli yetmezlikte doz aralığı 12 saate uzatılır (SR form kullanılmaz).",
     "pregnancyLactation": "Gebelik: Kronik kullanımda neonatal yoksunluk sendromu ve solunum depresyonu yapar; kaçınılmalıdır. Emzirme: CYP2D6 ultra-hızlı metabolize edicilerde bebekte fatal opioid toksisitesi riski nedeniyle ÖNERİLMEZ.",
     "contraindications": "MAO inhibitörü kullanımı (veya son 14 gün içinde kesilmiş olması), kontrolsüz epilepsi, akut alkol/hipnotik/opioid intoksikasyonu, ağır solunum depresyonu.",
-    "clinicalPearls": "Yeşil reçeteye tabidir. İki kritik toksisite kalkanı: (1) SSRI, SNRI, TCA, Triptan veya Linezolid ile kombinasyonda yüksek SEROTONİN SENDROMU riski (Hunter kriterleri: klonus, hiperrefleksi, ajitasyon, diyaforez); (2) Nöbet eşiğini düşürür. CYP2D6 zayıf metabolize edicilerde analjezik etkisi yetersiz kalabilir."
+    "clinicalPearls": "Yeşil reçeteye tabidir. İki kritik toksisite kalkanı: (1) SSRI, SNRI, TCA, Triptan veya Linezolid ile kombinasyonda yüksek SEROTONİN SENDROMU riski (Hunter kriterleri: klonus, hiperrefleksi, ajitasyon, diyaforez); (2) Nöbet eşiğini düşürür. CYP2D6 zayıf metabolize edicilerde analjezik etkisi yetersiz kalabilir.",
+    "schema_version": "2.0.0",
+    "rxcui": "10689",
+    "fda_gsrs_unii": "39J1LGJ30J",
+    "summary": "Tramadol (CYP2D6 Ön-İlaç + Serotonerjik): <12 yaşta KONTRENDİKE; MAOI ile 14 gün arınma şart, BZD/opioidle solunum depresyonu riski.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Solunum Hızı",
+        "loinc_code": "9279-1",
+        "ucum_unit": "/min",
+        "critical_threshold": "<10/dk (solunum depresyonu — nalokson hazır)",
+        "timing_tr": "İlk 24–48 saat ve BZD/opioid birlikteliğinde"
+      },
+      {
+        "parameter_tr": "Oksijen Satürasyonu (SpO₂)",
+        "loinc_code": "59408-5",
+        "ucum_unit": "%",
+        "critical_threshold": "<%92",
+        "timing_tr": "Sedasyon/opioid yükünde sürekli veya saatlik"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_N02AX02_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB N02AX02 · CONTRAMAL 50 MG 20 KAPSUL (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "CONTRAMAL, MAO inhibitörleri ile kombine edilmemelidir (bölüm 4.3’e bakınız)."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "fentanyl",
@@ -597,6 +667,41 @@
       ],
       "version_date": "2026-REV01",
       "last_reviewed_iso": "2026-10-26"
+    },
+    "schema_version": "2.0.0",
+    "rxcui": "4337",
+    "fda_gsrs_unii": "UF599785JZ",
+    "summary": "Fentanil (Yüksek Potent Opioid / CYP3A4): Opioid-naif hastada ölümcül solunum depresyonu; güçlü CYP3A4 inhibitörleri ve BZD ile kaçının.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Solunum Hızı",
+        "loinc_code": "9279-1",
+        "ucum_unit": "/min",
+        "critical_threshold": "<10/dk (acil nalokson 0,4 mg IV)",
+        "timing_tr": "İlk 24–72 saat ve doz artışında sürekli"
+      },
+      {
+        "parameter_tr": "Oksijen Satürasyonu (SpO₂)",
+        "loinc_code": "59408-5",
+        "ucum_unit": "%",
+        "critical_threshold": "<%92",
+        "timing_tr": "Başlangıç ve doz titrasyonunda sürekli"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_N02AB03_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB N02AB03 · EFFENTORA 100 MCG BUKKAL TABLET (28 TABLET) (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Fentanil ağırlıklı olarak insan sitokrom P450 3A4 izoenzim sistemi (CYP3A4) ile metabolize olur; bundan dolayı EFFENTORA, CYP3A4 aktivitesini etkileyen bu ajanlarla birlikte verildiğinde potansiyel etkileşimler oluşabilir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
     }
   },
   {
@@ -624,7 +729,7 @@
     "adultDose": "PO: 12 saatte bir 8 mg (2x8 mg). IM: 12 saatte bir 4 mg (2x4 mg).",
     "pediatricDose": "<16 yaş çocuk ve adölesanlarda KONTRENDİKE.",
     "maxDailyDose": "PO: Maksimum 16 mg/gün ve en fazla ardışık 7 gün; IM: Maksimum 8 mg/gün ve en fazla ardışık 5 gün (TİTCK/EMA zorunlu süre kısıtlaması!).",
-    "renalAdjustment": "Böbrek yetmezliğinde spesifik çalışma verisi sınırlıdır; orta-ağır böbrek yetmezliğinde birikim riskine karşı kaçınılması veya yakın izlem önerilir.",
+    "renalAdjustment": "Böbrek yetmezliğinde spesifik PK verisi sınırlıdır; eGFR <30 mL/dk hastada M2/M3 metabolit birikimi ve nöbet/sedasyon riskine karşı kaçınılmalı, zorunlu kullanımda 4 mg 12 saatte bir tavanı aşılmadan tedavi 5–7 günle sınırlandırılmalıdır.",
     "hepaticAdjustment": "Sitopeni ve kolestatik/sitoliitik ilaç ilişkili karaciğer hasarı bildirilmiştir; karaciğer yetmezliğinde önerilmez.",
     "pregnancyLactation": "Gebelik: Anöploidi/teratojenite riski nedeniyle gebelikte ve kontrasepsiyon kullanmayan doğurganlık çağındaki kadınlarda KESİN KONTRENDİKE (erkeklerde de spermatogenez toksisitesi nedeniyle tedavi süresince ve kesildikten sonra 3 ay kontrasepsiyon önerilir). Emzirme: Anne sütüne yüksek oranda geçer, KONTRENDİKE.",
     "contraindications": "Gebelik, emzirme, etkili kontrasepsiyon kullanmayan doğurganlık çağındaki kadınlar, <16 yaş, gevşek paralizi ve kas hipotonisi, epilepsi/nöbet öyküsü (dikkat/kaçınılmalı).",
@@ -656,7 +761,49 @@
     "hepaticAdjustment": "Hafif-orta karaciğer yetmezliğinde yakın izlem ve doz azaltımı; ağır hepatobiliyer yetmezlikte KONTRENDİKE (böbrek + karaciğer yetmezliği birlikteliğinde kesin kontrendike).",
     "pregnancyLactation": "Gebelik: FMF hastalarında gebelik boyunca KESİLMEZ (kesilmesi atak, peritonit/abortus ve amiloidoz riskini artırır; EULAR kılavuzlarına göre teratojenik artış saptanmamıştır). Emzirme: Uyumlu (emzirmeden önce veya 2–4 saat ara ile alınabilir).",
     "contraindications": "eGFR <30 mL/dk olan hastalarda CYP3A4/P-gp inhibitörü kullanımı, ağır karaciğer/böbrek yetmezliği, kan diskrazileri.",
-    "clinicalPearls": "Dar terapötik indeksli ve doz aşımında antidotu olmayan ÖLÜMCÜL bir ilaçtır (>0.5 mg/kg genellikle fatal çoklu organ yetmezliği yapar). Güçlü CYP3A4 / P-glikoprotein inhibitörleri (Klaritromisin, Eritromisin, Siklosporin, İtrakonazol, Verapamil, Diltiazem) ve Statinler/Fibratlar ile eşzamanlı kullanımda fatal pansitopeni ve ağır rabdomiyoliz gelişir!"
+    "clinicalPearls": "Dar terapötik indeksli ve doz aşımında antidotu olmayan ÖLÜMCÜL bir ilaçtır (>0.5 mg/kg genellikle fatal çoklu organ yetmezliği yapar). Güçlü CYP3A4 / P-glikoprotein inhibitörleri (Klaritromisin, Eritromisin, Siklosporin, İtrakonazol, Verapamil, Diltiazem) ve Statinler/Fibratlar ile eşzamanlı kullanımda fatal pansitopeni ve ağır rabdomiyoliz gelişir!",
+    "schema_version": "2.0.0",
+    "rxcui": "2683",
+    "fda_gsrs_unii": "SML2Y3J35T",
+    "summary": "Kolşisin (DAR TERAPÖTİK / CYP3A4+P-gp): KBH veya hepatik yetmezlikte güçlü CYP3A4/P-gp inhibitörleriyle KONTRENDİKE (fatal toksisite).",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<30 mL/dk (maks 0,5 mg/gün); <10 mL/dk kontrendike",
+        "timing_tr": "Başlangıçta ve 3–6 ayda bir"
+      },
+      {
+        "parameter_tr": "Tam Kan Sayımı (WBC)",
+        "loinc_code": "6690-2",
+        "ucum_unit": "10*3/uL",
+        "critical_threshold": "Lökopeni/pansitopeni (<3,5×10³/µL)",
+        "timing_tr": "Uzun süreli kullanımda 3–6 ayda bir veya ishal/toksisitede"
+      },
+      {
+        "parameter_tr": "Kreatin Kinaz (CK)",
+        "loinc_code": "2157-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">5× ÜSN (nöromiyopati)",
+        "timing_tr": "Kas güçsüzlüğü veya statin birlikteliğinde"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_M04AC01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB M04AC01 · COLXERIS 0,5 MG FILM KAPLI TABLET (Bölüm 4.2 Pozoloji)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.2 Pozoloji",
+        "source_quote_verbatim": "Başlangıçta günde bir defa 1 film kaplı tablet kullanılır. Gerekirse doz günde iki defa 1’er film kaplı tablete çıkarılabilir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "allopurinol",
@@ -712,7 +859,7 @@
     "pediatricDose": "PO (amoksisilin bileşeni üzerinden): Standart 40–45 mg/kg/gün (2 doza bölünmüş); dirençli S. pneumoniae / AOM / sinüzitte yüksek doz 80–90 mg/kg/gün (ES 600/42.9 mg/5 mL formülasyonu ile 12 saatte bir, klavulanat ishalini sınırlamak için 14:1 oranlı form tercih edilir). <3 ay: 30 mg/kg/gün (2 dozda).",
     "maxDailyDose": "Erişkin PO: Amoksisilin 3000 mg / Klavulanat 375–500 mg (standart BID rejimde 2x1000 mg; klavulanat tek dozda 125–250 mg'ı aşmamalıdır); Çocuk: Amoksisilin maks 2000–3000 mg/gün (klavulanat maks 10 mg/kg/gün).",
     "renalAdjustment": "eGFR >30 mL/dk: Doz ayarı gerekmez. eGFR 10–29 mL/dk: 875/125 mg (1000 mg) tablet KULLANILMAZ; PO 12 saatte bir 500/125 mg (IV 1.2 g yükleme sonrası 12 saatte bir 600 mg). eGFR <10 mL/dk: 24 saatte bir 500/125 mg PO (hemodiyaliz sonrası ek doz).",
-    "hepaticAdjustment": "Daha önce ko-amoksiklava bağlı kolestatik sarılık/hepatit öyküsü olanlarda KONTRENDİKE; karaciğer hastalığında dikkatli kullanılmalı ve KCFT izlenmelidir.",
+    "hepaticAdjustment": "Daha önce ko-amoksiklava bağlı kolestatik sarılık/hepatit öyküsü olanlarda KONTRENDİKE; altta yatan karaciğer hastalığında bazal ve 7–14. gün ALT/AST/bilirubin (LOINC 1742-6 / 1975-2) takibi yapın, >3× ÜSN artışta veya sarılıkta tedaviyi derhal kesin.",
     "pregnancyLactation": "Gebelik: Güvenli (ancak preterm membran rüptürü [PPROM] olgularında yenidoğanda nekrotizan enterokolit [NEK] riskini artırdığı için PPROM'da kaçınılır!). Emzirme: Uyumlu.",
     "contraindications": "Penisilin/beta-laktam aşırı duyarlılığı (anafilaksi), geçmişte amoksisilin-klavulanata bağlı kolestatik sarılık/karaciğer disfonksiyonu.",
     "clinicalPearls": "İki adet 625 mg (500/125 mg) tablet toplam 250 mg klavulanat içerdiğinden bir adet 1000 mg (875/125 mg) tablete EŞDEĞER DEĞİLDİR (şiddetli ishal yapar!). Yemeğin hemen başında alınması GİS intoleransını azaltır ve klavulanat emilimini optimize eder. EBV (Enfeksiyöz Mononükleoz) varlığında %80–90 non-alerjik makülopapüler döküntü yapar.",
@@ -1500,6 +1647,49 @@
       ],
       "version_date": "2026-REV01",
       "last_reviewed_iso": "2026-10-26"
+    },
+    "schema_version": "2.0.0",
+    "rxcui": "21212",
+    "fda_gsrs_unii": "H1250JIK0A",
+    "summary": "Klaritromisin (Güçlü CYP3A4/P-gp İnhibitörü + Known QT): Simvastatin, kolşisin (KBH), domperidon ve tikagrelor ile KONTRENDİKE.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "QTc Aralığı (Fridericia)",
+        "loinc_code": "76634-5",
+        "ucum_unit": "ms",
+        "critical_threshold": ">500 ms veya bazale göre >60 ms artış",
+        "timing_tr": "QT risk faktörü olan hastada bazal ve 48–72. saatte"
+      },
+      {
+        "parameter_tr": "Serum Potasyum (K⁺)",
+        "loinc_code": "2823-3",
+        "ucum_unit": "mmol/L",
+        "critical_threshold": "<3,5 mmol/L (tedavi öncesi düzeltilmelidir)",
+        "timing_tr": "Yüksek QT riskinde tedavi öncesi"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_J01FA09_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB J01FA09 · CLARICIDE 500 MG 14 TABLET (Bölüm 4.3 Kontrendikasyonlar)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.3 Kontrendikasyonlar",
+        "source_quote_verbatim": "Klaritromisinin tikagrelor ya da ranolazin ile birlikte kullanılması kontrendikedir."
+      },
+      {
+        "source_id": "TITCK_KUB_J01FA09_2",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB J01FA09 · CLARICIDE 500 MG 14 TABLET (Bölüm 4.3 Kontrendikasyonlar)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.3 Kontrendikasyonlar",
+        "source_quote_verbatim": "Klaritromisin elektrolit bozuklukları (QT aralık uzaması riskinden ötürü hipokalemi veya hipomagnezemi) olan hastalara verilmemelidir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
     }
   },
   {
@@ -1660,7 +1850,42 @@
     "hepaticAdjustment": "Hafif-orta karaciğer yetmezliğinde rutin doz ayarı gerekmez; ağır sirozda dikkatli izlenir.",
     "pregnancyLactation": "Gebelik: Fetal kıkırdak hasarı potansiyeli nedeniyle ÖNERİLMEZ (yalnızca hayatı tehdit eden şarbon/dirençli Gram-negatif enfeksiyonda). Emzirme: Kısa süreli kullanımda süte geçişi düşüktür; kalsiyumla şelat yaptığından emzirmeden 3–4 saat sonra emzirme veya alternatif tercih edilebilir.",
     "contraindications": "Kinolon alerjisi, daha önce florokinolona bağlı tendinit/tendon rüptürü öyküsü, TİZANİDİN (Sirdalud) ile eşzamanlı kullanım (CYP1A2 inhibisyonuyla ağır hipotansiyon ve sedasyon — KESİN KONTRENDİKE!), Myasthenia Gravis (solunum kası zayıflığını ağırlaştırır!).",
-    "clinicalPearls": "S. pneumoniae kapsayıcılığı ZAYIFTIR ('solunum kinolonu' değildir; toplum kökenli pnömonide tek başına verilmez!). Kara kutu uyarıları: Tendinit/Aşil tendon rüptürü (yaşlı ve steroid kullananlarda risk çok yüksek!), periferik nöropati, aort anevrizması/diseksiyonu, hipoglisemi/hiperglisemi, QTc uzaması ve deliryum/nöbet (NSAİİ ile nöbet riski artar). Süt/yoğurt, Kalsiyum, Demir, Çinko, Magnezyum/Alüminyum antasitler veya Sukralfat ile aynı anda alınırsa şelat oluşturup emilmez (2 saat önce veya 6 saat sonra alınmalıdır). CYP1A2'yi güçlü inhibe eder (Teofilin, Klozapin ve Varfarin toksisitesi!)."
+    "clinicalPearls": "S. pneumoniae kapsayıcılığı ZAYIFTIR ('solunum kinolonu' değildir; toplum kökenli pnömonide tek başına verilmez!). Kara kutu uyarıları: Tendinit/Aşil tendon rüptürü (yaşlı ve steroid kullananlarda risk çok yüksek!), periferik nöropati, aort anevrizması/diseksiyonu, hipoglisemi/hiperglisemi, QTc uzaması ve deliryum/nöbet (NSAİİ ile nöbet riski artar). Süt/yoğurt, Kalsiyum, Demir, Çinko, Magnezyum/Alüminyum antasitler veya Sukralfat ile aynı anda alınırsa şelat oluşturup emilmez (2 saat önce veya 6 saat sonra alınmalıdır). CYP1A2'yi güçlü inhibe eder (Teofilin, Klozapin ve Varfarin toksisitesi!).",
+    "schema_version": "2.0.0",
+    "rxcui": "2551",
+    "fda_gsrs_unii": "5E8K9I0O4U",
+    "summary": "Siprofloksasin (Güçlü CYP1A2 İnhibitörü + QT): Tizanidinle KONTRENDİKE; oral katyonlardan 2 saat önce veya ≥4 saat sonra verilmelidir.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "QTc Aralığı (Fridericia)",
+        "loinc_code": "76634-5",
+        "ucum_unit": "ms",
+        "critical_threshold": ">500 ms veya bazale göre >60 ms artış",
+        "timing_tr": "Riskli hastada başlangıç ve 48–72. saatte"
+      },
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<30 mL/dk (günlük doz %50 azaltılır)",
+        "timing_tr": "Tedavi öncesi"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_J01MA02_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB J01MA02 · CIPRONATIN 500 MG 14 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Birlikte kullanımı gerektiğinde CİPRONATİN diğer ilaçlardan 1-2 saat önce veya en az 4 saat sonra verilmelidir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "levofloxacin",
@@ -2076,6 +2301,49 @@
       ],
       "version_date": "2026-REV01",
       "last_reviewed_iso": "2026-10-26"
+    },
+    "schema_version": "2.0.0",
+    "rxcui": "11124",
+    "fda_gsrs_unii": "6Q205EH1VU",
+    "summary": "Vankomisin (IV TDM Zorunlu): İnfüzyon ≥60 dk; 4. doz öncesi vadi düzeyi (LOINC 4092-3, hedef 10–20 µg/mL veya AUC/MIC 400–600) izlenir.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Vankomisin Vadi Düzeyi",
+        "loinc_code": "4092-3",
+        "ucum_unit": "ug/mL",
+        "critical_threshold": ">20 µg/mL (nefrotoksisite eşiği)",
+        "timing_tr": "4. dozdan 30 dk önce ve haftada 1–2 kez"
+      },
+      {
+        "parameter_tr": "Serum Kreatinin",
+        "loinc_code": "2160-0",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "≥0,3 mg/dL (48 saat) veya ≥1,5× bazal artış",
+        "timing_tr": "Başlangıçta ve 48–72 saatte bir"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_J01XA01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB J01XA01 · VANKOMYL 1000 MG IV INFUZYONLUK COZELTI HAZIRLAMAK ICIN LIYOFILIZE TOZ (1 FLAKON) (Bölüm 4.2 Pozoloji)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.2 Pozoloji",
+        "source_quote_verbatim": "Hedef terapötik konsantrasyonlara ulaşmak için bir sonraki doz ayarlaması serum konsantrasyon değeri baz alınarak yapılmalıdır."
+      },
+      {
+        "source_id": "TITCK_KUB_J01XA01_2",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB J01XA01 · VANKOMYL 1000 MG IV INFUZYONLUK COZELTI HAZIRLAMAK ICIN LIYOFILIZE TOZ (1 FLAKON) (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Vankomisinin anestezik ajanlarla eş zamanlı kullanımı, eritema, histamin benzeri flushing ve anaflaktoid reaksiyonlarla ilişkilendirilmiştir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
     }
   },
   {
@@ -2102,7 +2370,7 @@
     "pediatricDose": "Mukozal kandidiyazis PO/IV: İlk gün 6 mg/kg yükleme, sonra 1x3 mg/kg/gün. İnvaziv kandidiyazis/kriptokokoz: 1x6–12 mg/kg/gün (maks 600–800 mg/gün). Yenidoğanda yaşamın ilk 2 haftasında aynı doz 48–72 saatte bir.",
     "maxDailyDose": "Erişkin: Standart maks 800 mg/gün (ağır kriptokokal menenjitte uzman kontrolünde 800–1200 mg/gün).",
     "renalAdjustment": "%80 böbreklerden değişmeden atılır! Tek doz 150 mg vajinal tedavide doz ayarı GEREKMEZ. Çoklu doz rejimlerinde eGFR ≤50 mL/dk (diyaliz almayan): İlk gün normal yükleme dozu verilir, sonraki günlük idame dozları %50 azaltılır; Hemodiyalizde: Her diyaliz seansı sonrasında %100 tam günlük doz verilir.",
-    "hepaticAdjustment": "Nadir fakat ciddi hepatotoksisite yapabilir; karaciğer yetmezliğinde dikkatle kullanılır ve transaminazlar izlenir.",
+    "hepaticAdjustment": "Nadir fakat ciddi hepatotoksisite yapabilir; Child-Pugh B/C karaciğer yetmezliğinde bazal ve 1–2. hafta ALT/AST/bilirubin (LOINC 1742-6 / 1975-2) ölçümü yapın, >3× ÜSN artışta veya klinik sarılıkta ilacı derhal kesin.",
     "pregnancyLactation": "Gebelik: Tek doz 150 mg dahi 1. trimesterde spontan abortus risk artışı ile ilişkilendirilmiştir; yüksek doz kronik kullanım (≥400 mg/gün) ağır kraniyofasiyal/iskelet teratojenisitesi (Kategori D/X) yapar! Gebelik vajinal kandidiyazisinde topikal azoller (klotrimazol) tercih edilmelidir. Emzirme: Tek doz 150 mg ve meme ucu kandidiyazisinde uyumlu.",
     "contraindications": "Azol aşırı duyarlılığı; QTc uzatan CYP3A4 substratları (pimozid, kinidin, eritromisin, sisaprid) ile eşzamanlı kullanım.",
     "clinicalPearls": "Candida krusei flukonazole DOĞAL DİRENÇLİDİR, Candida glabrata'da ise azalmış duyarlılık/direnç sıktır; ayrıca küf mantarlarına (Aspergillus, Mucor) ETKİSİZDİR! Güçlü CYP2C9 ve orta düzey CYP3A4/CYP2C19 inhibitörüdür: Varfarin INR'sini 2–3 kat artırır, Fenitoin, Gliklazid/Glimepirid (ağır hipoglisemi!), Simvastatin/Atorvastatin ve Takrolimus/Siklosporin düzeylerini yükseltir, QTc mesafesini uzatır.",
@@ -2214,6 +2482,41 @@
       ],
       "version_date": "2026-REV01",
       "last_reviewed_iso": "2026-10-26"
+    },
+    "schema_version": "2.0.0",
+    "rxcui": "4450",
+    "fda_gsrs_unii": "8VZV102JFY",
+    "summary": "Flukonazol (Güçlü CYP2C19 + Orta CYP2C9/3A4 İnhibitörü + QT): Warfarin INR'sini 150 mg tek dozda bile yükseltir; QT ve ALT izleyin.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "QTc Aralığı (Fridericia)",
+        "loinc_code": "76634-5",
+        "ucum_unit": "ms",
+        "critical_threshold": ">500 ms veya >60 ms artış",
+        "timing_tr": "Çoklu doz veya QT ilacı birlikteliğinde bazal ve 48–72. saatte"
+      },
+      {
+        "parameter_tr": "Serum ALT (SGPT)",
+        "loinc_code": "1742-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">3× ÜSN",
+        "timing_tr": "Uzun süreli (>7 gün) tedavide başlangıç ve 2. haftada"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_J02AC01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB J02AC01 · FLUCAN 100 MG KAPSUL (7 KAPSUL) (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Flukonazol ile birlikte sisaprid uygulanan hastalarda torsades de pointes de dahil olmak üzere bazı kardiyak olaylar bildirilmiştir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
     }
   },
   {
@@ -2243,7 +2546,42 @@
     "hepaticAdjustment": "Ağır karaciğer yetmezliği (portal hipertansiyon/özofagus varisi ve koagülopati riski) durumunda KONTRENDİKE.",
     "pregnancyLactation": "Gebelik: Düşük doz (75–150 mg/gün) preeklampsi ve antifosfolipid sendromu profilaksisinde GÜVENLİDİR! Analjezik yüksek dozlar (≥500 mg) özellikle 3. trimesterde duktus arteriozusun erken kapanması ve peripartum kanama nedeniyle KONTRENDİKE. Emzirme: Düşük doz (75–100 mg) uyumlu; yüksek dozlardan Reye sendromu riski nedeniyle kaçınılır.",
     "contraindications": "Aktif peptik ülser veya GİS/intrakraniyal kanama, hemofili/ağır trombositopeni, Aspirinle alevlenen solunum hastalığı (AERD / Samter triadı: astım + nazal polip + ASA duyarlılığı), viral enfeksiyonlu <16 yaş çocuk ve adölesanlar (Reye Sendromu!).",
-    "clinicalPearls": "Akut Mİ şüphesinde enterik kaplı Coraspin/Ecopirin bütün yutulursa emilim 3–4 saat gecikir; MUTLAKA ÇİĞNETİLMELİDİR! Eşzamanlı İbuprofen/Naproksen alımı trombosit COX-1 kanalını yarışmalı kapatarak Aspirin'in kardiyoprotektif etkisini yok eder. Salisilat intoksikasyonunda tinnitus, takipne ve mikst (respiratuar alkaloz + yüksek anyon açıklı metabolik asidoz) tablo görülür; tedavisinde sodyum bikarbonat ile İDRAR ALKALİNİZASYONU ve hemodiyaliz hayat kurtarıcıdır."
+    "clinicalPearls": "Akut Mİ şüphesinde enterik kaplı Coraspin/Ecopirin bütün yutulursa emilim 3–4 saat gecikir; MUTLAKA ÇİĞNETİLMELİDİR! Eşzamanlı İbuprofen/Naproksen alımı trombosit COX-1 kanalını yarışmalı kapatarak Aspirin'in kardiyoprotektif etkisini yok eder. Salisilat intoksikasyonunda tinnitus, takipne ve mikst (respiratuar alkaloz + yüksek anyon açıklı metabolik asidoz) tablo görülür; tedavisinde sodyum bikarbonat ile İDRAR ALKALİNİZASYONU ve hemodiyaliz hayat kurtarıcıdır.",
+    "schema_version": "2.0.0",
+    "rxcui": "1191",
+    "fda_gsrs_unii": "R16CO5Y76E",
+    "summary": "Asetilsalisilik Asit: Kardiyoprotektif 75–100 mg/gün; ibuprofen ile eşzamanlı alım COX-1 antiagregan etkiyi antagonize eder.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Hemoglobin (Hb)",
+        "loinc_code": "718-7",
+        "ucum_unit": "g/dL",
+        "critical_threshold": "≥2 g/dL düşüş veya melena/hematemez",
+        "timing_tr": "Yüksek GİS riskinde başlangıç ve 3–6 ayda bir"
+      },
+      {
+        "parameter_tr": "Serum Kreatinin",
+        "loinc_code": "2160-0",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "Bazale göre ≥0,3 mg/dL artış",
+        "timing_tr": "KBH/yaşlı hastada başlangıç ve yıllık"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_B01AC06_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB B01AC06 · ASINPIRINE 100 MG 100 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "İbuprofen: İbuprofenin eş zamanlı kullanımı, asetilsalisilik asit tarafından indüklenen geri dönüşümsüz platelet inhibisyonunu antagonize eder."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "clopidogrel",
@@ -2272,7 +2610,42 @@
     "hepaticAdjustment": "Karaciğerde aktif metabolitine dönüştüğü ve koagülopati riski taşıdığı için ağır karaciğer yetmezliğinde KONTRENDİKE.",
     "pregnancyLactation": "Gebelik: Sınırlı klinik veri (hayvanlarda teratojenite yok); maternal stent gibi mutlak endikasyonda kardiyoloji/perinatoloji konseyi ile kullanılır, nöroaksiyel anestezi öncesi 5–7 gün kesilir. Emzirme: Sınırlı veri, dikkatle değerlendirilir.",
     "contraindications": "Aktif patolojik kanama (peptik ülser veya intrakraniyal kanama), ağır karaciğer yetmezliği.",
-    "clinicalPearls": "BİR ÖN-İLAÇTIR ve aktifleşmek için hepatik CYP2C19 enzimine muhtaçtır! OMEPRAZOL ve ESOMEPRAZOL CYP2C19'u güçlü inhibe ederek klopidogrelin antiagregan etkisini azaltır ve stent trombozu riskini artırır — GİS koruması gerektiğinde PANTOPRAZOL veya Rabeprazol tercih edilmelidir! Elektif majör cerrahi ve spinal/epidural anesteziden en az 5–7 gün önce (kardiyoloji onayıyla; erken stent trombozu ölümcüldür!) kesilir. Nadir trombotik trombositopenik purpura (TTP) yapabilir."
+    "clinicalPearls": "BİR ÖN-İLAÇTIR ve aktifleşmek için hepatik CYP2C19 enzimine muhtaçtır! OMEPRAZOL ve ESOMEPRAZOL CYP2C19'u güçlü inhibe ederek klopidogrelin antiagregan etkisini azaltır ve stent trombozu riskini artırır — GİS koruması gerektiğinde PANTOPRAZOL veya Rabeprazol tercih edilmelidir! Elektif majör cerrahi ve spinal/epidural anesteziden en az 5–7 gün önce (kardiyoloji onayıyla; erken stent trombozu ölümcüldür!) kesilir. Nadir trombotik trombositopenik purpura (TTP) yapabilir.",
+    "schema_version": "2.0.0",
+    "rxcui": "32968",
+    "fda_gsrs_unii": "A74586SNO7",
+    "summary": "Klopidogrel (CYP2C19 Ön-İlaç): Omeprazol/esomeprazol aktivasyonu bloke eder (12 saat doz ayrımı ETKİSİZDİR) → pantoprazol seçin.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Hemoglobin (Hb)",
+        "loinc_code": "718-7",
+        "ucum_unit": "g/dL",
+        "critical_threshold": "≥2 g/dL düşüş veya GİS/intrakraniyal kanama",
+        "timing_tr": "Başlangıçta ve kanama bulgusunda acil"
+      },
+      {
+        "parameter_tr": "Trombosit Sayısı (PLT)",
+        "loinc_code": "777-3",
+        "ucum_unit": "10*3/uL",
+        "critical_threshold": "<100.000/µL (TTP/trombositopeni şüphesi)",
+        "timing_tr": "Başlangıçta ve ilk 2 haftada klinik şüphede"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_B01AC04_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB B01AC04 · CLOPRA 75 MG 28 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Kanama riski ile ilişkilendirilebilecek ilaçlar: Potansiyel katkı etkisi nedeni ile kanama riskinde artış bulunmaktadır."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "enoxaparin",
@@ -2300,7 +2673,42 @@
     "hepaticAdjustment": "Siroz/karaciğer yetmezliğinde koagülopati ve trombositopeni nedeniyle kanama riski artar; dikkatle izlenir.",
     "pregnancyLactation": "Gebelik: GÜVENLİ (plasentayı geçmez, gebelikte VTE profilaksisi ve tedavisinde ALTIN STANDART antikoagülandır; çoklu dozlu benzil alkollü flakonlardan kaçınılır). Emzirme: Uyumlu (süte geçişi minimal ve oral emilmez).",
     "contraindications": "Aktif majör kanama, immün aracılı Heparin İlişkili Trombositopeni (HİT) öyküsü (son 100 gün veya dolaşan antikor varlığı), akut bakteriyel endokardit (embolik kanama riski).",
-    "clinicalPearls": "Enjektördeki hava kabarcığı uygulama öncesi ÇIKARILMAMALIDIR (ölü boşluk doz kaybını ve ekimozu önler); karın ön-yan duvarına SC yapılır ve enjeksiyon yeri OVULMAZ! Rutin aPTT ile izlenemez (gerekirse 4. saat Anti-Xa bakılır). Nöroaksiyel (spinal/epidural) anestezi öncesi profilaktik dozdan sonra en az 12 saat, terapötik dozdan sonra en az 24 saat beklenmelidir (epidural hematom!). Kanamada Protamin Sülfat anti-Xa etkisini yalnızca ~%60 nötralize eder."
+    "clinicalPearls": "Enjektördeki hava kabarcığı uygulama öncesi ÇIKARILMAMALIDIR (ölü boşluk doz kaybını ve ekimozu önler); karın ön-yan duvarına SC yapılır ve enjeksiyon yeri OVULMAZ! Rutin aPTT ile izlenemez (gerekirse 4. saat Anti-Xa bakılır). Nöroaksiyel (spinal/epidural) anestezi öncesi profilaktik dozdan sonra en az 12 saat, terapötik dozdan sonra en az 24 saat beklenmelidir (epidural hematom!). Kanamada Protamin Sülfat anti-Xa etkisini yalnızca ~%60 nötralize eder.",
+    "schema_version": "2.0.0",
+    "rxcui": "67108",
+    "fda_gsrs_unii": "E47C0NF7LV",
+    "summary": "Enoksaparin (DMAH): Tedavi 1 mg/kg SC q12h; eGFR <30 mL/dk'da 1 mg/kg q24h; HIT açısından 5–14. günlerde trombosit izlemi zorunludur.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Trombosit Sayısı (PLT)",
+        "loinc_code": "777-3",
+        "ucum_unit": "10*3/uL",
+        "critical_threshold": "<100.000/µL veya bazale göre ≥%50 düşüş (HIT)",
+        "timing_tr": "Başlangıçta ve 5–14. günler arasında her 2–3 günde bir"
+      },
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<30 mL/dk (doz aralığı q24h'ye uzatılır)",
+        "timing_tr": "Başlangıçta ve yatan hastada 3–5 günde bir"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_B01AB05_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB B01AB05 · CLEXANE 4000 ANTI-XA IU/0,4 ML 10 KULLANIMA HAZIR ENJEKTOR (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Eğer kesin olarak endike değilse hemostazı etkileyen ajanların enoksaparin sodyum tedavisinden önce kesilmesi önerilmektedir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "rivaroxaban",
@@ -2328,7 +2736,42 @@
     "hepaticAdjustment": "Koagülopati ve klinik kanama riski ile ilişkili karaciğer hastalığında (Child-Pugh B ve C siroz dahil) KESİN KONTRENDİKE!",
     "pregnancyLactation": "Gebelik: Plasentayı geçer ve üreme toksisitesi/kanama riski nedeniyle GEBELİKTE KONTRENDİKE (DMAH'a geçilmelidir). Emzirme: Anne sütüne geçer, KONTRENDİKE.",
     "contraindications": "Mekanik kalp kapağı veya orta-ağır romatizmal mitral darlık (Yalnızca Varfarin kullanılır!), üçlü pozitif antifosfolipid sendromu (yüksek tromboz nüksü!), aktif klinik anlamlı kanama, Child-Pugh B/C siroz, eGFR <15 mL/dk, gebelik ve emzirme, sistemik azol antifungaller (ketokonazol, itrakonazol, vorikonazol, posakonazol) veya HIV proteaz inhibitörleri ile eşzamanlı kullanım.",
-    "clinicalPearls": "ÇOK ÖNEMLİ EMİLİM KURALI: 15 mg ve 20 mg tabletler aç karnına alınırsa biyoyararlanım %66'da kalır (inme/tromboz riski!), YEMEKLE BİRLİKTE alındığında biyoyararlanım ~%100'e çıkar; hasta mutlaka ana öğünle almalıdır! (2.5 mg ve 10 mg formlar aç/tok alınabilir). Spesifik antidot Andeksanet Alfa (yoksa 4-faktörlü Protrombin Kompleks Konsantresi - 4F-PCC 50 IU/kg)."
+    "clinicalPearls": "ÇOK ÖNEMLİ EMİLİM KURALI: 15 mg ve 20 mg tabletler aç karnına alınırsa biyoyararlanım %66'da kalır (inme/tromboz riski!), YEMEKLE BİRLİKTE alındığında biyoyararlanım ~%100'e çıkar; hasta mutlaka ana öğünle almalıdır! (2.5 mg ve 10 mg formlar aç/tok alınabilir). Spesifik antidot Andeksanet Alfa (yoksa 4-faktörlü Protrombin Kompleks Konsantresi - 4F-PCC 50 IU/kg).",
+    "schema_version": "2.0.0",
+    "rxcui": "1114195",
+    "fda_gsrs_unii": "9NDF7JZ4M3",
+    "summary": "Rivaroksaban (DOAC): 15/20 mg tok alınmalıdır; CrCl 15–49 mL/dk'da 15 mg/gün, güçlü CYP3A4+P-gp inhibitörleriyle kontrendike/kaçın.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<15 mL/dk (kullanılmaz); <50 mL/dk doz 15 mg",
+        "timing_tr": "Başlangıçta ve 3–12 ayda bir"
+      },
+      {
+        "parameter_tr": "Hemoglobin (Hb)",
+        "loinc_code": "718-7",
+        "ucum_unit": "g/dL",
+        "critical_threshold": "≥2 g/dL düşüş veya aktif kanama",
+        "timing_tr": "Başlangıçta ve klinik kanama şüphesinde"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_B01AF01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB B01AF01 · RIVOKSAR 10 MG FILM KAPLI TABLET (10 TABLET) (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Örneğin, güçlü bir CYP3A4 inhibitörü ve orta derecede bir P-gp inhibitörü olarak kabul edilen klaritromisin (günde iki kez 500 mg), ortalama rivaroksaban EAA değerinde 1,5 kat, Cmaks değerinde ise 1,4 kat artışa yol açmaktadır."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "apixaban",
@@ -2353,10 +2796,52 @@
     "pediatricDose": "Rutin pediatrik kullanımı uzman pediatrik hematoloji protokolleri dışındaki olgularda standart değildir.",
     "maxDailyDose": "Akut VTE ilk 7 günde 20 mg/gün (2x10 mg); NVAF ve VTE idamede 10 mg/gün (2x5 mg).",
     "renalAdjustment": "Renal atılım oranı DOAK'lar içinde en düşük olandır (~%27)! NVAF'de 'ABC KURALI': (1) Yaş ≥80, (2) Vücut ağırlığı ≤60 kg, (3) Serum kreatinin ≥1.5 mg/dL kriterlerinden EN AZ 2'Sİ varsa VEYA CrCl 15–29 mL/dk ise doz 2x2.5 mg'a düşürülür! Tek kriter varsa yetersiz dozlamadan (inme riski!) kaçınmak için 2x5 mg devam edilir. CrCl <15 mL/dk'da TİTCK KÜB'e göre önerilmez.",
-    "hepaticAdjustment": "Child-Pugh C ağır karaciğer yetmezliğinde ve koagülopatili karaciğer hastalığında KONTRENDİKE; Child-Pugh A/B'de dikkatli kullanılır.",
+    "hepaticAdjustment": "Child-Pugh C ağır karaciğer yetmezliğinde ve koagülopatili karaciğer hastalığında KONTRENDİKE; Child-Pugh A/B'de standart dozla başlanabilir, ancak tedavi öncesi ve periyodik ALT/AST, total bilirubin ve PT/INR (LOINC 6301-6) kontrolü zorunludur.",
     "pregnancyLactation": "Gebelik: Önerilmez / kontrendike (gebelikte DMAH tercih edilir). Emzirme: Anne sütüne geçtiğinden emzirme veya ilaç kesilmelidir.",
     "contraindications": "Mekanik kalp kapağı, orta-ağır romatizmal mitral darlık, üçlü pozitif antifosfolipid sendromu, aktif klinik kanama, koagülopatili karaciğer hastalığı, güçlü CYP3A4 + P-gp inhibitörleri (ketokonazol, itrakonazol, vorikonazol, ritonavir) veya indükleyicileri (rifampisin, karbamazepin, fenitoin).",
-    "clinicalPearls": "GİS kanama ve intrakraniyal kanama profili yaşlı ve kırılgan NVAF hastalarında en elverişli DOAK'lardan biridir. EN SIK REÇETELEME HATASI: Yalnızca ileri yaşa veya tek bir kritere bakarak NVAF hastasına gereksiz düşük doz (2x2.5 mg) verilmesi önlenebilir iskemik inme riskini belirgin artırır; ABC kriterlerinden en az ikisi (veya CrCl 15–29 mL/dk) aranmalıdır! Aç veya tok alınabilir, NG tüpten ezilip su/dekstrozla verilebilir."
+    "clinicalPearls": "GİS kanama ve intrakraniyal kanama profili yaşlı ve kırılgan NVAF hastalarında en elverişli DOAK'lardan biridir. EN SIK REÇETELEME HATASI: Yalnızca ileri yaşa veya tek bir kritere bakarak NVAF hastasına gereksiz düşük doz (2x2.5 mg) verilmesi önlenebilir iskemik inme riskini belirgin artırır; ABC kriterlerinden en az ikisi (veya CrCl 15–29 mL/dk) aranmalıdır! Aç veya tok alınabilir, NG tüpten ezilip su/dekstrozla verilebilir.",
+    "schema_version": "2.0.0",
+    "rxcui": "1364430",
+    "fda_gsrs_unii": "3Z9Y7UWC1J",
+    "summary": "Apiksaban (DOAC): ABC doz azaltım (≥80y, ≤60kg, Kr ≥1,5 mg/dL → ≥2 kriterde 2×2,5 mg); güçlü CYP3A4+P-gp inhibitörleriyle kaçının.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<15 mL/dk (kaçın) veya CrCl düşüşü",
+        "timing_tr": "Başlangıçta ve yılda 1–2 kez (KBH'da 3–6 ayda bir)"
+      },
+      {
+        "parameter_tr": "Serum Kreatinin",
+        "loinc_code": "2160-0",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "≥1,5 mg/dL (ABC doz azaltım kriteri)",
+        "timing_tr": "Başlangıçta ve akut hastalıkta"
+      },
+      {
+        "parameter_tr": "Hemoglobin (Hb)",
+        "loinc_code": "718-7",
+        "ucum_unit": "g/dL",
+        "critical_threshold": "≥2 g/dL düşüş veya aktif kanama",
+        "timing_tr": "Başlangıçta ve yıllık / kanama şüphesinde"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_B01AF02_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB B01AF02 · VAXIVO 2,5 MG FILM KAPLI TABLET (56 TABLET) (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Hem CYP3A4 hem de P-gp’nin güçlü bir inhibitörü olan ketokonazol (günde bir kez 400 mg) ile apiksabanın birlikte kullanımı, ortalama apiksaban Eğri Altında Kalan Alan (EAA)’ında 2 kat artış ve ortalama apiksaban Cmaks değerinde 1,6 kat artışa neden olmuştur."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "dabigatran",
@@ -2409,7 +2894,50 @@
     "hepaticAdjustment": "Koagülasyon faktör sentezi bozulmuş ağır dekompanse karaciğer yetmezliğinde ve kanamalı özofagus varislerinde KONTRENDİKE; hafif-orta yetmezlikte çok düşük dozla başlanır.",
     "pregnancyLactation": "Gebelik: KONTRENDİKE (Kategori D/X)! 6.–12. haftalarda 'Fetal Varfarin Embriyopatisi' (nazal hipoplazi, kondrodisplazi punktata), 2.–3. trimesterde fetal MSS kanaması/optik atrofi yapar; gebelikte DMAH tercih edilir (yalnızca çok yüksek riskli mekanik kapakta ≤5 mg/gün seçilmiş protokollerle perinatoloji-kardiyoloji konseyince yönetilir). Emzirme: UYUMLU (anne sütüne aktif formda geçmez!).",
     "contraindications": "Aktif majör kanama, hemorajik diyatez, yakın zamanlı MSS/göz cerrahisi, kontrolsüz malign hipertansiyon, gebelik (mekanik kapak konsey istisnası hariç), uyumsuz/INR takibi yapılamayan hasta.",
-    "clinicalPearls": "Akut VTE'de ilk günlerde doğal antikoagülan Protein C ve S'yi Faktör II ve X'ten daha hızlı tükettiği için geçici HİPERKOAGÜLABİLİTE ve 'Varfarin Deri Nekrozu' yapar; bu nedenle akut VTE'de en az 5 gün ve INR ≥2.0 (24 saat) olana dek DMAH/UFH KÖPRÜLEMESİ zorunludur! Amiodaron, Flukonazol, Metronidazol, Bactrim ve Klaritromisin INR'yi tehlikeli biçimde yükseltir; Rifampisin ve Karbamazepin düşürür. Aşırı doz/majör kanamada: IV K1 Vitamini (Fitomenadion 5–10 mg yavaş IV) + 4-Faktörlü PCC (veya TDP) uygulanır."
+    "clinicalPearls": "Akut VTE'de ilk günlerde doğal antikoagülan Protein C ve S'yi Faktör II ve X'ten daha hızlı tükettiği için geçici HİPERKOAGÜLABİLİTE ve 'Varfarin Deri Nekrozu' yapar; bu nedenle akut VTE'de en az 5 gün ve INR ≥2.0 (24 saat) olana dek DMAH/UFH KÖPRÜLEMESİ zorunludur! Amiodaron, Flukonazol, Metronidazol, Bactrim ve Klaritromisin INR'yi tehlikeli biçimde yükseltir; Rifampisin ve Karbamazepin düşürür. Aşırı doz/majör kanamada: IV K1 Vitamini (Fitomenadion 5–10 mg yavaş IV) + 4-Faktörlü PCC (veya TDP) uygulanır.",
+    "schema_version": "2.0.0",
+    "rxcui": "11289",
+    "fda_gsrs_unii": "5Q7ZVV76EI",
+    "summary": "Varfarin (DAR TERAPÖTİK): Hedef INR 2,0–3,0 (mekanik kapak 2,5–3,5); rutin yükleme dozu önerilmez, INR >4,0 kanama riskini katlar.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Plazma INR",
+        "loinc_code": "6301-6",
+        "ucum_unit": "{INR}",
+        "critical_threshold": "INR >4,0 (kanama riski) veya hedef dışı",
+        "timing_tr": "Başlangıçta günlük (stabil olana kadar 3–4 gün), sonra 1–4 haftada bir"
+      },
+      {
+        "parameter_tr": "Hemoglobin (Hb)",
+        "loinc_code": "718-7",
+        "ucum_unit": "g/dL",
+        "critical_threshold": "≥2 g/dL düşüş veya aktif kanama",
+        "timing_tr": "Başlangıçta ve kanama şüphesinde acil"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_B01AA03_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB B01AA03 · PLASORIN 10 MG TABLET (28 TABLET) (Bölüm 4.2 Pozoloji)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.2 Pozoloji",
+        "source_quote_verbatim": "INR değerinin terapötik aralıkta olmasının sağlanması için gerekli doz kişiye göre değişir."
+      },
+      {
+        "source_id": "TITCK_KUB_B01AA03_2",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB B01AA03 · PLASORIN 10 MG TABLET (28 TABLET) (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "İlaç değişikliği, bitkisel ilaçlar ve diyet tek başına ya da kombinasyon halinde hastanın varfarin dahil antikoagülanlara yanıtını etkileyebilir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "ramipril",
@@ -2439,7 +2967,49 @@
     "hepaticAdjustment": "Ön-ilaçtır (karaciğerde aktif ramiprilata dönüşür); karaciğer yetmezliğinde yalnızca yakın medikal gözetim altında başlanır ve maks 2.5 mg/gün ile sınırlanır.",
     "pregnancyLactation": "Gebelik: KONTRENDİKE (Kategori D — özellikle 2. ve 3. trimesterde fetal renal disgenezis, anüri, oligohidramniyoz, pulmoner hipoplazi ve kafatası hipoplazisi; gebelik saptandığı anda KESİLİR!). Emzirme: Sağlıklı term bebekte düşük düzeyde geçer (Enalapril/Kaptopril daha çok veriye sahiptir).",
     "contraindications": "Önceki ACEi kullanımına bağlı veya herediter/idiyopatik ANJİYOÖDEM öyküsü, Sakubitril/Valsartan (Entresto) kullanımı (arada en az 36 SAAT arınma süresi şarttır!), bilateral renal arter darlığı (veya soliter böbrekte darlık), gebelik, diyabet/KBH hastasında Aliskiren ile kombinasyon.",
-    "clinicalPearls": "Bradikinin birikimine bağlı inatçı KURU ÖKSÜRÜK (%5–20) gelişirse ARB'ye geçilir; ancak dil/dudak/larinks ANJİYOÖDEMİ gelişirse hava yolu güvenliği acilen sağlanmalı (adrenalin anjiyoödemde etkisiz kalabilir, bradikinin aracılıdır!) ve bir daha asla ACEi verilmemelidir. Diüretik + NSAİİ ile 'Triple Whammy' akut böbrek hasarı; Spironolakton veya Bactrim ile ÖLÜMCÜL HİPERKALEMİ riski taşır!"
+    "clinicalPearls": "Bradikinin birikimine bağlı inatçı KURU ÖKSÜRÜK (%5–20) gelişirse ARB'ye geçilir; ancak dil/dudak/larinks ANJİYOÖDEMİ gelişirse hava yolu güvenliği acilen sağlanmalı (adrenalin anjiyoödemde etkisiz kalabilir, bradikinin aracılıdır!) ve bir daha asla ACEi verilmemelidir. Diüretik + NSAİİ ile 'Triple Whammy' akut böbrek hasarı; Spironolakton veya Bactrim ile ÖLÜMCÜL HİPERKALEMİ riski taşır!",
+    "schema_version": "2.0.0",
+    "rxcui": "35296",
+    "fda_gsrs_unii": "L35JN3I7SJ",
+    "summary": "Ramipril (ACEi): Gebelikte KONTRENDİKE; sakubitril/valsartan ile 36 saat arınma zorunludur; ilk 2 haftada K⁺ ve kreatinin ölçün.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum Potasyum (K⁺)",
+        "loinc_code": "2823-3",
+        "ucum_unit": "mmol/L",
+        "critical_threshold": ">5,4 mmol/L",
+        "timing_tr": "Başlangıç ve doz artışından 1–2 hafta sonra"
+      },
+      {
+        "parameter_tr": "Serum Kreatinin",
+        "loinc_code": "2160-0",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "Bazale göre >%30 artış",
+        "timing_tr": "Başlangıç ve doz artışından 1–2 hafta sonra"
+      },
+      {
+        "parameter_tr": "Sistolik Kan Basıncı (SKB)",
+        "loinc_code": "8480-6",
+        "ucum_unit": "mm[Hg]",
+        "critical_threshold": "<90 mmHg veya semptomatik hipotansiyon",
+        "timing_tr": "İlk doz sonrası 2–4 saat ve kontrolde"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_C09AA05_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB C09AA05 · DELIX PROTECT 10 MG 28 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "ADE inhibitörleri ile eş zamanlı olarak sakubitril/valsartan kullanımı anjiyoödem riskini artırdığı için kontrendikedir"
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "perindopril",
@@ -2758,7 +3328,49 @@
     "hepaticAdjustment": "Sirozda spironolakton ile 100 mg Spironolakton : 40 mg Furosemid oranında kombine başlanır; agresif IV furosemid hipokalemi ve metabolik alkaloz (NH4+ -> NH3 dönüşümü) yaparak HEPATİK ENSEFALOPATİ VE KOMAYI tetiklediği için ağır hepatik koma/prekoma durumunda KONTRENDİKEDİR!",
     "pregnancyLactation": "Gebelik: Preeklampside rutin ödem için KULLANILMAZ (zaten daralmış olan intravasküler hacmi ve plasental perfüzyonu çökertebilir!); yalnızca maternal akut akciğer ödemi veya KKY'de verilir. Emzirme: Süt üretimini (laktasyonu) baskılayabilir.",
     "contraindications": "Anüri, hipovolemi veya ağır dehidratasyon, düzeltilmemiş ağır hipokalemi veya ağır hiponatremi, hepatik koma/prekoma, emzirme (göreceli).",
-    "clinicalPearls": "Elektrolit imzası: Hipokalemi, hipomagnezemi, hiponatremi, HİPOKALSİEMİ (tiyazidlerin tersine idrarla Ca2+ atar!), hiperürisemi (gut atağı!) ve kontraksiyon metabolik alkalozu. Hızlı yüksek doz IV puşe (>4 mg/dk) ve Aminoglikozid/Vankomisin birlikteliği kalıcı koklear OTOTOKSİSİTE (sağırlık) yapar! ACEi/ARB + NSAİİ ile 'Triple Whammy' ABH; hipokalemi zemininde Digoksin toksisitesi ve QT uzaması yapar."
+    "clinicalPearls": "Elektrolit imzası: Hipokalemi, hipomagnezemi, hiponatremi, HİPOKALSİEMİ (tiyazidlerin tersine idrarla Ca2+ atar!), hiperürisemi (gut atağı!) ve kontraksiyon metabolik alkalozu. Hızlı yüksek doz IV puşe (>4 mg/dk) ve Aminoglikozid/Vankomisin birlikteliği kalıcı koklear OTOTOKSİSİTE (sağırlık) yapar! ACEi/ARB + NSAİİ ile 'Triple Whammy' ABH; hipokalemi zemininde Digoksin toksisitesi ve QT uzaması yapar.",
+    "schema_version": "2.0.0",
+    "rxcui": "4603",
+    "fda_gsrs_unii": "7LXU5N7ZO5",
+    "summary": "Furosemid (Loop Diüretik): Hipokalemi (K⁺ <3,5 mmol/L → QT/TdP riski) ve prerenal ABH izlemi gerekir; NSAİİ etkinliğini azaltır.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum Potasyum (K⁺)",
+        "loinc_code": "2823-3",
+        "ucum_unit": "mmol/L",
+        "critical_threshold": "<3,5 mmol/L (hipokalemi / aritmi riski)",
+        "timing_tr": "Başlangıçtan 5–7 gün sonra ve doz artışında"
+      },
+      {
+        "parameter_tr": "Serum Sodyum (Na⁺)",
+        "loinc_code": "2951-2",
+        "ucum_unit": "mmol/L",
+        "critical_threshold": "<130 mmol/L (hiponatremi)",
+        "timing_tr": "İlk 1–2 haftada ve yüksek doz IV tedavide"
+      },
+      {
+        "parameter_tr": "Serum Kreatinin",
+        "loinc_code": "2160-0",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "≥0,3 mg/dL artış (volüm deplesyonu/ABH)",
+        "timing_tr": "Başlangıçtan 1–2 hafta sonra"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_C03CA01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB C03CA01 · DESAL 40 MG 50 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Furosemid ve glukokortikoidler, karbenoksolon veya laksatiflerin eş zamanlı kullanımı, potasyum kaybını artırarak hipokalemi riskini yükseltebilir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "spironolactone",
@@ -2783,7 +3395,42 @@
     "hepaticAdjustment": "Sirozda birinci basamak diüretiktir; ancak hızlı elektrolit kaymaları hepatik ensefalopati tetikleyebileceğinden dikkatle titre edilir.",
     "pregnancyLactation": "Gebelik: Antiandrojenik etkisiyle erkek fetüste feminizasyon riski taşıdığından gebelikte ÖNERİLMEZ / kaçınılır. Emzirme: Aktif metaboliti (kanrenon) çok düşük oranda süte geçer, uyumlu kabul edilir.",
     "contraindications": "eGFR <30 mL/dk veya akut böbrek yetmezliği/anüri, HİPERKALEMİ (K+ >5.0 mEq/L), Addison hastalığı, Eplerenon veya potasyum takviyeleri ile eşzamanlı kullanım.",
-    "clinicalPearls": "ÖLÜMCÜL HİPERKALEMİ KALKANI : ACEi veya ARB kullanan bir hastaya Spironolakton eklendiğinde (>25 mg/gün, yaşlı veya KBH varsa) ya da üstüne Bactrim/NSAİİ yazıldığında potasyum hızla >6.5 mEq/L'ye çıkarak kardiyak arrest yapabilir! Non-selektif steroid reseptör bağlanması nedeniyle erkeklerde ağrılı JİNEKOMASTİ (%10), meme hassasiyeti ve impotans, kadınlarda menstrüel düzensizlik yapar (jinekomasti gelişirse selektif MRA olan Eplerenon'a geçilir)."
+    "clinicalPearls": "ÖLÜMCÜL HİPERKALEMİ KALKANI : ACEi veya ARB kullanan bir hastaya Spironolakton eklendiğinde (>25 mg/gün, yaşlı veya KBH varsa) ya da üstüne Bactrim/NSAİİ yazıldığında potasyum hızla >6.5 mEq/L'ye çıkarak kardiyak arrest yapabilir! Non-selektif steroid reseptör bağlanması nedeniyle erkeklerde ağrılı JİNEKOMASTİ (%10), meme hassasiyeti ve impotans, kadınlarda menstrüel düzensizlik yapar (jinekomasti gelişirse selektif MRA olan Eplerenon'a geçilir).",
+    "schema_version": "2.0.0",
+    "rxcui": "9997",
+    "fda_gsrs_unii": "27O7W4T232",
+    "summary": "Spironolakton (MRA): eGFR <30 mL/dk veya K⁺ >5,0 mEq/L'de kaçının; RAAS blokörü ve TMP-SMX ile ölümcül hiperkalemi riski taşır.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum Potasyum (K⁺)",
+        "loinc_code": "2823-3",
+        "ucum_unit": "mmol/L",
+        "critical_threshold": ">5,4 mmol/L (dozu kes / acil yönetim)",
+        "timing_tr": "Başlangıç, 1. hafta, 4. hafta ve doz artışında"
+      },
+      {
+        "parameter_tr": "Serum Kreatinin",
+        "loinc_code": "2160-0",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "Bazale göre >%30 artış veya ≥0,3 mg/dL yükselme",
+        "timing_tr": "Başlangıç, 1. hafta ve 4. hafta"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_C03DA01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB C03DA01 · ALDACTONE 100 MG 16 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Spironolakton ile, hiperkalemiye sebep olduğu bilinen ilaçların bir arada kullanımı şiddetli hiperkalemi ile sonuçlanabilir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "indapamide",
@@ -2841,7 +3488,42 @@
     "hepaticAdjustment": "Aktif karaciğer hastalığında veya açıklanamayan kalıcı serum transaminaz yüksekliğinde (>3xÜSN) KONTRENDİKE.",
     "pregnancyLactation": "Gebelik: KONTRENDİKE (Kategori X — kolesterol sentezi fetal gelişim için gerekli olup gebelik planlandığında veya saptandığında kesilir). Emzirme: KONTRENDİKE.",
     "contraindications": "Aktif karaciğer hastalığı veya >3xÜSN kalıcı transaminaz artışı, gebelik ve emzirme, Siklosporin, Gemfibrozil veya Glekaprevir/Pibrentasvir ile eşzamanlı yüksek doz kullanım.",
-    "clinicalPearls": "CYP3A4 VE RABDOMİYOLİZ KALKANI : Atorvastatin CYP3A4 ile metabolize olur! Klaritromisin, Eritromisin, İtrakonazol, Ketokonazol, Vorikonazol veya Posakonazol gibi güçlü CYP3A4 inhibitörleri plazma düzeyini 3–4 kat artırarak ağır MİYOPATİ / RABDOMİYOLİZ ve akut tübüler nekroz yapar — enfeksiyon kürü süresince Atorvastatin'e geçici ara verilmeli ('statin hold') veya Azitromisin seçilmelidir! Büyük miktarlarda greyfurt suyu (>1 L/gün) tüketiminden kaçınılmalıdır. Başlangıç öncesi bazal ALT ve CK (semptomda >5xÜSN ise kesilir) değerlendirilir; hafif transaminaz artışlarında (<3xÜSN) ve alkolsüz yağlı karaciğerde (MASLD) statin GÜVENLİDİR ve kesilmez!"
+    "clinicalPearls": "CYP3A4 VE RABDOMİYOLİZ KALKANI : Atorvastatin CYP3A4 ile metabolize olur! Klaritromisin, Eritromisin, İtrakonazol, Ketokonazol, Vorikonazol veya Posakonazol gibi güçlü CYP3A4 inhibitörleri plazma düzeyini 3–4 kat artırarak ağır MİYOPATİ / RABDOMİYOLİZ ve akut tübüler nekroz yapar — enfeksiyon kürü süresince Atorvastatin'e geçici ara verilmeli ('statin hold') veya Azitromisin seçilmelidir! Büyük miktarlarda greyfurt suyu (>1 L/gün) tüketiminden kaçınılmalıdır. Başlangıç öncesi bazal ALT ve CK (semptomda >5xÜSN ise kesilir) değerlendirilir; hafif transaminaz artışlarında (<3xÜSN) ve alkolsüz yağlı karaciğerde (MASLD) statin GÜVENLİDİR ve kesilmez!",
+    "schema_version": "2.0.0",
+    "rxcui": "83367",
+    "fda_gsrs_unii": "A0JWA85V8F",
+    "summary": "Atorvastatin (CYP3A4/OATP1B1): Güçlü CYP3A4 inhibitörleriyle miyopati/rabdomiyoliz riski artar; semptomda CK ve bazal ALT ölçün.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Kreatin Kinaz (CK)",
+        "loinc_code": "2157-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">5× ÜSN (statini derhal kes)",
+        "timing_tr": "Kas ağrısı, halsizlik veya koyu idrarda acil"
+      },
+      {
+        "parameter_tr": "Serum ALT (SGPT)",
+        "loinc_code": "1742-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">3× ÜSN (ardışık 2 ölçümde)",
+        "timing_tr": "Başlangıçta ve hepatotoksisite şüphesinde"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_C10AA05_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB C10AA05 · ALVASTIN 10 MG 30 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "CYP3A4 ya da taşıyıcı proteinlerin inhibitörleri olan ilaçlarla eş zamanlı kullanılması atorvastatinin plazma konsantrasyonlarında ve miyopati riskinde artışa neden olabilir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "rosuvastatin",
@@ -2896,7 +3578,57 @@
     "hepaticAdjustment": "Karaciğer/safra yoluyla atılır; AST/ALT >3xÜSN çıkarsa doz azaltılır veya kesilir (hızlı IV infüzyondaki polisorbat-80 çözücüsü akut fulminan karaciğer nekrozu yapabilir!).",
     "pregnancyLactation": "Gebelik: İyot içeriği (%37 ağırlıkça iyot!) ve plasental geçişi nedeniyle fetal hipotiroidizm/guatr, bradikardi ve nörogelişimsel gerilik yapar (Kategori D — yalnızca diğer tüm tedavilere dirençli maternal/fetal hayati aritmilerde!). Emzirme: Anne sütüne yüksek oranda geçer ve yarı ömrü çok uzundur; KONTRENDİKE.",
     "contraindications": "Kalıcı pil olmaksızın sinüs bradikardisi, sinoatriyal blok veya 2.–3. derece AV blok, iyot aşırı duyarlılığı, aktif tiroid disfonksiyonu, Torsades de Pointes (uzun QT'li polimorfik VT!), Sofosbuvir ile eşzamanlı kullanım (ölümcül bradikardi!).",
-    "clinicalPearls": "YARI ÖMRÜ ~40–55 GÜNDÜR (ilaç kesilse bile etkileri ve etkileşimleri aylarca sürer!). IV form SADECE %5 DEKSTROZ (%5 DW) içinde hazırlanır (%0.9 SF içinde çöker!) ve periferik vende ağır tromboflebit yapar. Kronik izlem (6 ayda bir): Tiroid (Tip 1 hipertiroidi / Tip 2 destrüktif tiroidit veya hipotiroidi), Akciğer grafisi/DLCO (pulmoner fibrozis!), KCFT, kornea mikrodepozitleri ve mavi-gri cilt pigmentasyonu. Varfarin dozunu %30–50, Digoksin dozunu %50 azaltmayı gerektirir ve Simvastatin dozunu maks 20 mg ile sınırlar."
+    "clinicalPearls": "YARI ÖMRÜ ~40–55 GÜNDÜR (ilaç kesilse bile etkileri ve etkileşimleri aylarca sürer!). IV form SADECE %5 DEKSTROZ (%5 DW) içinde hazırlanır (%0.9 SF içinde çöker!) ve periferik vende ağır tromboflebit yapar. Kronik izlem (6 ayda bir): Tiroid (Tip 1 hipertiroidi / Tip 2 destrüktif tiroidit veya hipotiroidi), Akciğer grafisi/DLCO (pulmoner fibrozis!), KCFT, kornea mikrodepozitleri ve mavi-gri cilt pigmentasyonu. Varfarin dozunu %30–50, Digoksin dozunu %50 azaltmayı gerektirir ve Simvastatin dozunu maks 20 mg ile sınırlar.",
+    "schema_version": "2.0.0",
+    "rxcui": "703",
+    "fda_gsrs_unii": "N3RQ532IUT",
+    "summary": "Amiodaron (Yüksek Risk / t½ 40–55 gün): QTc, tiroid (TSH) ve ALT izlemi zorunludur; CYP2C9/3A4 ve P-gp inhibisyonu haftalarca sürer.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "QTc Aralığı (Fridericia)",
+        "loinc_code": "76634-5",
+        "ucum_unit": "ms",
+        "critical_threshold": "QTc >500 ms veya bazale göre >60 ms artış",
+        "timing_tr": "Başlangıçta, yükleme sonrası ve 3–6 ayda bir"
+      },
+      {
+        "parameter_tr": "Serum TSH",
+        "loinc_code": "3016-3",
+        "ucum_unit": "mIU/L",
+        "critical_threshold": "Referans dışı (hipo/hipertiroidi)",
+        "timing_tr": "Başlangıçta ve 6 ayda bir"
+      },
+      {
+        "parameter_tr": "Serum ALT (SGPT)",
+        "loinc_code": "1742-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">2–3× ÜSN (hepatotoksisite)",
+        "timing_tr": "Başlangıçta ve 6 ayda bir"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_C01BD01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB C01BD01 · AMIDOVIN 150 MG/3 ML IV 6 AMPUL (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Birçok antiaritmik ilaç kalbin otomatizmasını, ileti sistemini ve kontraktilitesini deprese edebilir."
+      },
+      {
+        "source_id": "TITCK_KUB_C01BD01_2",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB C01BD01 · AMIDOVIN 150 MG/3 ML IV 6 AMPUL (Bölüm 4.2 Pozoloji)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.2 Pozoloji",
+        "source_quote_verbatim": "Ortalama doz, 250 ml % 5 dekstroz çözeltisi içinde 5 mg/kg’dır."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "glyceryl-trinitrate",
@@ -2983,7 +3715,7 @@
     "pediatricDose": "4–11 yaş çocuklarda astım idamesi: Diskus 50/100 mcg 2x1 inhalasyon veya ÖDİ 25/50 mcg 2x2 puf. <4 yaş çocuklarda önerilmez.",
     "maxDailyDose": "Salmeterol bileşeni maksimum 100 mcg/gün (Diskus formunda kesinlikle 2x1 inhalasyon aşılmaz!).",
     "renalAdjustment": "Böbrek yetmezliğinde doz ayarlaması gerekmez.",
-    "hepaticAdjustment": "Her iki bileşen karaciğerden (CYP3A4) temizlenir; ağır karaciğer hastalığında plazma düzeyleri artacağından yakın izlem gerekir.",
+    "hepaticAdjustment": "Her iki bileşen karaciğerden (CYP3A4) temizlenir; Child-Pugh B/C ağır karaciğer yetmezliğinde flutikazon plazma düzeyi artacağından en düşük etkin doz (≤500 mcg/gün) seçilmeli, HPA aksı baskılanması için sabah kortizol (<5 µg/dL) ve hipokalemi/taşikardi açısından serum K⁺ (<3.5 mEq/L) 4–8 haftada bir izlenmelidir.",
     "pregnancyLactation": "Gebelik: Gebelik öncesi bu rejimle iyi kontrol altında olan orta-ağır astımlı gebelerde tedavi değiştirilmeden sürdürülür (kontrolsüz atak riski çok daha yüksektir). Emzirme: Sistemik plazma düzeyi çok düşüktür, uyumlu.",
     "contraindications": "AKUT ASTIM ATAĞI / AKUT BRONKOSPAZM KURTARICI TEDAVİSİ (Salmeterolün etkisi geç başlar [10–20 dk] — akut atakta kullanılması ölümcül gecikmeye yol açar!), laktoz/süt proteini anafilaksisi (kuru toz formda).",
     "clinicalPearls": "HASTAYA HAYATİ UYARI: Formoterol-Budesonid'in aksine Salmeterol-Flutikazon nefes darlığı tuttuğunda KURTARICI OLARAK ÇEKİLMEZ; hastanın yanında ayrıca Salbutamol (veya İKS-Formoterol) bulunmalıdır! İnhalasyon sonrası pamukçuk ve disfoniyi önlemek için ağız çalkalanıp tükürülmelidir. Ritonavir, Kobicistat, Ketokonazol, İtrakonazol ve Klaritromisin ile eşzamanlı kullanımda flutikazon birikerek ağır sistemik CUSHING SENDROMU ve adrenal süpresyon yapar! KOAH'ta yüksek doz İKS pnömoni riskini hafif artırabilir."
@@ -3703,7 +4435,7 @@
     "adultDose": "PO Süspansiyon / Likit Saşe / Çiğneme Tableti: Ana yemeklerden SONRA (30–60 dk içinde) ve GECE YATARKEN günde 4 keze kadar 10–20 mL süspansiyon (veya 1–2 saşe / 2–4 çiğneme tableti iyice çiğnenerek).",
     "pediatricDose": "≥12 yaş adölesanlarda erişkin dozu; <12 yaş çocuklarda yalnızca hekim önerisiyle (bebek reflüsünde özel pediatrik 'Gaviscon Infant' toz saşe formülasyonları ağırlığa göre kullanılır; erişkin şurupları yüksek sodyum/kalsiyum nedeniyle bebeklere verilmez!).",
     "maxDailyDose": "Erişkin: Günde 4 doz (maks 80 mL süspansiyon veya 8–16 çiğneme tableti, ürün formülasyonuna göre).",
-    "renalAdjustment": "DİKKAT: Yüksek sodyum ve kalsiyum karbonat içerir! Ağır böbrek yetmezliği (eGFR <30 mL/dk), diyaliz, hiperkalsemi/nefrolitiyazis ve dekompanse KKY hastalarında tuz/hacim yükü ve süt-alkali sendromu riski nedeniyle çok dikkatli kullanılmalı veya sodyumu düşük formlar seçilmelidir.",
+    "renalAdjustment": "DİKKAT: Yüksek sodyum (~141 mg/10 mL) ve kalsiyum karbonat içerir! Ağır böbrek yetmezliği (eGFR <30 mL/dk), diyaliz, hiperkalsemi/nefrolitiyazis ve dekompanse KKY hastalarında tuz/hacim yükü ve süt-alkali sendromu riski nedeniyle standart yüksek sodyumlu formlardan kaçının; sodyumu kısıtlı formülasyon tercih edin ve serum Na⁺/Ca²⁺ düzeyini izleyin.",
     "hepaticAdjustment": "Kompanse karaciğer hastalığında güvenlidir; ancak asitli (ascites) ve sıkı sodyum kısıtlaması (<2 g Na/gün) olan siroz hastalarında sodyum yüküne dikkat edilmelidir!",
     "pregnancyLactation": "Gebelik: GÜVENLİ (sistemik dolaşıma emilmez, mide içeriği üzerinde fiziksel 'jel sal/bariyer' oluşturur; gebelik reflüsünde İLK TERCİH ilaçtır!). Emzirme: UYUMLU.",
     "contraindications": "Bileşenlere aşırı duyarlılık; ağır hiperkalsemi/nefrokalsinozis (kalsiyum karbonat içeren formlarda).",
@@ -4077,7 +4809,42 @@
     "hepaticAdjustment": "Laktat klirensini bozduğundan dekompanse karaciğer yetmezliği / siroz ve alkolizmde laktik asidoz riski nedeniyle KONTRENDİKE! (Kompanse yağlı karaciğerde [MASLD] güvenlidir ve faydalıdır).",
     "pregnancyLactation": "Gebelik: Plasentayı geçer; PKOS veya Tip 2 DM'de ilk trimesterde teratojenik saptanmamıştır ancak gestasyonel diyabette fetal uzun dönem metabolik etkiler nedeniyle İNSÜLİN ilk tercihtir. Emzirme: Anne sütüne çok düşük miktarda (<%0.5) geçer, UYUMLU.",
     "contraindications": "eGFR <30 mL/dk, akut metabolik asidoz (DKA / laktik asidoz), doku hipoksisi yapan akut durumlar (sepsis/şok, akut dekompanse KKY, solunum yetmezliği, akut Mİ), karaciğer yetmezliği, akut alkol intoksikasyonu.",
-    "clinicalPearls": "İYOTLU KONTRAST KURALI: İntraarteriyel kontrast verilecek herkeste veya IV kontrast verilecek eGFR <60 mL/dk (veya ABH riski olan) hastalarda işlem anında/öncesinde Metformin KESİLİR, işlemden 48 SAAT SONRA eGFR stabil olduğu görülerek yeniden başlanır! Tek başına hipoglisemi yapmaz ve kilo aldırmaz. Uzun süreli (>2–4 yıl) kullanımda ileal emilimi bozarak VİTAMİN B12 EKSİKLİĞİ (anemi ve diyabetik nöropatiyi taklit eden periferik nöropati!) yapar; yıllık B12 ölçümü şarttır!"
+    "clinicalPearls": "İYOTLU KONTRAST KURALI: İntraarteriyel kontrast verilecek herkeste veya IV kontrast verilecek eGFR <60 mL/dk (veya ABH riski olan) hastalarda işlem anında/öncesinde Metformin KESİLİR, işlemden 48 SAAT SONRA eGFR stabil olduğu görülerek yeniden başlanır! Tek başına hipoglisemi yapmaz ve kilo aldırmaz. Uzun süreli (>2–4 yıl) kullanımda ileal emilimi bozarak VİTAMİN B12 EKSİKLİĞİ (anemi ve diyabetik nöropatiyi taklit eden periferik nöropati!) yapar; yıllık B12 ölçümü şarttır!",
+    "schema_version": "2.0.0",
+    "rxcui": "6809",
+    "fda_gsrs_unii": "9100L32L2N",
+    "summary": "Metformin: eGFR <30 mL/dk'da KONTRENDİKE (laktik asidoz); eGFR 30–45'te maks 1000 mg/gün; iyotlu kontrast öncesi/sonrası 48s ara.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<30 mL/dk (derhal kes)",
+        "timing_tr": "Başlangıçta, yılda 1 kez (eGFR <60'ta 3–6 ayda bir) ve kontrasttan 48s sonra"
+      },
+      {
+        "parameter_tr": "Serum Glukoz",
+        "loinc_code": "2345-7",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "<70 mg/dL veya hedeflenen glisemik kontrol dışı",
+        "timing_tr": "10–15. günde ve doz titrasyonunda"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_A10BA02_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB A10BA02 · GLUCOTARD 1000 MG 100 FILM KAPLI TABLET (Bölüm 4.2 Pozoloji)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.2 Pozoloji",
+        "source_quote_verbatim": "Metforminin önerilen maksimum dozu üçe bölünmüş doz şeklinde günlük 3 g’dır."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "gliclazide",
@@ -4187,7 +4954,7 @@
     "pediatricDose": "≥1 yaş Tip 1 DM'li çocuklarda öğün öncesi (küçük çocukta ne kadar yediği görüldükten hemen sonra da yapılabilir!) bireysel titre edilen SC bolus.",
     "maxDailyDose": "Kan şekeri profili ve karbonhidrat alımına göre bireysel belirlenir.",
     "renalAdjustment": "Böbrek yetmezliğinde (özellikle eGFR <30 mL/dk) insülin klirensi azaldığından hipoglisemiyi önlemek için dozlar sık kan şekeri ölçümüyle azaltılır.",
-    "hepaticAdjustment": "Ağır karaciğer hastalığında glukoneogenez bozulduğundan insülin gereksinimi azalır; yakın takip gerekir.",
+    "hepaticAdjustment": "Ağır karaciğer hastalığında (Child-Pugh B/C) hepatik glukoneogenez bozulduğundan insülin gereksinimi %20–30 azalabilir; öğün öncesi ve gece yarısı kapiller glukoz günde 4 kez izlenerek <70 mg/dL eşiğinde prandiyal doz azaltılmalıdır.",
     "pregnancyLactation": "Gebelik: GÜVENLİ (gebelikte randomize kontrollü çalışmalarla kanıtlanmış birinci tercih hızlı etkili insülin analoğudur!). Emzirme: UYUMLU.",
     "contraindications": "Hipoglisemi atağı; BULANIK KARIŞIM FORMUNUN (NovoMix 30) İNTRAVENÖZ VEYA İNSÜLİN POMPASINDA KULLANILMASI KESİN KONTRENDİKEDİR!",
     "clinicalPearls": "Regüler kristalize insülinin (yemekten 30 dk önce yapılır, 6–8 saat sürer) aksine NovoRapid yemekten hemen önce yapılır (10–20 dk'da başlar, 1–3 saatte pik yapar, 3–5 saat sürer) ve geç öğün arası hipoglisemi riski çok daha düşüktür. İsim benzerliği hatasına dikkat: 'NovoRapid' berrak %100 hızlı insülindir; 'NovoMix 30' ise %30 çözünür aspart + %70 protamin kristalize aspart içeren bulanık bifazik karışımdır ve ASLA IV damardan verilemez!"
@@ -4218,7 +4985,41 @@
     "hepaticAdjustment": "Karaciğer yetmezliğinde doz ayarlaması gerekmez.",
     "pregnancyLactation": "Gebelik: KESİNLİKLE KESİLMEZ VE ARTIRILIR! Fetüs ilk 12–16 hafta tamamen annenin T4 hormonuna bağımlıdır; bilinen hipotiroidili kadın GEBE KALDIĞINI ÖĞRENDİĞİ ANDA günlük levotiroksin dozunu %25–30 artırmalıdır (örn. haftada 7 tablet yerine 9 tablet) ve 4 haftada bir TSH (<2.5 mIU/L hedefi) izlenmelidir! Emzirme: UYUMLU.",
     "contraindications": "Tedavi edilmemiş ADRENAL YETMEZLİK (önce hidrokortizon/steroid başlanmadan levotiroksin verilirse kortizol yıkımını hızlandırarak ÖLÜMCÜL AKUT ADRENAL KRİZ tetikler!), tedavi edilmemiş tirotoksikoz, akut miyokard infarktüsü / akut pankardit. OBEZİTEDE ZAYIFLAMA İLACI OLARAK KULLANILMASI KESİN KONTRENDİKEDİR (fatal aritmi!).",
-    "clinicalPearls": "EMİLİM DÜŞMANLARI (EN AZ 4 SAAT ARA VERİLMELİDİR!): Demir ilaçları (Ferro Sanol/Ferrum), Kalsiyum karbonat, Aljinat/Antasitler (Gaviscon/Rennie), PPİ'ler, Sukralfat, Kahve/Çay ve Soya ürünleri levotiroksini bağırsakta bağlayarak TSH'nın kontrolsüz yükselmesine yol açar! Yaşlılarda aşırı doz (TSH <0.1) ATRİYAL FİBRİLASYON ve OSTEOPOROZ yapar."
+    "clinicalPearls": "EMİLİM DÜŞMANLARI (EN AZ 4 SAAT ARA VERİLMELİDİR!): Demir ilaçları (Ferro Sanol/Ferrum), Kalsiyum karbonat, Aljinat/Antasitler (Gaviscon/Rennie), PPİ'ler, Sukralfat, Kahve/Çay ve Soya ürünleri levotiroksini bağırsakta bağlayarak TSH'nın kontrolsüz yükselmesine yol açar! Yaşlılarda aşırı doz (TSH <0.1) ATRİYAL FİBRİLASYON ve OSTEOPOROZ yapar.",
+    "schema_version": "2.0.0",
+    "rxcui": "10582",
+    "summary": "Levotiroksin (Dar Terapötik): Sabah aç karnına alınır; kalsiyum/demir/antasitlerden en az 4 saat ayrı verilmelidir; TSH 6–8 haftada kontrol.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum TSH",
+        "loinc_code": "3016-3",
+        "ucum_unit": "mIU/L",
+        "critical_threshold": "Hedef aralık dışı (<0,4 veya >4,0 mIU/L)",
+        "timing_tr": "Başlangıç ve her doz değişikliğinden 6–8 hafta sonra"
+      },
+      {
+        "parameter_tr": "Kalp Hızı",
+        "loinc_code": "8867-4",
+        "ucum_unit": "{beats}/min",
+        "critical_threshold": ">100 atım/dk veya yeni AF/anjina",
+        "timing_tr": "Yaşlı/koroner hastada doz artışından 2–4 hafta sonra"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_H03AA01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB H03AA01 · EUTHYROX 100 MCG 50 TABLET (Bölüm 4.2 Pozoloji)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.2 Pozoloji",
+        "source_quote_verbatim": "Hastanın günlük alması gereken ilaç dozu, laboratuvar testleri ve klinik muayene sonucunda belirlenmelidir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "methylprednisolone",
@@ -4622,7 +5423,56 @@
     "hepaticAdjustment": "Alkolik karaciğer hastalığı, kronik karaciğer hastalığı/fibrozis/siroz veya bazal transaminaz >2–3xÜSN varlığında KONTRENDİKE!",
     "pregnancyLactation": "Gebelik: KESİN KONTRENDİKE (Kategori X)! Güçlü abortifasyan ve majör teratojendir (Fetal Aminopterin/Metotreksat Sendromu: anensefali, kraniyosinostoz, ekstremite defektleri). Gebelik planlamadan EN AZ 3–6 AY ÖNCE kesilmeli ve folik asit başlanmalıdır! Emzirme: KESİN KONTRENDİKE.",
     "contraindications": "GEBELİK VE EMZİRME, ağır böbrek yetmezliği (CrCl <30 mL/dk), kronik karaciğer hastalığı/alkolizm, kemik iliği hipoplazisi/lökopeni/trombositopeni/ağır anemi, ağır immün yetmezlik veya aktif ciddi enfeksiyon (tüberküloz dahil), canlı aşılar.",
-    "clinicalPearls": "DÜNYADAKİ EN ÖLÜMCÜL REÇETELEME HATASI (TİTCK & EMA KARA KUTU UYARISI): Romatoid artrit/psöriyazis hastasının haftada 1 kez alması gereken metotreksatı YANLIŞLIKLA HER GÜN alması 5–7 gün içinde ağır oral/GİS ülserasyon (mukozit), sepsis, hepatik nekroz ve ÖLÜMCÜL PANSİTOPENİ yapar! Reçeteye haftanın günü büyük harflerle yazılmalıdır. BACTRİM (Trimetoprim-Sulfametoksazol) ile eşzamanlı verilmesi çift folat blokajıyla ölümcül aplazi yapar — KESİN YASAKTIR! NSAİİ'ler, Penisilinler ve PPİ'ler renal tübüler MTX atılımını azaltarak toksisiteyi artırabilir; kuru öksürük/dispne gelişirse 'Akut MTX Pnömonitisi' acilen dışlanmalıdır. Doz aşımı antidotu: Kalsiyum Folinat (Lökovorin)!"
+    "clinicalPearls": "DÜNYADAKİ EN ÖLÜMCÜL REÇETELEME HATASI (TİTCK & EMA KARA KUTU UYARISI): Romatoid artrit/psöriyazis hastasının haftada 1 kez alması gereken metotreksatı YANLIŞLIKLA HER GÜN alması 5–7 gün içinde ağır oral/GİS ülserasyon (mukozit), sepsis, hepatik nekroz ve ÖLÜMCÜL PANSİTOPENİ yapar! Reçeteye haftanın günü büyük harflerle yazılmalıdır. BACTRİM (Trimetoprim-Sulfametoksazol) ile eşzamanlı verilmesi çift folat blokajıyla ölümcül aplazi yapar — KESİN YASAKTIR! NSAİİ'ler, Penisilinler ve PPİ'ler renal tübüler MTX atılımını azaltarak toksisiteyi artırabilir; kuru öksürük/dispne gelişirse 'Akut MTX Pnömonitisi' acilen dışlanmalıdır. Doz aşımı antidotu: Kalsiyum Folinat (Lökovorin)!",
+    "schema_version": "2.0.0",
+    "rxcui": "6851",
+    "fda_gsrs_unii": "YL5FZ2Y5U1",
+    "summary": "Metotreksat (HAFTADA 1 GÜN): Günlük yanlış alım ölümcüldür! TMP-SMX ile pansitopeni riski; düzenli WBC, PLT, ALT ve eGFR izlemi şart.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Tam Kan Sayımı (WBC)",
+        "loinc_code": "6690-2",
+        "ucum_unit": "10*3/uL",
+        "critical_threshold": "WBC <3,0×10³/µL veya ateş/mukozit",
+        "timing_tr": "İlk 3 ay 2–4 haftada bir, stabilde 8–12 haftada bir"
+      },
+      {
+        "parameter_tr": "Trombosit Sayısı (PLT)",
+        "loinc_code": "777-3",
+        "ucum_unit": "10*3/uL",
+        "critical_threshold": "<100×10³/µL",
+        "timing_tr": "WBC ile eşzamanlı"
+      },
+      {
+        "parameter_tr": "Serum ALT (SGPT)",
+        "loinc_code": "1742-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">2–3× ÜSN",
+        "timing_tr": "2–4 haftada bir, stabilde 8–12 haftada bir"
+      },
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<30 mL/dk (kontrendike/doz kes)",
+        "timing_tr": "Başlangıçta ve 8–12 haftada bir"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_L04AX03_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB L04AX03 · EMTHEXATE 2,5 MG 100 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Düzenli alkol tüketimi ve diğer hepatotoksik tıbbi ürünlerle aynı zamanda kullanıldığında metotreksatın hepatotoksik bir etki gösterme olasılığı artar"
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "isotretinoin",
@@ -4816,7 +5666,49 @@
     "hepaticAdjustment": "AKUT VEYA KRONİK KARACİĞER HASTALIĞI, ailede ilaca bağlı ağır hepatit öyküsü ve ÜRE SİKLUSU BOZUKLUKLARINDA KESİN KONTRENDİKEDİR!",
     "pregnancyLactation": "Gebelik: YÜKSEK TERATOJENİTE (Kategori D/X)! %10 majör konjenital malformasyon (spina bifida / nöral tüp defektleri, yarık damak, hipospadias) ve %30–40 kalıcı IQ düşüklüğü / OTİZM spektrum bozukluğu yapar! Migren ve bipolar bozuklukta gebelikte KESİN KONTRENDİKEDİR; doğurganlık çağındaki kız/kadınlarda başka hiçbir antiepileptik etkili olmadıkça başlanamaz (TİTCK Gebelik Önleme Programı zorunlu!). Emzirme: Anne sütüne çok az geçer, uyumlu.",
     "contraindications": "Karaciğer hastalığı, mitokondriyal POLG mutasyonları (Alpers-Huttenlocher sendromu — fatal karaciğer yetmezliği!), üre siklusu defektleri (ölümcül hiperamonyemik koma!), hepatik porfiri, gebelikte migren/bipolar tedavisi.",
-    "clinicalPearls": "İKİ HAYATİ ETKİLEŞİM: (1) MEROPENEM / İMİPENEM / ERTAPENEM verildiğinde valproat düzeyi saatler içinde sıfıra yakın çökerek durdurulamayan STATUS EPİLEPTİKUS tetikler — karbapenemlerle asla birlikte verilmez! (2) LAMOTRİJİN'in glukuronidasyonunu inhibe ederek yarı ömrünü 2 katına çıkarır ve ölümcül STEVENS-JOHNSON SENDROMU / TEN riskini katlar (Lamotrijin dozu yarıya düşürülmelidir!). Normal AST/ALT ile seyreden 'Valproat Hiperamonyemik Ensefalopatisi' (letarji, konfüzyon -> venöz AMONYAK bakılmalı, L-karnitin verilip ilaç kesilmeli!), akut hemorajik pankreatit, trombositopeni, kilo artışı, saç dökülmesi ve PKOS diğer önemli yan etkileridir."
+    "clinicalPearls": "İKİ HAYATİ ETKİLEŞİM: (1) MEROPENEM / İMİPENEM / ERTAPENEM verildiğinde valproat düzeyi saatler içinde sıfıra yakın çökerek durdurulamayan STATUS EPİLEPTİKUS tetikler — karbapenemlerle asla birlikte verilmez! (2) LAMOTRİJİN'in glukuronidasyonunu inhibe ederek yarı ömrünü 2 katına çıkarır ve ölümcül STEVENS-JOHNSON SENDROMU / TEN riskini katlar (Lamotrijin dozu yarıya düşürülmelidir!). Normal AST/ALT ile seyreden 'Valproat Hiperamonyemik Ensefalopatisi' (letarji, konfüzyon -> venöz AMONYAK bakılmalı, L-karnitin verilip ilaç kesilmeli!), akut hemorajik pankreatit, trombositopeni, kilo artışı, saç dökülmesi ve PKOS diğer önemli yan etkileridir.",
+    "schema_version": "2.0.0",
+    "rxcui": "11118",
+    "fda_gsrs_unii": "614OI1Z5WI",
+    "summary": "Valproat (Yüksek Teratojen + UGT İnhibitörü): Karbapenemlerle %60–90 düzey kaybı (KONTRENDİKE); lamotrijinle SJS/TEN riski taşır.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum Valproat Düzeyi",
+        "loinc_code": "4086-5",
+        "ucum_unit": "ug/mL",
+        "critical_threshold": "<50 µg/mL (nöbet riski) veya >100 µg/mL (toksisite)",
+        "timing_tr": "Başlangıçtan 3–5 gün sonra (sabah vadi) ve ilaç değişiminde"
+      },
+      {
+        "parameter_tr": "Serum ALT (SGPT)",
+        "loinc_code": "1742-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">3× ÜSN (hepatotoksisite)",
+        "timing_tr": "Başlangıçta ve ilk 6 ayda periyodik"
+      },
+      {
+        "parameter_tr": "Trombosit Sayısı (PLT)",
+        "loinc_code": "777-3",
+        "ucum_unit": "10*3/uL",
+        "critical_threshold": "<100×10³/µL",
+        "timing_tr": "Başlangıçta ve 3–6 ayda bir"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_N03AG01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB N03AG01 · CONVULEX CR 300 MG 50 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Ciddi deri reaksiyonları (toksik epidermal nekroliz) riskinde artış."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "phenytoin",
@@ -4923,6 +5815,41 @@
       ],
       "version_date": "2026-REV01",
       "last_reviewed_iso": "2026-10-26"
+    },
+    "schema_version": "2.0.0",
+    "rxcui": "8183",
+    "fda_gsrs_unii": "6158TKW0C5",
+    "summary": "Fenitoin (Sıfırıncı Derece Kinetik + Güçlü İndükleyici): Küçük doz artışlarında plazma düzeyi katlanır; vadi düzeyi 10–20 µg/mL izlenir.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum Fenitoin Düzeyi",
+        "loinc_code": "3968-5",
+        "ucum_unit": "ug/mL",
+        "critical_threshold": ">20 µg/mL (nistagmus, ataksi, toksisite)",
+        "timing_tr": "Başlangıçtan 5–7 gün sonra ve her doz değişikliğinde"
+      },
+      {
+        "parameter_tr": "Serum ALT (SGPT)",
+        "loinc_code": "1742-6",
+        "ucum_unit": "U/L",
+        "critical_threshold": ">3× ÜSN",
+        "timing_tr": "Başlangıçta ve döküntü/ateş (DRESS) şüphesinde acil"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_N03AB02_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB N03AB02 · EPDANTOIN 100 MG 100 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Fenitoin serum plazma proteinlerine kapsamlı şekilde bağlanır ve kompetitif yer değiştirmeye yatkındır."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
     }
   },
   {
@@ -4951,7 +5878,49 @@
     "hepaticAdjustment": "Aktif karaciğer hastalığında ve ağır karaciğer yetmezliğinde KONTRENDİKE; başlangıç ve izlemde KCFT kontrol edilir.",
     "pregnancyLactation": "Gebelik: Nöral tüp defektleri (spina bifida ~%0.5–1) ve kraniyofasiyal anomalilerle ilişkilidir (valproattan daha düşük riskli olsa da Levetirasetam/Lamotrijin önceliklidir; kullanan gebede 4–5 mg/gün yüksek doz folik asit verilir). Emzirme: Anne sütüne orta düzeyde geçer; bebekte sarılık, uyku hali ve emme güçlüğü izlenerek uyumlu kabul edilir.",
     "contraindications": "ATRIYOVENTRİKÜLER BLOK (AV blok), kemik iliği depresyonu öyküsü, hepatik porfiri, MAO inhibitörü kullanımı (son 14 gün), Vorikonazol/Delavirdin/DOAK kullanımı; ABSANS VE MİYOKLONİK NÖBETLERDE KONTRENDİKEDİR (nöbetleri ağırlaştırır!).",
-    "clinicalPearls": "OTO-İNDÜKSİYON İNCİSİ: İlk 2–4 haftada kendi CYP3A4 yıkımını indüklediği için başta normal olan ilaç düzeyi 3.–4. haftada düşer ve doz ayarlaması gerekir! GÜÇLÜ CYP3A4/1A2/2C9/P-gp İNDÜKLEYİCİSİDİR: Kombine oral kontraseptifleri etkisizleştirip İSTENMEYEN GEBELİĞE, DOAK ve Varfarini etkisizleştirip İNME/TROMBOZA yol açar! Buna karşılık Klaritromisin, Eritromisin, Verapamil, Diltiazem ve Flukonazol karbamazepin yıkımını bloke ederek akut DİPLOPİ, ATAKSİ, NİSTAGMUS VE LETARJİ toksisitesi yapar! UYARI: SIADH benzeri HİPONATREMİ (özellikle yaşlıda!), agranülositoz/aplastik anemi ve HLA-B*15:02 / HLA-A*31:01 ilişkili STEVENS-JOHNSON SENDROMU / TEN açısından ateş, boğaz ağrısı veya döküntüde derhal kesilmelidir!"
+    "clinicalPearls": "OTO-İNDÜKSİYON İNCİSİ: İlk 2–4 haftada kendi CYP3A4 yıkımını indüklediği için başta normal olan ilaç düzeyi 3.–4. haftada düşer ve doz ayarlaması gerekir! GÜÇLÜ CYP3A4/1A2/2C9/P-gp İNDÜKLEYİCİSİDİR: Kombine oral kontraseptifleri etkisizleştirip İSTENMEYEN GEBELİĞE, DOAK ve Varfarini etkisizleştirip İNME/TROMBOZA yol açar! Buna karşılık Klaritromisin, Eritromisin, Verapamil, Diltiazem ve Flukonazol karbamazepin yıkımını bloke ederek akut DİPLOPİ, ATAKSİ, NİSTAGMUS VE LETARJİ toksisitesi yapar! UYARI: SIADH benzeri HİPONATREMİ (özellikle yaşlıda!), agranülositoz/aplastik anemi ve HLA-B*15:02 / HLA-A*31:01 ilişkili STEVENS-JOHNSON SENDROMU / TEN açısından ateş, boğaz ağrısı veya döküntüde derhal kesilmelidir!",
+    "schema_version": "2.0.0",
+    "rxcui": "2002",
+    "fda_gsrs_unii": "33CM23913M",
+    "summary": "Karbamazepin (Güçlü CYP3A4 İndükleyici + Otoindüksiyon): Vadi 4–12 µg/mL, Na⁺ (<130 mmol/L SIADH) ve WBC izlemi zorunludur.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Karbamazepin Vadi Düzeyi",
+        "loinc_code": "74973-9",
+        "ucum_unit": "ug/mL",
+        "critical_threshold": ">12 µg/mL (ataksi, diplopi, toksisite)",
+        "timing_tr": "Başlangıçtan 2–4 hafta sonra (otoindüksiyon sonrası) ve etkileşimde"
+      },
+      {
+        "parameter_tr": "Serum Sodyum (Na⁺)",
+        "loinc_code": "2951-2",
+        "ucum_unit": "mmol/L",
+        "critical_threshold": "<130 mmol/L (SIADH hiponatremisi)",
+        "timing_tr": "Başlangıçta ve ilk 4–8 haftada"
+      },
+      {
+        "parameter_tr": "Tam Kan Sayımı (WBC)",
+        "loinc_code": "6690-2",
+        "ucum_unit": "10*3/uL",
+        "critical_threshold": "WBC <3,0×10³/µL veya ateş/boğaz ağrısı",
+        "timing_tr": "Başlangıçta ve ilk 3 ayda aylık"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_N03AF01_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB N03AF01 · KARAZEPIN 200 MG 25 TABLET (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Sitokrom P450 3A4 (CYP3A4), aktif metabolit karbamazepin-10-11 epoksitin oluşumunu katalizleyen asıl enzimdir."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
+    }
   },
   {
     "id": "midazolam",
@@ -5347,7 +6316,7 @@
     "adultDose": "Anksiyete PO: Başlangıç 2–3x0.25–0.5 mg/gün (yaşlı/karaciğer hastasında 2x0.25 mg/gün). Panik Bozukluk PO: Başlangıç gece 0.5 mg veya 3x0.25–0.5 mg, kademeli ayarlanır.",
     "pediatricDose": "<18 yaş çocuk ve adölesanlarda güvenlilik ve etkililiği kanıtlanmamıştır; kullanılmaz.",
     "maxDailyDose": "Genel anksiyetede maksimum 4 mg/gün (panik bozuklukta nadir uzman olgularında maks 6 mg/gün; pratikte >2–3 mg/gün ciddi bağımlılık yapar!).",
-    "renalAdjustment": "İleri böbrek yetmezliğinde serbest ilaç fraksiyonu artabileceğinden düşük dozla (0.25 mg) dikkatle kullanılır.",
+    "renalAdjustment": "İleri böbrek yetmezliğinde (eGFR <30 mL/dk) serbest ilaç fraksiyonu artabileceğinden en düşük başlangıç dozu (0.25 mg, 2–3x/gün) ile başlayın; aşırı sedasyon ve düşme bulgularına göre titre edin.",
     "hepaticAdjustment": "CYP3A4 ile metabolize olur; alkolik karaciğer hastalığı ve sirozda yarı ömür 2–3 kat uzar — düşük dozla başlanır, ağır karaciğer yetmezliğinde KONTRENDİKE!",
     "pregnancyLactation": "Gebelik: Fetal yoksunluk, hipotoni ve konjenital anomali tartışmaları nedeniyle gebelikte ÖNERİLMEZ. Emzirme: Anne sütüne geçer ve bebekte uyku hali/kilo kaybı ile kesildiğinde bebekte yoksunluk yapar — ÖNERİLMEZ.",
     "contraindications": "Myasthenia Gravis, ağır solunum yetmezliği, uyku apnesi sendromu, ağır karaciğer yetmezliği, KETOKONAZOL ve İTRAKONAZOL gibi güçlü CYP3A4 inhibitörleriyle eşzamanlı kullanım (alprazolam düzeyini 3–4 kat artırır — KESİN KONTRENDİKE!).",
@@ -5404,7 +6373,7 @@
     "adultDose": "PO (aç veya tok, günde 1 kez): Standart başlangıç 1x10 mg/gün (panik bozuklukta ilk hafta 1x5 mg/gün, sonra 10 mg/gün); yanıta göre 2–4 hafta sonra maksimum 1x20 mg/gün. DİKKAT: ≥65 YAŞ YAŞLILARDA başlangıç 1x5 mg/gün ve MAKSİMUM DOZ 10 MG/GÜN'DÜR!",
     "pediatricDose": "≥12 yaş adölesan majör depresyonda uzman psikiyatri kontrolünde 1x10 mg/gün (maks 20 mg/gün; yakın intihar eğilimi izlemiyle).",
     "maxDailyDose": "<65 yaş erişkin: 20 mg/gün; ≥65 yaş yaşlı ve karaciğer yetmezliğinde: KESİN SINIR 10 mg/gün (doza bağımlı QTc uzaması kalkanı!).",
-    "renalAdjustment": "Hafif-orta böbrek yetmezliğinde doz ayarı gerekmez; ağır böbrek yetmezliğinde (CrCl <30 mL/dk) dikkatli kullanılmalıdır.",
+    "renalAdjustment": "Hafif-orta böbrek yetmezliğinde (CrCl ≥30 mL/dk) doz ayarı gerekmez; ağır böbrek yetmezliğinde (CrCl <30 mL/dk) 1x5 mg/gün ile başlayın, tavan dozu 10 mg/gün ile sınırlandırın ve 1–2. haftada serum Na⁺ (LOINC 2951-2; hiponatremi <130 mEq/L) ile QTc (LOINC 76634-5) kontrolü yapın.",
     "hepaticAdjustment": "Hafif-orta karaciğer yetmezliğinde ve bilinen CYP2C19 yavaş metabolize edicilerde ilk 2 hafta 1x5 mg/gün ile başlanır, maksimum doz 10 mg/gün'ü aşmamalıdır.",
     "pregnancyLactation": "Gebelik: Sertralin sonrası yaygın kullanılan SSRI'lardandır (3. trimesterde yenidoğanda geçici adaptasyon sendromu ve nadir PPHN açısından izlem). Emzirme: Anne sütüne geçişi düşüktür (~%3–5), Sertralin alternatifinde uyumlu kabul edilir.",
     "contraindications": "MAO inhibitörleri / Linezolid / Metilen mavisi kullanımı (14 gün washout!), BİLİNEN UZUN QT SENDROMU, konjenital uzun QT veya QTc uzatan ilaçlarla (Sınıf IA/III antiaritmikler, antipsikotikler, haloperidol, makrolidler, moksifloksasin, ondansetron, hidroksizin) eşzamanlı kullanım!",
@@ -5485,8 +6454,8 @@
     "adultDose": "Uykusuzluk (İnsomnia) PO: Gece yatmadan hemen önce hafif bir atıştırmalıkla 25–100 mg (yaşlıda 25 mg ile başlanır!). Majör Depresyon PO: Başlangıç 150 mg/gün (bölünmüş dozda veya gece uzatılmış form), 3–4 günde bir 50 mg artırılarak ayaktan 150–300 mg/gün (yatan ağır hastada maks 400–600 mg/gün).",
     "pediatricDose": "<18 yaş çocuk ve adölesanlarda güvenlilik kanıtlanmadığından önerilmez.",
     "maxDailyDose": "Ayaktan hastada 300–400 mg/gün; hastanede yatan ağır depresyonda 600 mg/gün.",
-    "renalAdjustment": "Böbrek yetmezliğinde doz ayarlaması genellikle gerekmez; ağır KBH'da düşük dozla dikkatle titre edilir.",
-    "hepaticAdjustment": "CYP3A4 ile karaciğerde metabolize olur ve nadir hepatotoksisite yapabilir; karaciğer yetmezliğinde düşük dozla dikkatle kullanılır.",
+    "renalAdjustment": "eGFR ≥30 mL/dk böbrek yetmezliğinde doz ayarı gerekmez; eGFR <30 mL/dk ağır KBH'da 25–50 mg gece başlangıç dozuyla başlayın ve ortostatik hipotansiyon/sedasyona göre kademeli titre edin.",
+    "hepaticAdjustment": "CYP3A4 ile karaciğerde metabolize olur ve nadir hepatotoksisite yapabilir; Child-Pugh B/C karaciğer yetmezliğinde başlangıç dozunu %50 azaltın (25–50 mg/gün) ve 2–4. haftada ALT/AST (LOINC 1742-6) kontrolü yapın; >3× ÜSN artışta kesin.",
     "pregnancyLactation": "Gebelik: İnsan verileri teratojenik artış göstermemiştir; gerektiğinde düşük dozda değerlendirilebilir. Emzirme: Anne sütüne geçişi çok düşüktür (~%1), bebekte uyku hali izlenerek uyumlu.",
     "contraindications": "Akut miyokard infarktüsü erken iyileşme dönemi, alkol veya hipnotik intoksikasyonu, MAO inhibitörü / Linezolid kullanımı (14 gün ara).",
     "clinicalPearls": "ÜÇ ÖNEMLİ KLİNİK İNCİ: (1) PRİAPİZM KALKANI (ÜROLOJİK ACİL!): Alfa-1 adrenerjik blokajı nedeniyle nadir (~1/6000) fakat tedavi edilmezse kalıcı erektil disfonksiyon bırakan ağrılı uzamış ereksiyon (>4 saat — iskemik priapizm!) yapar; erkek hastalar mutlaka uyarılmalı ve gelişirse ilaç derhal kesilip acil kavernozal aspirasyon/fenilefrin için ürolojiye başvurmalıdır! (2) Belirgin ORTOSTATİK HİPOTANSİYON yapar; yatmadan hemen önce tok alınması pik plazma konsantrasyonunu yumuşatarak gece tuvalete kalkarken yaşlı hastanın bayılıp düşmesini önler! (3) SSRI'ların aksine cinsel disfonksiyon ve kilo alımı yapmaz; ancak serotonerjik olduğu için yüksek dozda SSRI/Tramadol ile Serotonin Sendromu ve yüksek dozda QTc uzaması riski unutulmamalıdır."
@@ -5735,7 +6704,7 @@
     "adultDose": "PO (değiştirilmiş salımlı kapsül/tablet BÜTÜN yutulur, kırılmaz/çiğnenmez!): Günde tek doz 1x0.4 mg, her gün aynı öğünden (genellikle kahvaltıdan) 30 dakika SONRA tok karnına!",
     "pediatricDose": "Pediatrik BPH endikasyonu yoktur (<18 yaşta rutin önerilmez).",
     "maxDailyDose": "0.4 mg/gün (nadir yanıtsız BPH olgularında maks 0.8 mg/gün).",
-    "renalAdjustment": "CrCl ≥10 mL/dk olan böbrek yetmezliğinde doz ayarlaması gerekmez; CrCl <10 mL/dk son dönem KBH'da dikkatle kullanılır.",
+    "renalAdjustment": "CrCl ≥10 mL/dk olan böbrek yetmezliğinde doz ayarı gerekmez (1x0.4 mg/gün); CrCl <10 mL/dk son dönem KBH'da resmi klinik çalışma verisi kısıtlı olduğundan ilk dozda ortostatik kan basıncı (SKB <90 mmHg) izlemiyle uygulayın.",
     "hepaticAdjustment": "Hafif-orta karaciğer yetmezliğinde doz ayarı gerekmez; AĞIR KARACİĞER YETMEZLİĞİNDE (Child-Pugh C) KONTRENDİKEDİR!",
     "pregnancyLactation": "Gebelik ve Emzirme: Yalnızca erkeklerde BPH için onaylıdır; kadınlarda distal üreter taşı off-label kullanımında dahi GEBELİKTE KULLANILMAZ.",
     "contraindications": "Ortostatik hipotansiyon (senkop) öyküsü, ağır karaciğer yetmezliği, tamsulosin aşırı duyarlılığı (ilaç kaynaklı anjiyoödem).",
@@ -6333,6 +7302,41 @@
       ],
       "version_date": "2026-REV01",
       "last_reviewed_iso": "2026-10-26"
+    },
+    "schema_version": "2.0.0",
+    "rxcui": "1596450",
+    "fda_gsrs_unii": "T6Z9V48IKG",
+    "summary": "Gentamisin (Aminoglikozid): Nefrotoksik/ototoksik ve NMBA potansiyalizatörü; 48 saatte bir kreatinin ve eGFR izlemi zorunludur.",
+    "monitoring_protocol": [
+      {
+        "parameter_tr": "Serum Kreatinin",
+        "loinc_code": "2160-0",
+        "ucum_unit": "mg/dL",
+        "critical_threshold": "≥0,3 mg/dL artış (doz aralığını aç / kes)",
+        "timing_tr": "Başlangıçta ve her 48 saatte bir"
+      },
+      {
+        "parameter_tr": "eGFR (CKD-EPI 2021)",
+        "loinc_code": "98979-8",
+        "ucum_unit": "mL/min/1.73m2",
+        "critical_threshold": "<60 mL/dk (doz aralığı 36–48 saate uzatılır)",
+        "timing_tr": "Başlangıçta ve 48–72 saatte bir"
+      }
+    ],
+    "evidence_and_provenance": [
+      {
+        "source_id": "TITCK_KUB_J01GB03_1",
+        "source_type": "TITCK_KUB",
+        "identifier": "TİTCK KÜB J01GB03 · GENTA 20 MG 1 AMPUL (Bölüm 4.5 Etkileşimler)",
+        "effective_date": "2026-11-21",
+        "section": "Bölüm 4.5 Etkileşimler",
+        "source_quote_verbatim": "Sefalosporinler ile özellikle de sefalotin ve sefaloridin ile diğer aminoglikozitler ve vankomisin birlikte kullanıldığında nefrotoksisite riski artar."
+      }
+    ],
+    "review_governance": {
+      "review_status": "author_draft_unreviewed",
+      "independent_pharmacologist_signed": false,
+      "independent_pharmacist_signed": false
     }
   },
   {

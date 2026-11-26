@@ -20,6 +20,7 @@ export interface DataSourceManifestEntry {
   equivalentGroupCount?: number;
   extraMonitoringCount?: number;
   pdfCount?: number;
+  pddiMonographCount?: number;
   staleAfterDays: number;
   criticalAfterDays: number;
   sourceName: string;
@@ -29,6 +30,7 @@ export interface DataSnapshotManifest {
   schemaVersion: number;
   generatedAt: string;
   masterBuildDate: string;
+  offline_integrity_sha256?: Record<string, string>;
   sources: Record<DataSourceKey, DataSourceManifestEntry>;
 }
 

@@ -43,6 +43,13 @@ import {
   evaluateClinicalStackingAndCypRules,
   type TisdaleQtcScoreResult
 } from './clinicalStackingEngine';
+import {
+  evaluateDiscontinuedWashoutAlerts,
+  evaluateDoseThresholdRules,
+  evaluateJanusmedRiskProfile,
+  type DiscontinuedDrugEntry,
+  type JanusmedRiskProfileResult
+} from './advancedPharmacologyEngine';
 import type { DrugInputItem } from '../types/engines';
 
 export type AlertTierLevel =
@@ -81,6 +88,7 @@ export interface PatientSafetyContext {
   indication?: string | null;
   admissionUnit?: string | null;
   history?: string[];
+  recentDiscontinuedDrugs?: DiscontinuedDrugEntry[];
 }
 
 export interface DrugInvolvedRef {
@@ -126,6 +134,8 @@ export interface InteractionEvaluationResult {
   };
   resolvedConcepts: ResolvedRxConcept[];
   tisdaleQtcScore?: TisdaleQtcScoreResult;
+  janusmedProfile?: JanusmedRiskProfileResult;
+  suppressTyramineFoodWarning?: boolean;
   summaryMessage: string;
 }
 
@@ -1174,16 +1184,16 @@ export function evaluatePrescriptionInteractions(
       alertTier: 'TIER_3_MONITORING',
       alertLevel: 'WARNING_MONITOR',
       alertTitle: 'YAKIN İZLEM: Klopidogrel + Omeprazol (CYP2C19 İnhibisyonu)',
-      message: 'Omeprazol ve esomeprazol hepatik CYP2C19 izoenzimini yarışmalı olarak inhibe ederek klopidogrelin aktif metabolitine dönüşümünü ve antiplatelet etkinliğini azaltır. Pantoprazol veya H2 blokörlerine geçiş önerilir.',
-      mechanism: 'CYP2C19 biyotransformasyon inhibisyonu.',
+      message: 'Omeprazol ve esomeprazol hepatik CYP2C19 izoenzimini inhibe ederek klopidogrelin aktif tiyol metabolitine dönüşümünü ve antiplatelet etkinliğini azaltır. NOT: 12 saatlik doz ayrımı FDA 72 gönüllülü klinik çalışmasında ETKİSİZDİR; Pantoprazol veya H2 blokörüne (Famotidin) geçiş gerekir.',
+      mechanism: 'CYP2C19 ön-ilaç biyotransformasyon inhibisyonu (zaman ayrımı etkisizdir).',
       clinicalSeverity: 'MODERATE',
       interruptive: false,
       blocksConfirmation: false,
-      evidenceLevel: 'CPIC Farmakogenetik Kılavuzu / FDA Boxed Warning',
-      guidelineSource: 'CPIC Guidelines for Clopidogrel/CYP2C19; FDA Safety Alert',
+      evidenceLevel: 'CPIC Farmakogenetik Kılavuzu (2022) / FDA Boxed Warning',
+      guidelineSource: 'CPIC Guidelines for Clopidogrel/CYP2C19 (PMID: 35034351); FDA Plavix Label',
       recommendations: [
-        'CYP2C19 üzerinde minimal inhibitör etkisi olan PANTOPRAZOL tercih ediniz.',
-        'Alternatif olarak H2 reseptör blokörleri (Famotidin) değerlendirilebilir.'
+        'CYP2C19 inhibisyonu klinik olarak önemsiz olan PANTOPRAZOL tercih ediniz (12 saatlik uygulama ayrımı etkisizdir).',
+        'Alternatif olarak H2 reseptör blokörü (Famotidin) veya kardiyoloji onayıyla Prasugrel/Tikagrelor değerlendirilebilir.'
       ],
       involvedDrugs: [getDrugRef('clopidogrel'), getDrugRef(ppiKey)],
       alertClass: 'yellow',
@@ -1298,6 +1308,41 @@ export function evaluatePrescriptionInteractions(
     }
   }
 
+  // =========================================================================
+  // --- FAZ 3: KESİLEN İLAÇ ARINMA (14–35G), DOZ-EŞİĞİ VE JANUSMED 9-ALAN ---
+  // =========================================================================
+  const washoutAlerts = evaluateDiscontinuedWashoutAlerts(
+    resolvedList,
+    patientContext.recentDiscontinuedDrugs || []
+  );
+  for (const wAlert of washoutAlerts) {
+    if (!existingRuleIds.has(wAlert.ruleId)) {
+      existingRuleIds.add(wAlert.ruleId);
+      alerts.push(wAlert);
+    }
+  }
+
+  const normalizedRawForDose = validInputs.map(d =>
+    typeof d === 'string'
+      ? { brand: d, name: d }
+      : {
+          brand: String(d?.brand || d?.brandName || d?.name || ''),
+          name: String(d?.name || d?.brand || ''),
+          dosage: typeof d?.dosage === 'string' ? d.dosage : undefined,
+          route: typeof d?.route === 'string' ? d.route : undefined,
+          instructions: typeof d?.instructions === 'string' ? d.instructions : undefined
+        }
+  );
+  const doseRules = evaluateDoseThresholdRules(normalizedRawForDose, resolvedList);
+  for (const dAlert of doseRules.alerts) {
+    if (!existingRuleIds.has(dAlert.ruleId)) {
+      existingRuleIds.add(dAlert.ruleId);
+      alerts.push(dAlert);
+    }
+  }
+
+  const janusmedProfile = evaluateJanusmedRiskProfile(resolvedList);
+
   // Sıralama: En yüksek ciddiyet (Tier 1 -> Tier 4) üstte
   alerts.sort((a, b) => a.tier - b.tier);
 
@@ -1339,6 +1384,8 @@ export function evaluatePrescriptionInteractions(
     countsByTier,
     resolvedConcepts: resolvedList,
     tisdaleQtcScore: stackingEval.tisdaleScore,
+    janusmedProfile,
+    suppressTyramineFoodWarning: doseRules.suppressTyramineFoodWarning,
     summaryMessage
   };
 }

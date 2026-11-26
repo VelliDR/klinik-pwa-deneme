@@ -54,6 +54,16 @@ import { inferDrugRoute, type DrugRouteCode } from './drugRouteEngine';
 import { getRxNormConceptByKey, resolveToRxNormConcept } from './rxNormMappingEngine';
 import { findCatalogDrugSync } from '../db/titckIndexedDB';
 import type { TisdaleQtcScoreResult } from './clinicalStackingEngine';
+import {
+  classifyPharmacologicBadge,
+  type DiscontinuedDrugEntry,
+  type JanusmedRiskProfileResult
+} from './advancedPharmacologyEngine';
+import {
+  buildCdsHookSuggestions,
+  CODED_OVERRIDE_REASONS,
+  type CdsHookActionSuggestion
+} from './cdsHooksActionEngine';
 
 export interface UnifiedSafetyContext {
   egfr?: number | null;
@@ -78,6 +88,7 @@ export interface UnifiedSafetyContext {
   childPughScore?: number | null;
   meldScore?: number | null;
   diagnosis?: string;
+  recentDiscontinuedDrugs?: DiscontinuedDrugEntry[];
 }
 
 export interface EnrichedSafetyDrug {
@@ -115,6 +126,8 @@ export interface UnifiedSafetyResult {
   enrichedDrugs: EnrichedSafetyDrug[];
   interactions: InteractionEvaluationResult;
   tisdaleQtcScore?: TisdaleQtcScoreResult;
+  janusmedProfile?: JanusmedRiskProfileResult;
+  missingLabs: Array<{ labelTr: string; loincCode: string | null }>;
   pddiMatches: PddiMonographMatch[];
   /** interactionTierEngine ile aynı ATC çiftini zaten yakalamayan özgün PDDI monografları */
   uniquePddiCount: number;
@@ -234,7 +247,8 @@ export function evaluateUnifiedPrescriptionSafety(
     hasSepsis: ctx.hasSepsis,
     hasHeartFailure: ctx.hasHeartFailure,
     childPughClass: ctx.childPughClass ?? null,
-    diagnosis: ctx.diagnosis
+    diagnosis: ctx.diagnosis,
+    recentDiscontinuedDrugs: ctx.recentDiscontinuedDrugs
   });
 
   // 2. W3C PDDI-CDS Kanıtlı Türkçe Monograflar (Faz 3 + Faz 4 dinamik organ yükseltmesi)
@@ -343,14 +357,49 @@ export function evaluateUnifiedPrescriptionSafety(
     isPediatricOrNeonate: isPediatric
   });
 
-  // 6. Legacy kalkan çift-sayım bayrakları
+  // Faz 3 Doz Kuralı: Transdermal selejilin <9 mg/24s ise tiramin gıda uyarısını bastır
+  if (interactions.suppressTyramineFoodWarning && ddiMatrix.counseling?.foods) {
+    const before = ddiMatrix.counseling.foods.length;
+    ddiMatrix.counseling.foods = ddiMatrix.counseling.foods.filter(
+      f => !/tyramin|tiramin/i.test(`${f.foodKey} ${f.foodLabelTr}`)
+    );
+    ddiMatrix.counseling.totalSignals = Math.max(
+      0,
+      ddiMatrix.counseling.totalSignals - (before - ddiMatrix.counseling.foods.length)
+    );
+  }
+
+  // Eksik laboratuvar bağlam tespiti (çevrimdışı missing_context_fallback — Faz 4)
+  const missingLabs: Array<{ labelTr: string; loincCode: string | null }> = [];
+  if (ctx.egfr === null || ctx.egfr === undefined) {
+    missingLabs.push({ labelTr: 'eGFR (CKD-EPI)', loincCode: '98979-8' });
+  }
+  if (ctx.baselineK === null || ctx.baselineK === undefined) {
+    missingLabs.push({ labelTr: 'Serum Potasyum (K⁺)', loincCode: '2823-3' });
+  }
+  if (ctx.baselineQtcMs === null || ctx.baselineQtcMs === undefined) {
+    missingLabs.push({ labelTr: '12-Lead EKG / QTc Fridericia', loincCode: '76634-5' });
+  }
+
+  // 6. Legacy kalkan çift-sayım bayrakları (gerçek interactionTierEngine ruleId'leriyle %100 hizalı)
+  const hasTierPreg = Array.from(ruleIds).some(id => id.startsWith('PREG_') || id.startsWith('DDI_PREGNANCY_'));
+  const hasTierNeo = Array.from(ruleIds).some(id => id.startsWith('NEO_') || id.startsWith('DDI_NEONATAL_'));
+  // Gebelikte statin veya tetrasiklin gibi Tier 1'de ayrı kuralı olmayan ilaçlar varsa legacy pregnancySafety gizlenmez
+  const pregAlertDrugsOutsideTier = (pregnancySafety?.alerts || []).some(a => {
+    const n = String(a.drugName || '').toLowerCase();
+    return n.includes('statin') || n.includes('tetrasiklin') || n.includes('doksisiklin');
+  });
+  // Hiperkalemi: TMP-SMX + RAAS/Spironolakton kuralı safetyPrescriptionEngine'dedir; K-tuzu+K-tutucu Tier 1'de yakalandığında TMP-SMX varsa gizleme
+  const hasTmpSmxHyperK = Boolean(
+    hyperkalemiaRisk.riskFactorsIdentified?.some(r => /trimetoprim|bactrim|tmp-?smx/i.test(r))
+  );
   const dedupedFlags = {
     tripleWhammyCovered: ruleIds.has('DDI_TRIPLE_WHAMMY_001'),
-    serotoninCovered: ruleIds.has('DDI_SEROTONIN_MAOI_001'),
-    hyperkalemiaCovered: ruleIds.has('DDI_HYPERKALEMIA_001'),
-    cypStatinCovered: ruleIds.has('DDI_CYP3A4_STATIN_001'),
-    pregnancyCovered: Array.from(ruleIds).some(id => id.startsWith('DDI_PREGNANCY_')),
-    neonatalCovered: Array.from(ruleIds).some(id => id.startsWith('DDI_NEONATAL_'))
+    serotoninCovered: ruleIds.has('DDI_SERO_MAOI_001') || ruleIds.has('DDI_SEROTONIN_MAOI_001'),
+    hyperkalemiaCovered: (ruleIds.has('DDI_K_SPARING_K_SUPP_001') || ruleIds.has('DDI_K_SPARING_K_SUPP_002') || ruleIds.has('DDI_HYPERKALEMIA_001')) && !hasTmpSmxHyperK,
+    cypStatinCovered: ruleIds.has('DDI_STATIN_CYP3A4_001') || ruleIds.has('DDI_CYP3A4_STATIN_001'),
+    pregnancyCovered: hasTierPreg && !pregAlertDrugsOutsideTier,
+    neonatalCovered: hasTierNeo
   };
 
   // 7. Deterministik ve %100 Senkronize Sayım
@@ -411,6 +460,8 @@ export function evaluateUnifiedPrescriptionSafety(
     enrichedDrugs,
     interactions,
     tisdaleQtcScore: interactions.tisdaleQtcScore,
+    janusmedProfile: interactions.janusmedProfile,
+    missingLabs,
     pddiMatches,
     uniquePddiCount: uniqueActionablePddi + uniqueMonitoringPddi,
     ddiMatrix,
@@ -445,12 +496,29 @@ export function evaluateUnifiedPrescriptionSafety(
 // PAYLAŞIMLI HTML RENDER YARDIMCILARI (Ana Panel & Reçete Modalı %100 Senkron)
 // ============================================================================
 
+function renderCdsSuggestionsBarHTML(suggestions: CdsHookActionSuggestion[]): string {
+  if (!suggestions || suggestions.length === 0) return '';
+  return `
+    <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/10" data-cds-suggestions="true">
+      ${suggestions.map(s => {
+        const cls = s.actionType === 'SWITCH_ALTERNATIVE'
+          ? 'bg-emerald-950/90 hover:bg-emerald-900 text-emerald-200 border-emerald-500/70 font-semibold'
+          : s.actionType === 'REMOVE_DRUG'
+            ? 'bg-rose-950/90 hover:bg-rose-900 text-rose-200 border-rose-500/70 font-semibold'
+            : 'bg-sky-950/90 hover:bg-sky-900 text-sky-200 border-sky-500/70';
+        return `<button type="button" class="btn-cds-action btn-compact px-2 py-0.5 rounded border text-[0.6875rem] transition-colors ${cls}" data-cds-action="${escapeHtml(s.actionType)}" data-target-key="${escapeHtml(s.targetDrugKey || '')}" data-target-brand="${escapeHtml(s.targetDrugBrand || '')}" data-target-atc="${escapeHtml(s.targetDrugAtc || '')}" data-rep-brand="${escapeHtml(s.replacementBrand || '')}" data-rep-generic="${escapeHtml(s.replacementGeneric || '')}" data-rep-atc="${escapeHtml(s.replacementAtc || '')}" data-lab-order="${escapeHtml(s.labOrderText || '')}">${escapeHtml(s.labelTr)}</button>`;
+      }).join('')}
+    </div>
+  `;
+}
+
 /**
- * Tek bakışta etkileşim özeti + Tisdale QTc risk rozeti.
+ * Tek bakışta etkileşim özeti + Tisdale QTc (RISQ-PATH/Fridericia kalibrasyonlu) + Janusmed 9-Alanlı Risk Profili Şeridi.
  */
 export function renderQuickSafetySummaryHTML(res: UnifiedSafetyResult): string {
-  const { counts, tisdaleQtcScore } = res;
-  if (counts.totalActionable === 0 && counts.totalMonitoring === 0 && (!tisdaleQtcScore || tisdaleQtcScore.score < 7)) {
+  const { counts, tisdaleQtcScore, janusmedProfile } = res;
+  const hasElevatedJanusmed = Boolean(janusmedProfile && janusmedProfile.elevatedDomains.length > 0);
+  if (counts.totalActionable === 0 && counts.totalMonitoring === 0 && (!tisdaleQtcScore || tisdaleQtcScore.score < 7) && !hasElevatedJanusmed) {
     return '';
   }
 
@@ -462,12 +530,26 @@ export function renderQuickSafetySummaryHTML(res: UnifiedSafetyResult): string {
             ? 'bg-amber-950/80 text-amber-200 border-amber-500/80 font-semibold'
             : 'bg-slate-800/80 text-slate-300 border-slate-700';
         const label = tisdaleQtcScore.riskTier === 'HIGH' ? 'Yüksek' : tisdaleQtcScore.riskTier === 'MODERATE' ? 'Orta' : 'Düşük';
-        const breakdownStr = tisdaleQtcScore.breakdown
-          .filter(b => b.active)
-          .map(b => `${b.criterion} (+${b.points})`)
-          .join(' | ');
-        return `<span class="px-2 py-0.5 rounded border text-[0.6875rem] font-mono ${cls}" title="${escapeHtml(breakdownStr)}">Tisdale QTc: ${tisdaleQtcScore.score}/21 (${label})</span>`;
+        const breakdownStr = [
+          ...tisdaleQtcScore.breakdown.filter(b => b.active).map(b => `${b.criterion} (+${b.points})`),
+          tisdaleQtcScore.nonCardiologySpecificityNoteTr
+        ].join(' | ');
+        return `<span class="px-2 py-0.5 rounded border text-[0.6875rem] font-mono ${cls}" title="${escapeHtml(breakdownStr)}">Tisdale QTc: ${tisdaleQtcScore.score}/21 (${label}) · Fridericia 76634-5</span>`;
       })()
+    : '';
+
+  const janusmedStrip = hasElevatedJanusmed && janusmedProfile
+    ? `
+      <div class="w-full pt-1.5 mt-1 border-t border-slate-800/80 flex flex-wrap items-center gap-1" data-janusmed-strip="true">
+        <span class="text-[0.6875rem] font-bold text-violet-300 uppercase tracking-wide mr-1">Janusmed 9-Alan PD Yükü:</span>
+        ${janusmedProfile.elevatedDomains.map(d => {
+          const pillCls = d.level === 'HIGH'
+            ? 'bg-rose-950/80 text-rose-200 border-rose-500/75 font-bold'
+            : 'bg-amber-950/70 text-amber-200 border-amber-500/70 font-semibold';
+          return `<span class="px-1.5 py-0.5 rounded border text-[0.6875rem] font-mono ${pillCls}" title="${escapeHtml(d.drugs.join(' + '))} (Eşik: ≥${d.threshold}, ${d.aggregation === 'MAX' ? 'Maks tekil skor' : 'Kümülatif toplam'})">${escapeHtml(d.labelTr)}: ${d.score}p</span>`;
+        }).join('')}
+      </div>
+    `
     : '';
 
   return `
@@ -482,18 +564,106 @@ export function renderQuickSafetySummaryHTML(res: UnifiedSafetyResult): string {
         ${counts.totalMonitoring > 0 ? `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[0.6875rem]">İzlem: ${counts.totalMonitoring}</span>` : ''}
       </div>
       ${tisdalePill}
+      ${janusmedStrip}
     </div>
   `;
 }
 
 /**
- * W3C PDDI-CDS kanıtlı Türkçe monograf kartları (aksiyon + alternatif + LOINC + birebir kaynak alıntısı).
+ * Russ (2014) Kaydırmasız (No-Scroll) 4-Hücreli Tablosal Tier 1/2 Uyarı Kartı + CDS Hooks Aksiyonları.
  */
-export function renderPddiMonographsHTML(matches: PddiMonographMatch[]): string {
+export function renderTier12ActionCardHTML(
+  a: InteractionAlert,
+  missingLabs: Array<{ labelTr: string; loincCode: string | null }> = []
+): string {
+  const isTier1 = a.tier === 1;
+  const boxCls = isTier1
+    ? 'bg-rose-950/70 border-2 border-rose-500/90 text-rose-100'
+    : 'bg-amber-950/60 border border-amber-500/85 text-amber-100';
+  const tierChipCls = isTier1
+    ? 'bg-rose-900/90 text-rose-100 border-rose-400'
+    : 'bg-amber-900/90 text-amber-100 border-amber-400';
+  const tilsonLabel = isTier1 ? 'HARD STOP (X)' : 'GEREKÇELİ KESİNTİLİ (D)';
+
+  const mechBadge = classifyPharmacologicBadge({
+    ruleId: a.ruleId,
+    text: `${a.alertTitle} ${a.mechanism} ${a.involvedDrugs.map(d => d.canonicalKey).join(' ')}`
+  });
+
+  const primaryAction = (a.recommendations && a.recommendations[0]) || a.message;
+  const onsetHint = /washout|arınma|14 gün|35 gün|5–7 gün/i.test(`${a.ruleId} ${a.message}`)
+    ? 'Arınma / Geç Başlangıç Penceresi'
+    : /indük|induction/i.test(a.mechanism)
+      ? 'Başlangıç 7–14g · De-indüksiyon 14g'
+      : 'Anlık – 72 saat (ilk dozdan itibaren)';
+  const contextHint = missingLabs.length > 0
+    ? `Eksik bağlam: ${missingLabs.slice(0, 2).map(l => l.labelTr).join(', ')}`
+    : 'Temel organ/lab bağlamı mevcut';
+
+  const inv0 = a.involvedDrugs?.[0];
+  const inv1 = a.involvedDrugs?.[1];
+  const suggestions = buildCdsHookSuggestions({
+    cardId: a.ruleId,
+    drugAKey: inv0?.canonicalKey,
+    drugABrand: inv0?.raw,
+    drugBKey: inv1?.canonicalKey,
+    drugBBrand: inv1?.raw,
+    missingLabs
+  });
+
+  return `
+    <div class="p-2.5 rounded-lg ${boxCls} text-xs space-y-1.5" data-cds-card="no-scroll" data-rule-id="${escapeHtml(a.ruleId)}">
+      <div class="flex flex-wrap items-center justify-between gap-1.5">
+        <span class="font-bold text-white leading-snug">${escapeHtml(a.alertTitle)}</span>
+        <div class="flex flex-wrap items-center gap-1">
+          ${mechBadge ? `<span class="px-1.5 py-0.5 rounded border text-[0.625rem] font-bold ${mechBadge.cssClass}">${escapeHtml(mechBadge.labelTr)}</span>` : ''}
+          <span class="text-[0.6875rem] font-mono px-1.5 py-0.5 rounded border ${tierChipCls}">${tilsonLabel}</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[0.75rem]">
+        <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+          <div class="text-[0.625rem] uppercase tracking-wider font-bold text-emerald-300">Önerilen Eylem</div>
+          <div class="text-white leading-snug">${escapeHtml(primaryAction)}</div>
+        </div>
+        <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+          <div class="text-[0.625rem] uppercase tracking-wider font-bold text-sky-300">Kanıt / Kılavuz</div>
+          <div class="text-slate-200 leading-snug">${escapeHtml(a.evidenceLevel)}</div>
+        </div>
+        <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+          <div class="text-[0.625rem] uppercase tracking-wider font-bold text-amber-300">Başlangıç / Arınma</div>
+          <div class="text-slate-200 leading-snug">${escapeHtml(onsetHint)}</div>
+        </div>
+        <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+          <div class="text-[0.625rem] uppercase tracking-wider font-bold text-cyan-300">Hasta Bağlamı &amp; Eksik Lab</div>
+          <div class="text-slate-200 leading-snug">${escapeHtml(contextHint)}</div>
+        </div>
+      </div>
+      ${renderCdsSuggestionsBarHTML(suggestions)}
+      <details class="pt-0.5">
+        <summary class="text-[0.6875rem] text-sky-300 hover:underline cursor-pointer select-none font-mono">Klinik Mekanizma &amp; Kaynak Detayı (${escapeHtml(a.ruleId)})</summary>
+        <div class="mt-1 p-2 rounded bg-slate-950/75 border border-slate-800 space-y-1 text-[0.75rem] text-slate-200 leading-relaxed">
+          <div>${escapeHtml(a.message)}</div>
+          <div class="text-slate-400"><strong>Mekanizma:</strong> ${escapeHtml(a.mechanism)}</div>
+          <div class="text-[0.6875rem] font-mono text-slate-400">Kaynak: ${escapeHtml(a.guidelineSource)}</div>
+        </div>
+      </details>
+    </div>
+  `;
+}
+
+/**
+ * W3C PDDI-CDS kanıtlı Türkçe monograf kartları (Russ 2014 no-scroll 4-hücreli tablo + Tilson 3 davranış + CDS Hooks butonları).
+ */
+export function renderPddiMonographsHTML(
+  matches: PddiMonographMatch[],
+  missingLabs: Array<{ labelTr: string; loincCode: string | null }> = []
+): string {
   if (!matches || matches.length === 0) return '';
 
-  const majorMatches = matches.filter(m => m.escalatedTier === 'X' || m.escalatedTier === 'D');
-  const monitorMatches = matches.filter(m => m.escalatedTier !== 'X' && m.escalatedTier !== 'D');
+  // Tilson (2016) 3 görsel davranış: X = Hard Stop (critical), D = Gerekçeli Kesintili (warning), C/B = Pasif Akordeon (info), A = Tam bastırma
+  const visibleMatches = matches.filter(m => m.escalatedTier !== 'A');
+  const majorMatches = visibleMatches.filter(m => m.escalatedTier === 'X' || m.escalatedTier === 'D');
+  const monitorMatches = visibleMatches.filter(m => m.escalatedTier === 'C' || m.escalatedTier === 'B');
 
   const renderCard = (m: PddiMonographMatch): string => {
     const mono = m.monograph;
@@ -509,25 +679,64 @@ export function renderPddiMonographsHTML(matches: PddiMonographMatch[]): string 
       : isD
         ? 'bg-amber-900/90 text-amber-100 border-amber-400'
         : 'bg-sky-900/80 text-sky-200 border-sky-500';
-    const tierLabel = isX ? 'KADEME X — KONTRENDİKE' : isD ? 'KADEME D — TEDAVİYİ DEĞİŞTİR' : `KADEME ${m.escalatedTier} — İZLEM`;
+    const tierLabel = isX ? 'HARD STOP (X)' : isD ? 'KAÇIN / DEĞİŞTİR (D)' : `PASİF İZLEM (${m.escalatedTier})`;
+
+    const mechBadge = classifyPharmacologicBadge({
+      categories: mono.interaction_category,
+      pairKey: mono.canonical_pair_key,
+      text: `${mono.mechanism_tr} ${mono.recommended_action_tr}`
+    });
 
     const escHtml = m.escalationNotes.length > 0
       ? `<div class="px-2 py-1 rounded bg-rose-900/50 border border-rose-500/60 text-[0.75rem] text-rose-100 font-semibold">Bağlamsal Yükseltme: ${escapeHtml(m.escalationNotes.join(' '))}</div>`
       : '';
 
+    const gradeBadgeLabel = mono.liverpool_grade_level || mono.evidence_level.toUpperCase();
+    const onsetText = mono.interaction_category.includes('CYP_INDUCTION')
+      ? 'Başlangıç 7–14 gün · De-indüksiyon 14 gün'
+      : mono.route_scope === 'ORAL_GI_ONLY'
+        ? 'Oral emilim penceresi (anlık)'
+        : 'Başlangıç 1–72 saat · Arınma yarı ömre bağlı';
+    const firstMon = mono.monitoring_parameters?.[0];
+    const contextCellText = m.escalationNotes.length > 0
+      ? m.escalationNotes[0]
+      : (firstMon
+        ? `${firstMon.parameter_tr} (${firstMon.loinc_code ? `LOINC ${firstMon.loinc_code}` : 'Cihaz/Klinik'}: ${firstMon.critical_threshold})`
+        : (missingLabs[0] ? `Eksik lab: ${missingLabs[0].labelTr}` : 'Standart izlem'));
+
+    const cardMissingLabs = firstMon
+      ? [{ labelTr: firstMon.parameter_tr, loincCode: firstMon.loinc_code }]
+      : missingLabs;
+    const suggestions = buildCdsHookSuggestions({
+      cardId: mono.monograph_id,
+      drugAKey: mono.drug_a_en,
+      drugABrand: m.drugABrand,
+      drugAAtc: m.atcA,
+      drugBKey: mono.drug_b_en,
+      drugBBrand: m.drugBBrand,
+      drugBAtc: m.atcB,
+      missingLabs: cardMissingLabs
+    });
+
     const loincHtml = (mono.monitoring_parameters || []).length > 0
-      ? `<div class="flex flex-wrap gap-1 pt-0.5">${mono.monitoring_parameters.slice(0, 4).map(p =>
-          `<span class="px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-700 text-[0.6875rem] font-mono text-cyan-200" title="${escapeHtml(p.timing_tr)}">${escapeHtml(p.parameter_tr)} [${escapeHtml(p.loinc_code)}]: ${escapeHtml(p.critical_threshold)}</span>`
-        ).join('')}</div>`
+      ? `<div class="flex flex-wrap gap-1 pt-0.5">${mono.monitoring_parameters.slice(0, 4).map(p => {
+          const codeLabel = p.loinc_code ? `LOINC ${p.loinc_code}` : 'Klinik/Cihaz İzlemi';
+          const unitSuffix = p.ucum_unit ? ` (${p.ucum_unit})` : '';
+          return `<span class="px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-700 text-[0.6875rem] font-mono text-cyan-200" title="${escapeHtml(p.timing_tr)}">${escapeHtml(p.parameter_tr)} [${escapeHtml(codeLabel)}${escapeHtml(unitSuffix)}]: ${escapeHtml(p.critical_threshold)}</span>`;
+        }).join('')}</div>`
       : '';
 
     const quotesHtml = (mono.source_assertions || []).length > 0
       ? `
         <details class="pt-1">
           <summary class="text-[0.6875rem] text-sky-300 hover:underline cursor-pointer select-none font-mono">
-            Düzenleyici Kanıt &amp; Birebir Kaynak Alıntısı (${mono.source_assertions.length} kaynak • ${escapeHtml(mono.evidence_level.toUpperCase())})
+            Katman 2 Detay: Mekanizma, NNH &amp; Birebir Kaynak Alıntısı (${mono.source_assertions.length} kaynak • GRADE: ${escapeHtml(gradeBadgeLabel)})
           </summary>
-          <div class="mt-1 space-y-1 text-[0.6875rem] text-slate-300 bg-slate-950/70 p-2 rounded border border-slate-800">
+          <div class="mt-1 space-y-1.5 text-[0.6875rem] text-slate-300 bg-slate-950/75 p-2 rounded border border-slate-800">
+            <div><strong class="text-slate-100">Mekanizma:</strong> ${escapeHtml(mono.mechanism_tr)}</div>
+            <div><strong class="text-slate-100">Epidemiyoloji / NNH:</strong> ${escapeHtml(mono.frequency_of_harm)}</div>
+            ${mono.alternative_tr ? `<div class="text-emerald-200"><strong>Alternatif:</strong> ${escapeHtml(mono.alternative_tr)}</div>` : ''}
+            ${loincHtml}
             ${mono.source_assertions.map(sa => `
               <div>
                 <span class="font-mono text-emerald-300">[${escapeHtml(sa.source_type)} • ${escapeHtml(sa.section)} • ${escapeHtml(sa.version_date)}]</span>
@@ -541,16 +750,34 @@ export function renderPddiMonographsHTML(matches: PddiMonographMatch[]): string 
       : '';
 
     return `
-      <div class="p-2.5 rounded-lg ${boxCls} text-xs space-y-1">
+      <div class="p-2.5 rounded-lg ${boxCls} text-xs space-y-1.5" data-cds-card="no-scroll" data-monograph-id="${escapeHtml(mono.monograph_id)}">
         <div class="flex flex-wrap items-center justify-between gap-1.5">
-          <span class="font-bold text-white">${escapeHtml(mono.drug_a_tr)} + ${escapeHtml(mono.drug_b_tr)} <span class="font-normal text-slate-300">(${escapeHtml(m.drugABrand)} / ${escapeHtml(m.drugBBrand)})</span></span>
-          <span class="text-[0.6875rem] font-mono px-1.5 py-0.5 rounded border ${badgeCls}">${tierLabel}</span>
+          <span class="font-bold text-white leading-snug">${escapeHtml(mono.summary)}</span>
+          <div class="flex flex-wrap items-center gap-1">
+            ${mechBadge ? `<span class="px-1.5 py-0.5 rounded border text-[0.625rem] font-bold ${mechBadge.cssClass}">${escapeHtml(mechBadge.labelTr)}</span>` : ''}
+            <span class="text-[0.6875rem] font-mono px-1.5 py-0.5 rounded border ${badgeCls}">${tierLabel}</span>
+          </div>
         </div>
         ${escHtml}
-        <div class="leading-relaxed"><strong>Klinik Sonuç:</strong> ${escapeHtml(mono.clinical_consequences_tr.join(', '))} — ${escapeHtml(mono.mechanism_tr)}</div>
-        <div class="leading-relaxed"><strong>Önerilen Eylem:</strong> ${escapeHtml(mono.recommended_action_tr)}</div>
-        ${mono.alternative_tr ? `<div class="text-emerald-200 leading-relaxed"><strong>Güvenli Alternatif:</strong> ${escapeHtml(mono.alternative_tr)}</div>` : ''}
-        ${loincHtml}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[0.75rem]">
+          <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+            <div class="text-[0.625rem] uppercase tracking-wider font-bold text-emerald-300">Önerilen Eylem</div>
+            <div class="text-white leading-snug">${escapeHtml(mono.primary_directive_tr || mono.recommended_action_tr)}</div>
+          </div>
+          <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+            <div class="text-[0.625rem] uppercase tracking-wider font-bold text-sky-300">Kanıt / DRIVE-GRADE</div>
+            <div class="text-slate-200 leading-snug font-mono">${escapeHtml(gradeBadgeLabel)} · ${mono.source_assertions.length} resmi kaynak</div>
+          </div>
+          <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+            <div class="text-[0.625rem] uppercase tracking-wider font-bold text-amber-300">Başlangıç / Arınma</div>
+            <div class="text-slate-200 leading-snug">${escapeHtml(onsetText)}</div>
+          </div>
+          <div class="p-1.5 rounded bg-slate-950/60 border border-white/10">
+            <div class="text-[0.625rem] uppercase tracking-wider font-bold text-cyan-300">Hasta Bağlamı &amp; Eksik Lab</div>
+            <div class="text-slate-200 leading-snug">${escapeHtml(contextCellText)}</div>
+          </div>
+        </div>
+        ${renderCdsSuggestionsBarHTML(suggestions)}
         ${quotesHtml}
       </div>
     `;
@@ -561,7 +788,7 @@ export function renderPddiMonographsHTML(matches: PddiMonographMatch[]): string 
     ? `
       <details class="rounded-lg border border-sky-700/50 bg-sky-950/20 overflow-hidden group">
         <summary class="px-2.5 py-2 cursor-pointer select-none flex items-center justify-between gap-2 list-none [&::-webkit-details-marker]:hidden text-sky-200 font-semibold text-xs hover:bg-sky-950/35">
-          <span>${monitorMatches.length} Kanıtlı PDDI İzlem Monografı (Kademe C/B) — İncele</span>
+          <span>${monitorMatches.length} Kanıtlı PDDI Pasif İzlem Monografı (Kademe C/B) — İncele</span>
           <span class="text-sky-300 group-open:rotate-180 transition-transform">▾</span>
         </summary>
         <div class="px-2 pb-2 pt-1.5 border-t border-sky-800/40 space-y-1.5 max-h-60 overflow-y-auto">
@@ -572,6 +799,48 @@ export function renderPddiMonographsHTML(matches: PddiMonographMatch[]): string 
     : '';
 
   return `${majorHtml}${monitorHtml}`;
+}
+
+/**
+ * Marcilly (2018) & CHK-16 uyumlu Kodlu Geçersiz Kılma (Override) Çubuğu (Hard Stop X için).
+ */
+export function renderCodedOverrideBarHTML(
+  res: UnifiedSafetyResult,
+  activeOverride?: { code: string; display: string; note?: string } | null
+): string {
+  if (!res.counts.hasCritical) return '';
+  const topRule = res.interactions.alerts.find(a => a.tier === 1)?.ruleId
+    || res.pddiMatches.find(m => m.escalatedTier === 'X')?.monograph.monograph_id
+    || 'CRITICAL_SAFETY_LOCK';
+  const pairLabel = res.enrichedDrugs.map(d => d.brand.split(' ')[0]).slice(0, 3).join(' + ');
+
+  if (activeOverride) {
+    return `
+      <div class="p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/75 text-emerald-100 text-xs flex flex-wrap items-center justify-between gap-2" data-override-status="unlocked">
+        <div>
+          <strong class="text-emerald-300">Kodlu Geçersiz Kılma Kaydedildi:</strong>
+          <span class="font-mono px-1.5 py-0.5 rounded bg-emerald-900/80 border border-emerald-500/60 ml-1">${escapeHtml(activeOverride.display)}</span>
+          ${activeOverride.note ? `<span class="text-slate-300 ml-1.5">(${escapeHtml(activeOverride.note)})</span>` : ''}
+        </div>
+        <button type="button" class="btn-clear-cds-override btn-compact px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-[0.6875rem]">Kilidi Geri Al</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="p-2.5 rounded-xl bg-rose-950/75 border-2 border-rose-500 text-rose-100 text-xs space-y-2" data-override-status="locked" data-override-rule="${escapeHtml(topRule)}" data-override-pair="${escapeHtml(pairLabel)}">
+      <div class="flex flex-wrap items-center justify-between gap-1">
+        <span class="font-bold text-rose-200 uppercase tracking-wide text-[0.6875rem]">Hard Stop (X) — Yazdırma İçin Kodlu Gerekçe Seçiniz</span>
+        <span class="text-[0.6875rem] font-mono text-rose-300">Marcilly 2018 · Yerel Denetim Günlüğü</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5">
+        ${CODED_OVERRIDE_REASONS.map(r => `
+          <button type="button" class="btn-cds-override btn-compact px-2.5 py-1 rounded-md bg-rose-900/80 hover:bg-rose-800 text-white border border-rose-400/80 font-semibold text-[0.75rem] transition-colors" data-override-code="${escapeHtml(r.code)}" data-override-display="${escapeHtml(r.display)}">${escapeHtml(r.display)}</button>
+        `).join('')}
+        <input type="text" id="input-cds-override-note" placeholder="Kısa klinik not (isteğe bağlı)" class="flex-1 min-w-[160px] h-7 px-2 rounded bg-slate-950/90 border border-rose-700/70 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-rose-400">
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -605,7 +874,10 @@ export function renderTier34CollapsibleHTML(alerts: InteractionAlert[]): string 
 /**
  * Reçete yazdırma modalı için ana güvenlik paneliyle %100 senkronize tek birleşik banner üretir.
  */
-export function renderUnifiedModalSafetyBannerHTML(res: UnifiedSafetyResult): string {
+export function renderUnifiedModalSafetyBannerHTML(
+  res: UnifiedSafetyResult,
+  activeOverride?: { code: string; display: string; note?: string } | null
+): string {
   const { counts, interactions, pddiMatches, ddiMatrix } = res;
   if (counts.totalActionable === 0 && counts.totalMonitoring === 0) return '';
 
@@ -613,35 +885,15 @@ export function renderUnifiedModalSafetyBannerHTML(res: UnifiedSafetyResult): st
   const summaryStrip = renderQuickSafetySummaryHTML(res);
   if (summaryStrip) blocks.push(summaryStrip);
 
+  const overrideBar = renderCodedOverrideBarHTML(res, activeOverride);
+  if (overrideBar) blocks.push(overrideBar);
+
   const tier12 = interactions.alerts.filter(a => a.tier === 1 || a.tier === 2);
   for (const a of tier12) {
-    if (a.tier === 1) {
-      blocks.push(`
-        <div class="p-3 rounded-xl bg-rose-950/70 border-2 border-rose-600 text-rose-200 text-xs space-y-1">
-          <div class="flex items-center justify-between font-bold text-rose-300">
-            <span>${escapeHtml(a.badgeLabel)}</span>
-            <span class="text-[0.75rem] font-mono uppercase bg-rose-900/80 px-2 py-0.5 rounded border border-rose-500">${escapeHtml(a.ruleId)}</span>
-          </div>
-          <p class="font-semibold text-white">${escapeHtml(a.alertTitle)}</p>
-          <p class="text-rose-100/90 leading-relaxed">${escapeHtml(a.message)}</p>
-          <div class="text-[0.75rem] text-rose-300 font-mono pt-1">Kılavuz / Kaynak: ${escapeHtml(a.guidelineSource)}</div>
-        </div>
-      `);
-    } else {
-      blocks.push(`
-        <div class="p-3 rounded-xl bg-amber-950/60 border border-amber-600 text-amber-200 text-xs space-y-1">
-          <div class="flex items-center justify-between font-bold text-amber-300">
-            <span>${escapeHtml(a.badgeLabel)}</span>
-            <span class="text-[0.75rem] font-mono uppercase bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">${escapeHtml(a.ruleId)}</span>
-          </div>
-          <p class="font-semibold text-white">${escapeHtml(a.alertTitle)}</p>
-          <p class="text-amber-100/90 leading-relaxed">${escapeHtml(a.message)}</p>
-        </div>
-      `);
-    }
+    blocks.push(renderTier12ActionCardHTML(a, res.missingLabs));
   }
 
-  const pddiHtml = renderPddiMonographsHTML(pddiMatches);
+  const pddiHtml = renderPddiMonographsHTML(pddiMatches, res.missingLabs);
   if (pddiHtml) blocks.push(pddiHtml);
 
   // Tekilleştirilmiş organ & özel popülasyon kalkanları

@@ -23,10 +23,21 @@ import {
   getPddiMonographStats
 } from '../src/engines/pddiMonographEngine';
 import {
+  isRegulatoryLabelOnlyEvidence,
+  validateLoincMonitoringItem
+} from '../src/schemas/pddiMonographSchema';
+import {
   evaluateUnifiedPrescriptionSafety,
   renderUnifiedModalSafetyBannerHTML,
-  renderQuickSafetySummaryHTML
+  renderQuickSafetySummaryHTML,
+  renderTier12ActionCardHTML
 } from '../src/engines/unifiedSafetyOrchestrator';
+import {
+  calculateStaticAucr,
+  classifyPharmacologicBadge
+} from '../src/engines/advancedPharmacologyEngine';
+import { checkHepaticDoseSafety } from '../src/engines/safetyPrescriptionEngine';
+import { CODED_OVERRIDE_REASONS } from '../src/engines/cdsHooksActionEngine';
 
 console.log('===================================================================');
 console.log('🧪 CLINICAL DDI REGRESSION SUITE (FAZ 0–4: 70+ KLİNİK SENARYO)');
@@ -227,17 +238,40 @@ for (const m of pddiBundle!.monographs) {
   assert.strictEqual(m.authored_text_license, 'CC-BY-NC-SA-4.0', 'Özgün Türkçe metin lisansı CC-BY-NC-SA-4.0 olmalı');
   assert.ok(m.source_assertions.length >= 1, `${m.monograph_id} en az 1 resmi kaynak içermeli`);
   assert.ok(m.recommended_action_tr.length >= 15, `${m.monograph_id} eylem önerisi boş olmamalı`);
-  // Tek kaynaklı teorik kural ASLA Tier X Hard Stop olamaz!
-  if (m.evidence_level === 'teorik') {
-    assert.notStrictEqual(m.unified_risk_tier, 'X', `${m.monograph_id}: Tek kaynaklı teorik etkileşim Tier X olamaz!`);
+  // Ortogonal Eylem (X/D/C/B/A) vs Kanıt (Liverpool GRADE) doğrulaması:
+  // Üretici KÜB/etiket tek başına VERY_LOW_4 olmalı; zayıf tek-kaynaklı FDA_CYP_TABLE ise X olamaz.
+  assert.ok(
+    ['HIGH_1', 'MODERATE_2', 'LOW_3', 'VERY_LOW_4'].includes(m.liverpool_grade_level),
+    `${m.monograph_id}: Geçersiz liverpool_grade_level (${m.liverpool_grade_level})`
+  );
+  if (isRegulatoryLabelOnlyEvidence(m.evidence_and_provenance)) {
+    assert.strictEqual(
+      m.liverpool_grade_level,
+      'VERY_LOW_4',
+      `${m.monograph_id}: Yalnızca düzenleyici KÜB/etiket verisine dayanan kayıt VERY_LOW_4 olmalıdır`
+    );
+  }
+  if (
+    m.source_assertions.length === 1 &&
+    m.source_assertions[0].source_type === 'FDA_CYP_TABLE'
+  ) {
+    assert.notStrictEqual(
+      m.unified_risk_tier,
+      'X',
+      `${m.monograph_id}: Tek kaynaklı FDA_CYP_TABLE kaydı Tier X olamaz!`
+    );
   }
   for (const sa of m.source_assertions) {
     assert.ok(sa.source_quote_verbatim && sa.source_quote_verbatim.trim().length >= 15, `${m.monograph_id} birebir alıntısı eksik`);
     verbatimVerified++;
   }
   for (const mp of m.monitoring_parameters) {
-    assert.ok(/^\d{3,6}-\d$/.test(mp.loinc_code), `Geçersiz LOINC kodu: ${mp.loinc_code}`);
-    loincCount++;
+    const loincErr = validateLoincMonitoringItem(mp);
+    assert.strictEqual(loincErr, null, `${m.monograph_id}: ${loincErr}`);
+    if (mp.loinc_code !== null) {
+      assert.ok(/^\d{3,6}-\d$/.test(mp.loinc_code), `Geçersiz LOINC kodu: ${mp.loinc_code}`);
+      loincCount++;
+    }
   }
 }
 
@@ -307,6 +341,35 @@ if (pddiHasWarfFluc) {
 const modalHtml = renderUnifiedModalSafetyBannerHTML(syncEval);
 const summaryHtml = renderQuickSafetySummaryHTML(syncEval);
 assert.ok(modalHtml.includes('Hızlı Etkileşim Özeti') && summaryHtml.includes('Hızlı Etkileşim Özeti'), 'Ana panel ve modal aynı Hızlı Etkileşim Özeti şeridini paylaşmalı');
+
+// Faz 0 Regresyon: Düzeltilmiş dedupedFlags + Spironolakton + TMP-SMX (Antoniou BMJ 2011 / CMAJ 2015)
+const maoiSsriEval = evaluateUnifiedPrescriptionSafety(
+  [
+    { brand: 'AURORIX 150 MG TABLET', generic: 'Moklobemid', atcCode: 'N06AG02' },
+    { brand: 'LUSTRAL 50 MG TABLET', generic: 'Sertralin', atcCode: 'N06AB06' }
+  ],
+  { ageYears: 44 }
+);
+assert.strictEqual(maoiSsriEval.dedupedFlags.serotoninCovered, true, 'MAOI+SSRI serotoninCovered çift sayımı tekilleştirilmeli');
+
+const statinCypEval = evaluateUnifiedPrescriptionSafety(
+  [
+    { brand: 'ZOCOR 40 MG TABLET', generic: 'Simvastatin', atcCode: 'C10AA01' },
+    { brand: 'KLACID 500 MG TABLET', generic: 'Klaritromisin', atcCode: 'J01FA09' }
+  ],
+  { ageYears: 61 }
+);
+assert.strictEqual(statinCypEval.dedupedFlags.cypStatinCovered, true, 'Simvastatin+Klaritromisin cypStatinCovered tekilleştirilmeli');
+
+const spiroTmpEval = evaluateUnifiedPrescriptionSafety(
+  [
+    { brand: 'ALDACTONE 25 MG TABLET', generic: 'Spironolakton', atcCode: 'C03DA01' },
+    { brand: 'BACTRIM FORT TABLET', generic: 'Sulfametoksazol + Trimetoprim', atcCode: 'J01EE01' }
+  ],
+  { ageYears: 72, egfr: 48 }
+);
+assert.strictEqual(spiroTmpEval.hyperkalemiaRisk.severity, 'CRITICAL', 'Spironolakton + TMP-SMX CRITICAL hiperkalemi uyarısı üretmeli');
+assert.strictEqual(spiroTmpEval.counts.hasCritical, true, 'Spironolakton + TMP-SMX kritik bayrak aktif olmalı');
 console.log(`✓ Birleşik güvenlik orkestratörü doğrulandı (actionable=${syncEval.counts.totalActionable}, pddi=${syncEval.counts.pddiMonographs}, DDInter bastırma aktif)`);
 
 // ============================================================================
@@ -438,8 +501,133 @@ const tisdaleMax = calculateTisdaleQtcScore(
 );
 assert.strictEqual(tisdaleMax.score, 21, `Maksimum Tisdale QTc skoru 21 olmalı (Bulunan: ${tisdaleMax.score})`);
 assert.strictEqual(tisdaleMax.riskTier, 'HIGH');
+assert.strictEqual(tisdaleMax.loincCodes.qtcFridericia, '76634-5', 'QTc Fridericia LOINC 76634-5 olmalı');
+assert.ok(tisdaleMax.nonCardiologySpecificityNoteTr.includes('RISQ-PATH'), 'RISQ-PATH kardiyoloji dışı kalibrasyon notu bulunmalı');
 
 console.log(`✓ Çok branşlı vaka matrisi doğrulandı: ${criticalHit}/${criticalTotal} kritik/eylem senaryosu (%100 duyarlılık), ${safeClean}/${safeTotal} güvenli kontrol temiz (%${falsePositiveRate.toFixed(1)} FP)`);
+
+// ============================================================================
+// 8. FAZ 3 & FAZ 4: KESİLEN İLAÇ ARINMA, JANUSMED 9-ALAN, WEERSİNK 6-KADEME,
+//    AUCR / SCOTCHER 2026 & İNSAN FAKTÖRLERİ NO-SCROLL CDS HOOKS DOĞRULAMASI
+// ============================================================================
+console.log('\n--- 8. FAZ 3 & FAZ 4 (ARINMA 14–35G, JANUSMED 9-ALAN, WEERSİNK, AUCR, CDS HOOKS) ---');
+
+// 8a. Kesilen İlaç Arınma (14–35 gün lookback)
+const washMaoi = evaluateUnifiedPrescriptionSafety(
+  [{ brand: 'LUSTRAL 50 MG TABLET', generic: 'Sertralin', atcCode: 'N06AB06' }],
+  { recentDiscontinuedDrugs: [{ canonicalKey: 'phenelzine', stoppedDaysAgo: 5 }] }
+);
+assert.ok(washMaoi.interactions.alerts.some(a => a.ruleId === 'WASHOUT_MAOI_SERO_001' && a.tier === 1), '5 gün önce kesilen Fenelzin + Sertralin Tier 1 arınma kilidi vermeli');
+
+const washMaoiSafe = evaluateUnifiedPrescriptionSafety(
+  [{ brand: 'LUSTRAL 50 MG TABLET', generic: 'Sertralin', atcCode: 'N06AB06' }],
+  { recentDiscontinuedDrugs: [{ canonicalKey: 'phenelzine', stoppedDaysAgo: 20 }] }
+);
+assert.ok(!washMaoiSafe.interactions.alerts.some(a => a.ruleId === 'WASHOUT_MAOI_SERO_001'), '20 gün (>14g) geçmiş MAOI arınma uyarısı vermemeli');
+
+const washFluo = evaluateUnifiedPrescriptionSafety(
+  [{ brand: 'AURORIX 150 MG TABLET', generic: 'Moklobemid', atcCode: 'N06AG02' }],
+  { recentDiscontinuedDrugs: [{ canonicalKey: 'fluoxetine', stoppedDaysAgo: 20 }] }
+);
+assert.ok(washFluo.interactions.alerts.some(a => a.ruleId === 'WASHOUT_FLUOXETINE_MAOI_001' && a.tier === 1), '20 gün önce kesilen Fluoksetin (<35g) + MAOI Tier 1 Hard Stop vermeli');
+
+const washRif = evaluateUnifiedPrescriptionSafety(
+  [{ brand: 'COUMADIN 5 MG TABLET', generic: 'Varfarin', atcCode: 'B01AA03' }],
+  { recentDiscontinuedDrugs: [{ canonicalKey: 'rifampicin', stoppedDaysAgo: 6 }] }
+);
+assert.ok(washRif.interactions.alerts.some(a => a.ruleId === 'WASHOUT_DEINDUCTION_REBOUND_001'), '6 gün önce kesilen Rifampisin + Varfarin 14g de-indüksiyon rebound uyarısı vermeli');
+
+const washMbi = evaluateUnifiedPrescriptionSafety(
+  [{ brand: 'ZOCOR 40 MG TABLET', generic: 'Simvastatin', atcCode: 'C10AA01' }],
+  { recentDiscontinuedDrugs: [{ canonicalKey: 'clarithromycin', stoppedDaysAgo: 3 }] }
+);
+assert.ok(washMbi.interactions.alerts.some(a => a.ruleId === 'WASHOUT_MBI_CYP3A4_001'), '3 gün önce kesilen Klaritromisin (MBI) + Simvastatin 7g kalıcı blokaj uyarısı vermeli');
+
+// 8b. Janusmed 9-Alanlı Risk Profili (PHARAO — Nöbet eşiği MAX kuralı!)
+const janusEval = evaluateUnifiedPrescriptionSafety([
+  { brand: 'LAROXYL 25 MG TABLET', generic: 'Amitriptilin', atcCode: 'N06AA09' },
+  { brand: 'ATARAX 25 MG TABLET', generic: 'Hidroksizin', atcCode: 'N05BB01' },
+  { brand: 'CONTRAMAL 50 MG KAPSUL', generic: 'Tramadol', atcCode: 'N02AX02' }
+]);
+assert.ok(janusEval.janusmedProfile && janusEval.janusmedProfile.domains.length === 9, 'Janusmed profili tam 9 alan içermeli');
+const achDom = janusEval.janusmedProfile!.domains.find(d => d.domain === 'anticholinergic')!;
+const sedDom = janusEval.janusmedProfile!.domains.find(d => d.domain === 'sedation')!;
+const seizDom = janusEval.janusmedProfile!.domains.find(d => d.domain === 'seizure_threshold')!;
+assert.ok(achDom.score >= 3, `Antikolinerjik yük ≥3 olmalı (Bulunan: ${achDom.score})`);
+assert.ok(sedDom.score >= 6, `Sedasyon yükü ≥6 olmalı (Bulunan: ${sedDom.score})`);
+assert.strictEqual(seizDom.aggregation, 'MAX');
+assert.strictEqual(seizDom.score, 3, 'Nöbet eşiği toplam (5) değil MAX tekil skor (3) olmalıdır');
+assert.ok(renderQuickSafetySummaryHTML(janusEval).includes('data-janusmed-strip="true"'), 'Özet şeridi Janusmed 9-alan çubuğunu göstermeli');
+
+// 8c. Weersink 6-Kademeli Child-Pugh Siroz + Yüksek Hepatik Ekstraksiyon (EH > 0.7)
+const hepShunt = checkHepaticDoseSafety(
+  [{ brand: 'DIDERAL 40 MG TABLET', generic: 'Propranolol', atcCode: 'C07AA05' }],
+  { childPughClass: 'A' }
+);
+assert.ok(
+  hepShunt.alerts.some(a => a.weersinkCategory === 'DEPENDENT_ON_SEVERITY' && a.highExtractionRatioShunt === true),
+  'Propranolol Child-Pugh A sirozda EH>0.7 portosistemik şant uyarısı vermeli'
+);
+const hepNsaid = checkHepaticDoseSafety(
+  [{ brand: 'VOLTAREN 50 MG', generic: 'Diklofenak', atcCode: 'M01AB05' }],
+  { childPughClass: 'B' }
+);
+assert.ok(hepNsaid.alerts.some(a => a.weersinkCategory === 'UNSAFE'), 'NSAİİ sirozda Weersink UNSAFE olmalı');
+
+// 8d. Doz Eşiği Kuralları (Transdermal Selejilin 6 vs 9 mg & Flukonazol 150 mg Tek Doz + Warfarin)
+const sel6 = evaluatePrescriptionInteractions([
+  { brand: 'EMSAM 6 MG/24H TRANSDERMAL PATCH', generic: 'Selegiline', atcCode: 'N04BD01', route: 'TD' }
+]);
+assert.strictEqual(sel6.suppressTyramineFoodWarning, true, 'Transdermal Selejilin 6 mg/24h tiramin gıda uyarısını bastırmalı');
+assert.ok(!sel6.alerts.some(a => a.ruleId === 'DOSE_SELEGILINE_TD_TYRAMINE_001'));
+
+const sel9 = evaluatePrescriptionInteractions([
+  { brand: 'EMSAM 9 MG/24H TRANSDERMAL PATCH', generic: 'Selegiline', atcCode: 'N04BD01', route: 'TD' }
+]);
+assert.strictEqual(sel9.suppressTyramineFoodWarning, false);
+assert.ok(sel9.alerts.some(a => a.ruleId === 'DOSE_SELEGILINE_TD_TYRAMINE_001'), 'Transdermal Selejilin 9 mg/24h tiramin uyarısını aktif tutmalı');
+
+const fluc150Warf = evaluatePrescriptionInteractions([
+  { brand: 'TRIFLUCAN 150 MG TEK DOZ KAPSUL', generic: 'Fluconazole', atcCode: 'J02AC01' },
+  { brand: 'COUMADIN 5 MG TABLET', generic: 'Warfarin', atcCode: 'B01AA03' }
+]);
+assert.ok(fluc150Warf.alerts.some(a => a.ruleId === 'DOSE_FLUCONAZOLE_150_WARFARIN_001'), 'Flukonazol 150 mg tek doz + Warfarin asla bastırılmamalı');
+
+// 8e. Kantitatif Statik AUCR & Scotcher (2026) Aynı Yolak Zayıf CYP Koruması
+const aucrParallel = calculateStaticAucr(
+  { CYP2C8: 0.65, CYP3A4: 0.30 },
+  [{ enzyme: 'CYP2C8', iOverKi: 20, label: 'Gemfibrozil' }, { enzyme: 'CYP3A4', iOverKi: 15, label: 'Itrakonazol' }]
+);
+assert.ok(aucrParallel.aucr >= 5.0 && aucrParallel.recommendedTier === 'X', `Paralel yolak blokajında hiperbolik AUCR ≥5× olmalı (Bulunan: ${aucrParallel.aucr})`);
+
+const aucrScotcher = calculateStaticAucr(
+  { CYP3A4: 0.80 },
+  [
+    { enzyme: 'CYP3A4', iOverKi: 0.2 },
+    { enzyme: 'CYP3A4', iOverKi: 0.2 },
+    { enzyme: 'CYP3A4', iOverKi: 0.2 },
+    { enzyme: 'CYP3A4', iOverKi: 0.2 }
+  ]
+);
+assert.strictEqual(aucrScotcher.isSamePathwayWeakGuardTriggered, true, 'Scotcher 2026 aynı yolak 4 zayıf inhibitör koruması tetiklenmeli');
+assert.ok(aucrScotcher.aucr < 2.0 && aucrScotcher.recommendedTier !== 'X' && aucrScotcher.recommendedTier !== 'D', `Aynı yolak 4 zayıf inhibitör X/D üretmemeli (AUCR=${aucrScotcher.aucr}, tier=${aucrScotcher.recommendedTier})`);
+
+// 8f. Faz 4 İnsan Faktörleri: No-Scroll Tablosal Kartlar, Ön-İlaç/Şant Rozetleri, CDS Hooks Önerileri & Kodlu Override
+assert.strictEqual(classifyPharmacologicBadge({ pairKey: 'clopidogrel::omeprazole' })?.type, 'PRODRUG_BLOCKADE');
+assert.strictEqual(classifyPharmacologicBadge({ pairKey: 'allopurinol::azathioprine' })?.type, 'METABOLIC_SHUNT');
+assert.strictEqual(classifyPharmacologicBadge({ pairKey: 'clarithromycin::codeine' })?.type, 'METABOLIC_SHUNT');
+
+const modalLockedHtml = renderUnifiedModalSafetyBannerHTML(statinCypEval, null);
+assert.ok(modalLockedHtml.includes('data-cds-card="no-scroll"'), 'Russ 2014 no-scroll tablosal kart üretilmeli');
+assert.ok(modalLockedHtml.includes('data-cds-suggestions="true"') && modalLockedHtml.includes('SWITCH_ALTERNATIVE'), 'Tek tıkla güvenli alternatif CDS Hooks butonu bulunmalı');
+assert.ok(modalLockedHtml.includes('data-override-status="locked"'), 'Hard Stop reçetede kodlu override kilidi aktif olmalı');
+assert.ok(CODED_OVERRIDE_REASONS.length <= 5 && CODED_OVERRIDE_REASONS.every(r => r.display.split(/\s+/).length <= 3), 'Override gerekçeleri CHK-16 sınırına uymalı');
+
+const modalUnlockedHtml = renderUnifiedModalSafetyBannerHTML(statinCypEval, { code: 'specialist-approval', display: 'Uzman onayı', note: 'Kardiyoloji konsültasyonu' });
+assert.ok(modalUnlockedHtml.includes('data-override-status="unlocked"'), 'Kodlu override sonrası kilit açılmalı');
+assert.ok(renderTier12ActionCardHTML(washMaoi.interactions.alerts[0], washMaoi.missingLabs).includes('Önerilen Eylem'));
+
+console.log('✓ Faz 3 & Faz 4 doğrulandı: 14–35g arınma, Janusmed 9-alan, Weersink 6-kademe/EH>0.7, TD selejilin/flukonazol 150, Scotcher 2026 AUCR, Russ 2014 no-scroll & Marcilly kodlu override %100 YEŞİL');
 console.log('===================================================================');
 console.log('🎉 ALL CLINICAL DDI REGRESSION TESTS PASSED (FAZ 0–4 %100 YEŞİL)!');
 console.log('===================================================================');

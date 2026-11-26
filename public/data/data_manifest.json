@@ -42,12 +42,12 @@
     },
     "ddi": {
       "label": "İlaç & Besin Etkileşim Matrisi + W3C PDDI-CDS",
-      "snapshotDate": "2026-11-25",
+      "snapshotDate": "2026-11-26",
       "recordCount": 81355,
-      "pddiMonographCount": 3041,
+      "pddiMonographCount": 3045,
       "staleAfterDays": 365,
       "criticalAfterDays": 730,
-      "sourceName": "W3C PDDI-CDS (3.041 Kanıtlı TR Monograf: TİTCK KÜB, OpenFDA SPL, ANSM 2023, FDA CYP, ONC-15) + DDInter 2.0"
+      "sourceName": "W3C PDDI-CDS (3.045 Kanıtlı TR Monograf: TİTCK KÜB, FDA SPL, ANSM 2023, FDA CYP, Hakemli Kılavuz/Çalışmalar) + DDInter 2.0"
     },
     "vaccines": {
       "label": "Ulusal & Özel Bağışıklama Takvimi",
@@ -57,5 +57,9 @@
       "criticalAfterDays": 730,
       "sourceName": "T.C. Sağlık Bakanlığı Genişletilmiş Bağışıklama Programı"
     }
+  },
+  "offline_integrity_sha256": {
+    "pddi_monographs_tr": "7fd7560813bc7c56098c246cb38f853f765e727202b22cd712d5e2ac0ecedc59",
+    "clinical_monographs": "672d5751d42c891be09f13a77ec59b784bf93f3325a17a8396c9ba9747780f04"
   }
 }

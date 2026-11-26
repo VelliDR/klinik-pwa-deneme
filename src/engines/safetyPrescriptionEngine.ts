@@ -1415,7 +1415,29 @@ export function checkHyperkalemiaRisk(
     };
   }
 
-  // 2. ÖLÜMCÜL KOMBİNASYON 2: RAAS Blokörü + Trimetoprim (Bactrim)
+  // 2. ÖLÜMCÜL KOMBİNASYON 2: Spironolakton / Eplerenon + Trimetoprim (TMP-SMX / Bactrim)
+  // Antoniou et al., BMJ 2011 (aOR 12.4, PAF %59.7); CMAJ 2015 (14g ani ölüm aOR 2.46, NNH ~256)
+  if (hasKSparing && hasTrimethoprim) {
+    riskFactors.unshift('Spironolakton/Eplerenon + Trimetoprim (aOR 12,4 Hiperkalemi / Ani Ölüm NNH ~256)');
+    return {
+      isAtRisk: true,
+      severity: 'CRITICAL',
+      alertClass: 'danger',
+      title: '🚨 ÖLÜMCÜL HİPERKALEMİ & ANİ ÖLÜM RİSKİ (Spironolakton/Eplerenon + Trimetoprim / Bactrim)!',
+      mechanism: 'Trimetoprim distal nefronda amilorid benzeri ENaC kanal blokajı yaparken spironolakton/eplerenon aldosteron reseptörlerini bloke eder. 14 gün içinde hiperkalemi yatışı riski 12,4 kat (BMJ 2011) ve ani ölüm riski 2,46 kat (CMAJ 2015; NNH ~256) artar.',
+      riskFactorsIdentified: riskFactors,
+      detectedDrugs: detected,
+      totalHyperkalemicCount,
+      hasRenalOrAgeCompounding,
+      recommendations: [
+        'Spironolakton/Eplerenon kullanan hastada TMP-SMX (Bactrim) kullanımından KAÇININIZ; antibiyogram uygunsa amoksisilin, fosfomisin, nitrofurantoin (eGFR ≥30) veya beta-laktam tercih ediniz.',
+        'TMP-SMX mutlak zorunluysa 3–5. günde serum potasyum (LOINC 2823-3; kritik eşik >5,4 mEq/L) ve serum kreatinin (LOINC 2160-0) kontrolü zorunludur.',
+        'Eşzamanlı potasyum takviyeleri ve sistemik NSAİİ derhal kesilmelidir.'
+      ]
+    };
+  }
+
+  // 3. ÖLÜMCÜL KOMBİNASYON 3: RAAS Blokörü + Trimetoprim (Bactrim)
   if (hasRaas && hasTrimethoprim) {
     riskFactors.unshift('RAAS Blokörü + Trimetoprim (Sinsi ENaC Kanal Blokajı)');
     return {
@@ -1755,10 +1777,20 @@ export {
  * siroz kuralları (NSAİİ, Parasetamol 2g/gün tavanı, benzodiazepin/opioid, statin,
  * metotreksat, valproat, izoniazid vb.) hem de LiverTox DILI A/B profiliyle tarar.
  */
+export type WeersinkCirrhosisCategory =
+  | 'SAFE'
+  | 'NO_ADDITIONAL_RISK'
+  | 'ADDITIONAL_RISKS'
+  | 'UNSAFE'
+  | 'DEPENDENT_ON_SEVERITY'
+  | 'UNKNOWN';
+
 export interface HepaticSafetyAlertItem {
   drugName: string;
   atcCode?: string;
   severity: 'CONTRAINDICATED' | 'CAUTION';
+  weersinkCategory: WeersinkCirrhosisCategory;
+  highExtractionRatioShunt?: boolean;
   ruleCode: string;
   diliScore?: string;
   warning: string;
@@ -1782,10 +1814,16 @@ interface HepaticDrugRule {
   minClass: 'A' | 'B' | 'C';
   severityForBC: 'CONTRAINDICATED' | 'CAUTION';
   severityForA?: 'CAUTION';
+  weersinkForA: WeersinkCirrhosisCategory;
+  weersinkForBC: WeersinkCirrhosisCategory;
+  highExtractionRatioShunt?: boolean;
   warning: string;
   recommendation: string;
 }
 
+/**
+ * Weersink (2016/2018) 6-Kademeli Child-Pugh Siroz Güvenlik Modeli + Yüksek Hepatik Ekstraksiyon (EH > 0.7) Kuralı
+ */
 const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
   {
     code: 'HEP_NSAID',
@@ -1794,8 +1832,10 @@ const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
     minClass: 'A',
     severityForA: 'CAUTION',
     severityForBC: 'CONTRAINDICATED',
-    warning: 'Sirozda NSAİİ kullanımı renal prostaglandin sentezini baskılayarak hepatorenal sendrom, dirençli asit ve varis/GİS kanaması riskini ağır biçimde artırır.',
-    recommendation: 'Child-Pugh B/C sirozda NSAİİ kesinlikle kaçınılmalıdır; analjezi için düşük doz Parasetamol (≤2 g/gün) değerlendiriniz.'
+    weersinkForA: 'UNSAFE',
+    weersinkForBC: 'UNSAFE',
+    warning: 'Sirozda NSAİİ kullanımı renal prostaglandin sentezini baskılayarak hepatorenal sendrom, dirençli asit ve varis/GİS kanaması riskini ağır biçimde artırır (Weersink: UNSAFE).',
+    recommendation: 'Tüm Child-Pugh sınıflarında NSAİİ kullanımından kaçınılmalıdır; analjezi için düşük doz Parasetamol (≤2 g/gün) değerlendiriniz.'
   },
   {
     code: 'HEP_PARACETAMOL',
@@ -1803,8 +1843,10 @@ const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
     keywords: ['parasetamol', 'paracetamol', 'asetaminofen', 'acetaminophen'],
     minClass: 'B',
     severityForBC: 'CAUTION',
-    warning: 'Sirozda glutatyon rezervi azaldığından standart 4 g/gün Parasetamol dozu hepatotoksisite riski taşır.',
-    recommendation: 'Child-Pugh B/C sirozda toplam günlük Parasetamol dozunu ≤2 g/gün ile sınırlandırınız (aktif alkol alımı veya ağır malnütrisyonda daha yakın izlem).'
+    weersinkForA: 'NO_ADDITIONAL_RISK',
+    weersinkForBC: 'ADDITIONAL_RISKS',
+    warning: 'Sirozda glutatyon rezervi azaldığından standart 4 g/gün Parasetamol dozu hepatotoksisite riski taşır (Weersink: ADDITIONAL_RISKS).',
+    recommendation: 'Child-Pugh B/C sirozda toplam günlük Parasetamol dozunu ≤2 g/gün ile sınırlandırınız (aktif alkol alımı veya ağır malnütrisyonda ALT/INR [LOINC 1742-6 / 6301-6] izleyiniz).'
   },
   {
     code: 'HEP_BENZO_OPIOID',
@@ -1812,8 +1854,23 @@ const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
     keywords: ['diazepam', 'alprazolam', 'lorazepam', 'midazolam', 'klonazepam', 'zolpidem', 'tramadol', 'morfin', 'morphine', 'kodein', 'codeine', 'oksikodon', 'fentanil', 'petidin'],
     minClass: 'B',
     severityForBC: 'CONTRAINDICATED',
-    warning: 'Sirozda sedatifler, benzodiazepinler ve opioidler yavaşlamış hepatik klirens ve konstipasyon yoluyla hepatik ensefalopatiyi tetikler.',
-    recommendation: 'Child-Pugh B/C hastada benzodiazepinlerden kaçınınız; opioid şartsa dozu en az %50 azaltıp laktüloz ile konstipasyon profilaksisi sağlayınız.'
+    weersinkForA: 'ADDITIONAL_RISKS',
+    weersinkForBC: 'UNSAFE',
+    warning: 'Sirozda sedatifler, benzodiazepinler ve opioidler yavaşlamış hepatik klirens ve konstipasyon yoluyla hepatik ensefalopatiyi tetikler (Weersink: UNSAFE).',
+    recommendation: 'Child-Pugh B/C hastada benzodiazepinlerden kaçınınız; opioid şartsa başlangıç dozunu ≥%50 azaltıp laktüloz ile konstipasyon profilaksisi sağlayınız.'
+  },
+  {
+    code: 'HEP_HIGH_EXTRACTION_SHUNT',
+    atcPrefixes: ['C07AA05', 'C07AB02', 'C07AG02', 'C08DA01', 'N02AA01', 'N05CD08', 'N02AX02'],
+    keywords: ['propranolol', 'metoprolol', 'carvedilol', 'karvedilol', 'verapamil', 'morfin', 'morphine', 'midazolam', 'tramadol', 'lidokain', 'lidocaine'],
+    minClass: 'A',
+    severityForA: 'CAUTION',
+    severityForBC: 'CAUTION',
+    weersinkForA: 'DEPENDENT_ON_SEVERITY',
+    weersinkForBC: 'DEPENDENT_ON_SEVERITY',
+    highExtractionRatioShunt: true,
+    warning: 'Yüksek Hepatik Ekstraksiyon Oranı (EH > 0,7): Portal hipertansiyon ve portosistemik şant nedeniyle ilk geçiş metabolizması kaybolur; oral biyoyararlanım 2–5 kat artar (Weersink: DEPENDENT_ON_SEVERITY).',
+    recommendation: 'Oral başlangıç dozunu %50 azaltınız ve kalp hızı (<50/dk, LOINC 8867-4), sistolik kan basıncı (<90 mmHg, LOINC 8480-6) veya sedasyon yanıtına göre yavaş titre ediniz.'
   },
   {
     code: 'HEP_STATIN',
@@ -1821,8 +1878,10 @@ const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
     keywords: ['atorvastatin', 'simvastatin', 'rosuvastatin', 'pravastatin', 'pitavastatin', 'fluvastatin'],
     minClass: 'B',
     severityForBC: 'CONTRAINDICATED',
-    warning: 'Dekompanze sirozda (Child-Pugh B/C) statin klirensi belirgin düşer; miyopati/rabdomiyoliz ve DILI riski yükselir.',
-    recommendation: 'Dekompanze sirozda (özellikle Child-Pugh C) statinler genellikle kontrendikedir; Child-Pugh A kompanze sirozda AST/ALT izlemiyle düşük doz değerlendirilebilir.'
+    weersinkForA: 'NO_ADDITIONAL_RISK',
+    weersinkForBC: 'DEPENDENT_ON_SEVERITY',
+    warning: 'Dekompanze sirozda (Child-Pugh B/C) statin klirensi belirgin düşer; miyopati/rabdomiyoliz ve DILI riski yükselir (Weersink: DEPENDENT_ON_SEVERITY / Child-Pugh C UNSAFE).',
+    recommendation: 'Child-Pugh C dekompanze sirozda statinler kontrendikedir; Child-Pugh A kompanze sirozda bazal ve 4–8. hafta ALT (LOINC 1742-6) izlemiyle düşük doz değerlendirilebilir.'
   },
   {
     code: 'HEP_HIGH_TOX',
@@ -1831,8 +1890,10 @@ const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
     minClass: 'A',
     severityForA: 'CAUTION',
     severityForBC: 'CONTRAINDICATED',
-    warning: 'Yüksek hepatotoksisite potansiyeline sahip ajan; sirozda ağır karaciğer hasarı ve dekompansasyon riski taşır.',
-    recommendation: 'Child-Pugh B/C sirozda alternatif ajan tercih ediniz; zorunlu kullanımda hepatoloji onayı ve sık karaciğer fonksiyon testi (ALT/AST/Bilirubin/INR) gerekir.'
+    weersinkForA: 'ADDITIONAL_RISKS',
+    weersinkForBC: 'UNSAFE',
+    warning: 'Yüksek hepatotoksisite potansiyeline sahip ajan; sirozda ağır karaciğer hasarı ve dekompansasyon riski taşır (Weersink: UNSAFE).',
+    recommendation: 'Child-Pugh B/C sirozda alternatif ajan tercih ediniz; zorunlu kullanımda hepatoloji onayı ve 2–4 haftada bir ALT/AST/Bilirubin/INR (LOINC 1742-6 / 1975-2 / 6301-6) takibi gerekir.'
   },
   {
     code: 'HEP_AMOX_CLAV',
@@ -1840,8 +1901,10 @@ const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
     keywords: ['amoksisilin klavulanat', 'amoksisilin-klavulanat', 'amoxicillin clavulanate', 'augmentin', 'amoklavin', 'klamoks'],
     minClass: 'B',
     severityForBC: 'CAUTION',
-    warning: 'Amoksisilin-klavulanat kolestatik DILI (LiverTox Kategori A) nedenlerinin başında gelir; dekompanze sirozda risk artar.',
-    recommendation: 'Klinik uygunluk varsa klavulanatsız veya hepatik profili daha güvenli bir antibiyotik alternatifi değerlendiriniz.'
+    weersinkForA: 'NO_ADDITIONAL_RISK',
+    weersinkForBC: 'ADDITIONAL_RISKS',
+    warning: 'Amoksisilin-klavulanat kolestatik DILI (LiverTox Kategori A) nedenlerinin başında gelir; dekompanze sirozda risk artar (Weersink: ADDITIONAL_RISKS).',
+    recommendation: 'Klinik uygunluk varsa klavulanatsız (Amoksisilin) veya hepatik profili daha güvenli bir antibiyotik alternatifi değerlendiriniz.'
   },
   {
     code: 'HEP_METFORMIN',
@@ -1849,7 +1912,9 @@ const HEPATIC_CIRRHOSIS_RULES: HepaticDrugRule[] = [
     keywords: ['metformin'],
     minClass: 'C',
     severityForBC: 'CONTRAINDICATED',
-    warning: 'Child-Pugh C dekompanze sirozda laktat klirensi bozulduğundan Metformin ile laktik asidoz riski belirgin artar.',
+    weersinkForA: 'SAFE',
+    weersinkForBC: 'UNSAFE',
+    warning: 'Child-Pugh C dekompanze sirozda laktat klirensi bozulduğundan Metformin ile laktik asidoz riski belirgin artar (Weersink: Child-Pugh A SAFE / Child-Pugh C UNSAFE).',
     recommendation: 'Child-Pugh C sirozda Metformin kesilmeli; glisemik kontrol için insülin değerlendirilmelidir.'
   }
 ];
@@ -1913,11 +1978,17 @@ export function checkHepaticDoseSafety(
 
       const severity: 'CONTRAINDICATED' | 'CAUTION' =
         cpClass === 'A' ? (rule.severityForA || 'CAUTION') : rule.severityForBC;
+      const weersinkCategory: WeersinkCirrhosisCategory =
+        cpClass === 'A'
+          ? rule.weersinkForA
+          : (rule.code === 'HEP_STATIN' && cpClass === 'C' ? 'UNSAFE' : rule.weersinkForBC);
 
       alerts.push({
         drugName: rawName,
         atcCode: atc || undefined,
         severity,
+        weersinkCategory,
+        highExtractionRatioShunt: rule.highExtractionRatioShunt,
         ruleCode: rule.code,
         diliScore,
         warning: rule.warning,
@@ -1934,10 +2005,11 @@ export function checkHepaticDoseSafety(
           drugName: rawName,
           atcCode: atc || undefined,
           severity: cpClass === 'C' && diliScore.startsWith('A') ? 'CONTRAINDICATED' : 'CAUTION',
+          weersinkCategory: cpClass === 'C' && diliScore.startsWith('A') ? 'UNSAFE' : 'ADDITIONAL_RISKS',
           ruleCode: 'HEP_LIVERTOX_DILI',
           diliScore,
           warning: `LiverTox DILI Kategori ${diliScore} (bilinen hepatotoksisite kanıtı) + Child-Pugh Sınıf ${cpClass} siroz.`,
-          recommendation: 'Mümkünse daha düşük hepatotoksisite riskli alternatif değerlendiriniz; kullanım zorunluysa bazal ve seri ALT/AST/Bilirubin takibi yapınız.'
+          recommendation: 'Mümkünse daha düşük hepatotoksisite riskli alternatif değerlendiriniz; kullanım zorunluysa bazal ve 2–4. hafta ALT/AST/Bilirubin (LOINC 1742-6 / 1975-2) takibi yapınız.'
         });
       }
     }

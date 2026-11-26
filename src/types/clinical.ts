@@ -292,6 +292,21 @@ export interface AppState {
     cypStatinInteraction: CypStatinInteractionResult | null;
     hepaticSafety?: HepaticDoseSafetyResult | null;
     selectedSafetyDrugs: SelectedDrugItem[];
+    recentDiscontinuedDrugs?: Array<{
+      canonicalKey: string;
+      displayNameTr?: string;
+      stoppedDaysAgo: number;
+    }>;
+    clinicalMonitoringOrders?: string[];
+    overrideAuditLog?: Array<{
+      cardUuid: string;
+      ruleId: string;
+      pairLabel: string;
+      overrideCode: string;
+      overrideDisplay: string;
+      note?: string;
+      timestampIso: string;
+    }>;
   };
   treatment?: {
     active?: boolean;

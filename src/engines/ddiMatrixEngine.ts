@@ -595,8 +595,18 @@ export function checkAtcPairInteraction(
   const routeA = inferDrugRoute({ route: drugA.route as string | undefined, brand: drugA.brand, atcCode: atc1 });
   const routeB = inferDrugRoute({ route: drugB.route as string | undefined, brand: drugB.brand, atcCode: atc2 });
 
-  // Topikal / Oftalmik / Otik lokal ajanlarda sistemik DDI matris gürültüsünü bastır
-  if (isLocalNonSystemicRoute(routeA) || isLocalNonSystemicRoute(routeB)) {
+  // Topikal / Oftalmik / Otik lokal ajanlarda sistemik DDI matris gürültüsünü bastır;
+  // Tilson 2016 istisnası: Nazal flutikazon/budezonid/mometazon/triamsinolon + güçlü CYP3A4 inhibitörü (ritonavir/kobisistat/azol/klaritromisin) bastırılmaz!
+  const isNasalCushingException = (atc: string, route: DrugRouteCode, otherAtc: string): boolean => {
+    if (route !== 'NASAL') return false;
+    const isCypNasalSteroid = /^(R01AD05|R01AD08|R01AD09|R01AD11|R01AD12)/.test(atc);
+    const isStrongCyp3a4 = /^(J05AE|J05AR|J01FA09|J02AB02|J02AC02|J02AC03|J02AC04)/.test(otherAtc);
+    return isCypNasalSteroid && isStrongCyp3a4;
+  };
+  if (
+    (isLocalNonSystemicRoute(routeA) && !isNasalCushingException(atc1, routeA, atc2)) ||
+    (isLocalNonSystemicRoute(routeB) && !isNasalCushingException(atc2, routeB, atc1))
+  ) {
     return null;
   }
 

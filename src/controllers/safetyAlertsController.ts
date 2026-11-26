@@ -10,9 +10,11 @@ import { getTdmGuidance } from '../engines/safetyPrescriptionEngine';
 import {
     evaluateUnifiedPrescriptionSafety,
     renderQuickSafetySummaryHTML,
+    renderTier12ActionCardHTML,
     renderPddiMonographsHTML,
     renderTier34CollapsibleHTML
 } from '../engines/unifiedSafetyOrchestrator';
+import { DISCONTINUED_LOOKBACK_PRESETS } from '../engines/advancedPharmacologyEngine';
 import {
     ensurePddiMonographsReady,
     isPddiMonographsReady
@@ -163,43 +165,19 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             baselineQtcMs,
             childPughClass: cpState?.childClass ?? null,
             childPughScore: cpState?.score ?? null,
-            meldScore: meldState?.score ?? null
+            meldScore: meldState?.score ?? null,
+            recentDiscontinuedDrugs: appState.safetyPrescription.recentDiscontinuedDrugs || []
         });
 
         const interactionsRes = unified.interactions;
         appState.safetyPrescription.interactions = interactionsRes;
 
-        // 0. Hızlı Özet + Tisdale QTc + 4-Kademeli Etkileşim + W3C PDDI-CDS Kanıtlı Monograflar
+        // 0. Hızlı Özet + Tisdale QTc + Janusmed 9-Alan + Russ 2014 No-Scroll Tier 1/2 + W3C PDDI-CDS Kanıtlı Monograflar
         if (outInteractions) {
             const summaryHtml = renderQuickSafetySummaryHTML(unified);
             const importantAlerts = (interactionsRes?.alerts || []).filter((a: any) => a.tier === 1 || a.tier === 2);
-            const tier12Html = importantAlerts.map((a: any) => {
-                if (a.tier === 1) {
-                    return `
-                        <div class="p-2.5 rounded-lg bg-rose-950/70 border-2 border-rose-600 text-rose-200 text-xs space-y-1">
-                            <div class="flex items-center justify-between font-bold text-rose-300">
-                                <span class="flex items-center gap-1.5">${getSvgIcon('alertCircle', 'w-4 h-4 text-rose-400 shrink-0')}<span>TIER 1 - ÖLÜMCÜL KONTRENDİKASYON (HARD STOP)</span></span>
-                                <span class="text-[0.75rem] font-mono uppercase bg-rose-900/80 px-2 py-0.5 rounded border border-rose-500">${escapeHtml(a.ruleId)}</span>
-                            </div>
-                            <div class="font-semibold text-white">${escapeHtml(a.alertTitle)}</div>
-                            <div class="text-rose-100/90 leading-relaxed">${escapeHtml(a.message)}</div>
-                            <div class="text-[0.75rem] text-rose-300 font-mono pt-0.5">Kılavuz / Kaynak: ${escapeHtml(a.guidelineSource)}</div>
-                        </div>
-                    `;
-                } else {
-                    return `
-                        <div class="p-2.5 rounded-lg bg-amber-950/60 border border-amber-600 text-amber-200 text-xs space-y-1">
-                            <div class="flex items-center justify-between font-bold text-amber-300">
-                                <span class="flex items-center gap-1.5">${getSvgIcon('alertTriangle', 'w-4 h-4 text-amber-400 shrink-0')}<span>TIER 2 - YÜKSEK RİSK (SOFT STOP)</span></span>
-                                <span class="text-[0.75rem] font-mono uppercase bg-amber-900/80 px-2 py-0.5 rounded border border-amber-500">${escapeHtml(a.ruleId)}</span>
-                            </div>
-                            <div class="font-semibold text-white">${escapeHtml(a.alertTitle)}</div>
-                            <div class="text-amber-100/90 leading-relaxed">${escapeHtml(a.message)}</div>
-                        </div>
-                    `;
-                }
-            }).join('');
-            const pddiHtml = renderPddiMonographsHTML(unified.pddiMatches);
+            const tier12Html = importantAlerts.map((a: any) => renderTier12ActionCardHTML(a, unified.missingLabs)).join('');
+            const pddiHtml = renderPddiMonographsHTML(unified.pddiMatches, unified.missingLabs);
             const tier34Html = renderTier34CollapsibleHTML(interactionsRes?.alerts || []);
 
             const combinedTopHtml = [summaryHtml, tier12Html, pddiHtml, tier34Html].filter(Boolean).join('');
@@ -389,7 +367,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
                     </div>
                     ${hepRes.alerts.map(a => `
                         <div class="text-[0.75rem] leading-relaxed">
-                            • <strong>${escapeHtml(a.drugName)}</strong>${a.diliScore ? ` <span class="font-mono text-[0.6875rem] opacity-85">[DILI ${escapeHtml(a.diliScore)}]</span>` : ''}: ${escapeHtml(a.warning)} <span class="opacity-90">${escapeHtml(a.recommendation)}</span>
+                            • <strong>${escapeHtml(a.drugName)}</strong> <span class="font-mono text-[0.6875rem] px-1 rounded bg-slate-900/70 border border-white/15">${escapeHtml(a.weersinkCategory)}</span>${a.highExtractionRatioShunt ? ' <span class="font-mono text-[0.6875rem] text-fuchsia-200">[EH&gt;0,7 Şant]</span>' : ''}${a.diliScore ? ` <span class="font-mono text-[0.6875rem] opacity-85">[DILI ${escapeHtml(a.diliScore)}]</span>` : ''}: ${escapeHtml(a.warning)} <span class="opacity-90">${escapeHtml(a.recommendation)}</span>
                         </div>
                     `).join('')}
                 `;
@@ -1222,4 +1200,149 @@ export function initDrugSearch(onUpdateTabs: () => void): void {
             }
         });
     }
+
+    // Faz 3: Son 14–35 Günde Kesilen İlaç Seçici & Çip Yönetimi
+    const renderDiscontinuedChips = (): void => {
+        const list = appState.safetyPrescription.recentDiscontinuedDrugs || [];
+        const badge = getEl('badge-discontinued-count');
+        if (badge) badge.textContent = String(list.length);
+        const box = getEl('container-discontinued-chips');
+        if (!box) return;
+        box.innerHTML = list.map((d, idx) => `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-950/60 text-rose-200 border border-rose-700/70 text-[0.6875rem] font-medium">
+                <span>${escapeHtml(d.displayNameTr || d.canonicalKey)} (${d.stoppedDaysAgo}g önce)</span>
+                <button type="button" class="btn-remove-discontinued text-rose-300 hover:text-white font-bold px-0.5" data-disc-idx="${idx}" title="Kaldır">×</button>
+            </span>
+        `).join('');
+    };
+
+    const renderClinicalLabOrders = (): void => {
+        const box = getEl('output-safety-lab-orders');
+        const orders = appState.safetyPrescription.clinicalMonitoringOrders || [];
+        if (!box) return;
+        if (orders.length === 0) {
+            box.classList.add('hidden');
+            box.innerHTML = '';
+            return;
+        }
+        box.classList.remove('hidden');
+        box.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+                <span class="font-bold text-cyan-300 uppercase tracking-wide text-[0.6875rem]">Eklenen LOINC İzlem İstemleri (${orders.length})</span>
+                <button type="button" class="btn-clear-lab-orders text-[0.6875rem] text-slate-400 hover:text-white">Temizle</button>
+            </div>
+            <div class="space-y-0.5">${orders.map(o => `<div>• ${escapeHtml(o)}</div>`).join('')}</div>
+        `;
+    };
+
+    const btnAddDisc = getEl('btn-add-discontinued-drug');
+    if (btnAddDisc) {
+        btnAddDisc.addEventListener('click', () => {
+            const sel = getEl<HTMLSelectElement>('select-discontinued-drug');
+            const daysInp = getEl<HTMLInputElement>('input-discontinued-days');
+            const key = sel?.value?.trim() || '';
+            if (!key) return;
+            const days = Math.max(0, Math.min(60, parseInt(daysInp?.value || '5', 10) || 0));
+            const preset = DISCONTINUED_LOOKBACK_PRESETS.find(p => p.canonicalKey === key);
+            const list = appState.safetyPrescription.recentDiscontinuedDrugs || [];
+            const existingIdx = list.findIndex(x => x.canonicalKey === key);
+            const entry = { canonicalKey: key, displayNameTr: preset?.displayNameTr || key, stoppedDaysAgo: days };
+            if (existingIdx >= 0) list[existingIdx] = entry;
+            else list.push(entry);
+            appState.safetyPrescription.recentDiscontinuedDrugs = list;
+            if (sel) sel.value = '';
+            renderDiscontinuedChips();
+            onTabsUpdateCallback();
+        });
+    }
+
+    // Faz 4: Ana Panel Tek Tıkla CDS Hooks Aksiyonları (İlacı Kaldır / Güvenli Alternatife Geç / İzlem Ekle)
+    const outSafetyRoot = getEl('output-safety-interactions');
+    if (outSafetyRoot) {
+        outSafetyRoot.addEventListener('click', (e: MouseEvent) => {
+            const btn = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.btn-cds-action');
+            if (!btn) return;
+            const action = btn.dataset.cdsAction || '';
+            const targetBrand = (btn.dataset.targetBrand || '').toLowerCase();
+            const targetAtc = (btn.dataset.targetAtc || '').toUpperCase();
+            const targetKey = (btn.dataset.targetKey || '').toLowerCase();
+            const drugs = appState.treatment?.selectedDrugs || [];
+
+            const findDrugIdx = (): number => drugs.findIndex((d: any) => {
+                const b = String(d.brand || d.name || '').toLowerCase();
+                const g = String(d.generic || '').toLowerCase();
+                const a = String(d.atcCode || d.atc || '').toUpperCase();
+                return (targetAtc && a === targetAtc) || (targetBrand && b === targetBrand) || (targetKey && (b.includes(targetKey) || g.includes(targetKey)));
+            });
+
+            if (action === 'REMOVE_DRUG') {
+                const idx = findDrugIdx();
+                if (idx >= 0) {
+                    drugs.splice(idx, 1);
+                    renderSelectedDrugs();
+                    onTabsUpdateCallback();
+                }
+            } else if (action === 'SWITCH_ALTERNATIVE') {
+                const idx = findDrugIdx();
+                const repBrand = btn.dataset.repBrand || '';
+                const repGeneric = btn.dataset.repGeneric || '';
+                const repAtc = btn.dataset.repAtc || '';
+                if (repBrand && repAtc) {
+                    const catMatch = findCatalogDrugSync({ atc: repAtc, brand: repBrand });
+                    const replacement = catMatch
+                        ? {
+                            brand: catMatch.brand,
+                            name: catMatch.brand,
+                            generic: catMatch.generic,
+                            atcCode: catMatch.atcCode,
+                            barcode: catMatch.barcode,
+                            rx: catMatch.prescriptionType,
+                            company: catMatch.company,
+                            kt: catMatch.kt_pdf_prospektus_url,
+                            kub: catMatch.kub_pdf_url,
+                            route: catMatch.route
+                        }
+                        : { brand: repBrand, name: repBrand, generic: repGeneric, atcCode: repAtc, rx: 'Normal' };
+                    if (idx >= 0) drugs[idx] = replacement;
+                    else drugs.push(replacement);
+                    renderSelectedDrugs();
+                    onTabsUpdateCallback();
+                }
+            } else if (action === 'ADD_LAB_ORDER') {
+                const orderText = btn.dataset.labOrder || '';
+                if (orderText) {
+                    const orders = appState.safetyPrescription.clinicalMonitoringOrders || [];
+                    if (!orders.includes(orderText)) orders.push(orderText);
+                    appState.safetyPrescription.clinicalMonitoringOrders = orders;
+                    renderClinicalLabOrders();
+                    const notesEl = getEl<HTMLTextAreaElement>('input-print-clinical-notes');
+                    if (notesEl && !notesEl.value.includes(orderText)) {
+                        notesEl.value = notesEl.value ? `${notesEl.value}\n${orderText}` : orderText;
+                    }
+                    onTabsUpdateCallback();
+                }
+            }
+        });
+    }
+
+    document.addEventListener('click', (e: MouseEvent) => {
+        const rmDisc = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.btn-remove-discontinued');
+        if (rmDisc) {
+            const idx = parseInt(rmDisc.dataset.discIdx || '-1', 10);
+            const list = appState.safetyPrescription.recentDiscontinuedDrugs || [];
+            if (idx >= 0 && idx < list.length) {
+                list.splice(idx, 1);
+                appState.safetyPrescription.recentDiscontinuedDrugs = list;
+                renderDiscontinuedChips();
+                onTabsUpdateCallback();
+            }
+            return;
+        }
+        const clearLab = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.btn-clear-lab-orders');
+        if (clearLab) {
+            appState.safetyPrescription.clinicalMonitoringOrders = [];
+            renderClinicalLabOrders();
+            onTabsUpdateCallback();
+        }
+    });
 }
