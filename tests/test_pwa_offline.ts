@@ -14,6 +14,7 @@ assert.ok(fs.existsSync('public/data/atc_knowledge_base.json'), 'public/data/atc
 assert.ok(fs.existsSync('public/data/atc_icd10_sozluk.json'), 'public/data/atc_icd10_sozluk.json must exist');
 assert.ok(fs.existsSync('public/data/ddi_matrix.json'), 'public/data/ddi_matrix.json must exist');
 assert.ok(fs.existsSync('public/data/pddi_monographs_tr.json'), 'public/data/pddi_monographs_tr.json must exist');
+assert.ok(fs.existsSync('public/data/supplement_interactions_tr.json'), 'public/data/supplement_interactions_tr.json must exist');
 assert.ok(fs.existsSync('public/schema/PddiMonograph.schema.json'), 'public/schema/PddiMonograph.schema.json must exist');
 assert.ok(fs.existsSync('public/data/data_manifest.json'), 'public/data/data_manifest.json must exist');
 assert.ok(fs.existsSync('public/manifest.json'), 'public/manifest.json must exist');
@@ -150,6 +151,7 @@ assert.ok(viteConfigContent.includes('data/atc_knowledge_base.json'), 'atc_knowl
 assert.ok(viteConfigContent.includes('data/atc_icd10_sozluk.json'), 'atc_icd10_sozluk.json must be in includeAssets');
 assert.ok(viteConfigContent.includes('data/ddi_matrix.json'), 'ddi_matrix.json must be in includeAssets');
 assert.ok(viteConfigContent.includes('data/pddi_monographs_tr.json'), 'pddi_monographs_tr.json must be in includeAssets');
+assert.ok(viteConfigContent.includes('data/supplement_interactions_tr.json'), 'supplement_interactions_tr.json must be in includeAssets');
 assert.ok(viteConfigContent.includes('data/data_manifest.json'), 'data_manifest.json must be in includeAssets');
 assert.ok(!viteConfigContent.includes('data/kub/kub_A.json'), 'Heavy KÜB shards must use CacheFirst runtime caching instead of bloating initial precache');
 assert.ok(!viteConfigContent.includes('data/clinical_monographs_master.json'), 'Heavy 8MB master monographs must use CacheFirst runtime caching instead of bloating initial precache');

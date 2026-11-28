@@ -18,6 +18,7 @@ export default defineConfig({
         'data/atc_icd10_sozluk.json',
         'data/ddi_matrix.json',
         'data/pddi_monographs_tr.json',
+        'data/supplement_interactions_tr.json',
         'data/data_manifest.json'
       ],
       manifest: {

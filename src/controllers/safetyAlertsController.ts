@@ -38,6 +38,16 @@ import {
     ensureDdiMatrixReady,
     isDdiMatrixReady
 } from '../engines/ddiMatrixEngine';
+import {
+    ensureSupplementCatalogReady,
+    isSupplementCatalogReady,
+    searchSupplementCatalog,
+    getSupplementByIdSync,
+    getDefaultFormulation,
+    renderSupplementAlertsHTML,
+    SUPPLEMENT_CATEGORY_LABELS_TR
+} from '../engines/supplementInteractionEngine';
+import type { SupplementCategory } from '../types/clinical';
 import { findMonographSync } from '../monographEngine';
 import { formatTlPrice, getDrugBadgesHTML } from '../drugEngine';
 import { openDrugEquivalentsModal } from './equivalentsModalController';
@@ -53,6 +63,8 @@ declare global {
 let onTabsUpdateCallback: () => void = () => {};
 let ddiRefreshPending = false;
 let pddiRefreshPending = false;
+let supplementRefreshPending = false;
+let currentSupplementCategory: SupplementCategory | 'all' = 'all';
 const boundDocuments = new WeakSet<Document>();
 
 export function setDrugUpdateCallback(callback: () => void): void {
@@ -88,6 +100,7 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
     const safetyTrim = getNum('select-safety-trimester') || (appState.obgyn.trimester || appState.obgyn.eddData?.trimester || appState.medicine.pregnancyTrimester || 0);
 
     const outInteractions = getEl('output-safety-interactions');
+    const outSupplements = getEl('output-safety-supplements');
     const outDdinter = getEl('output-safety-ddinter');
     const outDuplication = getEl('output-safety-duplication');
     const outCounseling = getEl('output-safety-counseling');
@@ -98,14 +111,31 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
     const outRenal = getEl('output-safety-renal');
     const outPreg = getEl('output-safety-pregnancy');
     const badgeSafety = getEl('badge-safety-status');
+    const selectedSupplements = appState.safetyPrescription.selectedSupplements || [];
 
-    if (selectedDrugs.length > 0) {
+    if (selectedDrugs.length > 0 || selectedSupplements.length > 0) {
         const patientAgeYears = ageData.y !== undefined && ageData.y !== null ? ageData.y : (appState.biometry.ageYears ?? null);
         const scrVal = getNum('input-creatinine');
         const baselineK = getNum('input-serum-k') ?? getNum('input-bg-k');
         const gestationalWeeks = appState.obgyn.eddData?.weeks;
         const pretermGw = getChk('chk-preterm') ? getNum('input-gestational-weeks') : null;
         const isPediatricOrNeonate = isNeonate || (patientAgeYears !== null && patientAgeYears < 18);
+
+        if (selectedSupplements.length > 0 && !isSupplementCatalogReady() && !supplementRefreshPending) {
+            supplementRefreshPending = true;
+            void ensureSupplementCatalogReady()
+                .then(loaded => {
+                    if (loaded && (appState.safetyPrescription.selectedSupplements?.length || 0) > 0) {
+                        onTabsUpdateCallback();
+                    }
+                })
+                .catch(() => {
+                    // Çevrimdışı veya takviye kataloğu yüklenemezse diğer kalkanlar çalışmaya devam eder
+                })
+                .finally(() => {
+                    supplementRefreshPending = false;
+                });
+        }
 
         if (!isDdiMatrixReady() && !ddiRefreshPending) {
             ddiRefreshPending = true;
@@ -166,11 +196,25 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
             childPughClass: cpState?.childClass ?? null,
             childPughScore: cpState?.score ?? null,
             meldScore: meldState?.score ?? null,
-            recentDiscontinuedDrugs: appState.safetyPrescription.recentDiscontinuedDrugs || []
+            recentDiscontinuedDrugs: appState.safetyPrescription.recentDiscontinuedDrugs || [],
+            selectedSupplements
         });
 
         const interactionsRes = unified.interactions;
         appState.safetyPrescription.interactions = interactionsRes;
+        appState.safetyPrescription.supplementSafety = unified.supplementSafety;
+
+        // 0b. Takviye, Vitamin & Bitki Çayı Etkileşimleri (Yalnızca kullanıcı açıkça seçtiğinde render edilir)
+        if (outSupplements) {
+            const suppHtml = renderSupplementAlertsHTML(unified.supplementSafety);
+            if (suppHtml) {
+                outSupplements.classList.remove('hidden');
+                outSupplements.innerHTML = replaceEmojisWithSvg(suppHtml);
+            } else {
+                outSupplements.classList.add('hidden');
+                outSupplements.innerHTML = '';
+            }
+        }
 
         // 0. Hızlı Özet + Tisdale QTc + Janusmed 9-Alan + Russ 2014 No-Scroll Tier 1/2 + W3C PDDI-CDS Kanıtlı Monograflar
         if (outInteractions) {
@@ -536,9 +580,14 @@ export function updateSafetyAlertsCard(ageData: PatientAgeResult): void {
         appState.safetyPrescription.pregnancySafety = null;
         appState.safetyPrescription.neonatalDrugSafety = null;
         appState.safetyPrescription.hepaticSafety = null;
+        appState.safetyPrescription.supplementSafety = null;
         if (outInteractions) {
             outInteractions.classList.add('hidden');
             outInteractions.innerHTML = '';
+        }
+        if (outSupplements) {
+            outSupplements.classList.add('hidden');
+            outSupplements.innerHTML = '';
         }
         if (outDdinter) {
             outDdinter.classList.add('hidden');
@@ -618,6 +667,27 @@ export function renderSelectedDrugs(): void {
             </div>
             <button class="text-slate-400 hover:text-rose-300 p-1.5 rounded hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0" onclick="window.removeDrug(${index})" title="İlacı Kaldır">${getSvgIcon('close', 'w-3.5 h-3.5')}</button>
         </div>
+        `;
+    }).join('');
+}
+
+export function renderSelectedSupplementsUI(): void {
+    const list = appState.safetyPrescription.selectedSupplements || [];
+    const box = getEl('container-selected-supplements');
+    const badge = getEl('badge-supplement-count');
+    if (badge) {
+        badge.textContent = String(list.length);
+        if (list.length > 0) badge.classList.remove('hidden');
+        else badge.classList.add('hidden');
+    }
+    if (!box) return;
+    box.innerHTML = list.map((s, idx) => {
+        const formHint = s.formulationLabelTr ? ` · ${s.formulationLabelTr.split('(')[0].trim()}` : '';
+        return `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-950/75 text-teal-100 border border-teal-600/75 text-[0.6875rem] font-medium">
+                <span>${escapeHtml(s.nameTr)}${escapeHtml(formHint)}</span>
+                <button type="button" class="btn-remove-supplement text-teal-300 hover:text-white font-bold px-0.5" data-supp-idx="${idx}" title="Takviyeyi Kaldır">×</button>
+            </span>
         `;
     }).join('');
 }
@@ -943,6 +1013,7 @@ export function resetDrugSearchUi(): void {
     }
     for (const outId of [
         'output-safety-interactions',
+        'output-safety-supplements',
         'output-safety-ddinter',
         'output-safety-duplication',
         'output-safety-counseling',
@@ -960,6 +1031,24 @@ export function resetDrugSearchUi(): void {
             el.classList.add('hidden');
             el.innerHTML = '';
         }
+    }
+    appState.safetyPrescription.selectedSupplements = [];
+    appState.safetyPrescription.supplementSafety = null;
+    currentSupplementCategory = 'all';
+    const suppPanel = getEl('panel-supplement-picker');
+    if (suppPanel) suppPanel.classList.add('hidden');
+    const suppToggle = getEl('btn-toggle-supplement-picker');
+    if (suppToggle) suppToggle.setAttribute('aria-expanded', 'false');
+    const suppSearch = getEl<HTMLInputElement>('input-supplement-search');
+    if (suppSearch) suppSearch.value = '';
+    const suppClear = getEl('btn-clear-supplement-search');
+    if (suppClear) suppClear.classList.add('hidden');
+    const suppChips = getEl('container-selected-supplements');
+    if (suppChips) suppChips.innerHTML = '';
+    const suppBadge = getEl('badge-supplement-count');
+    if (suppBadge) {
+        suppBadge.textContent = '0';
+        suppBadge.classList.add('hidden');
     }
     const badgeSafety = getEl('badge-safety-status');
     if (badgeSafety) {
@@ -1325,7 +1414,224 @@ export function initDrugSearch(onUpdateTabs: () => void): void {
         });
     }
 
+    // Ayrı Kategorili Takviye, Vitamin & Bitki Çayı Seçicisi (Yalnızca Tıklandığında Yüklenir)
+    const renderSelectedSupplementChips = (): void => {
+        renderSelectedSupplementsUI();
+    };
+
+    const renderSupplementPickerList = (): void => {
+        const listBox = getEl('list-supplement-results');
+        const searchInp = getEl<HTMLInputElement>('input-supplement-search');
+        if (!listBox) return;
+        if (!isSupplementCatalogReady()) {
+            listBox.innerHTML = '<div class="p-2 text-[0.75rem] text-slate-400 text-center">Takviye kataloğu yükleniyor...</div>';
+            return;
+        }
+        const q = searchInp?.value.trim() || '';
+        const items = searchSupplementCatalog(q, currentSupplementCategory);
+        const selectedIds = new Set((appState.safetyPrescription.selectedSupplements || []).map(x => x.id));
+
+        if (items.length === 0) {
+            listBox.innerHTML = '<div class="p-2.5 text-[0.75rem] text-slate-400 text-center">Eşleşen takviye, vitamin veya bitki çayı bulunamadı.</div>';
+            return;
+        }
+
+        listBox.innerHTML = items.map(item => {
+            const isAdded = selectedIds.has(item.id);
+            const catLabel = SUPPLEMENT_CATEGORY_LABELS_TR[item.category] || '';
+            const defForm = getDefaultFormulation(item);
+            const formSelect = Array.isArray(item.formulations) && item.formulations.length > 1
+                ? `<select class="select-supp-form h-6 bg-[#0c1322] border border-slate-700/80 rounded px-1.5 text-[0.6875rem] text-slate-200 focus:border-teal-400 focus:outline-none max-w-[210px]" data-supp-id="${escapeHtml(item.id)}">
+                    ${item.formulations.map(f => `<option value="${escapeHtml(f.code)}" ${f.code === defForm?.code ? 'selected' : ''}>${escapeHtml(f.label_tr)}</option>`).join('')}
+                   </select>`
+                : '';
+
+            return `
+                <div class="flex flex-wrap items-center justify-between gap-1.5 p-1.5 rounded border ${isAdded ? 'bg-teal-950/40 border-teal-600/70' : 'bg-slate-900/75 border-slate-800 hover:border-slate-600'} transition-colors">
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[0.75rem] font-semibold text-slate-100 leading-snug flex flex-wrap items-center gap-1.5">
+                            <span>${escapeHtml(item.name_tr)}</span>
+                            <span class="text-[0.625rem] px-1 py-0 rounded bg-slate-800 text-slate-400 border border-slate-700/70 font-normal">${escapeHtml(catLabel)}</span>
+                        </div>
+                        <div class="text-[0.6875rem] text-slate-400 truncate">${escapeHtml(item.short_tag_tr)}</div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${formSelect}
+                        <button
+                            type="button"
+                            class="btn-add-supplement btn-compact px-2 py-1 rounded border text-[0.6875rem] font-semibold transition-colors ${isAdded ? 'bg-teal-900/80 text-teal-100 border-teal-500' : 'bg-slate-800 hover:bg-teal-950 text-teal-200 border-teal-700/70'}"
+                            data-supp-id="${escapeHtml(item.id)}"
+                        >${isAdded ? '✓ Seçili' : '+ Ekle'}</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const btnToggleSupp = getEl('btn-toggle-supplement-picker');
+    const panelSupp = getEl('panel-supplement-picker');
+    const inpSuppSearch = getEl<HTMLInputElement>('input-supplement-search');
+    const btnClearSuppSearch = getEl('btn-clear-supplement-search');
+
+    if (btnToggleSupp && panelSupp) {
+        btnToggleSupp.addEventListener('click', async () => {
+            const willOpen = panelSupp.classList.contains('hidden');
+            panelSupp.classList.toggle('hidden', !willOpen);
+            btnToggleSupp.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (willOpen) {
+                renderSupplementPickerList();
+                if (!isSupplementCatalogReady()) {
+                    await ensureSupplementCatalogReady();
+                    renderSupplementPickerList();
+                }
+                inpSuppSearch?.focus();
+            }
+        });
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('.supplement-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const cat = (btn.dataset.suppCat || 'all') as SupplementCategory | 'all';
+            currentSupplementCategory = cat;
+            document.querySelectorAll<HTMLButtonElement>('.supplement-cat-btn').forEach(b => {
+                const active = (b.dataset.suppCat || 'all') === currentSupplementCategory;
+                b.className = active
+                    ? 'supplement-cat-btn px-2 py-1 rounded border bg-teal-950/80 text-teal-200 border-teal-500/70 font-semibold transition-colors'
+                    : 'supplement-cat-btn px-2 py-1 rounded border bg-slate-900/80 text-slate-300 border-slate-700 hover:text-white transition-colors';
+            });
+            renderSupplementPickerList();
+        });
+    });
+
+    if (inpSuppSearch) {
+        inpSuppSearch.addEventListener('input', () => {
+            const q = inpSuppSearch.value.trim();
+            if (btnClearSuppSearch) {
+                btnClearSuppSearch.classList.toggle('hidden', q.length === 0);
+            }
+            renderSupplementPickerList();
+        });
+    }
+
+    if (btnClearSuppSearch && inpSuppSearch) {
+        btnClearSuppSearch.addEventListener('click', () => {
+            inpSuppSearch.value = '';
+            btnClearSuppSearch.classList.add('hidden');
+            renderSupplementPickerList();
+            inpSuppSearch.focus();
+        });
+    }
+
+    const listSuppResults = getEl('list-supplement-results');
+    if (listSuppResults) {
+        listSuppResults.addEventListener('click', (e: MouseEvent) => {
+            const btn = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.btn-add-supplement');
+            if (!btn) return;
+            const suppId = btn.dataset.suppId || '';
+            const item = getSupplementByIdSync(suppId);
+            if (!item) return;
+
+            const row = btn.closest('div')?.parentElement;
+            const formSel = row?.querySelector<HTMLSelectElement>('.select-supp-form');
+            const defForm = getDefaultFormulation(item);
+            const formCode = formSel?.value || defForm?.code;
+            const formLabel = item.formulations?.find(f => f.code === formCode)?.label_tr || defForm?.label_tr;
+
+            const list = appState.safetyPrescription.selectedSupplements || [];
+            const existingIdx = list.findIndex(x => x.id === item.id);
+            const entry = {
+                id: item.id,
+                nameTr: item.name_tr,
+                category: item.category,
+                formulation: formCode,
+                formulationLabelTr: formLabel
+            };
+            if (existingIdx >= 0) {
+                if (list[existingIdx].formulation === formCode) {
+                    list.splice(existingIdx, 1);
+                } else {
+                    list[existingIdx] = entry;
+                }
+            } else {
+                list.push(entry);
+            }
+            appState.safetyPrescription.selectedSupplements = list;
+            renderSelectedSupplementChips();
+            renderSupplementPickerList();
+            onTabsUpdateCallback();
+        });
+
+        listSuppResults.addEventListener('change', (e: Event) => {
+            const sel = (e.target as HTMLElement | null)?.closest<HTMLSelectElement>('.select-supp-form');
+            if (!sel) return;
+            const suppId = sel.dataset.suppId || '';
+            const item = getSupplementByIdSync(suppId);
+            if (!item) return;
+            const list = appState.safetyPrescription.selectedSupplements || [];
+            const existingIdx = list.findIndex(x => x.id === item.id);
+            if (existingIdx < 0) return;
+            const formCode = sel.value;
+            const formLabel = item.formulations?.find(f => f.code === formCode)?.label_tr;
+            list[existingIdx] = {
+                ...list[existingIdx],
+                formulation: formCode,
+                formulationLabelTr: formLabel
+            };
+            appState.safetyPrescription.selectedSupplements = list;
+            renderSelectedSupplementChips();
+            onTabsUpdateCallback();
+        });
+    }
+
+    const outSuppRoot = getEl('output-safety-supplements');
+    if (outSuppRoot) {
+        outSuppRoot.addEventListener('click', (e: MouseEvent) => {
+            const btn = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.btn-cds-action');
+            if (!btn) return;
+            const action = btn.dataset.cdsAction || '';
+            if (action === 'REMOVE_SUPPLEMENT') {
+                const suppId = btn.dataset.supplementId || '';
+                const list = appState.safetyPrescription.selectedSupplements || [];
+                const next = list.filter(x => x.id !== suppId);
+                appState.safetyPrescription.selectedSupplements = next;
+                renderSelectedSupplementChips();
+                if (panelSupp && !panelSupp.classList.contains('hidden')) {
+                    renderSupplementPickerList();
+                }
+                onTabsUpdateCallback();
+            } else if (action === 'ADD_LAB_ORDER') {
+                const orderText = btn.dataset.labOrder || '';
+                if (orderText) {
+                    const orders = appState.safetyPrescription.clinicalMonitoringOrders || [];
+                    if (!orders.includes(orderText)) orders.push(orderText);
+                    appState.safetyPrescription.clinicalMonitoringOrders = orders;
+                    renderClinicalLabOrders();
+                    const notesEl = getEl<HTMLTextAreaElement>('input-print-clinical-notes');
+                    if (notesEl && !notesEl.value.includes(orderText)) {
+                        notesEl.value = notesEl.value ? `${notesEl.value}\n${orderText}` : orderText;
+                    }
+                    onTabsUpdateCallback();
+                }
+            }
+        });
+    }
+
     document.addEventListener('click', (e: MouseEvent) => {
+        const rmSupp = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.btn-remove-supplement');
+        if (rmSupp) {
+            const idx = parseInt(rmSupp.dataset.suppIdx || '-1', 10);
+            const list = appState.safetyPrescription.selectedSupplements || [];
+            if (idx >= 0 && idx < list.length) {
+                list.splice(idx, 1);
+                appState.safetyPrescription.selectedSupplements = list;
+                renderSelectedSupplementChips();
+                if (panelSupp && !panelSupp.classList.contains('hidden')) {
+                    renderSupplementPickerList();
+                }
+                onTabsUpdateCallback();
+            }
+            return;
+        }
         const rmDisc = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.btn-remove-discontinued');
         if (rmDisc) {
             const idx = parseInt(rmDisc.dataset.discIdx || '-1', 10);

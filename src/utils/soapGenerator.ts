@@ -771,6 +771,17 @@ export function generateSOAP(): string {
     p.push(`${pCount}. Arınma (Washout) Takibi — Yakın Dönemde Kesilen İlaçlar: ${discStr}.`);
     pCount++;
   }
+  if (appState.safetyPrescription?.selectedSupplements && appState.safetyPrescription.selectedSupplements.length > 0) {
+    const suppNames = appState.safetyPrescription.selectedSupplements
+      .map(s => s.formulationLabelTr ? `${s.nameTr} (${s.formulationLabelTr})` : s.nameTr)
+      .join(', ');
+    const suppRes = appState.safetyPrescription.supplementSafety as { alerts?: Array<{ actionTier: string; supplementNameTr: string; primaryDirectiveTr: string }> } | null | undefined;
+    const majorDirectives = (suppRes?.alerts || [])
+      .filter(a => a.actionTier === 'X' || a.actionTier === 'D')
+      .map(a => `${a.supplementNameTr}: ${a.primaryDirectiveTr}`);
+    p.push(`${pCount}. Eşzamanlı Takviye / Bitki Çayı Öyküsü: ${suppNames}.${majorDirectives.length > 0 ? ` Eylem: ${majorDirectives.join(' | ')}` : ''}`);
+    pCount++;
+  }
   if (appState.pediatrics?.growthVelocity?.malnutritionAssessment?.treatmentProtocol) {
     const tp = appState.pediatrics.growthVelocity.malnutritionAssessment.treatmentProtocol;
     p.push(`${pCount}. Beslenme & Malnütrisyon Protokolü (${tp.setting === 'INPATIENT' ? 'Yatarak Tedavi' : 'Ayaktan Tedavi'}):`);

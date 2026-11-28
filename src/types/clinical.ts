@@ -176,6 +176,16 @@ export interface SelectedDrugItem {
   [key: string]: unknown;
 }
 
+export type SupplementCategory = 'vitamin_mineral' | 'supplement_pill' | 'herbal_tea';
+
+export interface SelectedSupplementItem {
+  id: string;
+  nameTr: string;
+  category: SupplementCategory;
+  formulation?: string;
+  formulationLabelTr?: string;
+}
+
 export interface AppState {
   biometry: PatientBiometry;
   pediatrics: {
@@ -292,6 +302,8 @@ export interface AppState {
     cypStatinInteraction: CypStatinInteractionResult | null;
     hepaticSafety?: HepaticDoseSafetyResult | null;
     selectedSafetyDrugs: SelectedDrugItem[];
+    selectedSupplements?: SelectedSupplementItem[];
+    supplementSafety?: unknown;
     recentDiscontinuedDrugs?: Array<{
       canonicalKey: string;
       displayNameTr?: string;

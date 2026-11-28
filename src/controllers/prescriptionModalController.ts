@@ -16,7 +16,7 @@ import {
   recordOverrideAuditEntry
 } from '../engines/cdsHooksActionEngine';
 import { copyToClipboardWithFallback, updateLiveSOAP } from './workstationController';
-import { renderSelectedDrugs } from './safetyAlertsController';
+import { renderSelectedDrugs, renderSelectedSupplementsUI } from './safetyAlertsController';
 import {
   searchDrugsAsync,
   findCatalogDrugSync,
@@ -83,10 +83,15 @@ const boundDocuments = new WeakSet<Document>();
 let onPrescriptionTabsUpdate: (() => void) | undefined;
 
 function getPrescriptionSignature(): string {
-  return activePrescriptionDrugs
+  const drugSig = activePrescriptionDrugs
     .map(d => `${(d.atcCode || '').toUpperCase()}:${(d.name || '').toLowerCase()}`)
     .sort()
     .join('|');
+  const suppSig = (appState.safetyPrescription.selectedSupplements || [])
+    .map(s => `${s.id}:${s.formulation || ''}`)
+    .sort()
+    .join(',');
+  return suppSig ? `${drugSig}##SUP:${suppSig}` : drugSig;
 }
 
 export function resetPrescriptionData(): void {
@@ -263,7 +268,8 @@ export function initPrescriptionModalController(onUpdateAllTabs?: () => void): v
         childPughScore: cpState?.score ?? null,
         meldScore: meldState?.score ?? null,
         diagnosis: inputPrintDiagnosis?.value || undefined,
-        recentDiscontinuedDrugs: appState.safetyPrescription.recentDiscontinuedDrugs || []
+        recentDiscontinuedDrugs: appState.safetyPrescription.recentDiscontinuedDrugs || [],
+        selectedSupplements: appState.safetyPrescription.selectedSupplements || []
       }
     );
 
@@ -913,6 +919,15 @@ export function initPrescriptionModalController(onUpdateAllTabs?: () => void): v
             else activePrescriptionDrugs.push(sched);
             activeHardStopOverride = null;
             renderRxEditorList();
+          }
+        } else if (action === 'REMOVE_SUPPLEMENT') {
+          const suppId = cdsBtn.dataset.supplementId || '';
+          if (suppId) {
+            appState.safetyPrescription.selectedSupplements = (appState.safetyPrescription.selectedSupplements || []).filter(x => x.id !== suppId);
+            activeHardStopOverride = null;
+            renderSelectedSupplementsUI();
+            refreshPrescriptionPreview();
+            if (onPrescriptionTabsUpdate) onPrescriptionTabsUpdate();
           }
         } else if (action === 'ADD_LAB_ORDER') {
           const orderText = cdsBtn.dataset.labOrder || '';

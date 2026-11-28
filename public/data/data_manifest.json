@@ -60,6 +60,7 @@
   },
   "offline_integrity_sha256": {
     "pddi_monographs_tr": "7fd7560813bc7c56098c246cb38f853f765e727202b22cd712d5e2ac0ecedc59",
-    "clinical_monographs": "672d5751d42c891be09f13a77ec59b784bf93f3325a17a8396c9ba9747780f04"
+    "clinical_monographs": "672d5751d42c891be09f13a77ec59b784bf93f3325a17a8396c9ba9747780f04",
+    "supplement_interactions_tr": "f9e55c5f26c7fb65a95eeb70a623311395ea791e69997236b0dae9af06b77a37"
   }
 }

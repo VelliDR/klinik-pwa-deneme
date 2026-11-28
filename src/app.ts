@@ -314,6 +314,8 @@ export function updateAllTabs(): void {
         const hasDrugState = Boolean(
             appState.treatment?.selectedDrugs?.length ||
             sp.selectedSafetyDrugs?.length ||
+            sp.selectedSupplements?.length ||
+            sp.supplementSafety ||
             sp.interactions ||
             sp.renalAdjustments ||
             sp.tripleWhammy ||
@@ -344,6 +346,7 @@ export function updateAllTabs(): void {
 // ----------------------------------------------------------------------------
 const NON_CLINICAL_INPUT_IDS = new Set([
     'input-drug-search',
+    'input-supplement-search',
     'input-custom-pack-name',
     'input-quick-switcher',
     'input-vaccine-filter',

@@ -153,6 +153,8 @@ export const appState: AppState = {
         cypStatinInteraction: null,
         hepaticSafety: null,
         selectedSafetyDrugs: [],
+        selectedSupplements: [],
+        supplementSafety: null,
         recentDiscontinuedDrugs: [],
         clinicalMonitoringOrders: [],
         overrideAuditLog: []

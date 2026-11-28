@@ -23,6 +23,15 @@ export type CanonicalSourceType =
   | 'ANSM_2023'
   | 'FDA_CYP_TABLE';
 
+export type SupplementSourceType =
+  | CanonicalSourceType
+  | 'EMA_HMPC'
+  | 'NIH_ODS'
+  | 'NIH_NAPDI'
+  | 'NIH_LIVERTOX'
+  | 'FDA_SAFETY_COMM'
+  | 'EFSA_OPINION';
+
 export type CompatSourceType =
   | CanonicalSourceType
   | 'OPENFDA_SPL'
@@ -347,6 +356,30 @@ export const VERIFIED_LOINC_REGISTRY: Record<string, VerifiedLoincEntry> = {
     allowedUnits: ['Cel', '°C'],
     allowedParamRegex: /vücut\s*sıcakl|ateş|temperature/i,
     isCore17: false
+  },
+  '17861-6': {
+    code: '17861-6',
+    longCommonName: 'Calcium [Mass/volume] in Serum or Plasma',
+    ucumUnit: 'mg/dL',
+    allowedUnits: ['mg/dL'],
+    allowedParamRegex: /kalsiyum|calcium|\bca[²2+]?\b/i,
+    isCore17: false
+  },
+  '3520-4': {
+    code: '3520-4',
+    longCommonName: 'Cyclosporine [Mass/volume] in Blood',
+    ucumUnit: 'ng/mL',
+    allowedUnits: ['ng/mL', 'ug/L'],
+    allowedParamRegex: /siklosporin|cyclosporin/i,
+    isCore17: false
+  },
+  '49563-0': {
+    code: '49563-0',
+    longCommonName: 'Troponin I.cardiac [Mass/volume] in Serum or Plasma by High sensitivity method',
+    ucumUnit: 'ng/L',
+    allowedUnits: ['ng/L', 'pg/mL'],
+    allowedParamRegex: /troponin|hs-?ctn/i,
+    isCore17: false
   }
 };
 
@@ -391,6 +424,12 @@ export const ALLOWED_EVIDENCE_URL_HOSTS = [
   'sciencedirect.com',
   'nature.com',
   'biomedcentral.com',
+  'ods.od.nih.gov',
+  'nccih.nih.gov',
+  'napdi.org',
+  'repo.napdi.org',
+  'livertox.nih.gov',
+  'efsa.europa.eu',
   'offline-cds.local'
 ] as const;
 

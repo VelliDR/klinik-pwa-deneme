@@ -1513,6 +1513,8 @@ export function resetAllPatientData(options: { skipConfirm?: boolean } = {}): bo
         appState.safetyPrescription.cypStatinInteraction = null;
         appState.safetyPrescription.hepaticSafety = null;
         appState.safetyPrescription.selectedSafetyDrugs = [];
+        appState.safetyPrescription.selectedSupplements = [];
+        appState.safetyPrescription.supplementSafety = null;
     }
     renderSelectedDrugs();
     resetDrugSearchUi();

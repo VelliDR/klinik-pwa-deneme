@@ -884,12 +884,13 @@ async function main(): Promise<void> {
     offline_integrity_sha256?: Record<string, string>;
   };
   const expectedSha = manifestObj.offline_integrity_sha256;
-  if (!expectedSha?.pddi_monographs_tr || !expectedSha?.clinical_monographs) {
+  if (!expectedSha?.pddi_monographs_tr || !expectedSha?.clinical_monographs || !expectedSha?.supplement_interactions_tr) {
     strictErrors.push('[CHK-SHA-1] data_manifest.json içinde offline_integrity_sha256 eksik');
   } else {
     const sha256File = (fp: string) => crypto.createHash('sha256').update(fs.readFileSync(fp)).digest('hex');
     const actualPddiSha = sha256File(path.join(DATA_DIR, 'pddi_monographs_tr.json'));
     const actualMonoSha = sha256File(path.join(DATA_DIR, 'clinical_monographs.json'));
+    const actualSuppSha = sha256File(path.join(DATA_DIR, 'supplement_interactions_tr.json'));
     if (actualPddiSha !== expectedSha.pddi_monographs_tr) {
       strictErrors.push(
         `[CHK-SHA-1] pddi_monographs_tr.json SHA-256 uyuşmazlığı! Beklenen=${expectedSha.pddi_monographs_tr}, Gerçek=${actualPddiSha}`
@@ -900,9 +901,14 @@ async function main(): Promise<void> {
         `[CHK-SHA-1] clinical_monographs.json SHA-256 uyuşmazlığı! Beklenen=${expectedSha.clinical_monographs}, Gerçek=${actualMonoSha}`
       );
     }
+    if (actualSuppSha !== expectedSha.supplement_interactions_tr) {
+      strictErrors.push(
+        `[CHK-SHA-1] supplement_interactions_tr.json SHA-256 uyuşmazlığı! Beklenen=${expectedSha.supplement_interactions_tr}, Gerçek=${actualSuppSha}`
+      );
+    }
   }
   console.log(
-    `✓ RxCUI çapraz tutarlılığı (${rxCrossChecked} eşleşen kavram, 0 uyuşmazlık), ${uniiVerified} FDA GSRS UNII ve 2/2 SHA-256 paket özeti doğrulandı (ihlal: ${strictErrors.length - rxStartErr})`
+    `✓ RxCUI çapraz tutarlılığı (${rxCrossChecked} eşleşen kavram, 0 uyuşmazlık), ${uniiVerified} FDA GSRS UNII ve 3/3 SHA-256 paket özeti doğrulandı (ihlal: ${strictErrors.length - rxStartErr})`
   );
 
   // --------------------------------------------------------------------------

@@ -2880,6 +2880,7 @@
                         <!-- Canlı Uyarı Çıktıları -->
                         <div id="output-safety-lab-orders" class="hidden text-[0.75rem] p-2 rounded-lg border border-cyan-700/60 bg-cyan-950/30 text-cyan-100 space-y-1"></div>
                         <div id="output-safety-interactions" class="hidden text-[0.75rem] p-2.5 rounded-lg border tabular-nums space-y-2"></div>
+                        <div id="output-safety-supplements" class="hidden text-[0.75rem] space-y-2"></div>
                         <div id="output-safety-ddinter" class="hidden text-[0.75rem] space-y-1.5"></div>
                         <div id="output-safety-duplication" class="hidden text-[0.75rem] p-2.5 rounded-lg border space-y-1"></div>
                         <div id="output-safety-triple-whammy" class="hidden text-[0.75rem] p-2.5 rounded-lg border tabular-nums space-y-1"></div>
@@ -2891,6 +2892,49 @@
                         <div id="output-safety-neonatal" class="hidden text-[0.75rem] p-2.5 rounded-lg border tabular-nums space-y-1"></div>
                         <div id="output-safety-hepatic" class="hidden text-[0.75rem] p-2.5 rounded-lg border tabular-nums space-y-1"></div>
                         <div id="output-safety-counseling" class="hidden text-[0.75rem] p-2.5 rounded-lg border space-y-2"></div>
+
+                        <!-- Ayrı Kategorili Takviye, Vitamin & Bitki Çayı Etkileşim Seçicisi (Varsayılan Kapalı / Sıfır Gürültü) -->
+                        <div id="supplement-module-footer" class="pt-2 mt-1 border-t border-slate-800/80 space-y-2">
+                            <div id="container-selected-supplements" class="flex flex-wrap gap-1.5 empty:hidden"></div>
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <button
+                                    type="button"
+                                    id="btn-toggle-supplement-picker"
+                                    aria-expanded="false"
+                                    aria-controls="panel-supplement-picker"
+                                    class="btn-compact inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-700/90 bg-slate-900/70 hover:bg-slate-800 hover:border-teal-600/70 text-slate-300 hover:text-teal-200 text-[0.75rem] font-medium transition-colors"
+                                >
+                                    <span class="text-teal-400 font-bold leading-none">+</span>
+                                    <span>Takviye / Vitamin / Bitki Çayı Ekle</span>
+                                    <span id="badge-supplement-count" class="hidden ml-0.5 px-1.5 py-0 rounded bg-teal-950/90 text-teal-200 border border-teal-600/70 text-[0.6875rem] font-mono">0</span>
+                                </button>
+                                <span class="text-[0.6875rem] text-slate-500">Yalnızca hasta kullanıyorsa ekleyin · Seçilmedikçe uyarı açılmaz</span>
+                            </div>
+
+                            <div id="panel-supplement-picker" class="hidden rounded-lg border border-slate-700/80 bg-slate-950/75 p-2.5 space-y-2">
+                                <div class="flex flex-wrap items-center gap-1 text-[0.6875rem]" id="supplement-category-tabs" role="tablist" aria-label="Takviye Kategorileri">
+                                    <button type="button" data-supp-cat="all" class="supplement-cat-btn px-2 py-1 rounded border bg-teal-950/80 text-teal-200 border-teal-500/70 font-semibold transition-colors">Tümü</button>
+                                    <button type="button" data-supp-cat="vitamin_mineral" class="supplement-cat-btn px-2 py-1 rounded border bg-slate-900/80 text-slate-300 border-slate-700 hover:text-white transition-colors">Vitamin &amp; Mineral</button>
+                                    <button type="button" data-supp-cat="supplement_pill" class="supplement-cat-btn px-2 py-1 rounded border bg-slate-900/80 text-slate-300 border-slate-700 hover:text-white transition-colors">Takviye Hapı</button>
+                                    <button type="button" data-supp-cat="herbal_tea" class="supplement-cat-btn px-2 py-1 rounded border bg-slate-900/80 text-slate-300 border-slate-700 hover:text-white transition-colors">Bitki Çayı &amp; Bitkisel</button>
+                                </div>
+                                <div class="relative flex items-center">
+                                    <input
+                                        type="text"
+                                        id="input-supplement-search"
+                                        placeholder="Takviye, vitamin veya bitki çayı ara (örn. Sarı kantaron, D3+K2, Duvar sarmaşığı, Sinameki)..."
+                                        class="w-full pr-7 h-8 bg-[#0c1322] border border-slate-700/80 rounded-md px-2.5 text-xs text-slate-200 placeholder-slate-400/70 focus:border-teal-400 focus:outline-none transition-colors"
+                                    >
+                                    <button
+                                        type="button"
+                                        id="btn-clear-supplement-search"
+                                        class="hidden absolute right-1.5 text-slate-400 hover:text-slate-100 text-xs font-bold w-5 h-5 rounded-full hover:bg-slate-800 flex items-center justify-center"
+                                        title="Aramayı temizle"
+                                    >×</button>
+                                </div>
+                                <div id="list-supplement-results" class="space-y-1 max-h-56 overflow-y-auto pr-0.5"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </details>

@@ -15,7 +15,7 @@
  *    jenerik şablon metni bastırılır (monograf önceliği).
  */
 
-import type { SelectedDrugItem } from '../types/clinical';
+import type { SelectedDrugItem, SelectedSupplementItem } from '../types/clinical';
 import type {
   RenalDoseCheckResult,
   TripleWhammyResult,
@@ -64,6 +64,11 @@ import {
   CODED_OVERRIDE_REASONS,
   type CdsHookActionSuggestion
 } from './cdsHooksActionEngine';
+import {
+  evaluateSupplementInteractions,
+  renderSupplementAlertsHTML,
+  type SupplementEvaluationResult
+} from './supplementInteractionEngine';
 
 export interface UnifiedSafetyContext {
   egfr?: number | null;
@@ -89,6 +94,7 @@ export interface UnifiedSafetyContext {
   meldScore?: number | null;
   diagnosis?: string;
   recentDiscontinuedDrugs?: DiscontinuedDrugEntry[];
+  selectedSupplements?: SelectedSupplementItem[];
 }
 
 export interface EnrichedSafetyDrug {
@@ -114,9 +120,10 @@ export interface UnifiedSafetyCounts {
   duplications: number;
   organShields: number;
   ddinterExtra: number;
-  /** Ana rozette ve modalda gösterilen eyleme dönüştürülebilir tekil uyarı sayısı (Tier 1+2 + özgün PDDI X/D + tekilleştirilmiş organ kalkanları + duplikasyon + özgün DDInter Major) */
+  supplementAlerts: number;
+  /** Ana rozette ve modalda gösterilen eyleme dönüştürülebilir tekil uyarı sayısı (Tier 1+2 + özgün PDDI X/D + tekilleştirilmiş organ kalkanları + duplikasyon + özgün DDInter Major + seçili takviye X/D) */
   totalActionable: number;
-  /** Katlanabilir şeritte yer alan düşük öncelikli / izlem sayısı (Tier 3+4 + PDDI C/B + DDInter Moderate) */
+  /** Katlanabilir şeritte yer alan düşük öncelikli / izlem sayısı (Tier 3+4 + PDDI C/B + DDInter Moderate + seçili takviye C/B) */
   totalMonitoring: number;
   /** Hard Stop veya Kontrendikasyon bayrağı */
   hasCritical: boolean;
@@ -132,6 +139,7 @@ export interface UnifiedSafetyResult {
   /** interactionTierEngine ile aynı ATC çiftini zaten yakalamayan özgün PDDI monografları */
   uniquePddiCount: number;
   ddiMatrix: DdiMatrixEvaluationResult;
+  supplementSafety: SupplementEvaluationResult;
   tripleWhammy: TripleWhammyResult;
   serotoninSyndrome: SerotoninSyndromeResult;
   hyperkalemiaRisk: HyperkalemiaRiskResult;
@@ -381,6 +389,18 @@ export function evaluateUnifiedPrescriptionSafety(
     missingLabs.push({ labelTr: '12-Lead EKG / QTc Fridericia', loincCode: '76634-5' });
   }
 
+  // 5b. Takviye, Vitamin & Bitki Çayı Etkileşim Motoru (yalnızca seçili takviye varsa çalışır — 0 gürültü)
+  const supplementSafety = evaluateSupplementInteractions(enrichedDrugs, ctx.selectedSupplements, {
+    egfr: ctx.egfr ?? null,
+    ageYears: ctx.ageYears ?? null,
+    ageMonths: ctx.ageMonths ?? null,
+    ageDays: ctx.ageDays ?? null,
+    isPregnant,
+    trimester,
+    childPughClass: ctx.childPughClass ?? null,
+    existingTierRuleIds: ruleIds
+  });
+
   // 6. Legacy kalkan çift-sayım bayrakları (gerçek interactionTierEngine ruleId'leriyle %100 hizalı)
   const hasTierPreg = Array.from(ruleIds).some(id => id.startsWith('PREG_') || id.startsWith('DDI_PREGNANCY_'));
   const hasTierNeo = Array.from(ruleIds).some(id => id.startsWith('NEO_') || id.startsWith('DDI_NEONATAL_'));
@@ -421,7 +441,9 @@ export function evaluateUnifiedPrescriptionSafety(
     (!dedupedFlags.cypStatinCovered && cypStatinInteraction.hasInteraction ? 1 : 0);
 
   const ddinterExtra = ddiMatrix.curatedAlerts.length + ddiMatrix.majorAlerts.length;
-  const duplications = ddiMatrix.duplications.length;
+  const duplications = ddiMatrix.duplications.length + supplementSafety.duplications.length;
+  const suppTierXCount = supplementSafety.alerts.filter(a => a.actionTier === 'X').length;
+  const suppTierDCount = supplementSafety.alerts.filter(a => a.actionTier === 'D').length;
 
   const pddiTierXCount = pddiMatches.filter(m => m.escalatedTier === 'X' && !tierCoveredPairs.has(canonicalPairKey(m.atcA, m.atcB))).length;
   const pddiTierDCount = pddiMatches.filter(m => m.escalatedTier === 'D' && !tierCoveredPairs.has(canonicalPairKey(m.atcA, m.atcB))).length;
@@ -429,6 +451,7 @@ export function evaluateUnifiedPrescriptionSafety(
   const hasCritical = Boolean(
     interactions.hasHardStop ||
     hasPddiCritical ||
+    supplementSafety.hasCritical ||
     hasDoacLock ||
     hasPedRenalRisk ||
     ddiMatrix.curatedAlerts.some(a => a.severity === 'K') ||
@@ -448,13 +471,15 @@ export function evaluateUnifiedPrescriptionSafety(
     uniqueActionablePddi +
     organShieldCount +
     ddinterExtra +
-    duplications;
+    ddiMatrix.duplications.length +
+    supplementSafety.actionableCount;
 
   const totalMonitoring =
     tier3Alerts.length +
     tier4Alerts.length +
     uniqueMonitoringPddi +
-    ddiMatrix.moderateAlerts.length;
+    ddiMatrix.moderateAlerts.length +
+    supplementSafety.monitoringCount;
 
   return {
     enrichedDrugs,
@@ -465,6 +490,7 @@ export function evaluateUnifiedPrescriptionSafety(
     pddiMatches,
     uniquePddiCount: uniqueActionablePddi + uniqueMonitoringPddi,
     ddiMatrix,
+    supplementSafety,
     tripleWhammy,
     serotoninSyndrome,
     hyperkalemiaRisk,
@@ -477,14 +503,15 @@ export function evaluateUnifiedPrescriptionSafety(
     hasPedRenalRisk,
     dedupedFlags,
     counts: {
-      tier1: tier1Alerts.length + pddiTierXCount,
-      tier2: tier2Alerts.length + pddiTierDCount,
+      tier1: tier1Alerts.length + pddiTierXCount + suppTierXCount,
+      tier2: tier2Alerts.length + pddiTierDCount + suppTierDCount,
       tier3: tier3Alerts.length,
       tier4: tier4Alerts.length,
       pddiMonographs: pddiMatches.length,
       duplications,
       organShields: organShieldCount,
       ddinterExtra,
+      supplementAlerts: supplementSafety.actionableCount,
       totalActionable,
       totalMonitoring,
       hasCritical
@@ -561,6 +588,7 @@ export function renderQuickSafetySummaryHTML(res: UnifiedSafetyResult): string {
         ${counts.organShields > 0 ? `<span class="px-1.5 py-0.5 rounded bg-fuchsia-950/70 text-fuchsia-200 border border-fuchsia-600/70 text-[0.6875rem]">Organ/Popülasyon: ${counts.organShields}</span>` : ''}
         ${counts.duplications > 0 ? `<span class="px-1.5 py-0.5 rounded bg-orange-950/70 text-orange-200 border border-orange-600/70 text-[0.6875rem]">Duplikasyon: ${counts.duplications}</span>` : ''}
         ${counts.pddiMonographs > 0 ? `<span class="px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-200 border border-emerald-600/70 text-[0.6875rem]">Kanıtlı Monograf: ${counts.pddiMonographs}</span>` : ''}
+        ${counts.supplementAlerts > 0 ? `<span class="px-1.5 py-0.5 rounded bg-teal-950/75 text-teal-200 border border-teal-500/70 text-[0.6875rem]">Takviye/Bitki: ${counts.supplementAlerts}</span>` : ''}
         ${counts.totalMonitoring > 0 ? `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[0.6875rem]">İzlem: ${counts.totalMonitoring}</span>` : ''}
       </div>
       ${tisdalePill}
@@ -811,6 +839,7 @@ export function renderCodedOverrideBarHTML(
   if (!res.counts.hasCritical) return '';
   const topRule = res.interactions.alerts.find(a => a.tier === 1)?.ruleId
     || res.pddiMatches.find(m => m.escalatedTier === 'X')?.monograph.monograph_id
+    || res.supplementSafety?.alerts.find(a => a.actionTier === 'X')?.ruleId
     || 'CRITICAL_SAFETY_LOCK';
   const pairLabel = res.enrichedDrugs.map(d => d.brand.split(' ')[0]).slice(0, 3).join(' + ');
 
@@ -895,6 +924,9 @@ export function renderUnifiedModalSafetyBannerHTML(
 
   const pddiHtml = renderPddiMonographsHTML(pddiMatches, res.missingLabs);
   if (pddiHtml) blocks.push(pddiHtml);
+
+  const suppHtml = renderSupplementAlertsHTML(res.supplementSafety);
+  if (suppHtml) blocks.push(suppHtml);
 
   // Tekilleştirilmiş organ & özel popülasyon kalkanları
   if (res.hasDoacLock) {
